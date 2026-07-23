@@ -11,6 +11,10 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("is_active"), &HitBox::is_active);
         ClassDB::bind_method(D_METHOD("set_knockback_from_facing", "facing"), &HitBox::set_knockback_from_facing);
         ClassDB::bind_method(D_METHOD("_on_area_entered", "area"), &HitBox::_on_area_entered);
+
+        ADD_SIGNAL(MethodInfo("hit_landed",
+                              PropertyInfo(Variant::OBJECT, "victim"),
+                              PropertyInfo(Variant::FLOAT, "damage")));
     }
 
     void HitBox::_ready() {
@@ -49,6 +53,7 @@ namespace godot {
             Node *owner = hurtbox->get_parent();
             if (owner && owner->has_method("take_damage")) {
                 owner->call("take_damage", damage, get_parent());
+                emit_signal("hit_landed", owner, damage);
             }
         }
     }

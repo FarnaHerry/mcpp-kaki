@@ -4,6 +4,7 @@
 #include <godot_cpp/classes/character_body2d.hpp>
 #include <godot_cpp/classes/input.hpp>
 
+#include "../combat/combo_chain.h"
 #include "../utils/state_machine.h"
 #include "../utils/input_buffer.h"
 
@@ -46,6 +47,7 @@ namespace godot {
         bool jump_held() const;
         bool dash_just_pressed() const;
         bool attack_just_pressed() const;
+        bool attack_held() const;
         bool can_dash() const;
         void start_dash();
         double get_time() const { return _time; }
@@ -62,10 +64,19 @@ namespace godot {
         double dash_cooldown_end = 0.0;
         double left_ground_time = -1.0;
 
+        // Combo system
+        ComboChain combo_chain;
+        double attack_phase_end_time = 0.0; // when current attack phase ends
+        enum AttackPhase { STARTUP, ACTIVE, RECOVERY };
+        AttackPhase attack_phase = ACTIVE;
+
         // Cultivation
         CultivationSystem *get_cultivation() const { return _cultivation; }
         AbilityManager *get_ability_manager() const { return _abilities; }
         void gain_spiritual_energy(float p_amount);
+
+        // Called when HitBox lands a hit (for combo tracking)
+        void on_attack_landed(Node *p_victim);
 
         void _ready() override;
         void _physics_process(double p_delta) override;

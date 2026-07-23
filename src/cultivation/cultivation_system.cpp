@@ -1,4 +1,5 @@
 #include "cultivation_system.h"
+#include "../utils/signal_bus.h"
 
 #include <cstdlib>
 #include <godot_cpp/core/class_db.hpp>
@@ -64,6 +65,11 @@ namespace godot {
     void CultivationSystem::accumulate_energy(float p_amount) {
         _spiritual_energy += p_amount;
         emit_signal("energy_changed", _spiritual_energy, get_max_energy());
+
+        SignalBus *bus = SignalBus::get_singleton();
+        if (bus) {
+            bus->emit_signal("spiritual_energy_changed", _spiritual_energy, get_max_energy());
+        }
     }
 
     bool CultivationSystem::attempt_breakthrough() {
@@ -86,6 +92,12 @@ namespace godot {
             _current_realm = (Realm)((int)_current_realm + 1);
             emit_signal("breakthrough_success", (int)_current_realm);
             emit_signal("realm_changed", (int)old, (int)_current_realm);
+
+            SignalBus *bus = SignalBus::get_singleton();
+            if (bus) {
+                bus->emit_signal("realm_changed", (int)old, (int)_current_realm,
+                                _realms[_current_realm].name);
+            }
             return true;
         } else {
             // Failed — keep some progress (50% of energy)

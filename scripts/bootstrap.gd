@@ -15,10 +15,26 @@ func _make_sprite(parent, color, size, pos=Vector2.ZERO):
 	parent.add_child(poly)
 
 func _setup_game():
+	# ---- SignalBus (global signal hub) ----
+	var signal_bus = ClassDB.instantiate("SignalBus")
+	signal_bus.name = "SignalBus"
+	add_child(signal_bus)
+
+	# ---- GameManager (game state controller) ----
+	var game_mgr = ClassDB.instantiate("GameManager")
+	game_mgr.name = "GameManager"
+	add_child(game_mgr)
+
+	# ---- HUD (must be created after SignalBus so it can connect signals) ----
+	var hud = ClassDB.instantiate("GameHUD")
+	hud.name = "GameHUD"
+	add_child(hud)
+
 	# ---- Camera ----
 	var camera = ClassDB.instantiate("CameraRoom2D")
 	camera.name = "CameraRoom2D"
 	add_child(camera)
+	game_mgr.call("set_camera", camera)
 
 	# ---- Player ----
 	var player = ClassDB.instantiate("Player")
@@ -33,6 +49,14 @@ func _setup_game():
 	_make_sprite(player, Color(0.2, 0.4, 0.9, 1), Vector2(16, 28))
 	add_child(player)
 	camera.call("set_follow_target", player)
+	game_mgr.call("set_player", player)
+
+	# Set initial checkpoint
+	game_mgr.call("set_checkpoint", Vector2(200, 200), "")
+
+	# Connect player death to GameManager
+	if player.has_signal("player_died"):
+		player.connect("player_died", game_mgr.on_player_died)
 
 	# ---- Portals (composition: each portal owns its scene lifecycle) ----
 	# Town portal at x=600
@@ -125,5 +149,11 @@ func _on_enemy_died():
 func _debug_update(label, player):
 	var vel = player.get("velocity")
 	var txt = "Pos:(%.0f, %.0f) Vel:(%.0f, %.0f)\n" % [player.position.x, player.position.y, vel.x, vel.y]
-	txt += "Floor:%s  Wall:%s" % [player.is_on_floor(), player.is_on_wall()]
+	txt += "Floor:%s  Wall:%s\n" % [player.is_on_floor(), player.is_on_wall()]
+	var cultivation = player.call("get_cultivation")
+	if cultivation:
+		txt += "Realm: %s (%.0f/%.0f)\n" % [cultivation.get_realm_name(), cultivation.get_spiritual_energy(), cultivation.get_max_energy()]
+	var gm = get_node_or_null("GameManager")
+	if gm:
+		txt += "Kills: %d" % gm.get_kill_count()
 	label.text = txt

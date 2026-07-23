@@ -1,9 +1,11 @@
 #include "player.h"
 
+#include "../combat/combo_chain.h"
 #include "../combat/hitbox.h"
 #include "../combat/hurtbox.h"
 #include "../cultivation/ability_manager.h"
 #include "../cultivation/cultivation_system.h"
+#include "../utils/signal_bus.h"
 
 #include <godot_cpp/classes/collision_shape2d.hpp>
 #include <godot_cpp/classes/polygon2d.hpp>
@@ -322,30 +324,106 @@ namespace godot {
         }
     };
 
-    // ------- Attack -------
+    // ------- Attack (multi-phase with combo chaining) -------
     class PlayerAttackState : public State<Player> {
     public:
         void enter(Player *p) override {
-            // Activate hitbox
+            // Start combo chain and get current step
+            int step = p->combo_chain.start_attack(p->get_time());
+
+            // Setup HitBox with combo multipliers
             HitBox *hb = Object::cast_to<HitBox>(p->get_node_or_null("HitBox"));
             if (hb) {
-                float mult = p->get_cultivation() ? p->get_cultivation()->get_damage_multiplier() : 1.0f;
-                hb->damage = p->attack_damage * mult;
+                float realm_mult = p->get_cultivation() ? p->get_cultivation()->get_damage_multiplier() : 1.0f;
+                float combo_mult = p->combo_chain.get_damage_multiplier();
+                float kbr_mult = p->combo_chain.get_knockback_multiplier();
+                hb->damage = p->attack_damage * realm_mult * combo_mult;
+                hb->knockback_force = 200.0f * kbr_mult;
                 hb->set_knockback_from_facing(p->facing_direction);
-                // Flip hitbox to match facing direction
                 hb->set_scale(Vector2((float)p->facing_direction, 1.0f));
-                hb->set_active(true);
+                hb->set_active(false); // Will be activated during active phase
+            }
+
+            // Start in startup phase
+            p->attack_phase = Player::STARTUP;
+            p->attack_phase_end_time = p->get_time() + p->combo_chain.get_startup_time();
+
+            // Broadcast combo step change
+            SignalBus *bus = SignalBus::get_singleton();
+            if (bus) {
+                bus->emit_signal("combo_changed", step + 1);
             }
         }
+
         void exit(Player *p) override {
             HitBox *hb = Object::cast_to<HitBox>(p->get_node_or_null("HitBox"));
             if (hb) hb->set_active(false);
+
+            // If exiting without chaining to next attack, end the combo
+            // (transitioned to non-attack state)
         }
 
         void physics_update(Player *p, double delta) override {
-            // Attack is a brief state — transition back immediately
-            // The hitbox stays active for the duration of this frame's physics
-            // In a full implementation, we'd track animation frames
+            double t = p->get_time();
+
+            // Phase transitions
+            switch (p->attack_phase) {
+                case Player::STARTUP:
+                    if (t >= p->attack_phase_end_time) {
+                        // Activate hitbox
+                        HitBox *hb = Object::cast_to<HitBox>(p->get_node_or_null("HitBox"));
+                        if (hb) hb->set_active(true);
+                        p->attack_phase = Player::ACTIVE;
+                        p->attack_phase_end_time = t + p->combo_chain.get_active_time();
+                    }
+                    break;
+
+                case Player::ACTIVE:
+                    if (t >= p->attack_phase_end_time) {
+                        // Deactivate hitbox
+                        HitBox *hb = Object::cast_to<HitBox>(p->get_node_or_null("HitBox"));
+                        if (hb) hb->set_active(false);
+                        p->attack_phase = Player::RECOVERY;
+                        p->attack_phase_end_time = t + p->combo_chain.get_recovery_time();
+                    }
+                    break;
+
+                case Player::RECOVERY:
+                    // Check for combo chain: attack press during recovery buffers the next hit
+                    if (p->attack_just_pressed() && p->combo_chain.get_combo_step() < ComboChain::MAX_COMBO - 1) {
+                        // Chain to next attack — re-enter with same state
+                        p->state_machine->transition_to(PlayerStates::Attack);
+                        return;
+                    }
+
+                    if (t >= p->attack_phase_end_time) {
+                        // Recovery complete — transition out
+                        _exit_attack(p);
+                        return;
+                    }
+                    break;
+            }
+
+            // Apply minimal movement during attack (allow gravity in air)
+            Vector2 vel = p->get_velocity();
+            if (!p->is_on_floor()) {
+                vel.y += p->get_gravity() * delta;
+            } else {
+                vel.x = Math::move_toward(vel.x, 0.0f, float(p->move_speed * 8.0 * delta));
+            }
+            p->set_velocity(vel);
+            p->move_and_slide();
+        }
+
+    private:
+        void _exit_attack(Player *p) {
+            // End combo and broadcast
+            int final_count = p->combo_chain.get_hit_count();
+            SignalBus *bus = SignalBus::get_singleton();
+            if (bus && final_count > 0) {
+                bus->emit_signal("combo_ended", final_count);
+            }
+
             if (p->is_on_floor()) {
                 if (Math::abs(p->get_move_input()) > 0.01f) {
                     p->state_machine->transition_to(PlayerStates::Run);
@@ -367,6 +445,7 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("get_gravity"), &Player::get_gravity);
         ClassDB::bind_method(D_METHOD("take_damage", "amount", "source"), &Player::take_damage);
         ClassDB::bind_method(D_METHOD("gain_spiritual_energy", "amount"), &Player::gain_spiritual_energy);
+        ClassDB::bind_method(D_METHOD("on_attack_landed", "victim"), &Player::on_attack_landed);
         ClassDB::bind_method(D_METHOD("_on_hurtbox_hit", "hitbox", "source"), &Player::_on_hurtbox_hit);
 
         ADD_SIGNAL(MethodInfo("player_died"));
@@ -409,6 +488,7 @@ namespace godot {
         _time += p_delta;
         _update_buffers();
         _update_facing();
+        combo_chain.update(_time);
         state_machine->process_update(p_delta);
     }
 
@@ -467,6 +547,10 @@ namespace godot {
         return Input::get_singleton()->is_action_just_pressed("attack");
     }
 
+    bool Player::attack_held() const {
+        return Input::get_singleton()->is_action_pressed("attack");
+    }
+
     bool Player::can_dash() const {
         return _time >= dash_cooldown_end;
     }
@@ -479,9 +563,19 @@ namespace godot {
     void Player::take_damage(float p_amount, Node *p_source) {
         current_health -= p_amount;
 
+        // Broadcast through global signal bus
+        SignalBus *bus = SignalBus::get_singleton();
+        if (bus) {
+            bus->emit_signal("player_health_changed", current_health, max_health);
+            bus->emit_signal("player_damaged", p_amount, p_source);
+        }
+
         if (current_health <= 0.0f) {
             current_health = 0.0f;
             emit_signal("player_died");
+            if (bus) {
+                bus->emit_signal("player_died");
+            }
             return;
         }
 
@@ -512,6 +606,7 @@ namespace godot {
         _hitbox->set_collision_layer_value(5, true);
         _hitbox->set_collision_mask_value(4, true);
         _hitbox->connect("area_entered", Callable(_hitbox, "_on_area_entered"));
+        _hitbox->connect("hit_landed", Callable(this, "on_attack_landed"));
 
         CollisionShape2D *hb_shape = memnew(CollisionShape2D);
         Ref<RectangleShape2D> hb_rect;
@@ -569,6 +664,15 @@ namespace godot {
     void Player::gain_spiritual_energy(float p_amount) {
         if (_cultivation) {
             _cultivation->accumulate_energy(p_amount);
+        }
+    }
+
+    void Player::on_attack_landed(Node *p_victim) {
+        combo_chain.on_hit_landed(_time);
+
+        SignalBus *bus = SignalBus::get_singleton();
+        if (bus) {
+            bus->emit_signal("combo_changed", combo_chain.get_hit_count());
         }
     }
 

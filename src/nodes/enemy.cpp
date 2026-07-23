@@ -2,6 +2,7 @@
 
 #include "../combat/hitbox.h"
 #include "../combat/hurtbox.h"
+#include "../utils/signal_bus.h"
 
 #include <cstdlib>
 
@@ -128,9 +129,13 @@ namespace godot {
     class EnemyAttackState : public State<Enemy> {
     public:
         void enter(Enemy *e) override {
-            // Activate hitbox
+            // Activate hitbox and flip to facing direction
             HitBox *hb = Object::cast_to<HitBox>(e->get_node_or_null("HitBox"));
-            if (hb) hb->set_active(true);
+            if (hb) {
+                hb->set_scale(Vector2((float)e->facing_direction, 1.0f));
+                hb->set_knockback_from_facing(e->facing_direction);
+                hb->set_active(true);
+            }
         }
         void exit(Enemy *e) override {
             HitBox *hb = Object::cast_to<HitBox>(e->get_node_or_null("HitBox"));
@@ -138,12 +143,9 @@ namespace godot {
         }
 
         void physics_update(Enemy *e, double delta) override {
-            // Brief attack window, then back to chase
-            // The hitbox stays active for this state's duration
-            // Transition handled by a timer or after one frame
             e->last_attack_time = e->get_time();
 
-            // Transition immediately — the attack is an instant hitbox activation
+            // Transition immediately — attack is instant hitbox activation
             if (e->can_see_player()) {
                 e->state_machine->transition_to(EnemyStates::Chase);
             } else {
@@ -329,10 +331,13 @@ namespace godot {
 
             // Give spiritual energy to the player who killed this enemy
             if (p_source) {
-                // p_source is the Player node
-                Node *player = p_source;
-                // Try to call gain_spiritual_energy via dynamic lookup
-                player->call("gain_spiritual_energy", 15.0f);
+                p_source->call("gain_spiritual_energy", 15.0f);
+            }
+
+            // Broadcast kill through signal bus
+            SignalBus *bus = SignalBus::get_singleton();
+            if (bus) {
+                bus->emit_signal("enemy_killed", this, p_source);
             }
 
             if (state_machine) {

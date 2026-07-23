@@ -1,5 +1,6 @@
 #include "portal.h"
 #include "camera_room_2d.h"
+#include "../utils/signal_bus.h"
 
 #include <godot_cpp/classes/collision_shape2d.hpp>
 #include <godot_cpp/classes/engine.hpp>
@@ -76,6 +77,11 @@ namespace godot {
         if (!_player)
             _player = p_body;
         emit_signal("portal_prompt", _prompt_text, true);
+
+        SignalBus *bus = SignalBus::get_singleton();
+        if (bus) {
+            bus->emit_signal("interaction_prompt", _prompt_text, true);
+        }
     }
 
     void Portal::_on_body_exited(Node2D *p_body) {
@@ -83,6 +89,11 @@ namespace godot {
             return;
         _player_inside = false;
         emit_signal("portal_prompt", "", false);
+
+        SignalBus *bus = SignalBus::get_singleton();
+        if (bus) {
+            bus->emit_signal("interaction_prompt", "", false);
+        }
     }
 
     // ============================================================

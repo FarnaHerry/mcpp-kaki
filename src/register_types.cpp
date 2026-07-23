@@ -5,12 +5,15 @@
 
 #include "combat/hitbox.h"
 #include "combat/hurtbox.h"
+#include "core/game_manager.h"
 #include "cultivation/ability_manager.h"
 #include "cultivation/cultivation_system.h"
 #include "nodes/camera_room_2d.h"
 #include "nodes/enemy.h"
+#include "nodes/game_hud.h"
 #include "nodes/player.h"
 #include "nodes/portal.h"
+#include "utils/signal_bus.h"
 
 using namespace godot;
 
@@ -27,6 +30,9 @@ void initialize_cpp_kaki_module(ModuleInitializationLevel p_level) {
     GDREGISTER_CLASS(HurtBox);
     GDREGISTER_CLASS(CultivationSystem);
     GDREGISTER_CLASS(AbilityManager);
+    GDREGISTER_CLASS(SignalBus);
+    GDREGISTER_CLASS(GameManager);
+    GDREGISTER_CLASS(GameHUD);
 }
 
 void uninitialize_cpp_kaki_module(ModuleInitializationLevel p_level) {
