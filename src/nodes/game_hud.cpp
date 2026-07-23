@@ -1,27 +1,34 @@
 #include "game_hud.h"
 
+#include "../cultivation/cultivation_system.h"
 #include "../utils/signal_bus.h"
 
 #include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/input_event_key.hpp>
 #include <godot_cpp/core/class_db.hpp>
+#include <godot_cpp/variant/utility_functions.hpp>
 
 namespace godot {
 
 // Layout constants (480×270 viewport)
-static constexpr float BAR_WIDTH = 100.0f;
-static constexpr float BAR_HEIGHT = 8.0f;
+static constexpr float BAR_WIDTH = 140.0f;
+static constexpr float BAR_HEIGHT = 16.0f; // tall enough to hold the value text inside
 static constexpr float BAR_X = 8.0f;
-static constexpr float HEALTH_BAR_Y = 8.0f;
-static constexpr float ENERGY_BAR_Y = 22.0f;
-static constexpr int FONT_SIZE_SM = 10;
+static constexpr float HEALTH_BAR_Y = 6.0f;
+static constexpr float ENERGY_BAR_Y = 24.0f; // 灵力（法力）
+static constexpr float XP_BAR_Y = 42.0f;     // 修为经验（百分比）
+static constexpr float REALM_LABEL_Y = 62.0f;
+static constexpr int FONT_SIZE_XS = 9;
 static constexpr int FONT_SIZE_MD = 14;
 static constexpr int FONT_SIZE_LG = 20;
 
 void GameHUD::_bind_methods() {
     ClassDB::bind_method(D_METHOD("on_player_health_changed", "current", "max"),
                          &GameHUD::on_player_health_changed);
-    ClassDB::bind_method(D_METHOD("on_spiritual_energy_changed", "current", "max"),
+    ClassDB::bind_method(D_METHOD("on_spiritual_energy_changed", "current", "max", "progress"),
                          &GameHUD::on_spiritual_energy_changed);
+    ClassDB::bind_method(D_METHOD("on_mana_changed", "current", "max"),
+                         &GameHUD::on_mana_changed);
     ClassDB::bind_method(D_METHOD("on_realm_changed", "old_realm", "new_realm", "realm_name"),
                          &GameHUD::on_realm_changed);
     ClassDB::bind_method(D_METHOD("on_combo_changed", "count"), &GameHUD::on_combo_changed);
@@ -30,6 +37,9 @@ void GameHUD::_bind_methods() {
                          &GameHUD::on_interaction_prompt);
     ClassDB::bind_method(D_METHOD("on_player_died"), &GameHUD::on_player_died);
     ClassDB::bind_method(D_METHOD("on_player_respawned"), &GameHUD::on_player_respawned);
+    ClassDB::bind_method(D_METHOD("set_hud_visible", "visible"), &GameHUD::set_hud_visible);
+    ClassDB::bind_method(D_METHOD("is_hud_visible"), &GameHUD::is_hud_visible);
+    ClassDB::bind_method(D_METHOD("set_all_visible", "visible"), &GameHUD::set_all_visible);
 }
 
 void GameHUD::_ready() {
@@ -40,16 +50,20 @@ void GameHUD::_ready() {
 
     _create_health_bar();
     _create_energy_bar();
+    _create_xp_bar();
     _create_realm_label();
     _create_combo_label();
     _create_interact_prompt();
     _create_death_overlay();
+
+    set_process_unhandled_input(true);
 
     // Connect to SignalBus
     SignalBus *bus = SignalBus::get_singleton();
     if (bus) {
         bus->connect("player_health_changed", Callable(this, "on_player_health_changed"));
         bus->connect("spiritual_energy_changed", Callable(this, "on_spiritual_energy_changed"));
+        bus->connect("mana_changed", Callable(this, "on_mana_changed"));
         bus->connect("realm_changed", Callable(this, "on_realm_changed"));
         bus->connect("combo_changed", Callable(this, "on_combo_changed"));
         bus->connect("combo_ended", Callable(this, "on_combo_ended"));
@@ -63,62 +77,61 @@ void GameHUD::_ready() {
 // Health Bar
 // ============================================================
 
-void GameHUD::_create_health_bar() {
-    // Background
-    _health_bg = memnew(ColorRect);
-    _health_bg->set_name("HealthBg");
-    _health_bg->set_position(Vector2(BAR_X, HEALTH_BAR_Y));
-    _health_bg->set_size(Vector2(BAR_WIDTH, BAR_HEIGHT));
-    _health_bg->set_color(Color(0.15f, 0.15f, 0.15f, 0.8f));
-    add_child(_health_bg);
+// Shared builder: one bar (bg + fill + centered in-bar value text)
+static void _build_bar(CanvasLayer *p_parent, float p_y, const Color &p_fill_color,
+                       ColorRect *&r_bg, ColorRect *&r_fill, Label *&r_label,
+                       const String &p_initial_text) {
+    r_bg = memnew(ColorRect);
+    r_bg->set_position(Vector2(BAR_X, p_y));
+    r_bg->set_size(Vector2(BAR_WIDTH, BAR_HEIGHT));
+    r_bg->set_color(Color(0.15f, 0.15f, 0.15f, 0.8f));
+    p_parent->add_child(r_bg);
 
-    // Fill
-    _health_fill = memnew(ColorRect);
-    _health_fill->set_name("HealthFill");
-    _health_fill->set_position(Vector2(BAR_X, HEALTH_BAR_Y));
-    _health_fill->set_size(Vector2(BAR_WIDTH, BAR_HEIGHT));
-    _health_fill->set_color(_health_color);
-    add_child(_health_fill);
+    r_fill = memnew(ColorRect);
+    r_fill->set_position(Vector2(BAR_X, p_y));
+    r_fill->set_size(Vector2(BAR_WIDTH, BAR_HEIGHT));
+    r_fill->set_color(p_fill_color);
+    p_parent->add_child(r_fill);
 
-    // Label
-    _health_label = memnew(Label);
-    _health_label->set_name("HealthLabel");
-    _health_label->set_position(Vector2(BAR_X, HEALTH_BAR_Y + BAR_HEIGHT + 1));
-    _health_label->add_theme_font_size_override("font_size", FONT_SIZE_SM);
-    _health_label->add_theme_color_override("font_color", Color(1, 1, 1, 1));
-    _health_label->set_text("HP 100/100");
-    add_child(_health_label);
+    // Value text drawn inside the bar (nudged up: font metrics sit low otherwise)
+    r_label = memnew(Label);
+    r_label->set_position(Vector2(BAR_X, p_y - 2.0f));
+    r_label->set_size(Vector2(BAR_WIDTH, BAR_HEIGHT));
+    r_label->add_theme_font_size_override("font_size", FONT_SIZE_XS);
+    r_label->add_theme_color_override("font_color", Color(1, 1, 1, 1));
+    r_label->add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9f));
+    r_label->add_theme_constant_override("outline_size", 2);
+    r_label->set_horizontal_alignment(HorizontalAlignment::HORIZONTAL_ALIGNMENT_CENTER);
+    r_label->set_vertical_alignment(VerticalAlignment::VERTICAL_ALIGNMENT_CENTER);
+    r_label->set_clip_text(true);
+    r_label->set_text(p_initial_text);
+    p_parent->add_child(r_label);
 }
 
-// ============================================================
-// Energy Bar
-// ============================================================
+void GameHUD::_create_health_bar() {
+    _build_bar(this, HEALTH_BAR_Y, _health_color,
+               _health_bg, _health_fill, _health_label, TXT("生命 100/100"));
+    _health_bg->set_name("HealthBg");
+    _health_fill->set_name("HealthFill");
+    _health_label->set_name("HealthLabel");
+}
 
 void GameHUD::_create_energy_bar() {
-    // Background
-    _energy_bg = memnew(ColorRect);
-    _energy_bg->set_name("EnergyBg");
-    _energy_bg->set_position(Vector2(BAR_X, ENERGY_BAR_Y));
-    _energy_bg->set_size(Vector2(BAR_WIDTH, BAR_HEIGHT));
-    _energy_bg->set_color(Color(0.15f, 0.15f, 0.15f, 0.8f));
-    add_child(_energy_bg);
-
-    // Fill
-    _energy_fill = memnew(ColorRect);
-    _energy_fill->set_name("EnergyFill");
-    _energy_fill->set_position(Vector2(BAR_X, ENERGY_BAR_Y));
+    _build_bar(this, ENERGY_BAR_Y, _energy_color,
+               _energy_bg, _energy_fill, _energy_label, TXT("灵力 0/0"));
+    _energy_bg->set_name("ManaBg");
+    _energy_fill->set_name("ManaFill");
+    _energy_label->set_name("ManaLabel");
     _energy_fill->set_size(Vector2(0, BAR_HEIGHT)); // starts empty
-    _energy_fill->set_color(_energy_color);
-    add_child(_energy_fill);
+}
 
-    // Label
-    _energy_label = memnew(Label);
-    _energy_label->set_name("EnergyLabel");
-    _energy_label->set_position(Vector2(BAR_X, ENERGY_BAR_Y + BAR_HEIGHT + 1));
-    _energy_label->add_theme_font_size_override("font_size", FONT_SIZE_SM);
-    _energy_label->add_theme_color_override("font_color", Color(0.7f, 0.85f, 1.0f, 1));
-    _energy_label->set_text("气 0/80");
-    add_child(_energy_label);
+void GameHUD::_create_xp_bar() {
+    _build_bar(this, XP_BAR_Y, _xp_color,
+               _xp_bg, _xp_fill, _xp_label, TXT("修为 0%"));
+    _xp_bg->set_name("XpBg");
+    _xp_fill->set_name("XpFill");
+    _xp_label->set_name("XpLabel");
+    _xp_fill->set_size(Vector2(0, BAR_HEIGHT)); // starts empty
 }
 
 // ============================================================
@@ -128,10 +141,10 @@ void GameHUD::_create_energy_bar() {
 void GameHUD::_create_realm_label() {
     _realm_label = memnew(Label);
     _realm_label->set_name("RealmLabel");
-    _realm_label->set_position(Vector2(BAR_X, 40));
+    _realm_label->set_position(Vector2(BAR_X, REALM_LABEL_Y));
     _realm_label->add_theme_font_size_override("font_size", FONT_SIZE_MD);
     _realm_label->add_theme_color_override("font_color", Color(1.0f, 0.85f, 0.3f, 1));
-    _realm_label->set_text("凡人");
+    _realm_label->set_text(TXT("凡人"));
     add_child(_realm_label);
 }
 
@@ -142,7 +155,7 @@ void GameHUD::_create_realm_label() {
 void GameHUD::_create_combo_label() {
     _combo_label = memnew(Label);
     _combo_label->set_name("ComboLabel");
-    _combo_label->set_position(Vector2(400, 20));
+    _combo_label->set_position(Vector2(380, 130)); // mid-right, clear of telemetry
     _combo_label->add_theme_font_size_override("font_size", FONT_SIZE_LG);
     _combo_label->add_theme_color_override("font_color", Color(1.0f, 0.6f, 0.1f, 1));
     _combo_label->set_visible(false);
@@ -181,6 +194,49 @@ void GameHUD::_create_death_overlay() {
 }
 
 // ============================================================
+// Input
+// ============================================================
+
+void GameHUD::_unhandled_input(const Ref<InputEvent> &p_event) {
+    if (Engine::get_singleton()->is_editor_hint())
+        return;
+
+    Ref<InputEventKey> key = p_event;
+    if (key.is_null() || !key->is_pressed() || key->is_echo())
+        return;
+
+    if (key->get_keycode() == KEY_F4) { // Toggle gameplay HUD
+        set_hud_visible(!_hud_visible);
+    }
+}
+
+// ============================================================
+// Visibility switches
+// ============================================================
+
+void GameHUD::_apply_hud_visibility() {
+    if (_health_bg)     _health_bg->set_visible(_hud_visible);
+    if (_health_fill)   _health_fill->set_visible(_hud_visible);
+    if (_health_label)  _health_label->set_visible(_hud_visible);
+    if (_energy_bg)     _energy_bg->set_visible(_hud_visible);
+    if (_energy_fill)   _energy_fill->set_visible(_hud_visible);
+    if (_energy_label)  _energy_label->set_visible(_hud_visible);
+    if (_xp_bg)         _xp_bg->set_visible(_hud_visible);
+    if (_xp_fill)       _xp_fill->set_visible(_hud_visible);
+    if (_xp_label)      _xp_label->set_visible(_hud_visible);
+    if (_realm_label)   _realm_label->set_visible(_hud_visible);
+    // Combo/prompt manage their own visibility; only show when HUD is on
+    if (_combo_label)   _combo_label->set_visible(_hud_visible && _combo_count >= 3);
+    if (_interact_label) _interact_label->set_visible(_hud_visible && _prompt_showing);
+}
+
+void GameHUD::set_hud_visible(bool p_visible) {
+    _hud_visible = p_visible;
+    _apply_hud_visibility();
+}
+
+
+// ============================================================
 // Update helpers
 // ============================================================
 
@@ -214,25 +270,62 @@ void GameHUD::on_player_health_changed(float p_current, float p_max) {
 
     if (_health_label) {
         _health_label->set_text(
-            "HP " + String::num_int64(int(p_current)) + "/" + String::num_int64(int(p_max)));
+            TXT("生命 ") + String::num_int64(int(p_current)) + "/" + String::num_int64(int(p_max)));
     }
 }
 
-void GameHUD::on_spiritual_energy_changed(float p_current, float p_max) {
-    _energy_current = p_current;
-    _energy_max = p_max;
-    _update_bar(_energy_fill, p_current, p_max);
-
+void GameHUD::_refresh_mana_label() {
     if (_energy_label) {
         _energy_label->set_text(
-            String::utf8("气 ") + String::num_int64(int(p_current)) + "/" + String::num_int64(int(p_max)));
+            _mana_prefix + " " + String::num_int64(int64_t(_mana_current)) +
+            "/" + String::num_int64(int64_t(_mana_max)));
     }
+}
+
+void GameHUD::_refresh_xp_label() {
+    if (_xp_label) {
+        _xp_label->set_text(
+            TXT("修为 ") + String::num_int64(int64_t(_xp_progress * 100.0f)) + "%");
+    }
+}
+
+void GameHUD::_refresh_realm_label() {
+    if (_realm_label) {
+        _realm_label->set_text(_realm_name);
+    }
+}
+
+void GameHUD::on_spiritual_energy_changed(int64_t p_current, int64_t p_max, float p_progress) {
+    // 修为经验：HUD 只显示境内进度百分比（符合修仙"进度感"）
+    _xp_progress = p_progress;
+    if (_xp_fill) {
+        Vector2 size = _xp_fill->get_size();
+        size.x = BAR_WIDTH * Math::clamp(p_progress, 0.0f, 1.0f);
+        _xp_fill->set_size(size);
+    }
+    _refresh_xp_label();
+}
+
+void GameHUD::on_mana_changed(double p_current, double p_max) {
+    _mana_current = p_current;
+    _mana_max = p_max;
+    _update_bar(_energy_fill, float(p_current), float(p_max));
+    _refresh_mana_label();
 }
 
 void GameHUD::on_realm_changed(int p_old_realm, int p_new_realm, const String &p_realm_name) {
+    _realm_name = p_realm_name;
+    _refresh_realm_label();
     if (_realm_label) {
-        _realm_label->set_text(p_realm_name);
         _realm_label->add_theme_color_override("font_color", Color(1.0f, 0.85f, 0.3f, 1));
+    }
+
+    // 法力体系随境界切换：凡尘用灵力，仙级用仙元
+    String new_prefix = p_new_realm >= CultivationSystem::TRUE_IMMORTAL
+        ? TXT("仙元") : TXT("灵力");
+    if (new_prefix != _mana_prefix) {
+        _mana_prefix = new_prefix;
+        _refresh_mana_label();
     }
 }
 
@@ -241,7 +334,7 @@ void GameHUD::on_combo_changed(int p_count) {
     if (!_combo_label) return;
 
     if (p_count >= 3) {
-        _combo_label->set_visible(true);
+        _combo_label->set_visible(_hud_visible);
         _combo_label->set_text(String::num_int64(p_count) + " HIT");
 
         // Color gets more intense with higher combos
@@ -265,15 +358,16 @@ void GameHUD::on_combo_changed(int p_count) {
 void GameHUD::on_combo_ended(int p_final_count) {
     if (_combo_label && p_final_count >= 3) {
         _combo_label->set_text(String::num_int64(p_final_count) + " HIT!");
-        _combo_label->set_visible(true);
+        _combo_label->set_visible(_hud_visible);
         // Will be hidden on next combo change or after a timeout
     }
 }
 
 void GameHUD::on_interaction_prompt(const String &p_text, bool p_show) {
+    _prompt_showing = p_show;
     if (!_interact_label) return;
     _interact_label->set_text(p_text);
-    _interact_label->set_visible(p_show);
+    _interact_label->set_visible(_hud_visible && p_show);
 }
 
 void GameHUD::on_player_died() {

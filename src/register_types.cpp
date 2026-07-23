@@ -5,54 +5,70 @@
 
 #include "combat/hitbox.h"
 #include "combat/hurtbox.h"
+#include "combat/projectile.h"
 #include "core/game_manager.h"
+#include "core/drop_system.h"
+#include "core/save_system.h"
 #include "cultivation/ability_manager.h"
 #include "cultivation/cultivation_system.h"
+#include "inventory/inventory.h"
+#include "inventory/item_database.h"
 #include "nodes/camera_room_2d.h"
 #include "nodes/enemy.h"
 #include "nodes/game_hud.h"
+#include "nodes/inventory_panel.h"
+#include "nodes/item_pickup.h"
 #include "nodes/player.h"
 #include "nodes/portal.h"
+#include "nodes/telemetry_panel.h"
 #include "utils/signal_bus.h"
 
 using namespace godot;
 
 void initialize_cpp_kaki_module(ModuleInitializationLevel p_level) {
-    if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
-        return;
-    }
+	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
+		return;
+	}
 
-    GDREGISTER_CLASS(Player);
-    GDREGISTER_CLASS(Enemy);
-    GDREGISTER_CLASS(CameraRoom2D);
-    GDREGISTER_CLASS(Portal);
-    GDREGISTER_CLASS(HitBox);
-    GDREGISTER_CLASS(HurtBox);
-    GDREGISTER_CLASS(CultivationSystem);
-    GDREGISTER_CLASS(AbilityManager);
-    GDREGISTER_CLASS(SignalBus);
-    GDREGISTER_CLASS(GameManager);
-    GDREGISTER_CLASS(GameHUD);
+	GDREGISTER_CLASS(Player);
+	GDREGISTER_CLASS(Enemy);
+	GDREGISTER_CLASS(CameraRoom2D);
+	GDREGISTER_CLASS(Portal);
+	GDREGISTER_CLASS(HitBox);
+	GDREGISTER_CLASS(HurtBox);
+	GDREGISTER_CLASS(Projectile);
+	GDREGISTER_CLASS(CultivationSystem);
+	GDREGISTER_CLASS(AbilityManager);
+	GDREGISTER_CLASS(SignalBus);
+	GDREGISTER_CLASS(GameManager);
+	GDREGISTER_CLASS(GameHUD);
+	GDREGISTER_CLASS(TelemetryPanel);
+	GDREGISTER_CLASS(InventoryPanel);
+	GDREGISTER_CLASS(ItemDatabase);
+	GDREGISTER_CLASS(ItemPickup);
+	GDREGISTER_CLASS(SaveSystem);
+	GDREGISTER_CLASS(Inventory);
+	GDREGISTER_CLASS(DropSystem);
 }
 
 void uninitialize_cpp_kaki_module(ModuleInitializationLevel p_level) {
-    if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
-        return;
-    }
+	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
+		return;
+	}
 }
 
 extern "C" {
-    GDExtensionBool GDE_EXPORT cpp_kaki_library_init(
-        GDExtensionInterfaceGetProcAddress p_get_proc_address,
-        GDExtensionClassLibraryPtr p_library,
-        GDExtensionInitialization *r_initialization) {
+	GDExtensionBool GDE_EXPORT cpp_kaki_library_init(
+		GDExtensionInterfaceGetProcAddress p_get_proc_address,
+		GDExtensionClassLibraryPtr p_library,
+		GDExtensionInitialization *r_initialization) {
 
-        GDExtensionBinding::InitObject init_obj(p_get_proc_address, p_library, r_initialization);
+		GDExtensionBinding::InitObject init_obj(p_get_proc_address, p_library, r_initialization);
 
-        init_obj.register_initializer(initialize_cpp_kaki_module);
-        init_obj.register_terminator(uninitialize_cpp_kaki_module);
-        init_obj.set_minimum_library_initialization_level(MODULE_INITIALIZATION_LEVEL_SCENE);
+		init_obj.register_initializer(initialize_cpp_kaki_module);
+		init_obj.register_terminator(uninitialize_cpp_kaki_module);
+		init_obj.set_minimum_library_initialization_level(MODULE_INITIALIZATION_LEVEL_SCENE);
 
-        return init_obj.init();
-    }
+		return init_obj.init();
+	}
 }

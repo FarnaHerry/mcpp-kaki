@@ -76,24 +76,27 @@ bin/              # 编译产物 (.so)，gitignored
 
 - **`StateMachine<Owner>`** (`src/utils/state_machine.h`) — Generic FSM template, used by Player and Enemy
 - **`InputBuffer`** (`src/utils/input_buffer.h`) — Input buffering for responsive platforming
-- **`Player`** (`src/nodes/player.h/cpp`) — 7 states: Idle, Run, Jump, Fall, WallCling, Dash, Attack
+- **`TXT()`** (`src/utils/text.h`) — 统一文本编码包装（所有字符串字面量必须用它，禁直接 `String("...")`，否则中文乱码）
+- **`Player`** (`src/nodes/player.h/cpp`) — 8 states: Idle, Run, Jump, Fall, WallCling, Dash, Attack, Fly
   - Variable jump height, coyote time, jump buffering, wall slide/jump, air dash
+  - 飞行：空中再按跳进入，WASD 全向渐加速，速度随境界；筑基需飞剑+耗灵力（10/s），金丹+无条件；攻击/冲刺后自动恢复飞行（was_flying）
   - HitBox (layer 5) + HurtBox (monitors layer 6) for combat
+  - 本命法宝：温养 120%→150% → 渡劫觉醒 200%，飞升后锁定
 - **`Enemy`** (`src/nodes/enemy.h/cpp`) — 6 states: Idle, Patrol, Chase, Attack, Hurt, Death
-  - Distance-based detection, chase, attack cooldown, knockback on hurt
-  - HitBox (layer 6) + HurtBox (monitors layer 5) for combat
+  - 种类标志：近战/远程（Projectile）/飞行/Boss（多阶段）
 - **`Portal`** (`src/nodes/portal.h/cpp`) — Self-contained room transition (composition over inheritance)
-  - Place anywhere, press F to enter/exit. Each Portal owns its scene lifecycle.
-  - Entrance → loads .tscn, moves player in, locks camera, creates exit Portal
-  - Exit → delegates back to entrance, unloads scene, restores player position
-  - Config: `target_scene`, `spawn_marker`, `prompt_text`, `room_bounds`
-  - Signals: `portal_prompt(text, show)` for UI hints
-- **`CameraRoom2D`** (`src/nodes/camera_room_2d.h/cpp`) — Open world smooth follow + room lock
-  - WORLD_FOLLOW: lerp follow with dead zone + look-ahead
-  - ROOM_LOCKED: clamped to room bounds
-  - `enter_room(bounds)` / `exit_room()` with smooth transitions
-- **`HitBox`** (`src/combat/hitbox.h/cpp`) — Area2D attack hitbox; damage, knockback, active-frame control
-- **`HurtBox`** (`src/combat/hurtbox.h/cpp`) — Area2D damage receiver; emits hurtbox_hit signal
+- **`CameraRoom2D`** (`src/nodes/camera_room_2d.h/cpp`) — 跟随增益随距离缩放（高速飞行不落后）+ room lock
+- **`CultivationSystem`** (`src/cultivation/`) — 13 境界、int64 累计修为经验（9系门槛）、期数、四轴（门派/五仙/出身/果位）、混元一气、TitleComposer 称号、灵力法力池（与修为分离，自动回复）、生命/攻防速随境界、突破调试开关
+- **`AbilityManager`** (`src/cultivation/`) — 境界门控能力（纳戒/飞行/云游等）
+- **`Inventory` / `ItemDatabase` / `ItemPickup`** (`src/inventory/`, `src/nodes/`) — 24→999 纳戒扩容、装备三槽、掉落拾取
+- **`DropSystem`** (`src/core/drop_system.h/cpp`) — 所有掉落物的唯一入口（掉落表+生成）
+- **`SaveSystem` / `GameManager`** (`src/core/`) — ConfigFile 存档、检查点、重生、击杀统计
+- **`GameHUD` / `TelemetryPanel` / `InventoryPanel`** (`src/nodes/`) — UI 三类分立：游戏 HUD（生命/灵力/修为%条，F4）/ 遥测（F3/F5）/ 背包（I）
+- **调试键**: F3 遥测 / F4 HUD / F5 突破无经验门槛开关 / Q 突破 / R 读档
+
+### Input Map
+
+WASD 移动，J 攻击，K 跳跃（空中再按=飞行），L 冲刺，E 交互，F 传送门，I 背包，Q 修炼突破
 
 ### Collision Layers
 
@@ -106,26 +109,12 @@ bin/              # 编译产物 (.so)，gitignored
 | 5 | Player HitBox | Player attacks → detected by Enemy HurtBox |
 | 6 | Enemy HitBox | Enemy attacks → detected by Player HurtBox |
 
-### Core C++ Classes (Planned)
-| `HitBox` | `Area2D` | 攻击判定 |
-| `HurtBox` | `Area2D` | 受击判定 |
-| `RoomManager` | `Node2D` | 房间加载/卸载/相机约束 |
-| `RoomTransition` | `Area2D` | 房间切换触发器 |
-| `CameraRoom2D` | `Camera2D` | 房间约束相机 |
-| `CultivationSystem` | `Object` | 境界、灵气、突破 |
-| `AbilityManager` | `Object` | 可解锁能力管理 |
-| `InventorySystem` | `Object` | 背包系统 |
-| `SaveSystem` | `Object` | 存档/读档 |
-| `SignalBus` | `Node` | 全局信号总线 (autoload) |
-| `GameManager` | `Node` | 游戏主控 (autoload) |
-
 ### Key System Interactions
 
 - **战斗**: Player.attack() → HitBox 激活 → 碰撞 HurtBox → Enemy.take_damage()
-- **房间切换**: Player 进入 RoomTransition → RoomManager.transition_to(target) → 卸载/加载房间 → Camera 约束更新
+- **房间切换**: Player 进入 Portal → 加载目标场景 → Camera 约束更新
 - **能力门控**: 获得 Ability → AbilityManager 标记 → 之前不可达的区域变为可达
-- **修仙**: 灵气累积 → 满足条件 → 境界突破 → 解锁新能力/属性提升 → 新区域可探索
+- **修仙**: 击杀/丹药累积修为 → Q 突破（机缘事件待做）→ 境界提升 → 属性/生命/灵力上限提升 → 新能力解锁
+- **掉落**: Enemy 死亡 → SignalBus enemy_killed → DropSystem roll 掉落表 → ItemPickup
 
-### Input Map
-
-WASD 移动，J 攻击，K 跳跃，L 冲刺，E 交互，Q 修炼
+后续计划与 OOP 抽取候选见 `design/roadmap.md`。

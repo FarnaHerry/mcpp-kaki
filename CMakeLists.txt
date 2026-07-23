@@ -23,7 +23,8 @@ add_library(${LIBNAME} SHARED
 )
 
 target_link_libraries(${LIBNAME} PRIVATE godot::cpp)
-target_compile_features(${LIBNAME} PRIVATE cxx_std_17)
+# Our extension code uses C++23 (GDExtension is C ABI; godot-cpp itself stays at its own C++17).
+target_compile_features(${LIBNAME} PRIVATE cxx_std_23)
 
 # Output: bin/libcpp-kaki.linux.template_debug.x86_64.so
 set_target_properties(${LIBNAME} PROPERTIES

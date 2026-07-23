@@ -20,6 +20,32 @@ namespace godot {
         static const char *ABILITY_AIR_DASH;
         static const char *ABILITY_SPIRIT_VISION;
         static const char *ABILITY_GLIDE;
+        // 炼气：纳戒（储物无限）
+        static const char *ABILITY_STORAGE_RING;
+        // 筑基：短暂飞行 / 金丹：自主飞行
+        static const char *ABILITY_SHORT_FLIGHT;
+        static const char *ABILITY_FREE_FLIGHT;
+        // 元婴期
+        static const char *ABILITY_SOUL_EXIT;
+        static const char *ABILITY_DOMAIN;
+        // 化神期
+        static const char *ABILITY_SPIRIT_TRAVEL;
+        static const char *ABILITY_SPIRIT_SENSE;
+        // 炼虚
+        static const char *ABILITY_VOID_SHIFT;
+        // 合体
+        static const char *ABILITY_UNITY_FORM;
+        // 大乘
+        static const char *ABILITY_MERIT_HALO;
+        // 真仙（含渡劫成功奖励：免疫凡间雷火风）
+        static const char *ABILITY_CLOUD_FLIGHT;
+        static const char *ABILITY_TRIBULATION_IMMUNITY;
+        // 金仙
+        static const char *ABILITY_GIANT_FORM;
+        static const char *ABILITY_GOLDEN_BODY;
+        // 混元一气
+        static const char *ABILITY_DAO_DOMAIN;
+        static const char *ABILITY_MYRIAD_AVATARS;
 
         AbilityManager();
 

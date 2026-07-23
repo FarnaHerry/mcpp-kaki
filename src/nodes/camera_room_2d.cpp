@@ -90,7 +90,9 @@ namespace godot {
         // Target position: player + look-ahead
         Vector2 target = player_pos + Vector2(_current_look_ahead, 0);
 
-        // Dead zone: only move camera if player is outside the zone
+        // Dead zone: only move camera if player is outside the zone.
+        // Gain scales with overflow distance — at high target speed (flight)
+        // the camera accelerates to match instead of lagging behind.
         float half_dz_x = dead_zone.x * 0.5f;
         float half_dz_y = dead_zone.y * 0.5f;
 
@@ -98,14 +100,18 @@ namespace godot {
             float edge_x = (target.x > camera_pos.x)
                 ? target.x - half_dz_x
                 : target.x + half_dz_x;
-            camera_pos.x = Math::lerp(camera_pos.x, edge_x, float(Math::min(follow_speed * p_delta, 1.0)));
+            float overflow = Math::abs(edge_x - camera_pos.x);
+            float gain = follow_speed + overflow * 0.2f;
+            camera_pos.x = Math::lerp(camera_pos.x, edge_x, float(Math::min(gain * p_delta, 1.0)));
         }
 
         if (Math::abs(target.y - camera_pos.y) > half_dz_y) {
             float edge_y = (target.y > camera_pos.y)
                 ? target.y - half_dz_y
                 : target.y + half_dz_y;
-            camera_pos.y = Math::lerp(camera_pos.y, edge_y, float(Math::min(follow_speed * p_delta, 1.0)));
+            float overflow = Math::abs(edge_y - camera_pos.y);
+            float gain = follow_speed + overflow * 0.2f;
+            camera_pos.y = Math::lerp(camera_pos.y, edge_y, float(Math::min(gain * p_delta, 1.0)));
         }
 
         set_position(camera_pos);

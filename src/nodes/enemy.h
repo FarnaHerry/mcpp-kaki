@@ -7,64 +7,84 @@
 
 namespace godot {
 
-    class HitBox;
-    class HurtBox;
-    class Node2D;
+	class HitBox;
+	class HurtBox;
+	class Node2D;
 
-    class Enemy : public CharacterBody2D {
-        GDCLASS(Enemy, CharacterBody2D);
+	class Enemy : public CharacterBody2D {
+		GDCLASS(Enemy, CharacterBody2D);
 
-    public:
-        // Stats
-        float max_health = 1.0f;
-        float current_health = 1.0f;
-        float move_speed = 60.0f;
-        float detection_radius = 200.0f;
-        float attack_range = 40.0f;
-        float attack_damage = 10.0f;
-        float attack_cooldown = 0.8f;
-        float knockback_resistance = 1.0f;
+	public:
+		// Stats
+		float max_health = 1.0f;
+		float current_health = 1.0f;
+		float move_speed = 60.0f;
+		float detection_radius = 200.0f;
+		float attack_range = 40.0f;
+		float attack_damage = 10.0f;
+		float attack_cooldown = 0.8f;
+		float knockback_resistance = 1.0f;
 
-        // Facing (-1 or 1)
-        int facing_direction = -1;
+		// Behavior flags
+		bool is_ranged = false;       // true = archer type, keeps distance & shoots projectiles
+		bool is_flying = false;       // true = ignores gravity, hovers
+		bool is_boss = false;         // true = boss: more HP, phases, special attacks
+		float preferred_distance = 0.0f; // ideal combat range (0 = melee)
 
-        // References
-        StateMachine<Enemy> *state_machine = nullptr;
-        Node2D *_player_target = nullptr;
+		// Boss
+		int boss_phase = 1;
+		float boss_phase2_threshold = 0.5f;
+		float special_attack_cooldown = 3.0f;
 
-        // Attack cooldown timer
-        double last_attack_time = -999.0;
+		// Facing (-1 or 1)
+		int facing_direction = -1;
 
-        // Accessors for states
-        float get_gravity() const;
-        Node2D *get_player_target() const;
-        bool can_see_player() const;
-        bool player_in_attack_range() const;
-        bool can_attack() const;
-        void update_facing_to_player();
+		// References
+		StateMachine<Enemy> *state_machine = nullptr;
+		Node2D *_player_target = nullptr;
 
-        void take_damage(float p_amount, Node *p_source);
-        bool is_dead() const { return current_health <= 0.0f; }
+		// Attack cooldown timers
+		double last_attack_time = -999.0;
+		double last_special_time = -999.0;
+		double fly_phase_time = 0.0;     // for sine-wave hover
+		double last_dive_time = -999.0;
 
-        double get_time() const { return _time; }
+		// Accessors for states
+		float get_gravity() const;
+		Node2D *get_player_target() const;
+		bool can_see_player() const;
+		bool player_in_attack_range() const;
+		bool player_too_close() const;        // true if player is inside flee distance
+		bool player_at_preferred_range() const; // true if at ideal ranged distance
+		bool can_attack() const;
+		bool can_special() const;
+		void update_facing_to_player();
 
-        void _ready() override;
-        void _physics_process(double p_delta) override;
-        void _process(double p_delta) override;
-        void _on_hurtbox_hit(Object *p_hitbox, Node *p_source);
+		void take_damage(float p_amount, Node *p_source);
+		bool is_dead() const { return current_health <= 0.0f; }
 
-    protected:
-        static void _bind_methods();
+		double get_time() const { return _time; }
 
-    private:
-        double _time = 0.0;
-        HitBox *_hitbox = nullptr;
-        HurtBox *_hurtbox = nullptr;
+		void _ready() override;
+		void _physics_process(double p_delta) override;
+		void _process(double p_delta) override;
+		void _on_hurtbox_hit(Object *p_hitbox, Node *p_source);
 
-        void _setup_collision();
-        void _find_player();
-        void _create_hitboxes();
-    };
+	// Spawn a projectile toward the player (called by Shoot state)
+	void _spawn_projectile();
+
+	protected:
+		static void _bind_methods();
+
+	private:
+		double _time = 0.0;
+		HitBox *_hitbox = nullptr;
+		HurtBox *_hurtbox = nullptr;
+
+		void _setup_collision();
+		void _find_player();
+		void _create_hitboxes();
+	};
 
 } // namespace godot
 

@@ -5,100 +5,155 @@
 #include <godot_cpp/classes/input.hpp>
 
 #include "../combat/combo_chain.h"
+#include "../inventory/inventory.h"
 #include "../utils/state_machine.h"
 #include "../utils/input_buffer.h"
 
 namespace godot {
 
-    class HitBox;
-    class HurtBox;
-    class CultivationSystem;
-    class AbilityManager;
+	class HitBox;
+	class HurtBox;
+	class CultivationSystem;
+	class AbilityManager;
 
-    class Player : public CharacterBody2D {
-        GDCLASS(Player, CharacterBody2D);
+	class Player : public CharacterBody2D {
+		GDCLASS(Player, CharacterBody2D);
 
-    public:
-        // Movement
-        float move_speed = 180.0f;
-        float jump_velocity = -350.0f;
-        float jump_cut_multiplier = 0.5f;
-        float dash_speed = 500.0f;
-        float dash_duration = 0.15f;
-        float dash_cooldown = 0.4f;
-        float wall_slide_speed = 80.0f;
-        float wall_jump_horizontal = 200.0f;
-        float wall_jump_vertical = -320.0f;
-        float coyote_time = 0.08f;
-        float jump_buffer_time = 0.1f;
-        float air_horizontal_multiplier = 0.8f;
+	public:
+		static constexpr int EQUIP_SLOT_WEAPON = 0;
+		static constexpr int EQUIP_SLOT_ARMOR = 1;
+		static constexpr int EQUIP_SLOT_ACCESSORY = 2;
+		static constexpr int EQUIP_SLOT_COUNT = 3;
 
-        // Combat
-        float max_health = 100.0f;
-        float current_health = 100.0f;
-        float attack_damage = 1.0f;
+		// Movement
+		float move_speed = 180.0f;
+		float base_move_speed = 180.0f; // original speed before equipment bonuses
+		float jump_velocity = -350.0f;
+		float jump_cut_multiplier = 0.5f;
+		float dash_speed = 500.0f;
+		float dash_duration = 0.15f;
+		float dash_cooldown = 0.4f;
+		float wall_slide_speed = 80.0f;
+		float wall_jump_horizontal = 200.0f;
+		float wall_jump_vertical = -320.0f;
+		float coyote_time = 0.08f;
+		float jump_buffer_time = 0.1f;
+		float air_horizontal_multiplier = 0.8f;
 
-        int facing_direction = 1;
+		// Combat
+		float max_health = 100.0f;
+		float current_health = 100.0f;
+		float attack_damage = 10.0f;
 
-        // Accessors
-        float get_gravity() const;
-        float get_move_input() const;
-        bool jump_just_pressed() const;
-        bool jump_held() const;
-        bool dash_just_pressed() const;
-        bool attack_just_pressed() const;
-        bool attack_held() const;
-        bool can_dash() const;
-        void start_dash();
-        double get_time() const { return _time; }
+		int facing_direction = 1;
 
-        void take_damage(float p_amount, Node *p_source);
-        bool is_dead() const { return current_health <= 0.0f; }
+		// Accessors
+		float get_gravity() const;
+		float get_move_input() const;
+		bool jump_just_pressed() const;
+		bool jump_held() const;
+		bool dash_just_pressed() const;
+		bool attack_just_pressed() const;
+		bool attack_held() const;
+		bool can_dash() const;
+		void start_dash();
+		double get_time() const { return _time; }
 
-        StateMachine<Player> *state_machine = nullptr;
-        InputBuffer jump_buffer;
-        InputBuffer dash_buffer;
-        InputBuffer attack_buffer;
+		// Flight — 筑基借飞行法器（耗灵力），金丹以上无条件飞行（无消耗）
+		bool can_fly() const;
+		float get_fly_input() const; // 垂直输入：up=-1 down=+1
+		float flight_mana_cost_per_sec() const;
+		float fly_speed = 260.0f;          // 飞行极速（渐加速到达）
+		float fly_acceleration = 250.0f;   // 飞行加速度（px/s²，低 = 起步慢、逐渐加快）
+		bool was_flying = false;           // 攻击/冲刺等动作后是否恢复飞行
 
-        double dash_end_time = 0.0;
-        double dash_cooldown_end = 0.0;
-        double left_ground_time = -1.0;
+		void take_damage(float p_amount, Node *p_source);
+		float get_effective_attack() const;
+		bool is_dead() const { return current_health <= 0.0f; }
 
-        // Combo system
-        ComboChain combo_chain;
-        double attack_phase_end_time = 0.0; // when current attack phase ends
-        enum AttackPhase { STARTUP, ACTIVE, RECOVERY };
-        AttackPhase attack_phase = ACTIVE;
+		StateMachine<Player> *state_machine = nullptr;
+		InputBuffer jump_buffer;
+		InputBuffer dash_buffer;
+		InputBuffer attack_buffer;
 
-        // Cultivation
-        CultivationSystem *get_cultivation() const { return _cultivation; }
-        AbilityManager *get_ability_manager() const { return _abilities; }
-        void gain_spiritual_energy(float p_amount);
+		double dash_end_time = 0.0;
+		double dash_cooldown_end = 0.0;
+		double left_ground_time = -1.0;
 
-        // Called when HitBox lands a hit (for combo tracking)
-        void on_attack_landed(Node *p_victim);
+		// Combo system
+		ComboChain combo_chain;
+		double attack_phase_end_time = 0.0; // when current attack phase ends
+		enum AttackPhase { STARTUP, ACTIVE, RECOVERY };
+		AttackPhase attack_phase = ACTIVE;
 
-        void _ready() override;
-        void _physics_process(double p_delta) override;
-        void _process(double p_delta) override;
-        void _on_hurtbox_hit(Object *p_hitbox, Node *p_source);
+		// Cultivation
+		CultivationSystem *get_cultivation() const { return _cultivation; }
+		AbilityManager *get_ability_manager() const { return _abilities; }
+		void gain_spiritual_energy(float p_amount);
 
-    protected:
-        static void _bind_methods();
+		// 法宝系统（本命法宝：120%→150%温养 → 渡劫觉醒200%）
+		void set_benming_artifact(const StringName &p_item_id);
+		StringName get_benming_artifact() const { return _benming_item; }
+		float get_benming_coeff() const;
+		float get_benming_nurture() const { return _benming_nurture; }
+		bool is_benming_awakened() const { return _benming_awakened; }
+		void nurture_benming(float p_amount);
+		void awaken_benming_artifact();
+		// 法宝栏位：飞升前 1本命+2次要，飞升后 1本命+5次要（次要法宝待物品定义）
+		int get_artifact_slot_limit() const;
 
-    private:
-        double _time = 0.0;
-        HitBox *_hitbox = nullptr;
-        HurtBox *_hurtbox = nullptr;
-        CultivationSystem *_cultivation = nullptr;
-        AbilityManager *_abilities = nullptr;
+		// Inventory
+		Inventory *get_inventory() const { return _inventory; }
+		void pickup_item(const StringName &p_item_id, int p_qty = 1);
 
-        void _update_buffers();
-        void _update_facing();
-        void _create_hitboxes();
-        void _setup_collision();
-        void _create_cultivation();
-    };
+		// Equipment
+		bool equip_item(int p_inventory_slot);
+		bool unequip_item(int p_equip_slot);
+		StringName get_equipment_in_slot(int p_slot) const;
+		float get_equip_bonus_attack() const;
+		float get_equip_bonus_defense() const;
+		float get_equip_bonus_speed() const;
+
+		// Save / Load
+		void apply_save_data(const Dictionary &p_data);
+
+		// Called when HitBox lands a hit (for combo tracking)
+		void on_attack_landed(Node *p_victim, float p_damage);
+
+		void _ready() override;
+		void _physics_process(double p_delta) override;
+		void _process(double p_delta) override;
+		void _on_hurtbox_hit(Object *p_hitbox, Node *p_source);
+
+	protected:
+		static void _bind_methods();
+
+	private:
+		double _time = 0.0;
+		HitBox *_hitbox = nullptr;
+		HurtBox *_hurtbox = nullptr;
+		CultivationSystem *_cultivation = nullptr;
+		AbilityManager *_abilities = nullptr;
+		Inventory *_inventory = nullptr;
+
+		// Equipment slots: 0=weapon, 1=armor, 2=accessory
+		StringName _equipment[3];
+
+		// 本命法宝
+		StringName _benming_item;
+		float _benming_nurture = 0.0f;   // 温养进度（0~1000）
+		bool _benming_awakened = false;  // 渡劫成功觉醒（150%→200%）
+
+		void _update_buffers();
+		void _update_facing();
+		void _update_move_speed();
+		void _create_hitboxes();
+		void _setup_collision();
+		void _create_cultivation();
+		void _create_inventory();
+		void _on_ability_unlocked(const StringName &p_ability_id);
+		void _on_cultivation_realm_changed(int p_old_realm, int p_new_realm);
+	};
 
 } // namespace godot
 
