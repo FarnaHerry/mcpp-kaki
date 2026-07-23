@@ -1,0 +1,19 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/bootstrap.gd" id="bootstrap"]
+
+[sub_resource type="RectangleShape2D" id="ground_shape"]
+size = Vector2(2000, 24)
+
+[node name="Main" type="Node2D"]
+script = ExtResource("bootstrap")
+
+[node name="GroundVisual" type="Polygon2D" parent="."]
+color = Color(0.25, 0.2, 0.15, 1)
+polygon = PackedVector2Array(0, 238, 2000, 238, 2000, 270, 0, 270)
+
+[node name="Ground" type="StaticBody2D" parent="."]
+position = Vector2(1000, 238)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
+shape = SubResource("ground_shape")

@@ -1,0 +1,19 @@
+# Godot
+.godot/
+/android/
+
+# Build
+build/
+
+# Generated
+extension_api.json
+
+# Compiled GDExtension binaries
+bin/*.so
+bin/*.dll
+bin/*.dylib
+bin/*.framework
+
+# Claude Code
+.claude/
+*.uid

@@ -1,0 +1,59 @@
+[gd_scene load_steps=3 format=3]
+
+[sub_resource type="RectangleShape2D" id="ground_shape"]
+size = Vector2(400, 24)
+
+[sub_resource type="RectangleShape2D" id="wall_shape"]
+size = Vector2(16, 140)
+
+[node name="Town" type="Node2D"]
+
+; Background
+[node name="Background" type="Polygon2D" parent="."]
+color = Color(0.15, 0.12, 0.08, 1)
+polygon = PackedVector2Array(0, 0, 400, 0, 400, 270, 0, 270)
+
+; Ground
+[node name="Ground" type="StaticBody2D" parent="."]
+position = Vector2(200, 238)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
+shape = SubResource("ground_shape")
+
+[node name="GroundVisual" type="Polygon2D" parent="Ground"]
+color = Color(0.35, 0.28, 0.2, 1)
+polygon = PackedVector2Array(-200, -5, 200, -5, 200, 12, -200, 12)
+
+; Walls (left and right boundaries)
+[node name="WallL" type="StaticBody2D" parent="."]
+position = Vector2(0, 150)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallL"]
+shape = SubResource("wall_shape")
+
+[node name="WallVisualL" type="Polygon2D" parent="WallL"]
+color = Color(0.3, 0.25, 0.2, 1)
+polygon = PackedVector2Array(-8, -70, 8, -70, 8, 70, -8, 70)
+
+[node name="WallR" type="StaticBody2D" parent="."]
+position = Vector2(400, 150)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallR"]
+shape = SubResource("wall_shape")
+
+[node name="WallVisualR" type="Polygon2D" parent="WallR"]
+color = Color(0.3, 0.25, 0.2, 1)
+polygon = PackedVector2Array(-8, -70, 8, -70, 8, 70, -8, 70)
+
+; Exit marker
+[node name="ExitMarker" type="Polygon2D" parent="."]
+color = Color(0.3, 0.8, 0.3, 0.5)
+polygon = PackedVector2Array(-20, 40, 20, 40, 20, 50, -20, 50)
+position = Vector2(200, 135)
+
+; Spawn points
+[node name="SpawnEntrance" type="Marker2D" parent="."]
+position = Vector2(60, 200)
+
+[node name="SpawnExit" type="Marker2D" parent="."]
+position = Vector2(200, 200)
