@@ -80,6 +80,12 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("restore_mana", "amount"), &CultivationSystem::restore_mana);
 		ClassDB::bind_method(D_METHOD("set_mana", "amount"), &CultivationSystem::set_mana);
 		ClassDB::bind_method(D_METHOD("tick_mana_regen", "delta"), &CultivationSystem::tick_mana_regen);
+		ClassDB::bind_method(D_METHOD("get_law_power"), &CultivationSystem::get_law_power);
+		ClassDB::bind_method(D_METHOD("get_law_power_max"), &CultivationSystem::get_law_power_max);
+		ClassDB::bind_method(D_METHOD("consume_law_power", "cost"), &CultivationSystem::consume_law_power);
+		ClassDB::bind_method(D_METHOD("restore_law_power", "amount"), &CultivationSystem::restore_law_power);
+		ClassDB::bind_method(D_METHOD("set_law_power", "amount"), &CultivationSystem::set_law_power);
+		ClassDB::bind_method(D_METHOD("tick_law_regen", "delta"), &CultivationSystem::tick_law_regen);
 		ClassDB::bind_method(D_METHOD("get_damage_multiplier"), &CultivationSystem::get_damage_multiplier);
 		ClassDB::bind_method(D_METHOD("get_defense_multiplier"), &CultivationSystem::get_defense_multiplier);
 		ClassDB::bind_method(D_METHOD("get_speed_multiplier"), &CultivationSystem::get_speed_multiplier);
@@ -285,6 +291,42 @@ namespace godot {
 		return base * _mana_max_mult; // 功法（练气）乘区
 	}
 
+	void CultivationSystem::_emit_law_changed() {
+		SignalBus *bus = SignalBus::get_singleton();
+		if (bus) {
+			bus->emit_signal("law_power_changed", _law_power, get_law_power_max());
+		}
+	}
+
+	bool CultivationSystem::consume_law_power(double p_cost) {
+		if (p_cost <= 0.0) return true;
+		if (_law_power < p_cost) return false;
+		_law_power -= p_cost;
+		_emit_law_changed();
+		return true;
+	}
+
+	void CultivationSystem::restore_law_power(double p_amount) {
+		double max_law = get_law_power_max();
+		if (max_law <= 0.0) return;
+		double v = Math::clamp(_law_power + p_amount, 0.0, max_law);
+		if (v == _law_power) return;
+		_law_power = v;
+		_emit_law_changed();
+	}
+
+	void CultivationSystem::set_law_power(double p_amount) {
+		_law_power = Math::clamp(p_amount, 0.0, get_law_power_max());
+		_emit_law_changed();
+	}
+
+	void CultivationSystem::tick_law_regen(double p_delta) {
+		if (get_law_power_max() <= 0.0) return;
+		if (_law_power >= LAW_POWER_MAX) return;
+		_law_power = Math::min(_law_power + LAW_REGEN_PER_SEC * p_delta, LAW_POWER_MAX);
+		_emit_law_changed();
+	}
+
 	void CultivationSystem::_emit_mana_changed() {
 		SignalBus *bus = SignalBus::get_singleton();
 		if (bus) {
@@ -382,6 +424,12 @@ namespace godot {
 
 		// 突破后法力补满至新上限
 		_mana = get_max_mana();
+
+		// 化神「初触法则」：法则之力苏醒并补满
+		if (old < SPIRIT_SEVERING && _current_realm >= SPIRIT_SEVERING) {
+			_law_power = LAW_POWER_MAX;
+			_emit_law_changed();
+		}
 
 		emit_signal("realm_changed", (int)old, (int)_current_realm);
 		_emit_energy_changed();

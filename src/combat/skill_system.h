@@ -35,6 +35,7 @@ public:
 		FX_MELEE_SWING = 0, // 强化一挥（借 Player HitBox）
 		FX_LUNGE,           // 突进 + 一挥
 		FX_PROJECTILE,      // 投射物
+		FX_BLINK,           // 瞬移（缩地成寸；effect_param=距离px）
 	};
 
 	struct Def {
@@ -44,21 +45,25 @@ public:
 		DamageCategory category;
 		Element element;
 		float mana_cost;
+		float law_cost;   // 法则之力消耗（TYPE_SHENTONG；与灵力池分离）
 		float cooldown;
 		float power;      // × 攻击面板（法术另乘功法法强）
 		EffectKind effect;
 		int min_realm;    // 解锁最低境界（CultivationSystem::Realm）
 		float proj_speed; // FX_PROJECTILE
 		Color proj_color; // FX_PROJECTILE
+		float effect_param; // FX_BLINK: 瞬移距离(px)
 	};
 
-	static const int SLOT_COUNT = 6; // A/S=武技 D/F=法术 G/H=法宝(预留)
-	// 槽位许可的技能类型（G/H 由法宝系统步骤4接管，此处记 TYPE_SHENTONG 占位不可装配）
+	static const int SLOT_COUNT = 8; // A/S=武技 D/F=法术 G/H=法宝页占用 T=神通 Y=仙法
+	// 槽位许可的技能类型（G/H 在战斗页闲置，B 切法宝页后映射法宝槽）
 	static SkillType slot_type(int p_slot) {
 		switch (p_slot) {
 			case 0: case 1: return TYPE_MARTIAL;
 			case 2: case 3: return TYPE_SPELL;
-			default: return TYPE_SHENTONG;
+			case 6: return TYPE_SHENTONG;
+			case 7: return TYPE_XIANFA;
+			default: return TYPE_SHENTONG; // 4/5 战斗页闲置（占位不可装配）
 		}
 	}
 

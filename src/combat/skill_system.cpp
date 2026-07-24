@@ -11,14 +11,17 @@ namespace godot {
 static const SkillSystem::Def SKILL_DEFS[] = {
 	// 武技（物理，冷却驱动，凡人可用）
 	{ "po_kong_zhan", "破空斩", SkillSystem::TYPE_MARTIAL, DMG_PHYSICAL, ELEM_NONE,
-	  0.0f, 3.0f, 2.5f, SkillSystem::FX_MELEE_SWING, 0, 0.0f, Color() },
+	  0.0f, 0.0f, 3.0f, 2.5f, SkillSystem::FX_MELEE_SWING, 0, 0.0f, Color(), 0.0f },
 	{ "tu_jin_zhan", "突进斩", SkillSystem::TYPE_MARTIAL, DMG_PHYSICAL, ELEM_NONE,
-	  0.0f, 5.0f, 1.8f, SkillSystem::FX_LUNGE, 0, 0.0f, Color() },
+	  0.0f, 0.0f, 5.0f, 1.8f, SkillSystem::FX_LUNGE, 0, 0.0f, Color(), 0.0f },
 	// 法术（元素伤害，耗灵力，炼气解锁）
 	{ "huo_dan_shu", "火弹术", SkillSystem::TYPE_SPELL, DMG_ELEMENTAL, ELEM_HUO,
-	  15.0f, 2.0f, 2.0f, SkillSystem::FX_PROJECTILE, 1, 220.0f, Color(1.0f, 0.45f, 0.15f) },
+	  15.0f, 0.0f, 2.0f, 2.0f, SkillSystem::FX_PROJECTILE, 1, 220.0f, Color(1.0f, 0.45f, 0.15f), 0.0f },
 	{ "bing_zhui_shu", "冰锥术", SkillSystem::TYPE_SPELL, DMG_ELEMENTAL, ELEM_SHUI,
-	  25.0f, 4.0f, 3.0f, SkillSystem::FX_PROJECTILE, 1, 260.0f, Color(0.5f, 0.8f, 1.0f) },
+	  25.0f, 0.0f, 4.0f, 3.0f, SkillSystem::FX_PROJECTILE, 1, 260.0f, Color(0.5f, 0.8f, 1.0f), 0.0f },
+	// 神通（法则产物，耗法则之力，化神解锁）——示例：缩地成寸（空间法则）
+	{ "suo_di_cheng_cun", "缩地成寸", SkillSystem::TYPE_SHENTONG, DMG_PHYSICAL, ELEM_NONE,
+	  0.0f, 30.0f, 8.0f, 0.0f, SkillSystem::FX_BLINK, 5, 0.0f, Color(), 120.0f },
 };
 
 void SkillSystem::_bind_methods() {
@@ -95,9 +98,13 @@ bool SkillSystem::cast_slot(int p_slot) {
 	auto cd = _cooldown_until.find(id);
 	if (cd && cd->value > now) return false;
 
-	// 灵力（法术）
+	// 灵力（法术/仙法——仙法耗仙元，飞升后灵力池即仙元）
 	if (def->mana_cost > 0.0f) {
 		if (!cult || !cult->consume_mana(def->mana_cost)) return false;
+	}
+	// 法则之力（神通；独立能量条，不耗灵力）
+	if (def->law_cost > 0.0f) {
+		if (!cult || !cult->consume_law_power(def->law_cost)) return false;
 	}
 
 	_cooldown_until[id] = now + double(def->cooldown);
@@ -128,6 +135,9 @@ void SkillSystem::_execute(const Def *p_def) {
 			_player->exec_skill_projectile(p_def->power, p_def->category, p_def->element,
 			                               p_def->proj_speed, p_def->proj_color);
 			break;
+		case FX_BLINK:
+			_player->exec_skill_blink(p_def->effect_param);
+			break;
 	}
 }
 
@@ -157,6 +167,7 @@ Dictionary SkillSystem::get_slot_info(int p_slot) const {
 	d["cooldown"] = def->cooldown;
 	d["cd_remaining"] = get_cooldown_remaining(id);
 	d["mana_cost"] = def->mana_cost;
+	d["law_cost"] = def->law_cost;
 	d["power"] = def->power;
 	return d;
 }
@@ -172,6 +183,7 @@ Array SkillSystem::get_known_list() const {
 			d["type_name"] = type_name(def.type);
 			d["cooldown"] = def.cooldown;
 			d["mana_cost"] = def.mana_cost;
+			d["law_cost"] = def.law_cost;
 			d["power"] = def.power;
 			d["min_realm"] = def.min_realm;
 			out.append(d);

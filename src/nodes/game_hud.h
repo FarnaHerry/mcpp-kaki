@@ -108,6 +108,11 @@ private:
     class Player *_player = nullptr;         // 惰性缓存（技能栏轮询）
     Label *_page_badge = nullptr;            // 法宝页提示（B 切页，战斗页隐藏）
 
+    // 法则之力条（神通资源，化神解锁；max=0 时隐藏）—— 右上角短条
+    ColorRect *_law_bg = nullptr;
+    ColorRect *_law_fill = nullptr;
+    Label *_law_label = nullptr;
+
     // Visibility switch
     bool _hud_visible = true;
 
@@ -120,7 +125,9 @@ private:
     void _create_interact_prompt();
     void _create_death_overlay();
     void _create_skill_bar();
+    void _create_law_bar();
     void _update_skill_bar();
+    void _update_law_bar();
     void _update_bar(ColorRect *p_fill, float p_current, float p_max, bool p_horizontal = true);
     void _refresh_mana_label();
     void _refresh_xp_label();

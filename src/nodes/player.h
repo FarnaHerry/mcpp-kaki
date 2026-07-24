@@ -140,6 +140,7 @@ namespace godot {
 		void exec_skill_lunge(float p_power, DamageCategory p_cat, Element p_elem);
 		void exec_skill_projectile(float p_power, DamageCategory p_cat, Element p_elem,
 		                           float p_speed, const Color &p_color);
+		void exec_skill_blink(float p_distance); // 神通·缩地成寸（碰撞安全瞬移）
 
 		// Save / Load
 		void apply_save_data(const Dictionary &p_data);

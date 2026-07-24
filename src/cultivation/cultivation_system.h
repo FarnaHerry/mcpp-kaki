@@ -119,6 +119,16 @@ namespace godot {
 		void set_mana_max_mult(double p_m) { _mana_max_mult = p_m; _emit_mana_changed(); }
 		void set_mana_regen_mult(double p_m) { _mana_regen_mult = p_m; }
 
+		// 法则之力（design/gongfa-skills.md 第四节，已敲定：独立能量条）：
+		// 化神「初触法则」后解锁，与灵力池分离——神通只耗法则之力。
+		// 上限固定 100，缓慢自动回复 + 战斗行为回复。
+		double get_law_power() const { return _law_power; }
+		double get_law_power_max() const { return _current_realm >= SPIRIT_SEVERING ? LAW_POWER_MAX : 0.0; }
+		bool consume_law_power(double p_cost);  // 不足则失败返回 false
+		void restore_law_power(double p_amount);
+		void set_law_power(double p_amount);    // save/load
+		void tick_law_regen(double p_delta);
+
 		// Save/load 直写
 		void set_spiritual_energy(int64_t p_amount);
 		void set_xianyuan(int64_t p_amount);
@@ -187,6 +197,9 @@ namespace godot {
 		int64_t _lingqi = 0;     // 凡尘修为经验（全局累计）
 		int64_t _xianyuan = 0;   // 仙阶修为经验（九九归一）
 		double _mana = 0.0;      // 灵力（法力资源，非经验）
+		double _law_power = 0.0; // 法则之力（神通资源，化神解锁）
+		static constexpr double LAW_POWER_MAX = 100.0;
+		static constexpr double LAW_REGEN_PER_SEC = 3.0;
 		double _mana_max_mult = 1.0;   // 功法倍率（练气）
 		double _mana_regen_mult = 1.0; // 功法回灵倍率
 		ImmortalType _immortal_type = TYPE_HUMAN; // 凡尘默认人仙
@@ -200,6 +213,7 @@ namespace godot {
 		void _set_realm_internal(Realm p_realm);
 		void _emit_energy_changed();
 		void _emit_mana_changed();
+		void _emit_law_changed();
 		void _notify_name_changed();
 	};
 

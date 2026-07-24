@@ -374,13 +374,15 @@ void GameMenu::_build_skill_page() {
 
 	SkillSystem *skills = _player ? _player->get_skills() : nullptr;
 
-	// 槽位总览
-	static const char *KEYS[SkillSystem::SLOT_COUNT] = { "A", "S", "D", "F", "G", "H" };
-	for (int group = 0; group < 3; group++) {
-		String gname = group == 0 ? TXT("武技") : group == 1 ? TXT("法术") : TXT("法宝");
-		add_line(TXT("— ") + gname + TXT(" —"), 70.0f + group * 140.0f, 60.0f, 10, head_c);
-		for (int k = 0; k < 2; k++) {
-			int slot = group * 2 + k;
+	// 槽位总览（武技A/S 法术D/F 法宝G/H 神通T 仙法Y）
+	static const char *KEYS[SkillSystem::SLOT_COUNT] = { "A", "S", "D", "F", "G", "H", "T", "Y" };
+	static const char *GNAMES[5] = { "武技", "法术", "法宝", "神通", "仙法" };
+	for (int group = 0; group < 5; group++) {
+		add_line(TXT("— ") + TXT(GNAMES[group]) + TXT(" —"), 40.0f + group * 90.0f, 60.0f, 10, head_c);
+		int first = group < 3 ? group * 2 : group + 3; // 0/2/4/6/7
+		int count = group < 3 ? 2 : 1;
+		for (int k = 0; k < count; k++) {
+			int slot = first + k;
 			String text = String("[") + KEYS[slot] + "] ";
 			if (skills) {
 				Dictionary info = skills->get_slot_info(slot);
@@ -388,7 +390,7 @@ void GameMenu::_build_skill_page() {
 			} else {
 				text += TXT("（空）");
 			}
-			add_line(text, 70.0f + group * 140.0f, 76.0f + k * 14, 9, body_c);
+			add_line(text, 40.0f + group * 90.0f, 76.0f + k * 14, 9, body_c);
 		}
 	}
 
@@ -415,7 +417,7 @@ void GameMenu::_build_skill_page() {
 	}
 
 	add_line(TXT("武技冷却驱动不耗灵力（凡人可用）；法术耗灵力，炼气起。"), 70.0f, 226.0f, 8, dim_c);
-	add_line(TXT("神通（化神·法则之力）/仙法（真仙·仙元）随境界开放；B 键法宝页随法宝系统开放。"), 70.0f, 240.0f, 8, dim_c);
+	add_line(TXT("神通耗法则之力（化神，独立能量条）；仙法耗仙元（真仙）；B 键切法宝页。"), 70.0f, 240.0f, 8, dim_c);
 }
 
 // ============================================================

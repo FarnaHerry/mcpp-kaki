@@ -62,6 +62,7 @@ void GameHUD::_ready() {
     _create_interact_prompt();
     _create_death_overlay();
     _create_skill_bar();
+    _create_law_bar();
 
     set_process_unhandled_input(true);
     set_process(true); // 技能栏冷却轮询
@@ -229,10 +230,12 @@ void GameHUD::_create_skill_bar() {
         { nullptr, "F", Color(0.20f, 0.35f, 0.60f, 0.85f) },
         { "法宝", "G", Color(0.55f, 0.45f, 0.15f, 0.85f) },
         { nullptr, "H", Color(0.55f, 0.45f, 0.15f, 0.85f) },
+        { "神通", "T", Color(0.40f, 0.20f, 0.55f, 0.85f) },
+        { "仙法", "Y", Color(0.60f, 0.55f, 0.25f, 0.85f) },
     };
     const float SLOT_W = 20.0f, SLOT_GAP = 2.0f, GROUP_GAP = 10.0f;
-    const int GROUP_SIZE = 2, N = 6;
-    const float total_w = N * SLOT_W + (N - 1) * SLOT_GAP + 2 * GROUP_GAP; // 146
+    const int GROUP_SIZE = 2, N = 8;
+    const float total_w = N * SLOT_W + (N - 1) * SLOT_GAP + 3 * GROUP_GAP; // 204
     const float x0 = (480.0f - total_w) * 0.5f;
     const float y = 270.0f - 24.0f;
 
@@ -304,6 +307,57 @@ void GameHUD::_process(double p_delta) {
     if (Engine::get_singleton()->is_editor_hint())
         return;
     _update_skill_bar();
+    _update_law_bar();
+}
+
+// ============================================================
+// 法则之力条（右上角；化神解锁后显示）
+// ============================================================
+
+void GameHUD::_create_law_bar() {
+    const float x = 480.0f - BAR_WIDTH - 8.0f, y = 6.0f, h = 10.0f;
+    _law_bg = memnew(ColorRect);
+    _law_bg->set_position(Vector2(x, y));
+    _law_bg->set_size(Vector2(BAR_WIDTH, h));
+    _law_bg->set_color(Color(0.12f, 0.08f, 0.18f, 0.85f));
+    add_child(_law_bg);
+
+    _law_fill = memnew(ColorRect);
+    _law_fill->set_position(Vector2(x, y));
+    _law_fill->set_size(Vector2(0, h));
+    _law_fill->set_color(Color(0.65f, 0.40f, 0.95f, 1.0f));
+    add_child(_law_fill);
+
+    _law_label = memnew(Label);
+    _law_label->set_text(TXT("法则"));
+    _law_label->add_theme_font_size_override("font_size", FONT_SIZE_XS);
+    _law_label->add_theme_color_override("font_color", Color(0.85f, 0.70f, 1.0f, 0.95f));
+    _law_label->set_position(Vector2(x + 2, y - 1));
+    add_child(_law_label);
+
+    _law_bg->set_visible(false);
+    _law_fill->set_visible(false);
+    _law_label->set_visible(false);
+}
+
+void GameHUD::_update_law_bar() {
+    if (!_law_bg)
+        return;
+    if (!_player)
+        return; // 技能栏轮询先行缓存 _player
+    CultivationSystem *cult = _player->get_cultivation();
+    if (!cult)
+        return;
+    double max_law = cult->get_law_power_max();
+    bool show = max_law > 0.0 && _hud_visible;
+    _law_bg->set_visible(show);
+    _law_fill->set_visible(show);
+    _law_label->set_visible(show);
+    if (!show)
+        return;
+    double cur = cult->get_law_power();
+    _law_fill->set_size(Vector2(BAR_WIDTH * float(cur / max_law), 10.0f));
+    _law_label->set_text(TXT("法则 ") + String::num_int64(int64_t(cur)) + TXT("/") + String::num_int64(int64_t(max_law)));
 }
 
 void GameHUD::_update_skill_bar() {
@@ -318,50 +372,29 @@ void GameHUD::_update_skill_bar() {
     int page = _player->get_skill_page();
     if (_page_badge)
         _page_badge->set_visible(page == 1);
-    if (page == 1) {
-        // 法宝页：A~H = 法宝槽 0..5（0=本命）
-        ArtifactSystem *arts = _player->get_artifacts();
-        if (!arts)
-            return;
-        for (int i = 0; i < 6 && i < (int)_skill_name_labels.size(); i++) {
-            Dictionary info = arts->get_slot_info(i);
-            if (info.is_empty() || info.has("locked")) {
-                _skill_name_labels[i]->set_text(info.has("locked") ? TXT("×") : TXT("·"));
-                _skill_cd_labels[i]->set_text("");
-                continue;
-            }
-            String name = info.get("name", "");
-            _skill_name_labels[i]->set_text(name.is_empty() ? TXT("·") : name.substr(0, 1));
-            double rem = double(info.get("cd_remaining", 0.0));
-            if (rem > 0.05) {
-                _skill_cd_labels[i]->set_text(String::num(rem, 1));
-                _skill_name_labels[i]->add_theme_color_override("font_color", Color(1, 1, 1, 0.4f));
-            } else {
-                _skill_cd_labels[i]->set_text("");
-                _skill_name_labels[i]->add_theme_color_override("font_color", Color(1.0f, 0.85f, 0.4f, 0.95f));
-            }
-        }
-        return;
-    }
+    // 槽 i 的数据源：法宝页且 i<6 → 法宝槽；其余 → 技能槽（T/Y 两页通用）
     SkillSystem *skills = _player->get_skills();
-    if (!skills)
-        return;
-    for (int i = 0; i < 6 && i < (int)_skill_name_labels.size(); i++) {
-        Dictionary info = skills->get_slot_info(i);
-        if (info.is_empty()) {
-            _skill_name_labels[i]->set_text(TXT("·"));
+    ArtifactSystem *arts = _player->get_artifacts();
+    for (int i = 0; i < (int)_skill_name_labels.size(); i++) {
+        bool artifact_side = (page == 1 && i < 6);
+        Dictionary info = artifact_side
+            ? (arts ? arts->get_slot_info(i) : Dictionary())
+            : (skills ? skills->get_slot_info(i) : Dictionary());
+        if (info.is_empty() || info.has("locked")) {
+            _skill_name_labels[i]->set_text(info.has("locked") ? TXT("×") : TXT("·"));
             _skill_cd_labels[i]->set_text("");
             continue;
         }
         String name = info.get("name", "");
         _skill_name_labels[i]->set_text(name.is_empty() ? TXT("·") : name.substr(0, 1));
         double rem = double(info.get("cd_remaining", 0.0));
+        Color ready_c = artifact_side ? Color(1.0f, 0.85f, 0.4f, 0.95f) : Color(1, 1, 1, 0.95f);
         if (rem > 0.05) {
             _skill_cd_labels[i]->set_text(String::num(rem, 1));
             _skill_name_labels[i]->add_theme_color_override("font_color", Color(1, 1, 1, 0.4f));
         } else {
             _skill_cd_labels[i]->set_text("");
-            _skill_name_labels[i]->add_theme_color_override("font_color", Color(1, 1, 1, 0.95f));
+            _skill_name_labels[i]->add_theme_color_override("font_color", ready_c);
         }
     }
 }

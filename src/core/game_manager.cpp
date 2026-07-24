@@ -246,6 +246,7 @@ Dictionary GameManager::collect_save_data() const {
 			cd["spiritual_energy"] = _player->get_cultivation()->get_spiritual_energy();
 			cd["xianyuan"] = _player->get_cultivation()->get_xianyuan();
 			cd["mana"] = _player->get_cultivation()->get_mana();
+			cd["law_power"] = _player->get_cultivation()->get_law_power();
 			cd["immortal_type"] = (int)_player->get_cultivation()->get_immortal_type();
 			cd["sect"] = (int)_player->get_cultivation()->get_sect();
 			cd["origin"] = (int)_player->get_cultivation()->get_origin();
@@ -351,6 +352,8 @@ void GameManager::load_game(const String &p_slot_name) {
 			int64_t(cd.get("xianyuan", 0)));
 		_player->get_cultivation()->set_mana(
 			double(cd.get("mana", 0.0)));
+		_player->get_cultivation()->set_law_power(
+			double(cd.get("law_power", 0.0)));
 		_player->get_cultivation()->set_immortal_type(
 			int(cd.get("immortal_type", 0)));
 		_player->get_cultivation()->set_sect(

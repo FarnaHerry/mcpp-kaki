@@ -633,6 +633,7 @@ namespace godot {
 		// 灵力（法力）缓慢自动回复
 		if (_cultivation) {
 			_cultivation->tick_mana_regen(p_delta);
+			_cultivation->tick_law_regen(p_delta); // 法则之力（化神后）
 		}
 
 		state_machine->physics_update(p_delta);
@@ -654,15 +655,16 @@ namespace godot {
 
 		// 技能槽输入（DNF 式字母区）：战斗页=A/S武技 D/F法术；法宝页=A~H=法宝槽0..5
 		Input *input = Input::get_singleton();
-		static const char *SLOT_ACTIONS[6] = {
-			"skill_a", "skill_s", "skill_d", "skill_f", "skill_g", "skill_h"
+		static const char *SLOT_ACTIONS[8] = {
+			"skill_a", "skill_s", "skill_d", "skill_f", "skill_g", "skill_h", "skill_t", "skill_y"
 		};
-		for (int i = 0; i < 6; i++) {
+		for (int i = 0; i < 8; i++) {
 			if (!input->is_action_just_pressed(SLOT_ACTIONS[i])) continue;
-			if (_skill_page == 0) {
-				if (_skills) _skills->cast_slot(i);
-			} else {
+			if (_skill_page == 1 && i < 6) {
+				// 法宝页：A~H = 法宝槽 0..5（T/Y 神通/仙法两页通用）
 				if (_artifacts) _artifacts->activate_slot(i);
+			} else {
+				if (_skills) _skills->cast_slot(i);
 			}
 		}
 
@@ -992,6 +994,10 @@ namespace godot {
 		if (p_killer == this && _artifacts) {
 			_artifacts->nurture_equipped(2.0f);
 		}
+		// 战斗行为回复法则之力
+		if (p_killer == this && _cultivation) {
+			_cultivation->restore_law_power(10.0);
+		}
 	}
 
 	void Player::_create_inventory() {
@@ -1050,6 +1056,14 @@ namespace godot {
 			_artifacts->acquire(StringName("xuan_tie_ta"));
 		}
 
+		// 化神「初触法则」：授予首个神通（缩地成寸·空间法则），装神通槽 T
+		if (_skills && p_old_realm < CultivationSystem::SPIRIT_SEVERING &&
+		    p_new_realm >= CultivationSystem::SPIRIT_SEVERING) {
+			_skills->learn(StringName("suo_di_cheng_cun"));
+			if (_skills->get_slot_skill(6) == StringName())
+				_skills->assign(6, StringName("suo_di_cheng_cun")); // T
+		}
+
 		// 渡劫成仙：本命法宝觉醒（150% → 200%）
 		if (p_old_realm < CultivationSystem::TRUE_IMMORTAL &&
 		    p_new_realm >= CultivationSystem::TRUE_IMMORTAL) {
@@ -1104,6 +1118,17 @@ namespace godot {
 		proj->set_collision_mask_value(4, true);  // 打敌人 body
 		proj->set_collision_mask_value(1, true);  // 撞墙消失
 		get_parent()->add_child(proj);
+	}
+
+	void Player::exec_skill_blink(float p_distance) {
+		// 碰撞安全瞬移：test 模式先探路，撞墙则停在墙前
+		Vector2 motion((float)facing_direction * p_distance, 0.0f);
+		Ref<KinematicCollision2D> col = move_and_collide(motion, true);
+		if (col.is_valid()) {
+			set_global_position(get_global_position() + col->get_travel() * 0.9f);
+		} else {
+			set_global_position(get_global_position() + motion);
+		}
 	}
 
 	// ---- 法宝系统（本命法宝）----
