@@ -225,6 +225,9 @@ Dictionary GameManager::collect_save_data() const {
 		pd["max_health"] = _player->max_health;
 		pd["position_x"] = _player->get_global_position().x;
 		pd["position_y"] = _player->get_global_position().y;
+		if (_player->get_gongfa()) {
+			pd["gongfa"] = _player->get_gongfa()->save_to_dict();
+		}
 		data["player"] = pd;
 
 		// ---- Cultivation ----

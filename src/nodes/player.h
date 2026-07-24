@@ -6,6 +6,7 @@
 
 #include "../combat/combo_chain.h"
 #include "../combat/damage_types.h"
+#include "../cultivation/gongfa_system.h"
 #include "../inventory/inventory.h"
 #include "../utils/state_machine.h"
 #include "../utils/input_buffer.h"
@@ -99,6 +100,7 @@ namespace godot {
 		// Cultivation
 		CultivationSystem *get_cultivation() const { return _cultivation; }
 		AbilityManager *get_ability_manager() const { return _abilities; }
+		GongfaSystem *get_gongfa() const { return _gongfa; }
 		void gain_spiritual_energy(float p_amount);
 
 		// 法宝系统（本命法宝：120%→150%温养 → 渡劫觉醒200%）
@@ -144,8 +146,12 @@ namespace godot {
 		HurtBox *_hurtbox = nullptr;
 		CultivationSystem *_cultivation = nullptr;
 		AbilityManager *_abilities = nullptr;
+		GongfaSystem *_gongfa = nullptr;
 		Inventory *_inventory = nullptr;
 
+		void _refresh_max_health(bool p_refill);
+		void _on_gongfa_changed();
+		void _on_enemy_killed(Object *p_enemy, Object *p_killer);
 		void _take_damage_typed(float p_amount, DamageCategory p_cat, Element p_elem, Node *p_source);
 
 		// Equipment slots: 0=weapon, 1=armor, 2=accessory

@@ -1,6 +1,7 @@
 #include "game_menu.h"
 
 #include "../cultivation/ability_manager.h"
+#include "../cultivation/gongfa_system.h"
 #include "../nodes/inventory_panel.h"
 #include "../nodes/player.h"
 #include "../utils/text.h"
@@ -143,12 +144,7 @@ void GameMenu::_rebuild_page() {
 			break;
 		case PAGE_GONGFA:
 			if (_inv_panel) _inv_panel->close();
-			_build_placeholder_page(TXT("功法"), {
-				TXT("炼体槽:（空）  练气槽:（空）"),
-				TXT(""),
-				TXT("最多同修一门炼体 + 一门练气。"),
-				TXT("功法体系落地后在此装配（design/gongfa-skills.md）。"),
-			});
+			_build_gongfa_page();
 			_set_hint(TXT("←/→ 切换页  ESC 关闭"));
 			break;
 		case PAGE_SKILL:
@@ -278,6 +274,85 @@ void GameMenu::_build_ability_page() {
 	note->set_position(Vector2(60, 240));
 	add_child(note);
 	_page_nodes.push_back(note);
+}
+
+// ============================================================
+// 功法页（炼体/练气双槽 + 熟练进度 + 加成总览）
+// ============================================================
+
+void GameMenu::_build_gongfa_page() {
+	Label *title = memnew(Label);
+	title->set_text(TXT("—— 功法 ——"));
+	title->add_theme_font_size_override("font_size", 13);
+	title->add_theme_color_override("font_color", Color(1.0f, 0.9f, 0.5f));
+	title->set_position(Vector2(195, 36));
+	add_child(title);
+	_page_nodes.push_back(title);
+
+	GongfaSystem *gf = _player ? _player->get_gongfa() : nullptr;
+
+	auto slot_text = [&](GongfaSystem::School school) -> PackedStringArray {
+		PackedStringArray out;
+		const GongfaSystem::SlotState &slot = gf ? gf->get_slot(school) : GongfaSystem::SlotState();
+		if (!gf || slot.empty()) {
+			out.append(TXT("（空）"));
+			return out;
+		}
+		const GongfaSystem::Def *def = GongfaSystem::find_def(slot.id);
+		if (!def) {
+			out.append(TXT("（空）"));
+			return out;
+		}
+		String line1 = TXT(def->name) + TXT("  ") + GongfaSystem::grade_name(def->grade) +
+			TXT("  第") + String::num_int64(slot.layer) + TXT("/") + String::num_int64(def->max_layer) + TXT("层");
+		out.append(line1);
+		if (slot.layer >= def->max_layer) {
+			out.append(TXT("熟练: 圆满"));
+		} else {
+			float pct = slot.prof / gf->prof_threshold(slot.layer) * 100.0f;
+			out.append(TXT("熟练: ") + String::num(pct, 0) + TXT("%"));
+		}
+		return out;
+	};
+
+	auto add_line = [&](const String &text, float x, float y, int size, const Color &c) {
+		Label *l = memnew(Label);
+		l->set_text(text);
+		l->add_theme_font_size_override("font_size", size);
+		l->add_theme_color_override("font_color", c);
+		l->set_position(Vector2(x, y));
+		add_child(l);
+		_page_nodes.push_back(l);
+	};
+
+	Color head_c(1.0f, 0.85f, 0.5f);
+	Color body_c(0.85f, 0.85f, 0.85f);
+	Color dim_c(0.55f, 0.55f, 0.55f);
+
+	add_line(TXT("— 炼体 —"), 70.0f, 60.0f, 10, head_c);
+	PackedStringArray body_lines = slot_text(GongfaSystem::SCHOOL_BODY);
+	for (int i = 0; i < body_lines.size(); i++) {
+		add_line(body_lines[i], 70.0f, 76.0f + i * 14, 9, body_c);
+	}
+	add_line(TXT("— 练气 —"), 280.0f, 60.0f, 10, head_c);
+	PackedStringArray qi_lines = slot_text(GongfaSystem::SCHOOL_QI);
+	for (int i = 0; i < qi_lines.size(); i++) {
+		add_line(qi_lines[i], 280.0f, 76.0f + i * 14, 9, body_c);
+	}
+
+	// 加成总览
+	if (gf) {
+		auto pct = [](float m) { return String::num((m - 1.0f) * 100.0f, 0) + TXT("%"); };
+		add_line(TXT("加成总览:"), 70.0f, 130.0f, 9, head_c);
+		add_line(TXT("生命 +") + pct(gf->get_hp_mult()) + TXT("   防御 +") + pct(gf->get_def_mult()) +
+		         TXT("   物攻 +") + pct(gf->get_atk_mult()), 70.0f, 146.0f, 9, body_c);
+		add_line(TXT("灵力 +") + pct(gf->get_mana_mult()) + TXT("   回灵 +") + pct(gf->get_regen_mult()) +
+		         TXT("   法强 +") + pct(gf->get_spell_mult()) + TXT("   速度 +") + pct(gf->get_speed_mult()),
+		         70.0f, 162.0f, 9, body_c);
+	}
+
+	add_line(TXT("最多同修一门炼体 + 一门练气；炼体行为（受击/近战击杀）主养炼体，"), 70.0f, 196.0f, 8, dim_c);
+	add_line(TXT("练气行为（耗灵/施法）主养练气，副系亦得两成熟练。切换保留熟练。"), 70.0f, 210.0f, 8, dim_c);
 }
 
 // ============================================================

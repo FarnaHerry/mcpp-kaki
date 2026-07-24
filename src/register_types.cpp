@@ -12,6 +12,7 @@
 #include "cultivation/ability_manager.h"
 #include "cultivation/breakthrough_manager.h"
 #include "cultivation/cultivation_system.h"
+#include "cultivation/gongfa_system.h"
 #include "cultivation/tribulation_controller.h"
 #include "inventory/inventory.h"
 #include "inventory/item_database.h"
@@ -42,6 +43,7 @@ void initialize_cpp_kaki_module(ModuleInitializationLevel p_level) {
 	GDREGISTER_CLASS(HurtBox);
 	GDREGISTER_CLASS(Projectile);
 	GDREGISTER_CLASS(CultivationSystem);
+	GDREGISTER_CLASS(GongfaSystem);
 	GDREGISTER_CLASS(AbilityManager);
 	GDREGISTER_CLASS(SignalBus);
 	GDREGISTER_CLASS(GameManager);

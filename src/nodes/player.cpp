@@ -291,10 +291,15 @@ namespace godot {
 			// 筑基借法器飞行：持续消耗灵力，耗尽坠落
 			float cost = p->flight_mana_cost_per_sec();
 			if (cost > 0.0f && p->get_cultivation()) {
-				if (!p->get_cultivation()->consume_mana(cost * delta)) {
+				float spent = cost * float(delta);
+				if (!p->get_cultivation()->consume_mana(spent)) {
 					p->was_flying = false;
 					p->state_machine->transition_to(PlayerStates::Fall);
 					return;
+				}
+				// 练气行为：御剑耗灵喂养功法
+				if (p->get_gongfa()) {
+					p->get_gongfa()->feed(GongfaSystem::SCHOOL_QI, spent);
 				}
 			}
 
@@ -560,6 +565,7 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("pickup_item", "item_id", "qty"), &Player::pickup_item, DEFVAL(1));
 		ClassDB::bind_method(D_METHOD("get_inventory"), &Player::get_inventory);
 		ClassDB::bind_method(D_METHOD("get_cultivation"), &Player::get_cultivation);
+	ClassDB::bind_method(D_METHOD("get_gongfa"), &Player::get_gongfa);
 		ClassDB::bind_method(D_METHOD("get_ability_manager"), &Player::get_ability_manager);
 		ClassDB::bind_method(D_METHOD("equip_item", "inventory_slot"), &Player::equip_item);
 		ClassDB::bind_method(D_METHOD("unequip_item", "equip_slot"), &Player::unequip_item);
@@ -760,6 +766,9 @@ namespace godot {
 		if (_cultivation) {
 			defense *= _cultivation->get_defense_multiplier();
 		}
+		if (_gongfa) {
+			defense *= _gongfa->get_def_mult(); // 功法（炼体）乘区
+		}
 		DamageInfo info;
 		info.base_amount = p_amount;
 		info.category = p_cat;
@@ -772,6 +781,11 @@ namespace godot {
 		float actual_damage = DamageCalculator::compute(info, def);
 
 		current_health -= actual_damage;
+
+		// 炼体行为：承受伤害喂养功法熟练
+		if (_gongfa) {
+			_gongfa->feed(GongfaSystem::SCHOOL_BODY, actual_damage);
+		}
 
 		// Broadcast through global signal bus
 		SignalBus *bus = SignalBus::get_singleton();
@@ -866,6 +880,8 @@ namespace godot {
 	void Player::_create_cultivation() {
 		_cultivation = memnew(CultivationSystem);
 		_abilities = memnew(AbilityManager);
+		_gongfa = memnew(GongfaSystem);
+		_gongfa->connect("gongfa_changed", Callable(this, "_on_gongfa_changed"));
 		_abilities->set_cultivation(_cultivation);
 		_abilities->connect("ability_unlocked", Callable(this, "_on_ability_unlocked"));
 		_cultivation->connect("realm_changed", Callable(this, "_on_cultivation_realm_changed"));
@@ -875,9 +891,48 @@ namespace godot {
 		base_move_speed = move_speed;
 		_update_move_speed();
 
-		// 生命上限随境界（初始：凡人 100）
-		max_health = float(_cultivation->get_max_health());
-		current_health = max_health;
+		// 生命上限随境界 × 功法（初始：凡人 100）
+		_refresh_max_health(true);
+
+		// 击杀喂养功法（炼体行为：近战击杀）
+		SignalBus *bus = SignalBus::get_singleton();
+		if (bus) {
+			bus->connect("enemy_killed", Callable(this, "_on_enemy_killed"));
+		}
+	}
+
+	void Player::_refresh_max_health(bool p_refill) {
+		float old_max = max_health;
+		max_health = float(_cultivation ? _cultivation->get_max_health() : 100.0);
+		if (_gongfa) {
+			max_health *= _gongfa->get_hp_mult();
+		}
+		if (p_refill) {
+			current_health = max_health;
+		} else if (max_health > old_max) {
+			current_health += max_health - old_max; // 上限涨的差额补给当前血
+		}
+		current_health = Math::min(current_health, max_health);
+		SignalBus *bus = SignalBus::get_singleton();
+		if (bus) {
+			bus->emit_signal("player_health_changed", current_health, max_health);
+		}
+	}
+
+	void Player::_on_gongfa_changed() {
+		_refresh_max_health(false);
+		_update_move_speed();
+		if (_cultivation && _gongfa) {
+			_cultivation->set_mana_max_mult(_gongfa->get_mana_mult());
+			_cultivation->set_mana_regen_mult(_gongfa->get_regen_mult());
+		}
+	}
+
+	void Player::_on_enemy_killed(Object *p_enemy, Object *p_killer) {
+		// 炼体行为：近战击杀喂养（主系 100%/副系 20%，GongfaSystem 内部处理）
+		if (p_killer == this && _gongfa) {
+			_gongfa->feed(GongfaSystem::SCHOOL_BODY, 15.0f);
+		}
 	}
 
 	void Player::_create_inventory() {
@@ -900,13 +955,13 @@ namespace godot {
 		_update_move_speed();
 
 		// 突破洗髓：生命上限提升并回满
-		if (_cultivation) {
-			max_health = float(_cultivation->get_max_health());
-			current_health = max_health;
-			SignalBus *bus = SignalBus::get_singleton();
-			if (bus) {
-				bus->emit_signal("player_health_changed", current_health, max_health);
-			}
+		_refresh_max_health(true);
+
+		// 引气入体（炼气）：授予入门功法（炼体《莽牛劲》+ 练气《吐纳诀》）
+		if (_gongfa && p_old_realm < CultivationSystem::QI_REFINING &&
+		    p_new_realm >= CultivationSystem::QI_REFINING) {
+			_gongfa->grant(StringName("mang_niu_jin"));
+			_gongfa->grant(StringName("tu_na_jue"));
 		}
 
 		// 渡劫成仙：本命法宝觉醒（150% → 200%）
@@ -959,6 +1014,9 @@ namespace godot {
 			move_speed *= _cultivation->get_speed_multiplier();
 		}
 		move_speed *= (1.0f + get_equip_bonus_speed());
+		if (_gongfa) {
+			move_speed *= _gongfa->get_speed_mult(); // 功法（练气）乘区
+		}
 	}
 
 	// ---- Equipment ----
@@ -968,6 +1026,9 @@ namespace godot {
 		atk += get_equip_bonus_attack();
 		if (_cultivation) {
 			atk *= _cultivation->get_damage_multiplier();
+		}
+		if (_gongfa) {
+			atk *= _gongfa->get_atk_mult(); // 功法（炼体）乘区
 		}
 		atk *= get_benming_coeff(); // 本命法宝加成
 		return atk;
@@ -1136,6 +1197,11 @@ namespace godot {
 		}
 		if (p_data.has("max_health")) {
 			max_health = float(p_data["max_health"]);
+		}
+
+		// 功法
+		if (p_data.has("gongfa") && _gongfa) {
+			_gongfa->load_from_dict(p_data["gongfa"]);
 		}
 
 		// Position

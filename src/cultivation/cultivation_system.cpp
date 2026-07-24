@@ -274,13 +274,15 @@ namespace godot {
 
 	double CultivationSystem::get_max_mana() const {
 		// 凡人未引气入体，没有灵力；凡尘每境 +50；仙阶另起（草案数值）
+		double base = 0.0;
 		switch (_current_realm) {
-			case MORTAL:          return 0.0;
-			case TRUE_IMMORTAL:   return 1000.0;
-			case GOLDEN_IMMORTAL: return 2000.0;
-			case TIAN_ZUN:        return 9999.0;
-			default:              return double((int)_current_realm) * 50.0;
+			case MORTAL:          base = 0.0; break;
+			case TRUE_IMMORTAL:   base = 1000.0; break;
+			case GOLDEN_IMMORTAL: base = 2000.0; break;
+			case TIAN_ZUN:        base = 9999.0; break;
+			default:              base = double((int)_current_realm) * 50.0; break;
 		}
+		return base * _mana_max_mult; // 功法（练气）乘区
 	}
 
 	void CultivationSystem::_emit_mana_changed() {
@@ -323,7 +325,7 @@ namespace godot {
 			return;
 		// 缓慢回复：每秒 2% 上限（满蓝约 50 秒）；仅在整数值变化时发信号
 		double before = Math::floor(_mana);
-		_mana = Math::min(_mana + max_mana * 0.02 * p_delta, max_mana);
+		_mana = Math::min(_mana + max_mana * 0.02 * _mana_regen_mult * p_delta, max_mana);
 		if (Math::floor(_mana) != before) {
 			_emit_mana_changed();
 		}

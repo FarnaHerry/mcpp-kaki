@@ -115,6 +115,10 @@ namespace godot {
 		void set_mana(double p_amount);     // save/load
 		void tick_mana_regen(double p_delta);
 
+		// 功法等外部系统的倍率挂钩（默认 1.0，GongfaSystem 驱动）
+		void set_mana_max_mult(double p_m) { _mana_max_mult = p_m; _emit_mana_changed(); }
+		void set_mana_regen_mult(double p_m) { _mana_regen_mult = p_m; }
+
 		// Save/load 直写
 		void set_spiritual_energy(int64_t p_amount);
 		void set_xianyuan(int64_t p_amount);
@@ -183,6 +187,8 @@ namespace godot {
 		int64_t _lingqi = 0;     // 凡尘修为经验（全局累计）
 		int64_t _xianyuan = 0;   // 仙阶修为经验（九九归一）
 		double _mana = 0.0;      // 灵力（法力资源，非经验）
+		double _mana_max_mult = 1.0;   // 功法倍率（练气）
+		double _mana_regen_mult = 1.0; // 功法回灵倍率
 		ImmortalType _immortal_type = TYPE_HUMAN; // 凡尘默认人仙
 		Sect _sect = SECT_NONE;
 		Origin _origin = ORIGIN_MORTAL;
