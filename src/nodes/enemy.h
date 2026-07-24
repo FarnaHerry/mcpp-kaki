@@ -3,6 +3,7 @@
 
 #include <godot_cpp/classes/character_body2d.hpp>
 
+#include "../combat/damage_types.h"
 #include "../utils/state_machine.h"
 
 namespace godot {
@@ -25,6 +26,12 @@ namespace godot {
 		float attack_damage = 10.0f;
 		float attack_cooldown = 0.8f;
 		float knockback_resistance = 1.0f;
+
+		// 抗性剖面（DamageCalculator 统一结算）
+		float defense = 0.0f;                    // 物理平减
+		float spell_resist = 0.0f;               // 法术抗性（比例）
+		float elem_resist[ELEM_CAPACITY] = {};   // 元素抗性（比例）
+		Element self_element = ELEM_NONE;        // 自身五行（被克制判定）
 
 		// Behavior flags
 		bool is_ranged = false;       // true = archer type, keeps distance & shoots projectiles
@@ -64,6 +71,7 @@ namespace godot {
 		void update_facing_to_player();
 
 		void take_damage(float p_amount, Node *p_source);
+		void take_hit(const HitBox *p_hitbox, Node *p_source); // HitBox 驱动（含伤害类别/元素）
 		bool is_dead() const { return current_health <= 0.0f; }
 		float get_current_health() const { return current_health; }
 		float get_max_health() const { return max_health; }
@@ -118,6 +126,7 @@ namespace godot {
 		void _find_player();
 		void _create_hitboxes();
 		void _create_hp_bar();
+		void _apply_damage(float p_amount, DamageCategory p_cat, Element p_elem, Node *p_source);
 	};
 
 } // namespace godot

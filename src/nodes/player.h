@@ -5,6 +5,7 @@
 #include <godot_cpp/classes/input.hpp>
 
 #include "../combat/combo_chain.h"
+#include "../combat/damage_types.h"
 #include "../inventory/inventory.h"
 #include "../utils/state_machine.h"
 #include "../utils/input_buffer.h"
@@ -45,6 +46,11 @@ namespace godot {
 		float current_health = 100.0f;
 		float attack_damage = 10.0f;
 
+		// 抗性剖面（DamageCalculator 统一结算；defense 来自装备×境界，见 take_damage）
+		float spell_resist = 0.0f;               // 法术抗性（比例）
+		float elem_resist[ELEM_CAPACITY] = {};   // 元素抗性（比例）
+		Element self_element = ELEM_NONE;        // 自身五行（灵根挂钩预留）
+
 		int facing_direction = 1;
 
 		// Accessors
@@ -71,6 +77,7 @@ namespace godot {
 		bool input_inverted = false;
 
 		void take_damage(float p_amount, Node *p_source);
+		void take_hit(const HitBox *p_hitbox, Node *p_source); // HitBox 驱动（含伤害类别/元素）
 		float get_effective_attack() const;
 		bool is_dead() const { return current_health <= 0.0f; }
 
@@ -138,6 +145,8 @@ namespace godot {
 		CultivationSystem *_cultivation = nullptr;
 		AbilityManager *_abilities = nullptr;
 		Inventory *_inventory = nullptr;
+
+		void _take_damage_typed(float p_amount, DamageCategory p_cat, Element p_elem, Node *p_source);
 
 		// Equipment slots: 0=weapon, 1=armor, 2=accessory
 		StringName _equipment[3];

@@ -1,6 +1,7 @@
 #include "player.h"
 
 #include "../combat/combo_chain.h"
+#include "../combat/damage_calculator.h"
 #include "../combat/hitbox.h"
 #include "../combat/hurtbox.h"
 #include "../cultivation/ability_manager.h"
@@ -744,12 +745,32 @@ namespace godot {
 	}
 
 	void Player::take_damage(float p_amount, Node *p_source) {
-		// Apply defense from equipment + cultivation
+		// 无类别入口（投射物/三灾/环境等）：按物理无元素结算
+		_take_damage_typed(p_amount, DMG_PHYSICAL, ELEM_NONE, p_source);
+	}
+
+	void Player::take_hit(const HitBox *p_hitbox, Node *p_source) {
+		if (!p_hitbox) return;
+		_take_damage_typed(p_hitbox->damage, p_hitbox->damage_category, p_hitbox->element, p_source);
+	}
+
+	void Player::_take_damage_typed(float p_amount, DamageCategory p_cat, Element p_elem, Node *p_source) {
+		// DamageCalculator 统一结算：defense 来自装备 × 境界系数
 		float defense = get_equip_bonus_defense();
 		if (_cultivation) {
 			defense *= _cultivation->get_defense_multiplier();
 		}
-		float actual_damage = Math::max(p_amount - defense, 1.0f);
+		DamageInfo info;
+		info.base_amount = p_amount;
+		info.category = p_cat;
+		info.element = p_elem;
+		DefenseProfile def;
+		def.defense = defense;
+		def.spell_resist = spell_resist;
+		def.self_element = self_element;
+		for (int i = 0; i < ELEM_CAPACITY; i++) def.elem_resist[i] = elem_resist[i];
+		float actual_damage = DamageCalculator::compute(info, def);
+
 		current_health -= actual_damage;
 
 		// Broadcast through global signal bus
@@ -776,7 +797,7 @@ namespace godot {
 		HitBox *hb = Object::cast_to<HitBox>(p_hitbox);
 		if (!hb) return;
 
-		take_damage(hb->damage, p_source);
+		take_hit(hb, p_source);
 	}
 
 	void Player::_setup_collision() {

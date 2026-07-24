@@ -22,7 +22,9 @@ void Projectile::_ready() {
 	set_collision_layer_value(1, false); // Not on any body layer itself
 	// Collision mask is set by the creator — default to detect Player (layer 3)
 	set_collision_mask_value(3, true);
-	set_monitoring(false);
+	// monitoring 必须开：body_entered 由本节点主动检测发出
+	// （此前 monitoring=false，投射物从未造成过伤害——潜伏 bug）
+	set_monitoring(true);
 	set_monitorable(true);
 
 	connect("body_entered", Callable(this, "_on_body_entered"));

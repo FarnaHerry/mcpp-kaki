@@ -1,5 +1,6 @@
 #include "enemy.h"
 
+#include "../combat/damage_calculator.h"
 #include "../combat/hitbox.h"
 #include "../combat/hurtbox.h"
 #include "../combat/projectile.h"
@@ -26,7 +27,6 @@ namespace godot {
 		inline constexpr const char *Attack = "attack";
 		inline constexpr const char *Hurt = "hurt";
 		inline constexpr const char *Death = "death";
-		inline constexpr const char *Shoot = "shoot";
 		inline constexpr const char *Flee = "flee";
 		inline constexpr const char *BossSpecial = "boss_special";
 	}
@@ -222,37 +222,16 @@ namespace godot {
 		}
 	};
 
-	// Shoot state — archer fires a projectile
-	class EnemyShootState : public State<Enemy> {
-	public:
-		void enter(Enemy *e) override {
-			e->update_facing_to_player();
-			e->_spawn_projectile();
-			e->last_attack_time = e->get_time();
-		}
-		void exit(Enemy *e) override {}
-
-		void physics_update(Enemy *e, double delta) override {
-			// Brief pause after shooting, then transition
-			if (e->can_see_player()) {
-				if (e->is_ranged && e->player_too_close()) {
-					e->state_machine->transition_to(EnemyStates::Flee);
-				} else {
-					e->state_machine->transition_to(EnemyStates::Chase);
-				}
-			} else {
-				e->state_machine->transition_to(EnemyStates::Idle);
-			}
-		}
-	};
-
 	// Normal melee Attack state
 	class EnemyAttackState : public State<Enemy> {
 	public:
 		void enter(Enemy *e) override {
 			if (e->is_ranged) {
-				// Ranged: go to shoot state instead
-				e->state_machine->transition_to(EnemyStates::Shoot);
+				// 远程：直接放箭。不能 transition_to(Shoot)——pending 只会存一个，
+				// 同帧 Attack::physics_update 的 Chase 会覆盖 Shoot，
+				// Shoot::enter 永远执行不到（远程攻击从未生效的根因）
+				e->update_facing_to_player();
+				e->_spawn_projectile();
 				return;
 			}
 
@@ -469,7 +448,6 @@ namespace godot {
 		state_machine->add_state(EnemyStates::Attack, new EnemyAttackState());
 		state_machine->add_state(EnemyStates::Hurt, new EnemyHurtState());
 		state_machine->add_state(EnemyStates::Death, new EnemyDeathState());
-		state_machine->add_state(EnemyStates::Shoot, new EnemyShootState());
 		state_machine->add_state(EnemyStates::Flee, new EnemyFleeState());
 		state_machine->add_state(EnemyStates::BossSpecial, new EnemyBossSpecialState());
 
@@ -578,13 +556,35 @@ namespace godot {
 	}
 
 	void Enemy::take_damage(float p_amount, Node *p_source) {
-		current_health -= p_amount;
+		// 无类别入口（投射物/环境等）：按物理无元素结算
+		_apply_damage(p_amount, DMG_PHYSICAL, ELEM_NONE, p_source);
+	}
+
+	void Enemy::take_hit(const HitBox *p_hitbox, Node *p_source) {
+		if (!p_hitbox) return;
+		_apply_damage(p_hitbox->damage, p_hitbox->damage_category, p_hitbox->element, p_source);
+	}
+
+	void Enemy::_apply_damage(float p_amount, DamageCategory p_cat, Element p_elem, Node *p_source) {
+		// DamageCalculator 统一结算（防御/法抗/元素抗 + 五行克制）
+		DamageInfo info;
+		info.base_amount = p_amount;
+		info.category = p_cat;
+		info.element = p_elem;
+		DefenseProfile def;
+		def.defense = defense;
+		def.spell_resist = spell_resist;
+		def.self_element = self_element;
+		for (int i = 0; i < ELEM_CAPACITY; i++) def.elem_resist[i] = elem_resist[i];
+		float actual = DamageCalculator::compute(info, def);
+
+		current_health -= actual;
 
 		// 伤害数字显示
 		{
 			SignalBus *bus = SignalBus::get_singleton();
 			if (bus) {
-				bus->emit_signal("damage_dealt", get_global_position(), p_amount, false);
+				bus->emit_signal("damage_dealt", get_global_position(), actual, false);
 			}
 		}
 
@@ -620,7 +620,7 @@ namespace godot {
 	void Enemy::_on_hurtbox_hit(Object *p_hitbox, Node *p_source) {
 		HitBox *hb = Object::cast_to<HitBox>(p_hitbox);
 		if (!hb) return;
-		take_damage(hb->damage, p_source);
+		take_hit(hb, p_source);
 	}
 
 	void Enemy::_spawn_projectile() {

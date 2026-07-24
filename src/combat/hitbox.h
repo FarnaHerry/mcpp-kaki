@@ -3,6 +3,8 @@
 
 #include <godot_cpp/classes/area2d.hpp>
 
+#include "damage_types.h"
+
 namespace godot {
 
     class HitBox : public Area2D {
@@ -12,6 +14,9 @@ namespace godot {
         float damage = 1.0f;
         float knockback_force = 200.0f;
         float knockback_angle = 0.0f;
+        // 伤害类型（design/gongfa-skills.md）：类别 + 元素（元素类伤害时有效）
+        DamageCategory damage_category = DMG_PHYSICAL;
+        Element element = ELEM_NONE;
 
         void set_active(bool p_active);
         bool is_active() const { return _active; }
