@@ -139,6 +139,7 @@ void GameManager::on_player_died() {
 	// Use a timer to delay respawn
 	Timer *respawn_timer = memnew(Timer);
 	respawn_timer->set_name("RespawnTimer");
+	respawn_timer->set_process_mode(Node::PROCESS_MODE_ALWAYS); // 世界已暂停，计时器必须继续走
 	respawn_timer->set_one_shot(true);
 	respawn_timer->set_wait_time(_respawn_delay);
 	respawn_timer->connect("timeout", Callable(this, "trigger_respawn"));

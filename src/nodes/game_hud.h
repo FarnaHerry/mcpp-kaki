@@ -7,6 +7,8 @@
 #include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/variant/color.hpp>
 
+#include <vector>
+
 #include "../utils/text.h"
 
 namespace godot {
@@ -83,6 +85,8 @@ private:
 
     // Realm label (称号全称由 TitleComposer 生成，经 realm_changed 信号传入)
     Label *_realm_label = nullptr;
+    // 机缘提示（修为圆满时显示「机缘已至 [Q]」）
+    Label *_jiyuan_label = nullptr;
     String _realm_name = TXT("凡人");
 
     // Combo
@@ -96,6 +100,9 @@ private:
     // Death overlay
     ColorRect *_death_overlay = nullptr;
 
+    // 底部技能/法宝栏（占位：武技×2 / 法术×2 / 法宝×2，技能系统落地后填充）
+    std::vector<CanvasItem *> _skill_bar_nodes;
+
     // Visibility switch
     bool _hud_visible = true;
 
@@ -103,9 +110,11 @@ private:
     void _create_energy_bar();
     void _create_xp_bar();
     void _create_realm_label();
+    void _create_jiyuan_label();
     void _create_combo_label();
     void _create_interact_prompt();
     void _create_death_overlay();
+    void _create_skill_bar();
     void _update_bar(ColorRect *p_fill, float p_current, float p_max, bool p_horizontal = true);
     void _refresh_mana_label();
     void _refresh_xp_label();

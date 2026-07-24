@@ -30,6 +30,11 @@ void SignalBus::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("combo_ended",
 	                      PropertyInfo(Variant::INT, "final_count")));
 	ADD_SIGNAL(MethodInfo("boss_died"));
+	// 伤害结算广播（伤害数字显示等）。is_player_victim=true 表示玩家挨打。
+	ADD_SIGNAL(MethodInfo("damage_dealt",
+	                      PropertyInfo(Variant::VECTOR2, "world_pos"),
+	                      PropertyInfo(Variant::FLOAT, "amount"),
+	                      PropertyInfo(Variant::BOOL, "is_player_victim")));
 
 	// ---- Cultivation signals ----
 	ADD_SIGNAL(MethodInfo("spiritual_energy_changed",
@@ -49,6 +54,14 @@ void SignalBus::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("sect_changed",
 	                      PropertyInfo(Variant::INT, "sect"),
 	                      PropertyInfo(Variant::STRING, "sect_name")));
+
+	// ---- Breakthrough (机缘) signals ----
+	ADD_SIGNAL(MethodInfo("breakthrough_requested"));
+	ADD_SIGNAL(MethodInfo("breakthrough_event_started",
+	                      PropertyInfo(Variant::INT, "event_id")));
+	ADD_SIGNAL(MethodInfo("breakthrough_event_finished",
+	                      PropertyInfo(Variant::INT, "event_id"),
+	                      PropertyInfo(Variant::BOOL, "success")));
 
 	// ---- Game state signals ----
 	ADD_SIGNAL(MethodInfo("game_paused"));

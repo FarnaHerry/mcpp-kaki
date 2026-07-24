@@ -67,6 +67,9 @@ namespace godot {
 		float fly_acceleration = 250.0f;   // 飞行加速度（px/s²，低 = 起步慢、逐渐加快）
 		bool was_flying = false;           // 攻击/冲刺等动作后是否恢复飞行
 
+		// 赑风（三灾之一）：神魂受扰，水平输入反转（由 TribulationController 设置）
+		bool input_inverted = false;
+
 		void take_damage(float p_amount, Node *p_source);
 		float get_effective_attack() const;
 		bool is_dead() const { return current_health <= 0.0f; }

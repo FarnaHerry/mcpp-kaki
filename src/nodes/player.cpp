@@ -478,6 +478,20 @@ namespace godot {
 					break;
 
 				case Player::RECOVERY:
+					// 后摇可取消：跳跃/冲刺优先（被贴身围攻时不再"按不出跳"）
+					if (p->is_on_floor() && p->jump_just_pressed()) {
+						HitBox *hb = Object::cast_to<HitBox>(p->get_node_or_null("HitBox"));
+						if (hb) hb->set_active(false);
+						p->state_machine->transition_to(PlayerStates::Jump);
+						return;
+					}
+					if (p->dash_just_pressed() && p->can_dash()) {
+						HitBox *hb = Object::cast_to<HitBox>(p->get_node_or_null("HitBox"));
+						if (hb) hb->set_active(false);
+						p->state_machine->transition_to(PlayerStates::Dash);
+						return;
+					}
+
 					// Check for combo chain: attack press during recovery buffers the next hit
 					if (p->attack_just_pressed() && p->combo_chain.get_combo_step() < ComboChain::MAX_COMBO - 1) {
 						// Chain to next attack — re-enter with same state
@@ -616,16 +630,11 @@ namespace godot {
 		_update_facing();
 		combo_chain.update(_time);
 
-		// Q 修炼：尝试突破（调试开关打开时无经验门槛）
+		// Q 修炼：请求机缘突破（由 BreakthroughManager 统一受理，触发机缘事件）
 		if (Input::get_singleton()->is_action_just_pressed("cultivate")) {
-			if (_cultivation) {
-				bool ok = _cultivation->attempt_breakthrough();
-				UtilityFunctions::print(String("[DEBUG] Q pressed, breakthrough = ") +
-					(ok ? "SUCCESS" : "FAILED") + ", realm=" +
-					String::num_int64(_cultivation->get_realm_index()) +
-					", free=" + (_cultivation->is_free_breakthrough() ? "ON" : "OFF"));
-			} else {
-				UtilityFunctions::print("[DEBUG] Q pressed, but cultivation is null");
+			SignalBus *bus = SignalBus::get_singleton();
+			if (bus) {
+				bus->emit_signal("breakthrough_requested");
 			}
 		}
 
@@ -668,6 +677,8 @@ namespace godot {
 			val += 1.0f;
 		if (input->is_action_pressed("left"))
 			val -= 1.0f;
+		if (input_inverted)
+			val = -val; // 赑风袭魂，左右颠倒
 		return Math::clamp(val, -1.0f, 1.0f);
 	}
 
@@ -746,6 +757,7 @@ namespace godot {
 		if (bus) {
 			bus->emit_signal("player_health_changed", current_health, max_health);
 			bus->emit_signal("player_damaged", p_amount, p_source);
+			bus->emit_signal("damage_dealt", get_global_position(), actual_damage, true);
 		}
 
 		if (current_health <= 0.0f) {
@@ -789,23 +801,24 @@ namespace godot {
 		CollisionShape2D *hb_shape = memnew(CollisionShape2D);
 		Ref<RectangleShape2D> hb_rect;
 		hb_rect.instantiate();
-		hb_rect->set_size(Vector2(30, 20));
+		// 46×24 @ (12,0)：覆盖自身胶囊（-8..8）+ 身后少许（-11）+ 身前 35px 判定
+		hb_rect->set_size(Vector2(46, 24));
 		hb_shape->set_shape(hb_rect);
-		hb_shape->set_position(Vector2(15, 0));
+		hb_shape->set_position(Vector2(12, 0));
 		_hitbox->add_child(hb_shape);
 
-		// Visual for the hitbox
+		// Visual for the hitbox（与判定形状一致：中心对齐）
 		Polygon2D *hb_visual = memnew(Polygon2D);
 		hb_visual->set_name("HitBoxVisual");
 		hb_visual->set_visible(false);
 		hb_visual->set_color(Color(0.3, 1.0, 0.3, 0.4));
 		PackedVector2Array hb_poly;
-		hb_poly.append(Vector2(0, -10));
-		hb_poly.append(Vector2(30, -10));
-		hb_poly.append(Vector2(30, 10));
-		hb_poly.append(Vector2(0, 10));
+		hb_poly.append(Vector2(-23, -12));
+		hb_poly.append(Vector2(23, -12));
+		hb_poly.append(Vector2(23, 12));
+		hb_poly.append(Vector2(-23, 12));
 		hb_visual->set_polygon(hb_poly);
-		hb_visual->set_position(Vector2(15, 0));
+		hb_visual->set_position(Vector2(12, 0));
 		_hitbox->add_child(hb_visual);
 
 		add_child(_hitbox);

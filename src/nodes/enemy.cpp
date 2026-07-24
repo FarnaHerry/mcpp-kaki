@@ -9,6 +9,7 @@
 #include <cstdlib>
 
 #include <godot_cpp/classes/collision_shape2d.hpp>
+#include <godot_cpp/classes/color_rect.hpp>
 #include <godot_cpp/classes/polygon2d.hpp>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
@@ -396,6 +397,48 @@ namespace godot {
 	void Enemy::_bind_methods() {
 		ClassDB::bind_method(D_METHOD("take_damage", "amount", "source"), &Enemy::take_damage);
 		ClassDB::bind_method(D_METHOD("_on_hurtbox_hit", "hitbox", "source"), &Enemy::_on_hurtbox_hit);
+		ClassDB::bind_method(D_METHOD("get_current_health"), &Enemy::get_current_health);
+		ClassDB::bind_method(D_METHOD("get_max_health"), &Enemy::get_max_health);
+
+		// 属性注册——GDScript .set() 的生效前提
+		ClassDB::bind_method(D_METHOD("set_max_health", "v"), &Enemy::set_max_health);
+		ClassDB::bind_method(D_METHOD("set_current_health", "v"), &Enemy::set_current_health);
+		ClassDB::bind_method(D_METHOD("set_move_speed", "v"), &Enemy::set_move_speed);
+		ClassDB::bind_method(D_METHOD("set_detection_radius", "v"), &Enemy::set_detection_radius);
+		ClassDB::bind_method(D_METHOD("set_attack_range", "v"), &Enemy::set_attack_range);
+		ClassDB::bind_method(D_METHOD("set_attack_damage", "v"), &Enemy::set_attack_damage);
+		ClassDB::bind_method(D_METHOD("set_attack_cooldown", "v"), &Enemy::set_attack_cooldown);
+		ClassDB::bind_method(D_METHOD("set_is_ranged", "v"), &Enemy::set_is_ranged);
+		ClassDB::bind_method(D_METHOD("set_is_flying", "v"), &Enemy::set_is_flying);
+		ClassDB::bind_method(D_METHOD("set_is_boss", "v"), &Enemy::set_is_boss);
+		ClassDB::bind_method(D_METHOD("set_no_drops", "v"), &Enemy::set_no_drops);
+		ClassDB::bind_method(D_METHOD("set_show_hp_bar", "v"), &Enemy::set_show_hp_bar);
+		ClassDB::bind_method(D_METHOD("set_preferred_distance", "v"), &Enemy::set_preferred_distance);
+		ClassDB::bind_method(D_METHOD("get_move_speed"), &Enemy::get_move_speed);
+		ClassDB::bind_method(D_METHOD("get_detection_radius"), &Enemy::get_detection_radius);
+		ClassDB::bind_method(D_METHOD("get_attack_range"), &Enemy::get_attack_range);
+		ClassDB::bind_method(D_METHOD("get_attack_damage"), &Enemy::get_attack_damage);
+		ClassDB::bind_method(D_METHOD("get_attack_cooldown"), &Enemy::get_attack_cooldown);
+		ClassDB::bind_method(D_METHOD("get_is_ranged"), &Enemy::get_is_ranged);
+		ClassDB::bind_method(D_METHOD("get_is_flying"), &Enemy::get_is_flying);
+		ClassDB::bind_method(D_METHOD("get_is_boss"), &Enemy::get_is_boss);
+		ClassDB::bind_method(D_METHOD("get_no_drops"), &Enemy::get_no_drops);
+		ClassDB::bind_method(D_METHOD("get_show_hp_bar"), &Enemy::get_show_hp_bar);
+		ClassDB::bind_method(D_METHOD("get_preferred_distance"), &Enemy::get_preferred_distance);
+
+		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "max_health"), "set_max_health", "get_max_health");
+		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "current_health"), "set_current_health", "get_current_health");
+		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "move_speed"), "set_move_speed", "get_move_speed");
+		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "detection_radius"), "set_detection_radius", "get_detection_radius");
+		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "attack_range"), "set_attack_range", "get_attack_range");
+		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "attack_damage"), "set_attack_damage", "get_attack_damage");
+		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "attack_cooldown"), "set_attack_cooldown", "get_attack_cooldown");
+		ADD_PROPERTY(PropertyInfo(Variant::BOOL, "is_ranged"), "set_is_ranged", "get_is_ranged");
+		ADD_PROPERTY(PropertyInfo(Variant::BOOL, "is_flying"), "set_is_flying", "get_is_flying");
+		ADD_PROPERTY(PropertyInfo(Variant::BOOL, "is_boss"), "set_is_boss", "get_is_boss");
+		ADD_PROPERTY(PropertyInfo(Variant::BOOL, "no_drops"), "set_no_drops", "get_no_drops");
+		ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_hp_bar"), "set_show_hp_bar", "get_show_hp_bar");
+		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "preferred_distance"), "set_preferred_distance", "get_preferred_distance");
 
 		ADD_SIGNAL(MethodInfo("enemy_died"));
 		ADD_SIGNAL(MethodInfo("boss_died"));
@@ -415,6 +458,8 @@ namespace godot {
 
 		_setup_collision();
 		_create_hitboxes();
+		if (show_hp_bar)
+			_create_hp_bar();
 		_find_player();
 
 		state_machine = new StateMachine<Enemy>(this);
@@ -444,6 +489,28 @@ namespace godot {
 
 		_time += p_delta;
 		state_machine->process_update(p_delta);
+
+		// 头顶血条（秘境劫敌/Boss）
+		if (_hp_bar_fill) {
+			float frac = (max_health > 0.0f) ? (current_health / max_health) : 0.0f;
+			Vector2 s = _hp_bar_fill->get_size();
+			s.x = 28.0f * Math::clamp(frac, 0.0f, 1.0f);
+			_hp_bar_fill->set_size(s);
+		}
+	}
+
+	void Enemy::_create_hp_bar() {
+		ColorRect *bg = memnew(ColorRect);
+		bg->set_position(Vector2(-14, -26));
+		bg->set_size(Vector2(28, 4));
+		bg->set_color(Color(0.1f, 0.1f, 0.1f, 0.85f));
+		add_child(bg);
+
+		_hp_bar_fill = memnew(ColorRect);
+		_hp_bar_fill->set_position(Vector2(-14, -26));
+		_hp_bar_fill->set_size(Vector2(28, 4));
+		_hp_bar_fill->set_color(Color(0.85f, 0.15f, 0.15f, 1));
+		add_child(_hp_bar_fill);
 	}
 
 	void Enemy::_setup_collision() {
@@ -465,9 +532,10 @@ namespace godot {
 		CollisionShape2D *hb_shape = memnew(CollisionShape2D);
 		Ref<RectangleShape2D> hb_rect;
 		hb_rect.instantiate();
-		hb_rect->set_size(Vector2(30, 20));
+		// 46×24 @ (12,0)：覆盖自身 + 身后少许 + 身前判定（贴身不再打空）
+		hb_rect->set_size(Vector2(46, 24));
 		hb_shape->set_shape(hb_rect);
-		hb_shape->set_position(Vector2(15, 0));
+		hb_shape->set_position(Vector2(12, 0));
 		_hitbox->add_child(hb_shape);
 
 		Polygon2D *hb_visual = memnew(Polygon2D);
@@ -475,12 +543,12 @@ namespace godot {
 		hb_visual->set_visible(false);
 		hb_visual->set_color(Color(1.0, 0.3, 0.3, 0.4));
 		PackedVector2Array hb_poly;
-		hb_poly.append(Vector2(0, -10));
-		hb_poly.append(Vector2(30, -10));
-		hb_poly.append(Vector2(30, 10));
-		hb_poly.append(Vector2(0, 10));
+		hb_poly.append(Vector2(-23, -12));
+		hb_poly.append(Vector2(23, -12));
+		hb_poly.append(Vector2(23, 12));
+		hb_poly.append(Vector2(-23, 12));
 		hb_visual->set_polygon(hb_poly);
-		hb_visual->set_position(Vector2(15, 0));
+		hb_visual->set_position(Vector2(12, 0));
 		_hitbox->add_child(hb_visual);
 
 		add_child(_hitbox);
@@ -511,6 +579,14 @@ namespace godot {
 
 	void Enemy::take_damage(float p_amount, Node *p_source) {
 		current_health -= p_amount;
+
+		// 伤害数字显示
+		{
+			SignalBus *bus = SignalBus::get_singleton();
+			if (bus) {
+				bus->emit_signal("damage_dealt", get_global_position(), p_amount, false);
+			}
+		}
 
 		if (current_health <= 0.0f) {
 			current_health = 0.0f;

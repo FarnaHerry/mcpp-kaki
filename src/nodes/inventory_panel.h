@@ -28,6 +28,13 @@ public:
 
 	// Manual toggle from GDScript
 	void toggle();
+	void open() { if (!_visible) toggle(); }
+	void close() { if (_visible) toggle(); }
+
+	// 外部驱动模式（GameMenu 托管）：自身 _input 不再响应，由菜单转发操作
+	void set_external_drive(bool p_on) { _external_drive = p_on; }
+	void ext_navigate(int p_dir); // +1 下 / -1 上
+	void ext_use();               // 使用/装备当前选中
 
 	// Rebuild the item list (called on inventory_changed)
 	// item_picked_up/item_used signals carry (item_id, qty) — accepted and ignored
@@ -40,6 +47,7 @@ private:
 	Player *_player = nullptr;
 	SignalBus *_signal_bus = nullptr;
 	bool _visible = false;
+	bool _external_drive = false;
 
 	// UI elements
 	ColorRect *_background = nullptr;

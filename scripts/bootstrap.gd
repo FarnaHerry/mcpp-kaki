@@ -36,6 +36,16 @@ func _setup_game():
 	drop_system.name = "DropSystem"
 	add_child(drop_system)
 
+	# ---- BreakthroughManager (机缘突破事件唯一入口) ----
+	var breakthrough_mgr = ClassDB.instantiate("BreakthroughManager")
+	breakthrough_mgr.name = "BreakthroughManager"
+	add_child(breakthrough_mgr)
+
+	# ---- DamageNumbers (伤害数字显示) ----
+	var dmg_numbers = ClassDB.instantiate("DamageNumbers")
+	dmg_numbers.name = "DamageNumbers"
+	add_child(dmg_numbers)
+
 	# ---- HUD (must be created after SignalBus so it can connect signals) ----
 	var hud = ClassDB.instantiate("GameHUD")
 	hud.name = "GameHUD"
@@ -50,6 +60,11 @@ func _setup_game():
 	var inv_panel = ClassDB.instantiate("InventoryPanel")
 	inv_panel.name = "InventoryPanel"
 	add_child(inv_panel)
+
+	# ---- Game Menu (ESC 多页管理菜单: 背包/能力/功法/技能/法宝/设置) ----
+	var game_menu = ClassDB.instantiate("GameMenu")
+	game_menu.name = "GameMenu"
+	add_child(game_menu)
 
 	# ---- Camera ----
 	var camera = ClassDB.instantiate("CameraRoom2D")
@@ -127,7 +142,9 @@ func _setup_game():
 	# BOSS — large, multi-phase, special attacks
 	var boss = _spawn_enemy(Vector2(1200, 195), Color(1.0, 0.1, 0.1, 1), 40.0, 500.0)
 	boss.set("is_boss", true)
-	boss.set("max_health", 3.0); boss.set("current_health", 3.0)
+	# 属性注册后才真正生效；_ready 的 ×5 已过（add_child 时 is_boss 还是 false），
+	# 这里直接给最终值 3×5=15
+	boss.set("max_health", 15.0); boss.set("current_health", 15.0)
 	boss.set("attack_damage", 20.0)
 	boss.set("attack_cooldown", 1.2)
 	boss.set("detection_radius", 500.0)

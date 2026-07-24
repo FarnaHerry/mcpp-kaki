@@ -9,6 +9,7 @@ namespace godot {
 
 	class HitBox;
 	class HurtBox;
+	class ColorRect;
 	class Node2D;
 
 	class Enemy : public CharacterBody2D {
@@ -29,6 +30,8 @@ namespace godot {
 		bool is_ranged = false;       // true = archer type, keeps distance & shoots projectiles
 		bool is_flying = false;       // true = ignores gravity, hovers
 		bool is_boss = false;         // true = boss: more HP, phases, special attacks
+		bool no_drops = false;        // true = 死亡不掉落（心魔/三尸等幻境之敌）
+		bool show_hp_bar = false;     // true = 头顶显示血条（秘境劫敌/Boss 用）
 		float preferred_distance = 0.0f; // ideal combat range (0 = melee)
 
 		// Boss
@@ -62,6 +65,35 @@ namespace godot {
 
 		void take_damage(float p_amount, Node *p_source);
 		bool is_dead() const { return current_health <= 0.0f; }
+		float get_current_health() const { return current_health; }
+		float get_max_health() const { return max_health; }
+
+		// 属性 setter（GDScript .set() 必须走注册属性，否则静默失败——
+		// bootstrap 曾因此全部配置失效：弓手不射箭、Boss 只有 5 血）
+		void set_max_health(float v) { max_health = v; }
+		void set_current_health(float v) { current_health = v; }
+		void set_move_speed(float v) { move_speed = v; }
+		void set_detection_radius(float v) { detection_radius = v; }
+		void set_attack_range(float v) { attack_range = v; }
+		void set_attack_damage(float v) { attack_damage = v; }
+		void set_attack_cooldown(float v) { attack_cooldown = v; }
+		void set_is_ranged(bool v) { is_ranged = v; }
+		void set_is_flying(bool v) { is_flying = v; }
+		void set_is_boss(bool v) { is_boss = v; }
+		void set_no_drops(bool v) { no_drops = v; }
+		void set_show_hp_bar(bool v) { show_hp_bar = v; }
+		void set_preferred_distance(float v) { preferred_distance = v; }
+		float get_move_speed() const { return move_speed; }
+		float get_detection_radius() const { return detection_radius; }
+		float get_attack_range() const { return attack_range; }
+		float get_attack_damage() const { return attack_damage; }
+		float get_attack_cooldown() const { return attack_cooldown; }
+		bool get_is_ranged() const { return is_ranged; }
+		bool get_is_flying() const { return is_flying; }
+		bool get_is_boss() const { return is_boss; }
+		bool get_no_drops() const { return no_drops; }
+		bool get_show_hp_bar() const { return show_hp_bar; }
+		float get_preferred_distance() const { return preferred_distance; }
 
 		double get_time() const { return _time; }
 
@@ -80,10 +112,12 @@ namespace godot {
 		double _time = 0.0;
 		HitBox *_hitbox = nullptr;
 		HurtBox *_hurtbox = nullptr;
+		ColorRect *_hp_bar_fill = nullptr; // show_hp_bar 时创建
 
 		void _setup_collision();
 		void _find_player();
 		void _create_hitboxes();
+		void _create_hp_bar();
 	};
 
 } // namespace godot

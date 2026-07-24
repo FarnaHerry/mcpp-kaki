@@ -1,0 +1,53 @@
+[gd_scene load_steps=3 format=3]
+
+[sub_resource type="RectangleShape2D" id="ground_shape"]
+size = Vector2(320, 24)
+
+[sub_resource type="RectangleShape2D" id="wall_shape"]
+size = Vector2(16, 270)
+
+[node name="HeartDemonArena" type="Node2D"]
+
+; Background — 心魔幻境，幽暗压抑
+[node name="Background" type="Polygon2D" parent="."]
+color = Color(0.06, 0.03, 0.09, 1)
+polygon = PackedVector2Array(0, 0, 320, 0, 320, 270, 0, 270)
+
+; Ground
+[node name="Ground" type="StaticBody2D" parent="."]
+position = Vector2(160, 238)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
+shape = SubResource("ground_shape")
+
+[node name="GroundVisual" type="Polygon2D" parent="Ground"]
+color = Color(0.16, 0.1, 0.2, 1)
+polygon = PackedVector2Array(-160, -5, 160, -5, 160, 12, -160, 12)
+
+; Walls — 秘境锁死，直到分出生死
+[node name="WallL" type="StaticBody2D" parent="."]
+position = Vector2(0, 135)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallL"]
+shape = SubResource("wall_shape")
+
+[node name="WallVisualL" type="Polygon2D" parent="WallL"]
+color = Color(0.12, 0.07, 0.16, 1)
+polygon = PackedVector2Array(-8, -135, 8, -135, 8, 135, -8, 135)
+
+[node name="WallR" type="StaticBody2D" parent="."]
+position = Vector2(320, 135)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallR"]
+shape = SubResource("wall_shape")
+
+[node name="WallVisualR" type="Polygon2D" parent="WallR"]
+color = Color(0.12, 0.07, 0.16, 1)
+polygon = PackedVector2Array(-8, -135, 8, -135, 8, 135, -8, 135)
+
+; Spawn markers
+[node name="SpawnEntrance" type="Marker2D" parent="."]
+position = Vector2(60, 200)
+
+[node name="EnemySpawn" type="Marker2D" parent="."]
+position = Vector2(230, 200)

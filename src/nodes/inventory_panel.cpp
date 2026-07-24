@@ -184,14 +184,77 @@ void InventoryPanel::refresh(const String &p_item_id, int p_qty) {
 // Input handling
 // ============================================================
 
+void InventoryPanel::ext_navigate(int p_dir) {
+	if (!_player) return;
+	Inventory *inv = _player->get_inventory();
+	if (!inv) return;
+
+	if (p_dir < 0) {
+		if (_selected_index > 0) {
+			_selected_index--;
+			if (_selected_index < _scroll_offset) {
+				_scroll_offset = _selected_index;
+			}
+			refresh();
+		}
+	} else {
+		if (_selected_index < inv->get_capacity() - 1) {
+			_selected_index++;
+			if (_selected_index >= _scroll_offset + 8) {
+				_scroll_offset = _selected_index - 7;
+			}
+			refresh();
+		}
+	}
+}
+
+void InventoryPanel::ext_use() {
+	if (!_player) return;
+	Inventory *inv = _player->get_inventory();
+	if (!inv) return;
+
+	Dictionary slot_data = inv->get_slot(_selected_index);
+	if (slot_data.is_empty()) return;
+
+	StringName item_id = slot_data["id"];
+	const Item *def = ItemDatabase::get_singleton()->get_item(item_id);
+	if (!def) return;
+
+	if (def->type == Item::CONSUMABLE) {
+		if (inv->use_item(_selected_index)) {
+			if (def->heal_amount > 0.0f) {
+				_player->current_health = Math::min(
+					_player->current_health + def->heal_amount,
+					_player->max_health);
+				if (_signal_bus) {
+					_signal_bus->emit_signal("player_health_changed",
+						_player->current_health, _player->max_health);
+					_signal_bus->emit_signal("item_used", String(item_id), 1);
+				}
+			}
+			if (def->energy_amount > 0.0f && _player->get_cultivation()) {
+				_player->get_cultivation()->accumulate_energy(def->energy_amount);
+				if (_signal_bus) {
+					_signal_bus->emit_signal("item_used", String(item_id), 1);
+				}
+			}
+		}
+	} else if (def->type == Item::EQUIPMENT) {
+		_player->equip_item(_selected_index);
+		if (_signal_bus) {
+			_signal_bus->emit_signal("player_health_changed",
+				_player->current_health, _player->max_health);
+		}
+	}
+
+	refresh();
+}
+
 void InventoryPanel::_input(const Ref<InputEvent> &p_event) {
-	if (!_visible || !_player) return;
+	if (!_visible || !_player || _external_drive) return;
 
 	Ref<InputEventKey> key = p_event;
 	if (key.is_null() || !key->is_pressed() || key->is_echo()) return;
-
-	Inventory *inv = _player->get_inventory();
-	if (!inv) return;
 
 	int keycode = key->get_keycode();
 
@@ -203,74 +266,17 @@ void InventoryPanel::_input(const Ref<InputEvent> &p_event) {
 
 		case KEY_UP:
 		case KEY_W:
-			if (_selected_index > 0) {
-				_selected_index--;
-				if (_selected_index < _scroll_offset) {
-					_scroll_offset = _selected_index;
-				}
-				refresh();
-			}
+			ext_navigate(-1);
 			return;
 
 		case KEY_DOWN:
 		case KEY_S:
-			if (_selected_index < inv->get_capacity() - 1) {
-				_selected_index++;
-				if (_selected_index >= _scroll_offset + 8) {
-					_scroll_offset = _selected_index - 7;
-				}
-				refresh();
-			}
+			ext_navigate(+1);
 			return;
 
-		case KEY_E: {
-			// Use or equip the selected item
-			Dictionary slot_data = inv->get_slot(_selected_index);
-			if (slot_data.is_empty()) return;
-
-			StringName item_id = slot_data["id"];
-			const Item *def = ItemDatabase::get_singleton()->get_item(item_id);
-			if (!def) return;
-
-			if (def->type == Item::CONSUMABLE) {
-				// Use consumable
-				if (inv->use_item(_selected_index)) {
-					// Apply effect
-					if (def->heal_amount > 0.0f) {
-						_player->current_health = Math::min(
-							_player->current_health + def->heal_amount,
-							_player->max_health);
-						if (_signal_bus) {
-							_signal_bus->emit_signal("player_health_changed",
-								_player->current_health, _player->max_health);
-							_signal_bus->emit_signal("item_used", String(item_id), 1);
-						}
-					}
-					if (def->energy_amount > 0.0f && _player->get_cultivation()) {
-						_player->get_cultivation()->accumulate_energy(def->energy_amount);
-						if (_signal_bus) {
-							_signal_bus->emit_signal("item_used", String(item_id), 1);
-						}
-					}
-				}
-			} else if (def->type == Item::EQUIPMENT) {
-				// Equip item
-				_player->equip_item(_selected_index);
-				if (_signal_bus) {
-					_signal_bus->emit_signal("player_health_changed",
-						_player->current_health, _player->max_health);
-				}
-			}
-
-			refresh();
+		case KEY_E:
+			ext_use();
 			return;
-		}
-
-		case KEY_U: {
-			// Unequip from equipment slot (0-2)
-			// Check which equipment slot to unequip — use number keys 1-3
-			return;
-		}
 	}
 }
 

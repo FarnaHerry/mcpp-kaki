@@ -1,5 +1,6 @@
 #include "drop_system.h"
 
+#include "../nodes/enemy.h"
 #include "../nodes/item_pickup.h"
 #include "../utils/signal_bus.h"
 
@@ -41,6 +42,11 @@ void DropSystem::spawn_drop(const StringName &p_item_id, int p_qty, const Vector
 void DropSystem::_on_enemy_killed(Object *p_enemy, Object *p_killer) {
     Node2D *enemy = Object::cast_to<Node2D>(p_enemy);
     if (!enemy)
+        return;
+
+    // 幻境之敌（心魔/三尸）不掉落
+    Enemy *e = Object::cast_to<Enemy>(p_enemy);
+    if (e && e->no_drops)
         return;
 
     // enemy_killed 来自碰撞回调（物理刷新中），生成掉落必须延迟到空闲帧

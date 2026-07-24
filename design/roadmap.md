@@ -1,6 +1,22 @@
-# 开发路线图（截至 session 008）
+# 开发路线图（截至 session 009）
 
 ## 一、最近修改总结
+
+### Session 009（本次）：机缘突破事件系统
+- **BreakthroughManager**（src/cultivation/）：所有突破机缘的唯一入口。
+  Q → SignalBus `breakthrough_requested` → 受理分发（叙事/战斗秘境/三灾）；
+  +`breakthrough_event_started/finished` 信号；叙事 overlay（暂停+逐行推进）
+- **事件全覆盖**：引气入体/百日闭关/三花聚顶/出窍游历/形神合一/功德因果（叙事），
+  心魔劫（金丹→元婴）/三尸劫（化神→炼虚，恶念→执念→贪欲三连 wave，属性随玩家境界缩放），
+  三灾连考（大乘→渡劫之地→真仙）
+- **TribulationController**：雷灾（预警落雷走位）→ 阴火（体内 DoT 生存）→
+  赑风（控制反转+罡风推移+风蚀）；渡劫过渡态复用 DU_JIE（失败退回大乘，经验保持封顶）
+- **经验封顶**：accumulate_energy 到顶卡境界（设计原定），过机缘后继续累计
+- **秘境 arena**：heart_demon_arena.tscn / dujie_arena.tscn（复用 Portal 模式：
+  场景加载 + 玩家重挂载 + 相机锁定，进入锁死直到分出生死）
+- **F5 语义调整**：调试开关只免经验门槛，机缘事件始终触发
+- **附带修复**：重生 Timer 被死亡暂停冻结（process_mode→ALWAYS，潜伏老 bug）；
+  Enemy 加 `no_drops`（幻境之敌不掉落）；HUD 修为圆满显示「机缘已至 [Q]」
 
 ### Session 002-006（已提交前积压）
 - SaveSystem 存档/读档（ConfigFile → user://savegames）
@@ -40,15 +56,16 @@
 
 ## 二、后续计划（按优先级）
 
-1. **机缘突破事件**（设计已定，内容待做）：心魔劫 / 三尸劫 / 三灾关卡 /
-   渡劫之地秘境。突破不再只是 Q 键直接升——触发独立事件场景
+1. ~~**机缘突破事件**~~（session 009 已完成 v1）——后续可做：机缘事件失败惩罚细化、
+   心魔用玩家外观/招式、三灾「硬抗 vs 躲避」双过法（肉身/元神分叉检验）
 2. **洞天系统**（design/dongtian.md 待定稿）：炼虚解锁随身小世界，
    安全处 G 键进出 → 后花园种植/聚灵阵/扩张
 3. **技能/法术系统**：消耗灵力的主动技能（飞行已有 consume_mana 接口）
-4. **法宝系统完善**：次要法宝物品、槽位 UI（飞升前 3/后 6）、温养来源
+4. **法宝系统完善**：次要法宝物品、槽位 UI（飞升前 3/后 6）、温养来源；
+   渡劫之地「只带本命法宝」规则未生效（v1 未禁用装备加成）
 5. **食物/辟谷**：凡人需进食、炼气 buff 120%、筑基辟谷
 6. **地府/生死簿/勾魂**（设计已定，未动代码）
-7. **数值平衡**：攻防速倍率、掉落表、灵力消耗均为草案
+7. **数值平衡**：攻防速倍率、掉落表、灵力消耗、心魔/三灾数值均为草案
 8. **工程清理**：退出时 ObjectDB 内存泄漏（memnew 的 Object 成员未释放）
 
 ## 三、需要抽成 OOP 的候选
@@ -61,6 +78,6 @@
 | 技能不存在，只有 consume_mana 接口 | Skill 基类 + SkillManager（法术/神通继承体系） | 高 |
 | 法宝 = Player 上的 benming 字段 + flying_sword 特判 | Artifact 类 + ArtifactManager（槽位/温养/觉醒统一） | 中 |
 | bootstrap.gd 里手写场景搭建（敌人/拾取物/传送门坐标） | WorldBuilder / LevelManager C++ 类 + 场景数据 | 中 |
-| 机缘事件不存在 | BreakthroughEvent 基类 + EventManager（心魔/三尸/三灾各为子类） | 中 |
+| ~~机缘事件不存在~~ | ~~BreakthroughEvent 基类 + EventManager~~（session 009 已实现：BreakthroughManager + TribulationController） | ~~中~~ |
 | 交互提示两处重复（bootstrap _interact_hint + GameHUD _interact_label） | 统一收进 GameHUD（SignalBus interaction_prompt 已有） | 低 |
 | 食物/buff 不存在 | BuffSystem（食物/丹药/状态统一为 Buff） | 低 |

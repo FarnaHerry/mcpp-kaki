@@ -1,0 +1,55 @@
+[gd_scene load_steps=3 format=3]
+
+[sub_resource type="RectangleShape2D" id="ground_shape"]
+size = Vector2(480, 24)
+
+[sub_resource type="RectangleShape2D" id="wall_shape"]
+size = Vector2(16, 270)
+
+[node name="DujieArena" type="Node2D"]
+
+; Background — 渡劫之地：不在三界内，不在五行中
+[node name="Background" type="Polygon2D" parent="."]
+color = Color(0.03, 0.04, 0.1, 1)
+polygon = PackedVector2Array(0, 0, 480, 0, 480, 270, 0, 270)
+
+; 雷云压顶
+[node name="CloudVisual" type="Polygon2D" parent="."]
+color = Color(0.1, 0.1, 0.18, 1)
+polygon = PackedVector2Array(0, 0, 480, 0, 480, 60, 0, 60)
+
+; Ground — 劫台
+[node name="Ground" type="StaticBody2D" parent="."]
+position = Vector2(240, 238)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
+shape = SubResource("ground_shape")
+
+[node name="GroundVisual" type="Polygon2D" parent="Ground"]
+color = Color(0.14, 0.15, 0.24, 1)
+polygon = PackedVector2Array(-240, -5, 240, -5, 240, 12, -240, 12)
+
+; Walls — 进入即锁死，直到分出生死
+[node name="WallL" type="StaticBody2D" parent="."]
+position = Vector2(0, 135)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallL"]
+shape = SubResource("wall_shape")
+
+[node name="WallVisualL" type="Polygon2D" parent="WallL"]
+color = Color(0.09, 0.1, 0.17, 1)
+polygon = PackedVector2Array(-8, -135, 8, -135, 8, 135, -8, 135)
+
+[node name="WallR" type="StaticBody2D" parent="."]
+position = Vector2(480, 135)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallR"]
+shape = SubResource("wall_shape")
+
+[node name="WallVisualR" type="Polygon2D" parent="WallR"]
+color = Color(0.09, 0.1, 0.17, 1)
+polygon = PackedVector2Array(-8, -135, 8, -135, 8, 135, -8, 135)
+
+; Spawn marker — 渡劫者立于劫台中央
+[node name="SpawnEntrance" type="Marker2D" parent="."]
+position = Vector2(240, 200)

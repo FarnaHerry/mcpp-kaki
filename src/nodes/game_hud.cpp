@@ -52,9 +52,11 @@ void GameHUD::_ready() {
     _create_energy_bar();
     _create_xp_bar();
     _create_realm_label();
+    _create_jiyuan_label();
     _create_combo_label();
     _create_interact_prompt();
     _create_death_overlay();
+    _create_skill_bar();
 
     set_process_unhandled_input(true);
 
@@ -148,6 +150,19 @@ void GameHUD::_create_realm_label() {
     add_child(_realm_label);
 }
 
+void GameHUD::_create_jiyuan_label() {
+    _jiyuan_label = memnew(Label);
+    _jiyuan_label->set_name("JiyuanLabel");
+    _jiyuan_label->set_position(Vector2(BAR_X + 170.0f, REALM_LABEL_Y + 4.0f));
+    _jiyuan_label->add_theme_font_size_override("font_size", FONT_SIZE_XS);
+    _jiyuan_label->add_theme_color_override("font_color", Color(1.0f, 0.95f, 0.4f, 1));
+    _jiyuan_label->add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9f));
+    _jiyuan_label->add_theme_constant_override("outline_size", 2);
+    _jiyuan_label->set_text(TXT("机缘已至 [Q]"));
+    _jiyuan_label->set_visible(false);
+    add_child(_jiyuan_label);
+}
+
 // ============================================================
 // Combo Counter
 // ============================================================
@@ -194,6 +209,58 @@ void GameHUD::_create_death_overlay() {
 }
 
 // ============================================================
+// 底部技能/法宝栏（占位）
+// ============================================================
+
+void GameHUD::_create_skill_bar() {
+    // DNF 式布局预留：武技(A/S) 法术(D/F) 法宝(G/H)，空槽暗框 + 键位标签。
+    // 技能系统落地后：槽内填图标/冷却扫层，此处只负责槽位与可见性。
+    struct SlotSpec { const char *caption; const char *key; Color tint; };
+    static const SlotSpec SLOTS[] = {
+        { "武技", "A", Color(0.55f, 0.25f, 0.20f, 0.85f) },
+        { nullptr, "S", Color(0.55f, 0.25f, 0.20f, 0.85f) },
+        { "法术", "D", Color(0.20f, 0.35f, 0.60f, 0.85f) },
+        { nullptr, "F", Color(0.20f, 0.35f, 0.60f, 0.85f) },
+        { "法宝", "G", Color(0.55f, 0.45f, 0.15f, 0.85f) },
+        { nullptr, "H", Color(0.55f, 0.45f, 0.15f, 0.85f) },
+    };
+    const float SLOT_W = 20.0f, SLOT_GAP = 2.0f, GROUP_GAP = 10.0f;
+    const int GROUP_SIZE = 2, N = 6;
+    const float total_w = N * SLOT_W + (N - 1) * SLOT_GAP + 2 * GROUP_GAP; // 146
+    const float x0 = (480.0f - total_w) * 0.5f;
+    const float y = 270.0f - 24.0f;
+
+    for (int i = 0; i < N; i++) {
+        float x = x0 + i * (SLOT_W + SLOT_GAP) + (i / GROUP_SIZE) * GROUP_GAP;
+
+        ColorRect *slot = memnew(ColorRect);
+        slot->set_position(Vector2(x, y));
+        slot->set_size(Vector2(SLOT_W, SLOT_W));
+        slot->set_color(SLOTS[i].tint);
+        add_child(slot);
+        _skill_bar_nodes.push_back(slot);
+
+        Label *key = memnew(Label);
+        key->set_text(SLOTS[i].key); // ASCII 键名无需 TXT
+        key->add_theme_font_size_override("font_size", 8);
+        key->add_theme_color_override("font_color", Color(0.75f, 0.75f, 0.75f, 0.9f));
+        key->set_position(Vector2(x + 6, y + 5));
+        add_child(key);
+        _skill_bar_nodes.push_back(key);
+
+        if (SLOTS[i].caption) {
+            Label *cap = memnew(Label);
+            cap->set_text(TXT(SLOTS[i].caption));
+            cap->add_theme_font_size_override("font_size", 7);
+            cap->add_theme_color_override("font_color", Color(0.6f, 0.6f, 0.6f, 0.9f));
+            cap->set_position(Vector2(x + 2, y - 10));
+            add_child(cap);
+            _skill_bar_nodes.push_back(cap);
+        }
+    }
+}
+
+// ============================================================
 // Input
 // ============================================================
 
@@ -225,9 +292,13 @@ void GameHUD::_apply_hud_visibility() {
     if (_xp_fill)       _xp_fill->set_visible(_hud_visible);
     if (_xp_label)      _xp_label->set_visible(_hud_visible);
     if (_realm_label)   _realm_label->set_visible(_hud_visible);
+    if (_jiyuan_label)  _jiyuan_label->set_visible(_hud_visible && _xp_progress >= 1.0f);
     // Combo/prompt manage their own visibility; only show when HUD is on
     if (_combo_label)   _combo_label->set_visible(_hud_visible && _combo_count >= 3);
     if (_interact_label) _interact_label->set_visible(_hud_visible && _prompt_showing);
+    for (CanvasItem *n : _skill_bar_nodes) {
+        if (n) n->set_visible(_hud_visible);
+    }
 }
 
 void GameHUD::set_hud_visible(bool p_visible) {
@@ -303,6 +374,10 @@ void GameHUD::on_spiritual_energy_changed(int64_t p_current, int64_t p_max, floa
         size.x = BAR_WIDTH * Math::clamp(p_progress, 0.0f, 1.0f);
         _xp_fill->set_size(size);
     }
+    // 修为圆满 → 提示机缘已至（渡劫/天尊无经验条，恒满不提示）
+    bool jiyuan = (p_max > 0) && p_progress >= 1.0f;
+    if (_jiyuan_label)
+        _jiyuan_label->set_visible(_hud_visible && jiyuan);
     _refresh_xp_label();
 }
 

@@ -340,10 +340,14 @@ namespace godot {
 
 	void CultivationSystem::accumulate_energy(double p_amount) {
 		RealmStage before = get_stage();
+		// 经验到顶即卡在当前境界（设计：过机缘事件后才能继续累计）
+		int64_t cap = REALM_CAPS[_current_realm];
+		if (cap <= 0)
+			return; // 渡劫/天尊无经验条
 		if (is_immortal()) {
-			_xianyuan += (int64_t)p_amount;
+			_xianyuan = MIN(_xianyuan + (int64_t)p_amount, cap);
 		} else {
-			_lingqi += (int64_t)p_amount;
+			_lingqi = MIN(_lingqi + (int64_t)p_amount, cap);
 		}
 		_emit_energy_changed();
 		if (get_stage() != before) {

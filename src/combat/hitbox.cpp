@@ -19,7 +19,7 @@ namespace godot {
 
 	void HitBox::_ready() {
 		set_monitoring(false);
-		set_monitorable(true);
+		set_monitorable(true); // 常开：HurtBox 只是"可被击中"标记，检测全在 HitBox 侧
 	}
 
 	void HitBox::set_active(bool p_active) {
@@ -41,9 +41,12 @@ namespace godot {
 		// HitBox actively detects HurtBoxes when active.
 		// Deferred: set_active is often called from physics callbacks
 		// (kill inside area_entered), where direct set_monitoring errors.
+		//
+		// 关键机制：monitoring 关→开时，物理服务器会重扫当前重叠并重新
+		// 发出 area_entered——每次攻击激活都重新结算，持续重叠也能反复命中。
+		// （反方向不成立：若由 HurtBox 监控 HitBox，持续重叠不发 exit/enter，
+		// 只有第一下能命中——session 009 曾走错这个方向。）
 		set_deferred("monitoring", _active);
-		// NOTE: keep monitorable always true so HurtBoxes see us
-		// even when not active (they check is_active() manually).
 	}
 
 	void HitBox::_on_area_entered(Area2D *p_area) {
@@ -54,8 +57,11 @@ namespace godot {
 		if (hurtbox) {
 			Node *owner = hurtbox->get_parent();
 			// Never damage our own owner (prevent self-damage)
-			if (owner && owner != get_parent() && owner->has_method("take_damage")) {
-				owner->call("take_damage", damage, get_parent());
+			if (owner && owner != get_parent()) {
+				// 伤害唯一路径：HitBox 侧驱动（monitoring 重扫可靠重触发），
+				// 但仍以 hurtbox_hit 信号结算（owner 的处理函数不变）。
+				hurtbox->emit_signal("hurtbox_hit", this, get_parent());
+				// hit_landed 只给连击/手感，不结算伤害
 				emit_signal("hit_landed", owner, damage);
 			}
 		}
