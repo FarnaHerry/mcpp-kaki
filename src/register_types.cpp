@@ -6,6 +6,7 @@
 #include "combat/hitbox.h"
 #include "combat/hurtbox.h"
 #include "combat/projectile.h"
+#include "combat/skill_system.h"
 #include "core/game_manager.h"
 #include "core/drop_system.h"
 #include "core/save_system.h"
@@ -44,6 +45,7 @@ void initialize_cpp_kaki_module(ModuleInitializationLevel p_level) {
 	GDREGISTER_CLASS(Projectile);
 	GDREGISTER_CLASS(CultivationSystem);
 	GDREGISTER_CLASS(GongfaSystem);
+	GDREGISTER_CLASS(SkillSystem);
 	GDREGISTER_CLASS(AbilityManager);
 	GDREGISTER_CLASS(SignalBus);
 	GDREGISTER_CLASS(GameManager);

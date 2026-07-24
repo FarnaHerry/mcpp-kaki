@@ -2,7 +2,10 @@
 #define CPP_KAKI_PROJECTILE_H
 
 #include <godot_cpp/classes/area2d.hpp>
+#include <godot_cpp/variant/color.hpp>
 #include <godot_cpp/variant/vector2.hpp>
+
+#include "damage_types.h"
 
 namespace godot {
 
@@ -18,6 +21,10 @@ public:
 	float damage = 1.0f;
 	Vector2 direction = Vector2(1.0f, 0.0f);
 	float lifetime = 3.0f;
+	// 伤害类型（DamageCalculator 统一结算）+ 投射物颜色（创建者在 add_child 前设置）
+	DamageCategory damage_category = DMG_PHYSICAL;
+	Element element = ELEM_NONE;
+	Color visual_color = Color(1.0f, 0.4f, 0.2f, 0.9f);
 
 	// Source node (who fired this) — omitted from damage to prevent self-hit
 	void set_source(Node *p_source) { _source = p_source; }

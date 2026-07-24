@@ -4,6 +4,8 @@
 #include "../combat/damage_calculator.h"
 #include "../combat/hitbox.h"
 #include "../combat/hurtbox.h"
+#include "../combat/projectile.h"
+#include "../combat/skill_system.h"
 #include "../cultivation/ability_manager.h"
 #include "../cultivation/cultivation_system.h"
 #include "../inventory/item.h"
@@ -433,6 +435,8 @@ namespace godot {
 				float combo_mult = p->combo_chain.get_damage_multiplier();
 				float kbr_mult = p->combo_chain.get_knockback_multiplier();
 				hb->damage = p->attack_damage * realm_mult * combo_mult;
+				hb->damage_category = DMG_PHYSICAL;
+				hb->element = ELEM_NONE;
 				hb->knockback_force = 200.0f * kbr_mult;
 				hb->set_knockback_from_facing(p->facing_direction);
 				hb->set_scale(Vector2((float)p->facing_direction, 1.0f));
@@ -559,6 +563,7 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("get_move_input"), &Player::get_move_input);
 		ClassDB::bind_method(D_METHOD("get_gravity"), &Player::get_gravity);
 		ClassDB::bind_method(D_METHOD("take_damage", "amount", "source"), &Player::take_damage);
+	ClassDB::bind_method(D_METHOD("take_damage_typed", "amount", "cat", "elem", "source"), &Player::take_damage_typed);
 		ClassDB::bind_method(D_METHOD("gain_spiritual_energy", "amount"), &Player::gain_spiritual_energy);
 		ClassDB::bind_method(D_METHOD("on_attack_landed", "victim", "damage"), &Player::on_attack_landed);
 		ClassDB::bind_method(D_METHOD("_on_hurtbox_hit", "hitbox", "source"), &Player::_on_hurtbox_hit);
@@ -566,6 +571,7 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("get_inventory"), &Player::get_inventory);
 		ClassDB::bind_method(D_METHOD("get_cultivation"), &Player::get_cultivation);
 	ClassDB::bind_method(D_METHOD("get_gongfa"), &Player::get_gongfa);
+	ClassDB::bind_method(D_METHOD("get_skills"), &Player::get_skills);
 		ClassDB::bind_method(D_METHOD("get_ability_manager"), &Player::get_ability_manager);
 		ClassDB::bind_method(D_METHOD("equip_item", "inventory_slot"), &Player::equip_item);
 		ClassDB::bind_method(D_METHOD("unequip_item", "equip_slot"), &Player::unequip_item);
@@ -636,6 +642,25 @@ namespace godot {
 		_update_buffers();
 		_update_facing();
 		combo_chain.update(_time);
+
+		// 技能槽输入（DNF 式字母区：A/S 武技 D/F 法术）
+		if (_skills) {
+			Input *input = Input::get_singleton();
+			if (input->is_action_just_pressed("skill_a")) _skills->cast_slot(0);
+			if (input->is_action_just_pressed("skill_s")) _skills->cast_slot(1);
+			if (input->is_action_just_pressed("skill_d")) _skills->cast_slot(2);
+			if (input->is_action_just_pressed("skill_f")) _skills->cast_slot(3);
+		}
+
+		// 技能借用 HitBox 的时间窗关闭（攻击态自身的相位逻辑不干预）
+		if (_skill_hitbox_until > 0.0 && _time >= _skill_hitbox_until) {
+			_skill_hitbox_until = 0.0;
+			if (_hitbox) {
+				_hitbox->set_active(false);
+				_hitbox->damage_category = DMG_PHYSICAL;
+				_hitbox->element = ELEM_NONE;
+			}
+		}
 
 		// Q 修炼：请求机缘突破（由 BreakthroughManager 统一受理，触发机缘事件）
 		if (Input::get_singleton()->is_action_just_pressed("cultivate")) {
@@ -753,6 +778,10 @@ namespace godot {
 	void Player::take_damage(float p_amount, Node *p_source) {
 		// 无类别入口（投射物/三灾/环境等）：按物理无元素结算
 		_take_damage_typed(p_amount, DMG_PHYSICAL, ELEM_NONE, p_source);
+	}
+
+	void Player::take_damage_typed(float p_amount, int p_cat, int p_elem, Node *p_source) {
+		_take_damage_typed(p_amount, DamageCategory(p_cat), Element(p_elem), p_source);
 	}
 
 	void Player::take_hit(const HitBox *p_hitbox, Node *p_source) {
@@ -882,6 +911,13 @@ namespace godot {
 		_abilities = memnew(AbilityManager);
 		_gongfa = memnew(GongfaSystem);
 		_gongfa->connect("gongfa_changed", Callable(this, "_on_gongfa_changed"));
+		_skills = memnew(SkillSystem);
+		_skills->set_player(this);
+		// 凡人起步即会的基础武技（拳脚刀剑是凡人的本事）
+		_skills->learn(StringName("po_kong_zhan"));
+		_skills->learn(StringName("tu_jin_zhan"));
+		_skills->assign(0, StringName("po_kong_zhan")); // A
+		_skills->assign(1, StringName("tu_jin_zhan"));  // S
 		_abilities->set_cultivation(_cultivation);
 		_abilities->connect("ability_unlocked", Callable(this, "_on_ability_unlocked"));
 		_cultivation->connect("realm_changed", Callable(this, "_on_cultivation_realm_changed"));
@@ -962,6 +998,15 @@ namespace godot {
 		    p_new_realm >= CultivationSystem::QI_REFINING) {
 			_gongfa->grant(StringName("mang_niu_jin"));
 			_gongfa->grant(StringName("tu_na_jue"));
+			// 灵根显现：授予入门法术（火弹/冰锥）
+			if (_skills) {
+				_skills->learn(StringName("huo_dan_shu"));
+				_skills->learn(StringName("bing_zhui_shu"));
+				if (_skills->get_slot_skill(2) == StringName())
+					_skills->assign(2, StringName("huo_dan_shu")); // D
+				if (_skills->get_slot_skill(3) == StringName())
+					_skills->assign(3, StringName("bing_zhui_shu")); // F
+			}
 		}
 
 		// 渡劫成仙：本命法宝觉醒（150% → 200%）
@@ -969,6 +1014,47 @@ namespace godot {
 		    p_new_realm >= CultivationSystem::TRUE_IMMORTAL) {
 			awaken_benming_artifact();
 		}
+	}
+
+	// ---- 技能施放出口（SkillSystem 调用）----
+
+	void Player::exec_skill_melee(float p_power, DamageCategory p_cat, Element p_elem) {
+		if (!_hitbox) return;
+		_hitbox->damage = get_effective_attack() * p_power;
+		_hitbox->damage_category = p_cat;
+		_hitbox->element = p_elem;
+		_hitbox->set_knockback_from_facing(facing_direction);
+		_hitbox->set_scale(Vector2((float)facing_direction, 1.0f));
+		_hitbox->set_active(true);
+		_skill_hitbox_until = _time + 0.18;
+	}
+
+	void Player::exec_skill_lunge(float p_power, DamageCategory p_cat, Element p_elem) {
+		// 突进：向面朝方向冲一小段（不动状态机，直接给速度）
+		Vector2 v = get_velocity();
+		v.x = (float)facing_direction * 420.0f;
+		set_velocity(v);
+		exec_skill_melee(p_power, p_cat, p_elem);
+		_skill_hitbox_until = _time + 0.25; // 突进挥击窗口略长
+	}
+
+	void Player::exec_skill_projectile(float p_power, DamageCategory p_cat, Element p_elem,
+	                                   float p_speed, const Color &p_color) {
+		// 法术强度：攻击面板 × 功法法强乘区 × 技能倍率
+		float spell_mult = _gongfa ? _gongfa->get_spell_mult() : 1.0f;
+		Projectile *proj = memnew(Projectile);
+		proj->set_position(get_global_position() + Vector2((float)facing_direction * 14.0f, -4.0f));
+		proj->direction = Vector2((float)facing_direction, 0.0f);
+		proj->speed = p_speed;
+		proj->damage = get_effective_attack() * spell_mult * p_power;
+		proj->damage_category = p_cat;
+		proj->element = p_elem;
+		proj->visual_color = p_color;
+		proj->set_source(this);
+		proj->set_collision_mask_value(3, false); // 不打自己（Player body）
+		proj->set_collision_mask_value(4, true);  // 打敌人 body
+		proj->set_collision_mask_value(1, true);  // 撞墙消失
+		get_parent()->add_child(proj);
 	}
 
 	// ---- 法宝系统（本命法宝）----
@@ -1202,6 +1288,9 @@ namespace godot {
 		// 功法
 		if (p_data.has("gongfa") && _gongfa) {
 			_gongfa->load_from_dict(p_data["gongfa"]);
+		}
+		if (p_data.has("skills") && _skills) {
+			_skills->load_from_dict(p_data["skills"]);
 		}
 
 		// Position

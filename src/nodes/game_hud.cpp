@@ -1,9 +1,13 @@
 #include "game_hud.h"
 
+#include "../combat/skill_system.h"
 #include "../cultivation/cultivation_system.h"
+#include "player.h"
 #include "../utils/signal_bus.h"
 
 #include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/scene_tree.hpp>
+#include <godot_cpp/classes/window.hpp>
 #include <godot_cpp/classes/input_event_key.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
@@ -59,6 +63,7 @@ void GameHUD::_ready() {
     _create_skill_bar();
 
     set_process_unhandled_input(true);
+    set_process(true); // 技能栏冷却轮询
 
     // Connect to SignalBus
     SignalBus *bus = SignalBus::get_singleton();
@@ -244,9 +249,29 @@ void GameHUD::_create_skill_bar() {
         key->set_text(SLOTS[i].key); // ASCII 键名无需 TXT
         key->add_theme_font_size_override("font_size", 8);
         key->add_theme_color_override("font_color", Color(0.75f, 0.75f, 0.75f, 0.9f));
-        key->set_position(Vector2(x + 6, y + 5));
+        key->set_position(Vector2(x + 1, y + 1));
         add_child(key);
         _skill_bar_nodes.push_back(key);
+
+        // 技能名（槽中央，空槽显示 ·；名字取首字，像素屏宽所限）
+        Label *name = memnew(Label);
+        name->set_text(TXT("·"));
+        name->add_theme_font_size_override("font_size", 8);
+        name->add_theme_color_override("font_color", Color(1.0f, 1.0f, 1.0f, 0.95f));
+        name->set_position(Vector2(x + 6, y + 7));
+        add_child(name);
+        _skill_bar_nodes.push_back(name);
+        _skill_name_labels.push_back(name);
+
+        // 冷却剩余秒（槽右下角，仅冷却中显示）
+        Label *cd = memnew(Label);
+        cd->set_text("");
+        cd->add_theme_font_size_override("font_size", 7);
+        cd->add_theme_color_override("font_color", Color(1.0f, 0.9f, 0.4f, 0.95f));
+        cd->set_position(Vector2(x + 10, y + 12));
+        add_child(cd);
+        _skill_bar_nodes.push_back(cd);
+        _skill_cd_labels.push_back(cd);
 
         if (SLOTS[i].caption) {
             Label *cap = memnew(Label);
@@ -256,6 +281,48 @@ void GameHUD::_create_skill_bar() {
             cap->set_position(Vector2(x + 2, y - 10));
             add_child(cap);
             _skill_bar_nodes.push_back(cap);
+        }
+    }
+}
+
+// ============================================================
+// 技能栏刷新（轮询 Player->SkillSystem；冷却走 Player._time 时基）
+// ============================================================
+
+void GameHUD::_process(double p_delta) {
+    if (Engine::get_singleton()->is_editor_hint())
+        return;
+    _update_skill_bar();
+}
+
+void GameHUD::_update_skill_bar() {
+    if (_skill_name_labels.empty())
+        return;
+    if (!_player) {
+        Node *n = get_tree() ? get_tree()->get_root()->find_child("Player", true, false) : nullptr;
+        _player = Object::cast_to<Player>(n);
+        if (!_player)
+            return;
+    }
+    SkillSystem *skills = _player->get_skills();
+    if (!skills)
+        return;
+    for (int i = 0; i < 6 && i < (int)_skill_name_labels.size(); i++) {
+        Dictionary info = skills->get_slot_info(i);
+        if (info.is_empty()) {
+            _skill_name_labels[i]->set_text(TXT("·"));
+            _skill_cd_labels[i]->set_text("");
+            continue;
+        }
+        String name = info.get("name", "");
+        _skill_name_labels[i]->set_text(name.is_empty() ? TXT("·") : name.substr(0, 1));
+        double rem = double(info.get("cd_remaining", 0.0));
+        if (rem > 0.05) {
+            _skill_cd_labels[i]->set_text(String::num(rem, 1));
+            _skill_name_labels[i]->add_theme_color_override("font_color", Color(1, 1, 1, 0.4f));
+        } else {
+            _skill_cd_labels[i]->set_text("");
+            _skill_name_labels[i]->add_theme_color_override("font_color", Color(1, 1, 1, 0.95f));
         }
     }
 }

@@ -71,6 +71,7 @@ namespace godot {
 		void update_facing_to_player();
 
 		void take_damage(float p_amount, Node *p_source);
+		void take_damage_typed(float p_amount, int p_cat, int p_elem, Node *p_source); // 投射物用（Variant 可传 int）
 		void take_hit(const HitBox *p_hitbox, Node *p_source); // HitBox 驱动（含伤害类别/元素）
 		bool is_dead() const { return current_health <= 0.0f; }
 		float get_current_health() const { return current_health; }

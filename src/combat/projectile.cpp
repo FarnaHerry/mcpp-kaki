@@ -44,7 +44,7 @@ void Projectile::_create_visual() {
 	// Small arrow/diamond shape
 	Polygon2D *visual = memnew(Polygon2D);
 	visual->set_name("ProjVisual");
-	visual->set_color(Color(1.0f, 0.4f, 0.2f, 0.9f));
+	visual->set_color(visual_color);
 	PackedVector2Array arrow;
 	arrow.append(Vector2(8, 0));   // tip
 	arrow.append(Vector2(-4, -4)); // top back
@@ -79,8 +79,10 @@ void Projectile::_on_body_entered(Node2D *p_body) {
 	// Don't hit our own source
 	if (p_body == _source) return;
 
-	// Deal damage if the body has take_damage method
-	if (p_body->has_method("take_damage")) {
+	// 类型化伤害入口优先（DamageCalculator 统一结算），退回旧 take_damage（物理）
+	if (p_body->has_method("take_damage_typed")) {
+		p_body->call("take_damage_typed", damage, int(damage_category), int(element), _source);
+	} else if (p_body->has_method("take_damage")) {
 		p_body->call("take_damage", damage, _source);
 	}
 

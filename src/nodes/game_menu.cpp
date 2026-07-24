@@ -2,6 +2,7 @@
 
 #include "../cultivation/ability_manager.h"
 #include "../cultivation/gongfa_system.h"
+#include "../combat/skill_system.h"
 #include "../nodes/inventory_panel.h"
 #include "../nodes/player.h"
 #include "../utils/text.h"
@@ -149,13 +150,7 @@ void GameMenu::_rebuild_page() {
 			break;
 		case PAGE_SKILL:
 			if (_inv_panel) _inv_panel->close();
-			_build_placeholder_page(TXT("技能"), {
-				TXT("武技: [A]（空） [S]（空）"),
-				TXT("法术: [D]（空） [F]（空）"),
-				TXT(""),
-				TXT("武技/法术/神通/仙法 统一技能管线落地后在此装配。"),
-				TXT("B 键整页切换（法宝页/技能多页）随法宝系统开放。"),
-			});
+			_build_skill_page();
 			_set_hint(TXT("←/→ 切换页  ESC 关闭"));
 			break;
 		case PAGE_ARTIFACT:
@@ -353,6 +348,79 @@ void GameMenu::_build_gongfa_page() {
 
 	add_line(TXT("最多同修一门炼体 + 一门练气；炼体行为（受击/近战击杀）主养炼体，"), 70.0f, 196.0f, 8, dim_c);
 	add_line(TXT("练气行为（耗灵/施法）主养练气，副系亦得两成熟练。切换保留熟练。"), 70.0f, 210.0f, 8, dim_c);
+}
+
+// ============================================================
+// 技能页（槽位总览 + 已学列表；装配交互后续做）
+// ============================================================
+
+void GameMenu::_build_skill_page() {
+	Label *title = memnew(Label);
+	title->set_text(TXT("—— 技能 ——"));
+	title->add_theme_font_size_override("font_size", 13);
+	title->add_theme_color_override("font_color", Color(1.0f, 0.9f, 0.5f));
+	title->set_position(Vector2(195, 36));
+	add_child(title);
+	_page_nodes.push_back(title);
+
+	auto add_line = [&](const String &text, float x, float y, int size, const Color &c) {
+		Label *l = memnew(Label);
+		l->set_text(text);
+		l->add_theme_font_size_override("font_size", size);
+		l->add_theme_color_override("font_color", c);
+		l->set_position(Vector2(x, y));
+		add_child(l);
+		_page_nodes.push_back(l);
+	};
+
+	Color head_c(1.0f, 0.85f, 0.5f);
+	Color body_c(0.85f, 0.85f, 0.85f);
+	Color dim_c(0.55f, 0.55f, 0.55f);
+
+	SkillSystem *skills = _player ? _player->get_skills() : nullptr;
+
+	// 槽位总览
+	static const char *KEYS[SkillSystem::SLOT_COUNT] = { "A", "S", "D", "F", "G", "H" };
+	for (int group = 0; group < 3; group++) {
+		String gname = group == 0 ? TXT("武技") : group == 1 ? TXT("法术") : TXT("法宝");
+		add_line(TXT("— ") + gname + TXT(" —"), 70.0f + group * 140.0f, 60.0f, 10, head_c);
+		for (int k = 0; k < 2; k++) {
+			int slot = group * 2 + k;
+			String text = String("[") + KEYS[slot] + "] ";
+			if (skills) {
+				Dictionary info = skills->get_slot_info(slot);
+				text += info.is_empty() ? TXT("（空）") : String(info.get("name", ""));
+			} else {
+				text += TXT("（空）");
+			}
+			add_line(text, 70.0f + group * 140.0f, 76.0f + k * 14, 9, body_c);
+		}
+	}
+
+	// 已学技能列表
+	add_line(TXT("已学:"), 70.0f, 130.0f, 9, head_c);
+	if (skills) {
+		Array known = skills->get_known_list();
+		float y = 146.0f;
+		for (int i = 0; i < known.size(); i++) {
+			Dictionary k = known[i];
+			String line = String(k.get("type_name", "")) + TXT(" · ") + String(k.get("name", "")) +
+				TXT("  倍率×") + String::num(float(k.get("power", 1.0f)), 1) +
+				TXT("  冷却") + String::num(float(k.get("cooldown", 0.0f)), 1) + TXT("s");
+			float mana = float(k.get("mana_cost", 0.0f));
+			if (mana > 0.0f) {
+				line += TXT("  灵力") + String::num_int64(int64_t(mana));
+			}
+			add_line(line, 70.0f, y, 9, body_c);
+			y += 14.0f;
+		}
+		if (known.is_empty()) {
+			add_line(TXT("（尚未习得任何技能）"), 70.0f, 146.0f, 9, dim_c);
+		}
+	}
+
+	add_line(TXT("武技冷却驱动不耗灵力（凡人可用）；法术耗灵力，炼气起。"), 70.0f, 226.0f, 8, dim_c);
+	add_line(TXT("神通（化神·法则之力）/仙法（真仙·仙元）随境界开放；B 键法宝页随法宝系统开放。"), 70.0f, 240.0f, 8, dim_c);
 }
 
 // ============================================================

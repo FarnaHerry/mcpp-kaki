@@ -3,6 +3,7 @@
 
 #include <godot_cpp/classes/character_body2d.hpp>
 #include <godot_cpp/classes/input.hpp>
+#include <godot_cpp/variant/color.hpp>
 
 #include "../combat/combo_chain.h"
 #include "../combat/damage_types.h"
@@ -17,6 +18,7 @@ namespace godot {
 	class HurtBox;
 	class CultivationSystem;
 	class AbilityManager;
+	class SkillSystem;
 
 	class Player : public CharacterBody2D {
 		GDCLASS(Player, CharacterBody2D);
@@ -78,6 +80,7 @@ namespace godot {
 		bool input_inverted = false;
 
 		void take_damage(float p_amount, Node *p_source);
+		void take_damage_typed(float p_amount, int p_cat, int p_elem, Node *p_source); // 投射物用
 		void take_hit(const HitBox *p_hitbox, Node *p_source); // HitBox 驱动（含伤害类别/元素）
 		float get_effective_attack() const;
 		bool is_dead() const { return current_health <= 0.0f; }
@@ -101,6 +104,7 @@ namespace godot {
 		CultivationSystem *get_cultivation() const { return _cultivation; }
 		AbilityManager *get_ability_manager() const { return _abilities; }
 		GongfaSystem *get_gongfa() const { return _gongfa; }
+		SkillSystem *get_skills() const { return _skills; }
 		void gain_spiritual_energy(float p_amount);
 
 		// 法宝系统（本命法宝：120%→150%温养 → 渡劫觉醒200%）
@@ -126,6 +130,12 @@ namespace godot {
 		float get_equip_bonus_defense() const;
 		float get_equip_bonus_speed() const;
 
+		// 技能施放出口（SkillSystem 调用；伤害类别/元素经 DamageCalculator 结算）
+		void exec_skill_melee(float p_power, DamageCategory p_cat, Element p_elem);
+		void exec_skill_lunge(float p_power, DamageCategory p_cat, Element p_elem);
+		void exec_skill_projectile(float p_power, DamageCategory p_cat, Element p_elem,
+		                           float p_speed, const Color &p_color);
+
 		// Save / Load
 		void apply_save_data(const Dictionary &p_data);
 
@@ -147,7 +157,9 @@ namespace godot {
 		CultivationSystem *_cultivation = nullptr;
 		AbilityManager *_abilities = nullptr;
 		GongfaSystem *_gongfa = nullptr;
+		SkillSystem *_skills = nullptr;
 		Inventory *_inventory = nullptr;
+		double _skill_hitbox_until = 0.0; // 技能借用 HitBox 的关闭时刻（_time 时基）
 
 		void _refresh_max_health(bool p_refill);
 		void _on_gongfa_changed();

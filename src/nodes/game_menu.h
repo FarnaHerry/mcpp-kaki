@@ -55,6 +55,7 @@ class GameMenu : public CanvasLayer {
 	void _build_ability_page();
 	void _build_placeholder_page(const String &p_title, const PackedStringArray &p_lines);
 	void _build_gongfa_page();
+	void _build_skill_page();
 	void _build_settings_page();
 	void _refresh_settings_page();
 

@@ -375,6 +375,7 @@ namespace godot {
 
 	void Enemy::_bind_methods() {
 		ClassDB::bind_method(D_METHOD("take_damage", "amount", "source"), &Enemy::take_damage);
+		ClassDB::bind_method(D_METHOD("take_damage_typed", "amount", "cat", "elem", "source"), &Enemy::take_damage_typed);
 		ClassDB::bind_method(D_METHOD("_on_hurtbox_hit", "hitbox", "source"), &Enemy::_on_hurtbox_hit);
 		ClassDB::bind_method(D_METHOD("get_current_health"), &Enemy::get_current_health);
 		ClassDB::bind_method(D_METHOD("get_max_health"), &Enemy::get_max_health);
@@ -553,6 +554,10 @@ namespace godot {
 		if (root) {
 			_player_target = Object::cast_to<Node2D>(root->get_node_or_null("Player"));
 		}
+	}
+
+	void Enemy::take_damage_typed(float p_amount, int p_cat, int p_elem, Node *p_source) {
+		_apply_damage(p_amount, DamageCategory(p_cat), Element(p_elem), p_source);
 	}
 
 	void Enemy::take_damage(float p_amount, Node *p_source) {

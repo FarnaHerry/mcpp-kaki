@@ -31,6 +31,7 @@ class GameHUD : public CanvasLayer {
 
 public:
     void _ready() override;
+    void _process(double p_delta) override;
     void _unhandled_input(const Ref<InputEvent> &p_event) override;
 
     // Callbacks connected to SignalBus
@@ -100,8 +101,11 @@ private:
     // Death overlay
     ColorRect *_death_overlay = nullptr;
 
-    // 底部技能/法宝栏（占位：武技×2 / 法术×2 / 法宝×2，技能系统落地后填充）
+    // 底部技能/法宝栏（武技A/S 法术D/F 法宝G/H；技能名 + 冷却秒数实时刷新）
     std::vector<CanvasItem *> _skill_bar_nodes;
+    std::vector<Label *> _skill_name_labels; // 6 槽技能名（空槽显示 ·）
+    std::vector<Label *> _skill_cd_labels;   // 6 槽冷却剩余
+    class Player *_player = nullptr;         // 惰性缓存（技能栏轮询）
 
     // Visibility switch
     bool _hud_visible = true;
@@ -115,6 +119,7 @@ private:
     void _create_interact_prompt();
     void _create_death_overlay();
     void _create_skill_bar();
+    void _update_skill_bar();
     void _update_bar(ColorRect *p_fill, float p_current, float p_max, bool p_horizontal = true);
     void _refresh_mana_label();
     void _refresh_xp_label();

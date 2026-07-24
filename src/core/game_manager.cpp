@@ -1,6 +1,8 @@
 #include "game_manager.h"
 #include "save_system.h"
 
+#include "../combat/skill_system.h"
+
 #include "../cultivation/ability_manager.h"
 #include "../cultivation/cultivation_system.h"
 #include "../nodes/camera_room_2d.h"
@@ -227,6 +229,9 @@ Dictionary GameManager::collect_save_data() const {
 		pd["position_y"] = _player->get_global_position().y;
 		if (_player->get_gongfa()) {
 			pd["gongfa"] = _player->get_gongfa()->save_to_dict();
+		}
+		if (_player->get_skills()) {
+			pd["skills"] = _player->get_skills()->save_to_dict();
 		}
 		data["player"] = pd;
 
