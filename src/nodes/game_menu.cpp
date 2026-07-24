@@ -3,6 +3,7 @@
 #include "../cultivation/ability_manager.h"
 #include "../cultivation/gongfa_system.h"
 #include "../combat/skill_system.h"
+#include "../cultivation/artifact_system.h"
 #include "../nodes/inventory_panel.h"
 #include "../nodes/player.h"
 #include "../utils/text.h"
@@ -155,13 +156,7 @@ void GameMenu::_rebuild_page() {
 			break;
 		case PAGE_ARTIFACT:
 			if (_inv_panel) _inv_panel->close();
-			_build_placeholder_page(TXT("法宝"), {
-				TXT("本命法宝:（未定）"),
-				TXT("次要法宝:（空） （空）"),
-				TXT(""),
-				TXT("本命法宝温养 120%→150%，渡劫觉醒 200%。"),
-				TXT("法宝系统落地后在此管理，B 键战斗页/法宝页切换。"),
-			});
+			_build_artifact_page();
 			_set_hint(TXT("←/→ 切换页  ESC 关闭"));
 			break;
 		case PAGE_SETTINGS:
@@ -421,6 +416,85 @@ void GameMenu::_build_skill_page() {
 
 	add_line(TXT("武技冷却驱动不耗灵力（凡人可用）；法术耗灵力，炼气起。"), 70.0f, 226.0f, 8, dim_c);
 	add_line(TXT("神通（化神·法则之力）/仙法（真仙·仙元）随境界开放；B 键法宝页随法宝系统开放。"), 70.0f, 240.0f, 8, dim_c);
+}
+
+// ============================================================
+// 法宝页（本命 + 次要槽：系数/温养/祭出参数）
+// ============================================================
+
+void GameMenu::_build_artifact_page() {
+	Label *title = memnew(Label);
+	title->set_text(TXT("—— 法宝 ——"));
+	title->add_theme_font_size_override("font_size", 13);
+	title->add_theme_color_override("font_color", Color(1.0f, 0.9f, 0.5f));
+	title->set_position(Vector2(195, 36));
+	add_child(title);
+	_page_nodes.push_back(title);
+
+	auto add_line = [&](const String &text, float x, float y, int size, const Color &c) {
+		Label *l = memnew(Label);
+		l->set_text(text);
+		l->add_theme_font_size_override("font_size", size);
+		l->add_theme_color_override("font_color", c);
+		l->set_position(Vector2(x, y));
+		add_child(l);
+		_page_nodes.push_back(l);
+	};
+
+	Color head_c(1.0f, 0.85f, 0.5f);
+	Color body_c(0.85f, 0.85f, 0.85f);
+	Color dim_c(0.55f, 0.55f, 0.55f);
+
+	ArtifactSystem *arts = _player ? _player->get_artifacts() : nullptr;
+	int limit = arts ? arts->get_slot_limit() : 3;
+	static const char *KEYS[ArtifactSystem::MAX_SLOTS] = { "A", "S", "D", "F", "G", "H" };
+
+	float y = 60.0f;
+	for (int i = 0; i < ArtifactSystem::MAX_SLOTS; i++) {
+		if (i >= limit) {
+			add_line(TXT("—— 飞升后解锁 ——"), 70.0f, y, 8, dim_c);
+			break;
+		}
+		String head = i == 0 ? TXT("— 本命法宝 —") : (i == 1 ? TXT("— 次要法宝 —") : String());
+		if (!head.is_empty()) {
+			add_line(head, 70.0f, y, 10, head_c);
+			y += 15.0f;
+		}
+		Dictionary info = arts ? arts->get_slot_info(i) : Dictionary();
+		String line = String("[") + KEYS[i] + "] ";
+		if (info.is_empty()) {
+			line += TXT("（空）");
+			add_line(line, 70.0f, y, 9, body_c);
+			y += 14.0f;
+			continue;
+		}
+		line += String(info.get("name", "")) + TXT("  ") + String(info.get("kind_name", "")) +
+			TXT("  系数×") + String::num(float(info.get("coeff", 1.0f)), 2);
+		add_line(line, 70.0f, y, 9, body_c);
+		y += 14.0f;
+		String sub;
+		if (int(info.get("kind", 0)) == int(ArtifactSystem::KIND_ATTACK)) {
+			sub = TXT("    祭出: 倍率×") + String::num(float(info.get("power", 1.0f)), 1) +
+				TXT("  灵力") + String::num_int64(int64_t(float(info.get("mana_cost", 0.0f)))) +
+				TXT("  冷却") + String::num(float(info.get("cooldown", 0.0f)), 1) + TXT("s");
+		} else {
+			sub = TXT("    常驻: 防御+") + String::num(float(info.get("passive_def", 0.0f)) * 100.0f, 0) +
+				TXT("%×系数");
+		}
+		if (i == 0) {
+			sub += TXT("  温养") + String::num_int64(int64_t(float(info.get("nurture", 0.0f)))) + TXT("/1000");
+			if (_player && _player->is_benming_awakened()) {
+				sub += TXT(" 已觉醒");
+			}
+		} else {
+			sub += TXT("  温养") + String::num_int64(int64_t(float(info.get("nurture", 0.0f)))) + TXT("/600");
+		}
+		add_line(sub, 70.0f, y, 8, dim_c);
+		y += 13.0f;
+	}
+
+	add_line(TXT("战斗中按 B 整页切换法宝页，A~H 即法宝快捷键；祭出复用技能管线，耗灵力。"), 70.0f, 232.0f, 8, dim_c);
+	add_line(TXT("本命温养 120%→150%，渡劫觉醒 200% 并锁定；次要 100%→120%→150%。"), 70.0f, 246.0f, 8, dim_c);
 }
 
 // ============================================================

@@ -19,6 +19,7 @@ namespace godot {
 	class CultivationSystem;
 	class AbilityManager;
 	class SkillSystem;
+	class ArtifactSystem;
 
 	class Player : public CharacterBody2D {
 		GDCLASS(Player, CharacterBody2D);
@@ -105,6 +106,10 @@ namespace godot {
 		AbilityManager *get_ability_manager() const { return _abilities; }
 		GongfaSystem *get_gongfa() const { return _gongfa; }
 		SkillSystem *get_skills() const { return _skills; }
+		ArtifactSystem *get_artifacts() const { return _artifacts; }
+		// B 键技能页：0=战斗页(A/S武技 D/F法术) 1=法宝页(A~H=法宝槽0..5)
+		int get_skill_page() const { return _skill_page; }
+		void toggle_skill_page();
 		void gain_spiritual_energy(float p_amount);
 
 		// 法宝系统（本命法宝：120%→150%温养 → 渡劫觉醒200%）
@@ -158,6 +163,8 @@ namespace godot {
 		AbilityManager *_abilities = nullptr;
 		GongfaSystem *_gongfa = nullptr;
 		SkillSystem *_skills = nullptr;
+		ArtifactSystem *_artifacts = nullptr;
+		int _skill_page = 0;
 		Inventory *_inventory = nullptr;
 		double _skill_hitbox_until = 0.0; // 技能借用 HitBox 的关闭时刻（_time 时基）
 

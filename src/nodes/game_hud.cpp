@@ -1,6 +1,7 @@
 #include "game_hud.h"
 
 #include "../combat/skill_system.h"
+#include "../cultivation/artifact_system.h"
 #include "../cultivation/cultivation_system.h"
 #include "player.h"
 #include "../utils/signal_bus.h"
@@ -283,6 +284,16 @@ void GameHUD::_create_skill_bar() {
             _skill_bar_nodes.push_back(cap);
         }
     }
+
+    // 法宝页徽标（B 切换；仅法宝页显示）
+    _page_badge = memnew(Label);
+    _page_badge->set_text(TXT("法宝页 [B 返回]"));
+    _page_badge->add_theme_font_size_override("font_size", 8);
+    _page_badge->add_theme_color_override("font_color", Color(1.0f, 0.85f, 0.4f, 0.95f));
+    _page_badge->set_position(Vector2(x0 + total_w + 8.0f, y + 6.0f));
+    _page_badge->set_visible(false);
+    add_child(_page_badge);
+    _skill_bar_nodes.push_back(_page_badge);
 }
 
 // ============================================================
@@ -303,6 +314,34 @@ void GameHUD::_update_skill_bar() {
         _player = Object::cast_to<Player>(n);
         if (!_player)
             return;
+    }
+    int page = _player->get_skill_page();
+    if (_page_badge)
+        _page_badge->set_visible(page == 1);
+    if (page == 1) {
+        // 法宝页：A~H = 法宝槽 0..5（0=本命）
+        ArtifactSystem *arts = _player->get_artifacts();
+        if (!arts)
+            return;
+        for (int i = 0; i < 6 && i < (int)_skill_name_labels.size(); i++) {
+            Dictionary info = arts->get_slot_info(i);
+            if (info.is_empty() || info.has("locked")) {
+                _skill_name_labels[i]->set_text(info.has("locked") ? TXT("×") : TXT("·"));
+                _skill_cd_labels[i]->set_text("");
+                continue;
+            }
+            String name = info.get("name", "");
+            _skill_name_labels[i]->set_text(name.is_empty() ? TXT("·") : name.substr(0, 1));
+            double rem = double(info.get("cd_remaining", 0.0));
+            if (rem > 0.05) {
+                _skill_cd_labels[i]->set_text(String::num(rem, 1));
+                _skill_name_labels[i]->add_theme_color_override("font_color", Color(1, 1, 1, 0.4f));
+            } else {
+                _skill_cd_labels[i]->set_text("");
+                _skill_name_labels[i]->add_theme_color_override("font_color", Color(1.0f, 0.85f, 0.4f, 0.95f));
+            }
+        }
+        return;
     }
     SkillSystem *skills = _player->get_skills();
     if (!skills)

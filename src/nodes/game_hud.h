@@ -106,6 +106,7 @@ private:
     std::vector<Label *> _skill_name_labels; // 6 槽技能名（空槽显示 ·）
     std::vector<Label *> _skill_cd_labels;   // 6 槽冷却剩余
     class Player *_player = nullptr;         // 惰性缓存（技能栏轮询）
+    Label *_page_badge = nullptr;            // 法宝页提示（B 切页，战斗页隐藏）
 
     // Visibility switch
     bool _hud_visible = true;

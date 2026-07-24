@@ -2,6 +2,7 @@
 #include "save_system.h"
 
 #include "../combat/skill_system.h"
+#include "../cultivation/artifact_system.h"
 
 #include "../cultivation/ability_manager.h"
 #include "../cultivation/cultivation_system.h"
@@ -232,6 +233,9 @@ Dictionary GameManager::collect_save_data() const {
 		}
 		if (_player->get_skills()) {
 			pd["skills"] = _player->get_skills()->save_to_dict();
+		}
+		if (_player->get_artifacts()) {
+			pd["artifacts"] = _player->get_artifacts()->save_to_dict();
 		}
 		data["player"] = pd;
 

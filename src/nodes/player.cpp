@@ -6,6 +6,7 @@
 #include "../combat/hurtbox.h"
 #include "../combat/projectile.h"
 #include "../combat/skill_system.h"
+#include "../cultivation/artifact_system.h"
 #include "../cultivation/ability_manager.h"
 #include "../cultivation/cultivation_system.h"
 #include "../inventory/item.h"
@@ -572,6 +573,9 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("get_cultivation"), &Player::get_cultivation);
 	ClassDB::bind_method(D_METHOD("get_gongfa"), &Player::get_gongfa);
 	ClassDB::bind_method(D_METHOD("get_skills"), &Player::get_skills);
+	ClassDB::bind_method(D_METHOD("get_artifacts"), &Player::get_artifacts);
+	ClassDB::bind_method(D_METHOD("get_skill_page"), &Player::get_skill_page);
+	ClassDB::bind_method(D_METHOD("toggle_skill_page"), &Player::toggle_skill_page);
 		ClassDB::bind_method(D_METHOD("get_ability_manager"), &Player::get_ability_manager);
 		ClassDB::bind_method(D_METHOD("equip_item", "inventory_slot"), &Player::equip_item);
 		ClassDB::bind_method(D_METHOD("unequip_item", "equip_slot"), &Player::unequip_item);
@@ -643,13 +647,23 @@ namespace godot {
 		_update_facing();
 		combo_chain.update(_time);
 
-		// 技能槽输入（DNF 式字母区：A/S 武技 D/F 法术）
-		if (_skills) {
-			Input *input = Input::get_singleton();
-			if (input->is_action_just_pressed("skill_a")) _skills->cast_slot(0);
-			if (input->is_action_just_pressed("skill_s")) _skills->cast_slot(1);
-			if (input->is_action_just_pressed("skill_d")) _skills->cast_slot(2);
-			if (input->is_action_just_pressed("skill_f")) _skills->cast_slot(3);
+		// B 键整页切换：战斗页 ↔ 法宝页（页机制通用，后续可扩技能多页）
+		if (Input::get_singleton()->is_action_just_pressed("artifact_page")) {
+			toggle_skill_page();
+		}
+
+		// 技能槽输入（DNF 式字母区）：战斗页=A/S武技 D/F法术；法宝页=A~H=法宝槽0..5
+		Input *input = Input::get_singleton();
+		static const char *SLOT_ACTIONS[6] = {
+			"skill_a", "skill_s", "skill_d", "skill_f", "skill_g", "skill_h"
+		};
+		for (int i = 0; i < 6; i++) {
+			if (!input->is_action_just_pressed(SLOT_ACTIONS[i])) continue;
+			if (_skill_page == 0) {
+				if (_skills) _skills->cast_slot(i);
+			} else {
+				if (_artifacts) _artifacts->activate_slot(i);
+			}
 		}
 
 		// 技能借用 HitBox 的时间窗关闭（攻击态自身的相位逻辑不干预）
@@ -798,6 +812,9 @@ namespace godot {
 		if (_gongfa) {
 			defense *= _gongfa->get_def_mult(); // 功法（炼体）乘区
 		}
+		if (_artifacts) {
+			defense *= 1.0f + _artifacts->get_passive_def_bonus(); // 辅助型法宝常驻被动
+		}
 		DamageInfo info;
 		info.base_amount = p_amount;
 		info.category = p_cat;
@@ -913,6 +930,8 @@ namespace godot {
 		_gongfa->connect("gongfa_changed", Callable(this, "_on_gongfa_changed"));
 		_skills = memnew(SkillSystem);
 		_skills->set_player(this);
+		_artifacts = memnew(ArtifactSystem);
+		_artifacts->set_player(this);
 		// 凡人起步即会的基础武技（拳脚刀剑是凡人的本事）
 		_skills->learn(StringName("po_kong_zhan"));
 		_skills->learn(StringName("tu_jin_zhan"));
@@ -969,6 +988,10 @@ namespace godot {
 		if (p_killer == this && _gongfa) {
 			_gongfa->feed(GongfaSystem::SCHOOL_BODY, 15.0f);
 		}
+		// 战斗推进法宝温养（本命 + 装备中的次要）
+		if (p_killer == this && _artifacts) {
+			_artifacts->nurture_equipped(2.0f);
+		}
 	}
 
 	void Player::_create_inventory() {
@@ -1009,10 +1032,36 @@ namespace godot {
 			}
 		}
 
+		// 筑基：飞剑升级为法宝（飞行道具 → 可祭出作战）
+		if (_artifacts && p_old_realm < CultivationSystem::FOUNDATION &&
+		    p_new_realm >= CultivationSystem::FOUNDATION) {
+			_artifacts->acquire(StringName("fei_jian"));
+			_artifacts->equip(1, StringName("fei_jian"));
+		}
+		// 金丹：赐照妖葫
+		if (_artifacts && p_old_realm < CultivationSystem::GOLDEN_CORE &&
+		    p_new_realm >= CultivationSystem::GOLDEN_CORE) {
+			_artifacts->acquire(StringName("zhao_yao_hu"));
+			_artifacts->equip(2, StringName("zhao_yao_hu"));
+		}
+		// 元婴：赐玄铁塔（辅助型；次要栏满则持而未装，待换）
+		if (_artifacts && p_old_realm < CultivationSystem::NASCENT_SOUL &&
+		    p_new_realm >= CultivationSystem::NASCENT_SOUL) {
+			_artifacts->acquire(StringName("xuan_tie_ta"));
+		}
+
 		// 渡劫成仙：本命法宝觉醒（150% → 200%）
 		if (p_old_realm < CultivationSystem::TRUE_IMMORTAL &&
 		    p_new_realm >= CultivationSystem::TRUE_IMMORTAL) {
 			awaken_benming_artifact();
+		}
+	}
+
+	void Player::toggle_skill_page() {
+		_skill_page = (_skill_page == 0) ? 1 : 0;
+		SignalBus *bus = SignalBus::get_singleton();
+		if (bus) {
+			bus->emit_signal("skill_page_changed", _skill_page);
 		}
 	}
 
@@ -1291,6 +1340,9 @@ namespace godot {
 		}
 		if (p_data.has("skills") && _skills) {
 			_skills->load_from_dict(p_data["skills"]);
+		}
+		if (p_data.has("artifacts") && _artifacts) {
+			_artifacts->load_from_dict(p_data["artifacts"]);
 		}
 
 		// Position
