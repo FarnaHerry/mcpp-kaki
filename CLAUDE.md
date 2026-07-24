@@ -95,13 +95,16 @@ bin/              # 编译产物 (.so)，gitignored
 - **`SaveSystem` / `GameManager`** (`src/core/`) — ConfigFile 存档、检查点、重生、击杀统计
 - **`GameHUD` / `TelemetryPanel` / `InventoryPanel`** (`src/nodes/`) — UI 三类分立：游戏 HUD（生命/灵力/修为%条，F4）/ 遥测（F3/F5）/ 背包（I）
 - **DamageNumbers** (`src/nodes/`) — 伤害数字唯一入口：SignalBus `damage_dealt(pos,amount,is_player_victim)` → 世界坐标上浮淡出（敌=金/玩家=红）
+- **DamageCalculator** (`src/combat/damage_calculator.h`, header-only) — 伤害统一结算：物理(防御减免,min1)/法术(抗性比例,cap0.9)/元素(五行抗性,克制×1.25只增伤)；`DamageInfo`+`DefenseProfile`；HitBox/Projectile 携带 `damage_category`+`element`，投射物经 `take_damage_typed` 入口
+- **GongfaSystem** (`src/cultivation/gongfa_system.*`) — 功法：炼体/练气双槽(1+1)，黄/玄/地品(3/5/7层)，行为喂养主系100%/副系20%(受击/近战击杀养炼体，耗灵养练气)，层数乘区(1+每层×层数)，切换保留熟练(_known)，存档 pd["gongfa"]
+- **SkillSystem** (`src/combat/skill_system.*`) — 武技/法术统一 Skill 管线(为神通/仙法复用)：6槽(A/S武技 D/F法术 G/H法宝预留)，武技=物理+冷却驱动(凡人起步破空斩/突进斩)，法术=元素伤害+耗灵+冷却(炼气授予火弹/冰锥)；存档 pd["skills"]
 - **GameMenu** (`src/nodes/game_menu.*`) — ESC 多页管理菜单（背包/能力/功法/技能/法宝/设置），托管 InventoryPanel（外部驱动 ext_navigate/ext_use）；能力页=主动/被动分区技能树总览（只读 v1）；设置页含音量(持久化 user://settings.cfg)/保存/退出；嵌套暂停安全（还原原暂停状态）；页签条独立 CanvasLayer 130
 - **HUD 底部技能栏**: 武技[A/S] 法术[D/F] 法宝[G/H] 空槽占位（技能系统落地后填充）
 - **调试键**: F3 遥测 / F4 HUD / F5 突破无经验门槛开关 / Q 突破 / R 读档
 
 ### Input Map
 
-方向键移动（WASD 已腾出给技能槽，DNF 式），J 攻击，K 跳跃（空中再按=飞行），L 冲刺，E 使用/装备，F 交互/确认，I 背包，Q 修炼突破，ESC 多页菜单
+方向键移动（WASD 已腾出给技能槽，DNF 式），J 攻击，K 跳跃（空中再按=飞行），L 冲刺，E 使用/装备，Space 交互/确认，I 背包，Q 修炼突破，ESC 多页菜单；技能槽：A/S 武技、D/F 法术、G/H 法宝（预留）
 
 ### Collision Layers
 
