@@ -47,6 +47,9 @@ namespace godot {
 		float boss_phase2_threshold = 0.5f;
 		float special_attack_cooldown = 3.0f;
 
+		// 威压/灵压（design/sect-pressure.md §二）
+		int realm = 0; // 大境界（用于判定威压/灵压有效性）
+
 		// Facing (-1 or 1)
 		int facing_direction = -1;
 
@@ -109,6 +112,10 @@ namespace godot {
 		bool get_no_drops() const { return no_drops; }
 		bool get_show_hp_bar() const { return show_hp_bar; }
 		float get_preferred_distance() const { return preferred_distance; }
+		// 威压/灵压
+		int get_realm() const { return realm; }
+		void set_realm(int v) { realm = v; }
+		void suppress(double t); // 慑服：定身+灰显，t 秒后自动复原
 
 		double get_time() const { return _time; }
 
@@ -125,6 +132,7 @@ namespace godot {
 
 	private:
 		double _time = 0.0;
+		double _suppress_t = 0.0; // 威压慑服倒计时（>0=慑服中，_process 倒数）
 		HitBox *_hitbox = nullptr;
 		HurtBox *_hurtbox = nullptr;
 		void _setup_collision();

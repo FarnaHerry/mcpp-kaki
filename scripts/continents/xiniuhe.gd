@@ -32,9 +32,9 @@ func _setup():
 	for i in range(3):
 		var hy = WC.spawn_enemy(self, Vector2(600 + i * 300, 120 + i * 15), Color(0.9, 0.4, 0.1, 1), 110.0, 320.0, "HuoYa%d" % i)
 		hy.set("is_flying", true)
-		hy.set("max_health", 4.0); hy.set("current_health", 4.0)
+		hy.set("max_health", 4.0); hy.set("current_health", 4.0); hy.set("realm", 3)
 	var niu = WC.spawn_enemy(self, Vector2(1000, 210), Color(0.7, 0.2, 0.1, 1), 80.0, 260.0, "HuoNiu")
-	niu.set("max_health", 10.0); niu.set("current_health", 10.0)
+	niu.set("max_health", 10.0); niu.set("current_health", 10.0); niu.set("realm", 3)
 
 	WC.spawn_herb(self, Vector2(700, 124), "chi_yan_hua", 2)
 	WC.spawn_herb(self, Vector2(1500, 154), "chi_yan_hua", 1)

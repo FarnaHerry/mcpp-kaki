@@ -29,10 +29,10 @@ func _setup():
 
 	# 山贼（近战）+ 蛊雕（飞行）
 	for i in range(3):
-		WC.spawn_enemy(self, Vector2(500 + i * 350, 210), Color(0.5, 0.4, 0.2, 1), 85.0, 240.0, "ShanZei%d" % i)
+		WC.spawn_enemy(self, Vector2(500 + i * 350, 210), Color(0.5, 0.4, 0.2, 1), 85.0, 240.0, "ShanZei%d" % i).set("realm", 6)
 	var gu = WC.spawn_enemy(self, Vector2(1300, 110), Color(0.4, 0.5, 0.6, 1), 115.0, 330.0, "GuDiao")
 	gu.set("is_flying", true)
-	gu.set("max_health", 5.0); gu.set("current_health", 5.0)
+	gu.set("max_health", 5.0); gu.set("current_health", 5.0); gu.set("realm", 6)
 
 	WC.spawn_herb(self, Vector2(300, 214), "zhi_xue_cao", 2)
 	WC.spawn_herb(self, Vector2(1300, 134), "wu_dao_cha", 1)

@@ -20,6 +20,7 @@
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/input.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
+#include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/classes/rectangle_shape2d.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
@@ -672,6 +673,10 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("join_sect", "sect_id"), &Player::join_sect);
 		ClassDB::bind_method(D_METHOD("leave_sect"), &Player::leave_sect);
 		ClassDB::bind_method(D_METHOD("get_sect_system"), &Player::get_sect_system);
+		ClassDB::bind_method(D_METHOD("cast_wei_pressure"), &Player::cast_wei_pressure);
+		ClassDB::bind_method(D_METHOD("cast_lin_pressure"), &Player::cast_lin_pressure);
+		ClassDB::bind_method(D_METHOD("get_wei_cooldown_left"), &Player::get_wei_cooldown_left);
+		ClassDB::bind_method(D_METHOD("get_lin_cooldown_left"), &Player::get_lin_cooldown_left);
 		ClassDB::bind_method(D_METHOD("use_consumable", "item_id"), &Player::use_consumable);
 		ClassDB::bind_method(D_METHOD("get_consumable_bar_slot", "idx"), &Player::get_consumable_bar_slot);
 		ClassDB::bind_method(D_METHOD("use_consumable_bar_slot", "idx"), &Player::use_consumable_bar_slot);
@@ -813,6 +818,14 @@ namespace godot {
 			} else if (is_on_floor()) {
 				state_machine->transition_to(PlayerStates::Meditate);
 			}
+		}
+
+		// V 威压 / R 灵压（design/sect-pressure.md §二）
+		if (Input::get_singleton()->is_action_just_pressed("pressure_wei")) {
+			cast_wei_pressure();
+		}
+		if (Input::get_singleton()->is_action_just_pressed("pressure_lin")) {
+			cast_lin_pressure();
 		}
 
 		state_machine->process_update(p_delta);
@@ -1788,6 +1801,164 @@ namespace godot {
 		if (bus) {
 			bus->emit_signal("combo_changed", combo_chain.get_hit_count());
 		}
+	}
+
+	// ============================================================
+	// 威压 / 灵压（design/sect-pressure.md §二）
+	// ============================================================
+
+	Vector<Object*> Player::_find_guardians(float p_radius, int p_player_realm) {
+		Vector<Object*> guardians;
+		TypedArray<Node> enemies = get_tree()->get_nodes_in_group("enemies");
+		for (int i = 0; i < enemies.size(); i++) {
+			Enemy *e = Object::cast_to<Enemy>(enemies[i]);
+			if (!e || e->is_dead()) continue;
+			float dist = get_global_position().distance_to(e->get_global_position());
+			if (dist > p_radius) continue;
+			if (e->realm >= p_player_realm) {
+				guardians.push_back(e);
+			}
+		}
+		return guardians;
+	}
+
+	bool Player::_is_guarded(Node *p_enemy, const Vector<Object*> &p_guardians) {
+		if (p_guardians.is_empty()) return false;
+		Vector2 ep = Object::cast_to<Node2D>(p_enemy)->get_global_position();
+		for (int i = 0; i < p_guardians.size(); i++) {
+			Node2D *g = Object::cast_to<Node2D>(p_guardians[i]);
+			if (!g) continue;
+			if (ep.distance_to(g->get_global_position()) <= 300.0f) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bool Player::cast_wei_pressure() {
+		if (_time < _wei_cd_until) return false;
+		if (!_cultivation || !_cultivation->consume_mana(30.0f)) return false;
+		_wei_cd_until = _time + 8.0;
+
+		int prealm = _cultivation->get_realm_index();
+		int hit = 0;
+		Vector<Object*> guardians = _find_guardians(240.0f, prealm);
+
+		TypedArray<Node> enemies = get_tree()->get_nodes_in_group("enemies");
+		for (int i = 0; i < enemies.size(); i++) {
+			Enemy *e = Object::cast_to<Enemy>(enemies[i]);
+			if (!e || e->is_dead()) continue;
+			float dist = get_global_position().distance_to(e->get_global_position());
+			if (dist > 240.0f) continue;
+			// realm < player 方可慑服
+			if (e->realm >= prealm) continue;
+			// 护佑：高阶敌人在场 → 其身边 300px 低阶全免
+			if (_is_guarded(e, guardians)) continue;
+
+			float duration = 2.0f + 0.5f * float(prealm - e->realm);
+			if (duration > 5.0f) duration = 5.0f;
+			e->suppress(duration);
+			hit++;
+		}
+
+		// 护佑反弹
+		if (!guardians.is_empty()) {
+			float rebound = max_health * 0.05f;
+			current_health -= rebound;
+			SignalBus *bus = SignalBus::get_singleton();
+			if (bus) {
+				bus->emit_signal("interaction_prompt", TXT("对方有高人坐镇，威压反噬！"), true);
+				bus->emit_signal("player_health_changed", current_health, max_health);
+			}
+			if (current_health <= 0.0f) {
+				current_health = 0.0f;
+				emit_signal("player_died");
+				if (bus) bus->emit_signal("player_died");
+			}
+		} else if (hit > 0) {
+			SignalBus *bus = SignalBus::get_singleton();
+			if (bus) {
+				bus->emit_signal("interaction_prompt",
+					vformat(TXT("威压：慑服 %d 名敌人"), hit), true);
+			}
+		} else {
+			SignalBus *bus = SignalBus::get_singleton();
+			if (bus) {
+				bus->emit_signal("interaction_prompt", TXT("威压：范围内无低阶敌人"), true);
+			}
+		}
+
+		return hit > 0;
+	}
+
+	bool Player::cast_lin_pressure() {
+		if (_time < _lin_cd_until) return false;
+		if (!_cultivation || !_cultivation->consume_mana(60.0f)) return false;
+		_lin_cd_until = _time + 15.0;
+
+		int prealm = _cultivation->get_realm_index();
+		int hit = 0;
+		int zhen_sha = 0;
+		Vector<Object*> guardians = _find_guardians(200.0f, prealm);
+
+		TypedArray<Node> enemies = get_tree()->get_nodes_in_group("enemies");
+		for (int i = 0; i < enemies.size(); i++) {
+			Enemy *e = Object::cast_to<Enemy>(enemies[i]);
+			if (!e || e->is_dead()) continue;
+			float dist = get_global_position().distance_to(e->get_global_position());
+			if (dist > 200.0f) continue;
+			// realm ≤ player-2 方可生效（境界接近则灵压不侵）
+			int gap = prealm - e->realm;
+			if (gap < 2) continue;
+			// 护佑
+			if (_is_guarded(e, guardians)) continue;
+
+			if (gap >= 4) {
+				// 镇杀：大境界碾压（元婴镇凡人/炼气）
+				e->take_damage_typed(99999.0f, int(DMG_SPELL), int(ELEM_NONE), this);
+				zhen_sha++;
+			} else {
+				// 法术伤害 = 攻击力 × (2 + 0.5×差)，走法抗结算
+				float atk = get_effective_attack();
+				float dmg = atk * (2.0f + 0.5f * float(gap));
+				e->take_damage_typed(dmg, int(DMG_SPELL), int(ELEM_NONE), this);
+			}
+			hit++;
+		}
+
+		// 护佑反弹
+		if (!guardians.is_empty()) {
+			float rebound = max_health * 0.08f;
+			current_health -= rebound;
+			SignalBus *bus = SignalBus::get_singleton();
+			if (bus) {
+				bus->emit_signal("interaction_prompt", TXT("对方有高人坐镇，灵压反噬！"), true);
+				bus->emit_signal("player_health_changed", current_health, max_health);
+			}
+			if (current_health <= 0.0f) {
+				current_health = 0.0f;
+				emit_signal("player_died");
+				if (bus) bus->emit_signal("player_died");
+			}
+		} else if (hit > 0) {
+			SignalBus *bus = SignalBus::get_singleton();
+			if (bus) {
+				if (zhen_sha > 0) {
+					bus->emit_signal("interaction_prompt",
+						vformat(TXT("灵压：%d 伤 · %d 镇杀"), hit - zhen_sha, zhen_sha), true);
+				} else {
+					bus->emit_signal("interaction_prompt",
+						vformat(TXT("灵压：%d 名敌人受创"), hit), true);
+				}
+			}
+		} else {
+			SignalBus *bus = SignalBus::get_singleton();
+			if (bus) {
+				bus->emit_signal("interaction_prompt", TXT("灵压：无有效目标（境界差≥2 方可生效）"), true);
+			}
+		}
+
+		return hit > 0;
 	}
 
 } // namespace godot

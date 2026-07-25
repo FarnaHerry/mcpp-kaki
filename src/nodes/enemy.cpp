@@ -412,7 +412,11 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("get_no_drops"), &Enemy::get_no_drops);
 		ClassDB::bind_method(D_METHOD("get_show_hp_bar"), &Enemy::get_show_hp_bar);
 		ClassDB::bind_method(D_METHOD("get_preferred_distance"), &Enemy::get_preferred_distance);
+		ClassDB::bind_method(D_METHOD("set_realm", "v"), &Enemy::set_realm);
+		ClassDB::bind_method(D_METHOD("get_realm"), &Enemy::get_realm);
+		ClassDB::bind_method(D_METHOD("suppress", "t"), &Enemy::suppress);
 
+		ADD_PROPERTY(PropertyInfo(Variant::INT, "realm"), "set_realm", "get_realm");
 		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "max_health"), "set_max_health", "get_max_health");
 		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "current_health"), "set_current_health", "get_current_health");
 		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "move_speed"), "set_move_speed", "get_move_speed");
@@ -437,6 +441,9 @@ namespace godot {
 			return;
 
 		current_health = max_health;
+
+		// 威压/灵压扫描用
+		add_to_group("enemies");
 
 		// Boss gets 5x health
 		if (is_boss) {
@@ -466,6 +473,16 @@ namespace godot {
 		if (Engine::get_singleton()->is_editor_hint() || !state_machine)
 			return;
 
+		// 威压慑服：定身不动（跳过状态机），只受重力
+		if (_suppress_t > 0.0) {
+			Vector2 vel = get_velocity();
+			vel.x = 0.0f;
+			if (!is_flying) vel.y += get_gravity() * p_delta;
+			set_velocity(vel);
+			move_and_slide();
+			return;
+		}
+
 		state_machine->physics_update(p_delta);
 	}
 
@@ -474,6 +491,17 @@ namespace godot {
 			return;
 
 		_time += p_delta;
+
+		// 威压慑服倒计时
+		if (_suppress_t > 0.0) {
+			_suppress_t -= p_delta;
+			if (_suppress_t <= 0.0) {
+				_suppress_t = 0.0;
+				set_modulate(Color(1.0f, 1.0f, 1.0f, 1.0f)); // 复原
+			}
+			return; // 慑服期间不跑状态机 process（_physics_process 也跳过）
+		}
+
 		state_machine->process_update(p_delta);
 
 	}
@@ -705,6 +733,11 @@ namespace godot {
 	void Enemy::update_facing_to_player() {
 		if (!_player_target) return;
 		facing_direction = (_player_target->get_global_position().x > get_global_position().x) ? 1 : -1;
+	}
+
+	void Enemy::suppress(double t) {
+		_suppress_t = t;
+		set_modulate(Color(0.5f, 0.5f, 0.5f, 1.0f)); // 压灰
 	}
 
 } // namespace godot

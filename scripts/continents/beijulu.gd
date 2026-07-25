@@ -32,10 +32,10 @@ func _setup():
 	# 雪魈（近战厚血）+ 冰鸾（飞行）
 	for i in range(2):
 		var xx = WC.spawn_enemy(self, Vector2(800 + i * 400, 210), Color(0.7, 0.8, 0.9, 1), 75.0, 260.0, "XueXiao%d" % i)
-		xx.set("max_health", 12.0); xx.set("current_health", 12.0)
+		xx.set("max_health", 12.0); xx.set("current_health", 12.0); xx.set("realm", 8)
 	var luan = WC.spawn_enemy(self, Vector2(1200, 90), Color(0.5, 0.7, 1.0, 1), 120.0, 340.0, "BingLuan")
 	luan.set("is_flying", true)
-	luan.set("max_health", 6.0); luan.set("current_health", 6.0)
+	luan.set("max_health", 6.0); luan.set("current_health", 6.0); luan.set("realm", 8)
 
 	WC.spawn_herb(self, Vector2(900, 144), "bing_xin_lian", 2)
 	WC.spawn_herb(self, Vector2(300, 214), "jin_gang_teng", 1)

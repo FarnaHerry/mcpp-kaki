@@ -111,7 +111,9 @@ bin/              # 编译产物 (.so)，gitignored
 - **ArtifactSystem** (`src/cultivation/artifact_system.*`) — 法宝：槽0=本命(镜像Player本命,飞升后锁定)+次要×2(飞升后+3)，威力系数本命1.2~2.0/次要1.0→1.2→1.5(两段温养)，攻击型祭出复用Skill效果管线(耗灵+冷却)，辅助型常驻被动入防御乘区；示例：飞剑(筑基)/照妖葫(金丹)/玄铁塔(元婴)；存档 pd["artifacts"]
 - **B键切页**: `Player._skill_page` + `skill_page_changed` 信号；法宝页 A~H=法宝槽0..5(T/Y两页通用)；页机制通用可扩技能多页
 - **法则之力** (CultivationSystem) — 化神解锁独立能量条(max100,回复3/s+击杀+10)，神通唯一消耗源；HUD右上角紫条；存档 cd["law_power"]
-- **GameMenu** (`src/nodes/game_menu.*`) — ESC 多页管理菜单（背包/能力/功法/技能/法宝/云游/炼丹/设置），托管 InventoryPanel（外部驱动 ext_navigate/ext_use）；能力页=主动/被动分区技能树总览（只读 v1）；技能页=主动装配（↑/↓选已学主动，A/S/D/F/T/Y 装入对应槽，类型不符拒装提示）+被动分区（名+效果%）；设置页含音量(持久化 user://settings.cfg)/保存/退出；嵌套暂停安全（还原原暂停状态）；页签条独立 CanvasLayer 130
+- **SectSystem** (`src/cultivation/sect_system.*`) — 宗门：四宗一散（蜀山攻/昆仑灵力回灵/蓬莱生命防御/魔罗击杀修为+攻），职位 外门(0)/内门(100)/真传(300) 加成随档升；贡献=击杀+1/Boss+10；炼气门槛拜师、叛门贡献清零、已学专属技保留；乘区全走既有组合点（攻/生命/灵力上限+回灵/防御/击杀修为）；专属技×4（万剑归宗金系剑扇/太清神光水系法术/玄龟护体自buff防25%/血影斩突进）；存档 pd["sect"]
+- **威压/灵压** (`src/nodes/player.*` + `enemy.*`) — 威压 V：耗灵30/cd8s/r240px，realm<玩家→慑服(suppress:定身+灰显 2+0.5×gap s cap5)；灵压 R：耗灵60/cd15s/r200px，realm≤玩家-2→法伤 atk×(2+0.5×gap)，gap≥4→镇杀99999；护佑：敌方高阶(realm≥玩家)在场→300px低阶全免+反弹5%(V)/8%(R)生命；Enemy新增 realm 字段+suppress(t)+enemies group；bootstrap 全敌 realm 标注（0小怪→4螭龙→8北俱）
+- **GameMenu** (`src/nodes/game_menu.*`) — ESC 多页管理菜单（背包/能力/功法/技能/法宝/宗门/云游/炼丹/设置 共9页），托管 InventoryPanel（外部驱动 ext_navigate/ext_use）；能力页=主动/被动分区技能树总览（只读 v1）；技能页=主动装配（↑/↓选已学主动，A/S/D/F/T/Y 装入对应槽，类型不符拒装提示）+被动分区（名+效果%）；宗门页=未入门四宗列表选宗拜入/已入门职位贡献加成总览+叛门；设置页含音量(持久化 user://settings.cfg)/保存/退出；嵌套暂停安全（还原原暂停状态）；页签条独立 CanvasLayer 130
 - **HUD 底部技能栏**: 武技[A/S] 法术[D/F] 法宝[G/H]（技能系统已填充：显示装配技能名+冷却）
 - **BuffSystem** (`src/cultivation/buff_system.*`) — 丹药/食物/状态统一 Buff：def 表（冰心水抗15%/赤焰攻15%/金刚防20%, 300s）、同名刷新不叠加、到期自消、攻/防/元素抗性乘区钩子、HUD buff 行（名+秒）、存档 pd["buffs"]
 - **AlchemySystem** (`src/cultivation/alchemy_system.*`) — 炼丹：丹炉随身，7 固定配方，成功率字段 v1=100%（失败机制预留），地品金丹门控，每炉喂练气+5；GameMenu 第6页「炼丹」（↑/↓选方 X炼制，材料够=亮/不够=灰）
@@ -119,10 +121,11 @@ bin/              # 编译产物 (.so)，gitignored
 - **use_consumable 统一入口** — Player::use_consumable(item_id)：扣数量+回血/比例回血/回灵(mana_amount)/修为(energy_amount)/buff；拾取自动用、背包面板、数字键栏全部走这里；聚气丹已迁移为回灵50
 - **数字键消耗品栏** — 1~6 快捷栏（consume_1..6），拾取消耗品自动入栏（首个空位/耗尽槽），HUD 技能栏上方一行（名首字+数量），存档 pd["consumable_bar"]
 - **调试键**: F3 遥测 / F4 HUD / F5 突破无经验门槛开关 / F6 读档 / Q 突破
+- **潜伏 bug 教训**: `Player::_on_enemy_killed` 通过 `connect("enemy_killed", Callable(this, "_on_enemy_killed"))` 连接，但从未 `ClassDB::bind_method` → Callable 解析失败静默无效 → 击杀喂功法/法宝温养/法则击杀回复全部静默失效（自实现以来一直无效，2026-07-25 修复）
 
 ### Input Map
 
-方向键移动（WASD 已腾出给技能槽，DNF 式），X 普攻+交互+菜单确认合一（交互优先；采集/传送门/背包使用装备/炼丹/设置确认都用 X，菜单内暂停不冲突），C 跳跃（空中再按=飞行），Z 冲刺，Space 确认副键，I 背包，Q 修炼突破，ESC 多页菜单；技能槽：A/S 武技、D/F 法术、T 神通、Y 仙法（预留），B 切法宝页（A~H=法宝槽）；数字键 1~6 消耗品快捷栏
+方向键移动（WASD 已腾出给技能槽，DNF 式），X 普攻+交互+菜单确认合一（交互优先；采集/传送门/背包使用装备/炼丹/设置确认都用 X，菜单内暂停不冲突），C 跳跃（空中再按=飞行），Z 冲刺，V 威压，R 灵压，Space 确认副键，I 背包，Q 修炼突破，ESC 多页菜单；技能槽：A/S 武技、D/F 法术、T 神通、Y 仙法（预留），B 切法宝页（A~H=法宝槽）；数字键 1~6 消耗品快捷栏
 
 ### Collision Layers
 

@@ -120,6 +120,11 @@ namespace godot {
 		bool join_sect(const StringName &p_sect_id); // 拜师（炼气门槛；授专属技）
 		void leave_sect();                           // 叛门（贡献清零，技能保留）
 		AlchemySystem *get_alchemy() const { return _alchemy; }
+		// 威压/灵压（design/sect-pressure.md §二）
+		bool cast_wei_pressure(); // 威压 V：慑服低阶敌人（debuff 无伤）
+		bool cast_lin_pressure(); // 灵压 R：法术伤害低阶敌人，大境界差直接镇杀
+		double get_wei_cooldown_left() const { return Math::max(0.0, _wei_cd_until - _time); }
+		double get_lin_cooldown_left() const { return Math::max(0.0, _lin_cd_until - _time); }
 		// B 键技能页：0=战斗页(A/S武技 D/F法术) 1=法宝页(A~H=法宝槽0..5)
 		int get_skill_page() const { return _skill_page; }
 		void toggle_skill_page();
@@ -205,6 +210,8 @@ namespace godot {
 		Inventory *_inventory = nullptr;
 		double _skill_hitbox_until = 0.0;
 		double _invuln_until = 0.0;   // 金刚不坏无敌截止（神通）
+		double _wei_cd_until = 0.0;  // 威压冷却截止
+		double _lin_cd_until = 0.0;  // 灵压冷却截止
 		bool _skill_hitbox_aoe = false; // AOE 借用 HitBox 后需还原变换 // 技能借用 HitBox 的关闭时刻（_time 时基）
 		bool _interact_prompt_active = false; // 附近有可交互物（X 交互优先于普攻）
 		void _on_interaction_prompt(const String &p_text, bool p_show);
@@ -215,6 +222,10 @@ namespace godot {
 		void _refresh_regen_mults();
 		void _on_enemy_killed(Object *p_enemy, Object *p_killer);
 		void _take_damage_typed(float p_amount, DamageCategory p_cat, Element p_elem, Node *p_source);
+		// 威压/灵压 helper：扫描指定半径内 realm≥玩家的高阶敌人（护佑者）列表
+		Vector<Object*> _find_guardians(float p_radius, int p_player_realm);
+		// 判断某敌人是否在任一护佑者的 300px 保护圈内
+		bool _is_guarded(Node *p_enemy, const Vector<Object*> &p_guardians);
 
 		// Equipment slots: 0=weapon, 1=armor, 2=accessory
 		StringName _equipment[3];
