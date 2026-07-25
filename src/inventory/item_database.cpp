@@ -1,9 +1,12 @@
 #include "item_database.h"
 
+#include "../core/data_loader.h"
 #include "../utils/text.h"
 
 #include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/core/class_db.hpp>
+#include <godot_cpp/variant/utility_functions.hpp>
 
 namespace godot {
 
@@ -24,6 +27,39 @@ void ItemDatabase::_ready() {
 		return;
 
 	_singleton = this;
+
+	// Try DataLoader (JSON external data) first; fall back to hardcoded
+	Node *scene = get_tree()->get_current_scene();
+	DataLoader *dl = scene ? Object::cast_to<DataLoader>(scene->find_child("DataLoader", true, false)) : nullptr;
+	if (dl) {
+		Array all = dl->get_all_items();
+		if (all.size() > 0) {
+			for (int i = 0; i < all.size(); i++) {
+				Dictionary d = all[i];
+				Item it;
+				it.id = StringName(d["id"]);
+				it.name = String(d["name"]);
+				it.description = String(d["desc"]);
+				it.type = Item::Type(int(d.get("type", 0)));
+				it.max_stack = int(d.get("max_stack", 99));
+				it.grade = int(d.get("grade", 0));
+				if (d.has("heal_amount")) it.heal_amount = float(d["heal_amount"]);
+				if (d.has("heal_pct")) it.heal_pct = float(d["heal_pct"]);
+				if (d.has("mana_amount")) it.mana_amount = float(d["mana_amount"]);
+				if (d.has("energy_amount")) it.energy_amount = float(d["energy_amount"]);
+				if (d.has("buff_id")) { StringName b = d["buff_id"]; if (!b.is_empty()) it.buff_id = b; }
+				if (d.has("learn_skill")) { StringName ls = d["learn_skill"]; if (!ls.is_empty()) it.learn_skill = ls; }
+				if (d.has("breakthrough_bonus")) it.breakthrough_bonus = float(d["breakthrough_bonus"]);
+				if (d.has("equip_slot")) it.equip_slot = Item::EquipSlot(int(d["equip_slot"]));
+				if (d.has("attack_bonus")) it.attack_bonus = float(d["attack_bonus"]);
+				if (d.has("defense_bonus")) it.defense_bonus = float(d["defense_bonus"]);
+				if (d.has("speed_bonus")) it.speed_bonus = float(d["speed_bonus"]);
+				_items[it.id] = it;
+			}
+			return;
+		}
+	}
+	// Fallback: hardcoded items
 	_register_items();
 }
 

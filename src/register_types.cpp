@@ -9,6 +9,7 @@
 #include "combat/skill_system.h"
 #include "core/game_manager.h"
 #include "core/continent_manager.h"
+#include "core/data_loader.h"
 #include "core/drop_system.h"
 #include "core/save_system.h"
 #include "cultivation/ability_manager.h"
@@ -60,6 +61,7 @@ void initialize_cpp_kaki_module(ModuleInitializationLevel p_level) {
 	GDREGISTER_CLASS(SignalBus);
 	GDREGISTER_CLASS(GameManager);
 	GDREGISTER_CLASS(ContinentManager);
+	GDREGISTER_CLASS(DataLoader);
 	GDREGISTER_CLASS(GameHUD);
 	GDREGISTER_CLASS(TelemetryPanel);
 	GDREGISTER_CLASS(InventoryPanel);
