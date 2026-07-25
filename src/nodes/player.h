@@ -8,6 +8,7 @@
 #include "../combat/combo_chain.h"
 #include "../combat/damage_types.h"
 #include "../cultivation/gongfa_system.h"
+#include "../cultivation/buff_system.h"
 #include "../inventory/inventory.h"
 #include "../utils/state_machine.h"
 #include "../utils/input_buffer.h"
@@ -110,6 +111,7 @@ namespace godot {
 		GongfaSystem *get_gongfa() const { return _gongfa; }
 		SkillSystem *get_skills() const { return _skills; }
 		ArtifactSystem *get_artifacts() const { return _artifacts; }
+		BuffSystem *get_buffs() const { return _buffs; }
 		// B 键技能页：0=战斗页(A/S武技 D/F法术) 1=法宝页(A~H=法宝槽0..5)
 		int get_skill_page() const { return _skill_page; }
 		void toggle_skill_page();
@@ -170,6 +172,7 @@ namespace godot {
 		GongfaSystem *_gongfa = nullptr;
 		SkillSystem *_skills = nullptr;
 		ArtifactSystem *_artifacts = nullptr;
+		BuffSystem *_buffs = nullptr;
 		int _skill_page = 0;
 		Inventory *_inventory = nullptr;
 		double _skill_hitbox_until = 0.0; // 技能借用 HitBox 的关闭时刻（_time 时基）

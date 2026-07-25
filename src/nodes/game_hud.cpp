@@ -30,6 +30,7 @@ static constexpr int FONT_SIZE_LG = 20;
 void GameHUD::_bind_methods() {
     ClassDB::bind_method(D_METHOD("on_player_health_changed", "current", "max"),
                          &GameHUD::on_player_health_changed);
+    ClassDB::bind_method(D_METHOD("on_buffs_changed", "active"), &GameHUD::on_buffs_changed);
     ClassDB::bind_method(D_METHOD("on_spiritual_energy_changed", "current", "max", "progress"),
                          &GameHUD::on_spiritual_energy_changed);
     ClassDB::bind_method(D_METHOD("on_mana_changed", "current", "max"),
@@ -68,6 +69,15 @@ void GameHUD::_ready() {
     _create_death_overlay();
     _create_skill_bar();
     _create_law_bar();
+
+    // Buff 行（生命条下方小行）
+    _buff_label = memnew(Label);
+    _buff_label->set_name("BuffLabel");
+    _buff_label->set_position(Vector2(8.0f, XP_BAR_Y + BAR_HEIGHT + 2.0f));
+    _buff_label->add_theme_font_size_override("font_size", 8);
+    _buff_label->add_theme_color_override("font_color", Color(0.7f, 0.9f, 1.0f, 1.0f));
+    _buff_label->set_visible(false);
+    add_child(_buff_label);
     _create_boss_bar();
 
     set_process_unhandled_input(true);
@@ -87,6 +97,7 @@ void GameHUD::_ready() {
         bus->connect("boss_fight_update", Callable(this, "on_boss_fight_update"));
         bus->connect("boss_fight_ended", Callable(this, "on_boss_fight_ended"));
         bus->connect("player_respawned", Callable(this, "on_player_respawned"));
+        bus->connect("buffs_changed", Callable(this, "on_buffs_changed"));
     }
 }
 
@@ -316,6 +327,49 @@ void GameHUD::_process(double p_delta) {
         return;
     _update_skill_bar();
     _update_law_bar();
+    _update_buff_label(p_delta);
+}
+
+void GameHUD::on_buffs_changed(const Array &p_active) {
+    _buffs = p_active.duplicate(true);
+    _buff_refresh = 0.0f; // 立即重绘
+    if (_buffs.is_empty() && _buff_label) {
+        _buff_label->set_visible(false);
+    }
+}
+
+void GameHUD::_update_buff_label(double p_delta) {
+    if (!_buff_label) return;
+    if (_buffs.is_empty()) return;
+
+    // 本地倒计时（apply/到期时 buffs_changed 会重新同步，漂移可接受）
+    for (int i = (int)_buffs.size() - 1; i >= 0; i--) {
+        Dictionary d = _buffs[i];
+        float rem = float(d["remaining"]) - (float)p_delta;
+        if (rem <= 0.0f) {
+            _buffs.remove_at(i); // 本地先消失；服务端到期信号随后清场
+        } else {
+            d["remaining"] = rem;
+            _buffs[i] = d;
+        }
+    }
+    if (_buffs.is_empty()) {
+        _buff_label->set_visible(false);
+        return;
+    }
+
+    _buff_refresh -= (float)p_delta;
+    if (_buff_refresh > 0.0f) return;
+    _buff_refresh = 0.5f; // 0.5s 重绘一次足够
+
+    String text;
+    for (int i = 0; i < _buffs.size(); i++) {
+        Dictionary d = _buffs[i];
+        if (i > 0) text += "  ";
+        text += String(d["name"]) + " " + String::num_int64((int64_t)Math::ceil(float(d["remaining"]))) + "s";
+    }
+    _buff_label->set_text(text);
+    _buff_label->set_visible(_hud_visible);
 }
 
 // ============================================================

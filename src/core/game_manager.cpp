@@ -236,6 +236,9 @@ Dictionary GameManager::collect_save_data() const {
 		}
 		if (_player->get_artifacts()) {
 			pd["artifacts"] = _player->get_artifacts()->save_to_dict();
+		if (_player->get_buffs()) {
+			pd["buffs"] = _player->get_buffs()->save_to_dict();
+		}
 		}
 		data["player"] = pd;
 

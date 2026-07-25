@@ -578,6 +578,7 @@ namespace godot {
 	ClassDB::bind_method(D_METHOD("get_gongfa"), &Player::get_gongfa);
 	ClassDB::bind_method(D_METHOD("get_skills"), &Player::get_skills);
 	ClassDB::bind_method(D_METHOD("get_artifacts"), &Player::get_artifacts);
+	ClassDB::bind_method(D_METHOD("get_buffs"), &Player::get_buffs);
 	ClassDB::bind_method(D_METHOD("get_skill_page"), &Player::get_skill_page);
 	ClassDB::bind_method(D_METHOD("toggle_skill_page"), &Player::toggle_skill_page);
 	ClassDB::bind_method(D_METHOD("_on_interaction_prompt", "text", "show"), &Player::_on_interaction_prompt);
@@ -639,6 +640,9 @@ namespace godot {
 		if (_cultivation) {
 			_cultivation->tick_mana_regen(p_delta);
 			_cultivation->tick_law_regen(p_delta); // 法则之力（化神后）
+		}
+		if (_buffs) {
+			_buffs->tick(p_delta); // buff 计时（到期自动消失）
 		}
 
 		state_machine->physics_update(p_delta);
@@ -831,6 +835,9 @@ namespace godot {
 		if (_artifacts) {
 			defense *= 1.0f + _artifacts->get_passive_def_bonus(); // 辅助型法宝常驻被动
 		}
+		if (_buffs) {
+			defense *= _buffs->get_def_mult(); // buff（金刚丹等）乘区
+		}
 		DamageInfo info;
 		info.base_amount = p_amount;
 		info.category = p_cat;
@@ -839,7 +846,9 @@ namespace godot {
 		def.defense = defense;
 		def.spell_resist = spell_resist;
 		def.self_element = self_element;
-		for (int i = 0; i < ELEM_CAPACITY; i++) def.elem_resist[i] = elem_resist[i];
+		for (int i = 0; i < ELEM_CAPACITY; i++) {
+			def.elem_resist[i] = elem_resist[i] + (_buffs ? _buffs->get_elem_resist_bonus(i) : 0.0f);
+		}
 		float actual_damage = DamageCalculator::compute(info, def);
 
 		current_health -= actual_damage;
@@ -948,6 +957,7 @@ namespace godot {
 		_skills->set_player(this);
 		_artifacts = memnew(ArtifactSystem);
 		_artifacts->set_player(this);
+		_buffs = memnew(BuffSystem);
 		// 凡人起步即会的基础武技（拳脚刀剑是凡人的本事）
 		_skills->learn(StringName("po_kong_zhan"));
 		_skills->learn(StringName("tu_jin_zhan"));
@@ -1205,6 +1215,9 @@ namespace godot {
 		if (_gongfa) {
 			atk *= _gongfa->get_atk_mult(); // 功法（炼体）乘区
 		}
+		if (_buffs) {
+			atk *= _buffs->get_atk_mult(); // buff（赤焰丹等）乘区
+		}
 		atk *= get_benming_coeff(); // 本命法宝加成
 		return atk;
 	}
@@ -1368,8 +1381,8 @@ namespace godot {
 		if (def->energy_amount > 0.0f && _cultivation) {
 			_cultivation->accumulate_energy(def->energy_amount);
 		}
-		if (def->buff_id != StringName()) {
-			// TODO 步骤C：BuffSystem 接入后在此 apply(def->buff_id)
+		if (def->buff_id != StringName() && _buffs) {
+			_buffs->apply(def->buff_id); // 同名刷新不叠加
 		}
 
 		SignalBus *bus = SignalBus::get_singleton();
@@ -1410,6 +1423,9 @@ namespace godot {
 		}
 		if (p_data.has("artifacts") && _artifacts) {
 			_artifacts->load_from_dict(p_data["artifacts"]);
+		}
+		if (p_data.has("buffs") && _buffs) {
+			_buffs->load_from_dict(p_data["buffs"]);
 		}
 
 		// Position

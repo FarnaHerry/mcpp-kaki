@@ -12,6 +12,7 @@
 #include "core/save_system.h"
 #include "cultivation/ability_manager.h"
 #include "cultivation/artifact_system.h"
+#include "cultivation/buff_system.h"
 #include "cultivation/breakthrough_manager.h"
 #include "cultivation/cultivation_system.h"
 #include "cultivation/gongfa_system.h"
@@ -48,6 +49,7 @@ void initialize_cpp_kaki_module(ModuleInitializationLevel p_level) {
 	GDREGISTER_CLASS(GongfaSystem);
 	GDREGISTER_CLASS(SkillSystem);
 	GDREGISTER_CLASS(ArtifactSystem);
+	GDREGISTER_CLASS(BuffSystem);
 	GDREGISTER_CLASS(AbilityManager);
 	GDREGISTER_CLASS(SignalBus);
 	GDREGISTER_CLASS(GameManager);

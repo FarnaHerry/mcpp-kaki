@@ -5,6 +5,7 @@
 #include <godot_cpp/classes/color_rect.hpp>
 #include <godot_cpp/classes/input_event.hpp>
 #include <godot_cpp/classes/label.hpp>
+#include <godot_cpp/variant/array.hpp>
 #include <godot_cpp/variant/color.hpp>
 
 #include <vector>
@@ -46,6 +47,7 @@ public:
     void on_player_respawned();
     void on_boss_fight_update(const String &p_name, double p_current, double p_max);
     void on_boss_fight_ended();
+    void on_buffs_changed(const Array &p_active);
     bool is_boss_bar_visible() const { return _boss_bg && _boss_bg->is_visible(); }
     String get_boss_bar_name() const { return _boss_name ? _boss_name->get_text() : String(); }
 
@@ -87,6 +89,11 @@ private:
     Label *_xp_label = nullptr;
     float _xp_progress = 0.0f;
     Color _xp_color = Color(0.9f, 0.75f, 0.2f, 1.0f);
+
+    // Buff 行（生命条下方小行：buff 名+剩余秒，v1 纯文本）
+    Label *_buff_label = nullptr;
+    Array _buffs; // 缓存 SignalBus buffs_changed 推送的活跃列表 [{id,name,remaining}]
+    float _buff_refresh = 0.0f;
 
     // Realm label (称号全称由 TitleComposer 生成，经 realm_changed 信号传入)
     Label *_realm_label = nullptr;
@@ -138,6 +145,7 @@ private:
     void _create_boss_bar();
     void _update_skill_bar();
     void _update_law_bar();
+    void _update_buff_label(double p_delta);
     void _update_bar(ColorRect *p_fill, float p_current, float p_max, bool p_horizontal = true);
     void _refresh_mana_label();
     void _refresh_xp_label();

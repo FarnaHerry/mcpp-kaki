@@ -35,6 +35,7 @@ void SignalBus::_bind_methods() {
 	                      PropertyInfo(Variant::FLOAT, "current"), PropertyInfo(Variant::FLOAT, "max")));
 	ADD_SIGNAL(MethodInfo("boss_fight_ended"));
 	ADD_SIGNAL(MethodInfo("law_power_changed", PropertyInfo(Variant::FLOAT, "current"), PropertyInfo(Variant::FLOAT, "max")));
+	ADD_SIGNAL(MethodInfo("buffs_changed", PropertyInfo(Variant::ARRAY, "active"))); // BuffSystem 施加/到期/清空
 	ADD_SIGNAL(MethodInfo("skill_page_changed", PropertyInfo(Variant::INT, "page")));
 	ADD_SIGNAL(MethodInfo("damage_dealt",
 	                      PropertyInfo(Variant::VECTOR2, "world_pos"),
