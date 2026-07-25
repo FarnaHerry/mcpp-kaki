@@ -23,7 +23,7 @@ class Player;
 class GameMenu : public CanvasLayer {
 	GDCLASS(GameMenu, CanvasLayer)
 
-	enum Page { PAGE_INVENTORY = 0, PAGE_ABILITY, PAGE_GONGFA, PAGE_SKILL, PAGE_ARTIFACT, PAGE_SETTINGS, PAGE_COUNT };
+	enum Page { PAGE_INVENTORY = 0, PAGE_ABILITY, PAGE_GONGFA, PAGE_SKILL, PAGE_ARTIFACT, PAGE_ALCHEMY, PAGE_SETTINGS, PAGE_COUNT };
 
 	// 页签条（独立高层级 CanvasLayer，背包页压在 InventoryPanel 之上仍可见）
 	CanvasLayer *_tabs_layer = nullptr;
@@ -39,6 +39,12 @@ class GameMenu : public CanvasLayer {
 	int _page = PAGE_INVENTORY;
 	bool _open = false;
 	bool _restore_pause = false;
+
+	// 炼丹页状态
+	int _alchemy_sel = 0;
+	String _alchemy_msg;
+	float _alchemy_msg_t = 0.0f;
+	void _handle_alchemy_input();
 
 	// 设置页状态
 	int _settings_sel = 0;
@@ -57,6 +63,7 @@ class GameMenu : public CanvasLayer {
 	void _build_gongfa_page();
 	void _build_skill_page();
 	void _build_artifact_page();
+	void _build_alchemy_page();
 	void _build_settings_page();
 	void _refresh_settings_page();
 

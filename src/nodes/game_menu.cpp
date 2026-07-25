@@ -4,6 +4,10 @@
 #include "../cultivation/gongfa_system.h"
 #include "../combat/skill_system.h"
 #include "../cultivation/artifact_system.h"
+#include "../cultivation/alchemy_system.h"
+#include "../inventory/inventory.h"
+#include "../inventory/item.h"
+#include "../inventory/item_database.h"
 #include "../nodes/inventory_panel.h"
 #include "../nodes/player.h"
 #include "../utils/text.h"
@@ -20,7 +24,7 @@
 
 namespace godot {
 
-static const char *TAB_NAMES[] = { "背包", "能力", "功法", "技能", "法宝", "设置" };
+static const char *TAB_NAMES[] = { "背包", "能力", "功法", "技能", "法宝", "炼丹", "设置" };
 
 void GameMenu::_bind_methods() {
 }
@@ -158,6 +162,11 @@ void GameMenu::_rebuild_page() {
 			if (_inv_panel) _inv_panel->close();
 			_build_artifact_page();
 			_set_hint(TXT("←/→ 切换页  ESC 关闭"));
+			break;
+		case PAGE_ALCHEMY:
+			if (_inv_panel) _inv_panel->close();
+			_build_alchemy_page();
+			_set_hint(TXT("←/→ 切换页  ↑/↓ 选方  E 炼制  ESC 关闭"));
 			break;
 		case PAGE_SETTINGS:
 			if (_inv_panel) _inv_panel->close();
@@ -503,6 +512,122 @@ void GameMenu::_build_artifact_page() {
 // 设置页
 // ============================================================
 
+// ============================================================
+// 炼丹页（design/alchemy.md：丹炉随身，配方列表 → 材料够=亮/不够=灰 → E 炼制）
+// ============================================================
+
+void GameMenu::_build_alchemy_page() {
+	auto add_line = [&](const String &text, float x, float y, int size, const Color &c) {
+		Label *l = memnew(Label);
+		l->set_text(text);
+		l->add_theme_font_size_override("font_size", size);
+		l->add_theme_color_override("font_color", c);
+		l->set_position(Vector2(x, y));
+		add_child(l);
+		_page_nodes.push_back(l);
+	};
+
+	Color head_c(1.0f, 0.85f, 0.5f);
+	Color body_c(0.85f, 0.85f, 0.85f);
+	Color dim_c(0.45f, 0.45f, 0.45f);
+	Color sel_c(1.0f, 0.95f, 0.6f);
+	Color ok_c(0.6f, 1.0f, 0.6f);
+	Color bad_c(1.0f, 0.5f, 0.5f);
+
+	Label *title = memnew(Label);
+	title->set_text(TXT("—— 炼丹 ——"));
+	title->add_theme_font_size_override("font_size", 13);
+	title->add_theme_color_override("font_color", Color(1.0f, 0.9f, 0.5f));
+	title->set_position(Vector2(195, 36));
+	add_child(title);
+	_page_nodes.push_back(title);
+
+	AlchemySystem *al = _player ? _player->get_alchemy() : nullptr;
+	if (!al) {
+		add_line(TXT("（丹炉未备）"), 70.0f, 60.0f, 9, dim_c);
+		return;
+	}
+
+	// 顶部：各草药持有数
+	static const char *HERB_IDS[] = {
+		"zhi_xue_cao", "ju_ling_cao", "bing_xin_lian", "chi_yan_hua",
+		"jin_gang_teng", "wu_dao_cha", "qian_nian_ling_zhi"
+	};
+	Inventory *inv = _player->get_inventory();
+	ItemDatabase *db = ItemDatabase::get_singleton();
+	String herb_line;
+	for (int i = 0; i < 7; i++) {
+		const Item *def = db ? db->get_item(StringName(HERB_IDS[i])) : nullptr;
+		if (i > 0) herb_line += " ";
+		herb_line += (def ? def->name : String(HERB_IDS[i])) + TXT("×") +
+			String::num_int64(inv ? inv->get_item_count(StringName(HERB_IDS[i])) : 0);
+	}
+	add_line(herb_line, 40.0f, 58.0f, 8, head_c);
+
+	// 配方行
+	Array recipes = al->get_recipe_list();
+	int sel = CLAMP(_alchemy_sel, 0, (int)recipes.size() - 1);
+	for (int i = 0; i < recipes.size(); i++) {
+		Dictionary r = recipes[i];
+		float y = 80.0f + i * 24;
+		bool locked = r["realm_locked"];
+		bool can = r["can_craft"];
+		bool is_sel = (i == sel);
+
+		// 主行：选中标记 + 丹名 + 效果 + 门控标注
+		String main_line = (is_sel ? TXT("> ") : TXT("  ")) + String(r["name"]) +
+			TXT("  ") + String(r["effect"]);
+		if (locked) main_line += TXT("  （金丹起）");
+		Color mc = is_sel ? sel_c : (can ? body_c : dim_c);
+		add_line(main_line, 60.0f, y, 9, mc);
+
+		// 材料行：够=亮 / 不够=红
+		String mat_line = TXT("    ");
+		Array mats = r["mats"];
+		for (int j = 0; j < mats.size(); j++) {
+			Dictionary m = mats[j];
+			if (j > 0) mat_line += " + ";
+			mat_line += String(m["name"]) + "×" + String::num_int64((int)m["need"]) +
+				"(" + String::num_int64((int)m["have"]) + ")";
+		}
+		add_line(mat_line, 60.0f, y + 11, 8, can ? dim_c : bad_c);
+	}
+
+	// 炼制结果提示
+	if (!_alchemy_msg.is_empty()) {
+		bool ok = _alchemy_msg.contains(TXT("炼成"));
+		add_line(_alchemy_msg, 60.0f, 250.0f, 10, ok ? ok_c : bad_c);
+	} else {
+		add_line(TXT("丹炉随身，随时随地可炼。炼制亦修行：每炉喂练气 +5。"), 60.0f, 250.0f, 8, dim_c);
+	}
+}
+
+void GameMenu::_handle_alchemy_input() {
+	AlchemySystem *al = _player ? _player->get_alchemy() : nullptr;
+	if (!al) return;
+	Input *input = Input::get_singleton();
+	int count = al->get_recipe_list().size();
+	if (input->is_action_just_pressed(TXT("up"))) {
+		_alchemy_sel = (_alchemy_sel - 1 + count) % count;
+		_rebuild_page();
+	}
+	if (input->is_action_just_pressed(TXT("down"))) {
+		_alchemy_sel = (_alchemy_sel + 1) % count;
+		_rebuild_page();
+	}
+	if (input->is_action_just_pressed(TXT("action"))) {
+		Array recipes = al->get_recipe_list();
+		int sel = CLAMP(_alchemy_sel, 0, (int)recipes.size() - 1);
+		if (sel >= 0) {
+			StringName id = Dictionary(recipes[sel])["id"];
+			al->craft(id);
+			_alchemy_msg = al->get_last_message();
+			_alchemy_msg_t = 2.5f;
+			_rebuild_page();
+		}
+	}
+}
+
 void GameMenu::_build_settings_page() {
 	_refresh_settings_page();
 }
@@ -633,6 +758,14 @@ void GameMenu::_process(double p_delta) {
 		}
 	}
 
+	if (_alchemy_msg_t > 0.0f) {
+		_alchemy_msg_t -= float(p_delta);
+		if (_alchemy_msg_t <= 0.0f && _page == PAGE_ALCHEMY) {
+			_alchemy_msg = String();
+			_rebuild_page();
+		}
+	}
+
 	if (input->is_action_just_pressed(TXT("menu"))) {
 		_close_menu();
 		return;
@@ -660,6 +793,9 @@ void GameMenu::_process(double p_delta) {
 			if (input->is_action_just_pressed(TXT("up")))   _inv_panel->ext_navigate(-1);
 			if (input->is_action_just_pressed(TXT("down"))) _inv_panel->ext_navigate(+1);
 			if (input->is_action_just_pressed(TXT("action"))) _inv_panel->ext_use();
+			break;
+		case PAGE_ALCHEMY:
+			_handle_alchemy_input();
 			break;
 		case PAGE_SETTINGS:
 			_handle_settings_input();

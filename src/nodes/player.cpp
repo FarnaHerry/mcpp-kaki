@@ -579,6 +579,7 @@ namespace godot {
 	ClassDB::bind_method(D_METHOD("get_skills"), &Player::get_skills);
 	ClassDB::bind_method(D_METHOD("get_artifacts"), &Player::get_artifacts);
 	ClassDB::bind_method(D_METHOD("get_buffs"), &Player::get_buffs);
+	ClassDB::bind_method(D_METHOD("get_alchemy"), &Player::get_alchemy);
 	ClassDB::bind_method(D_METHOD("get_skill_page"), &Player::get_skill_page);
 	ClassDB::bind_method(D_METHOD("toggle_skill_page"), &Player::toggle_skill_page);
 	ClassDB::bind_method(D_METHOD("_on_interaction_prompt", "text", "show"), &Player::_on_interaction_prompt);
@@ -958,6 +959,8 @@ namespace godot {
 		_artifacts = memnew(ArtifactSystem);
 		_artifacts->set_player(this);
 		_buffs = memnew(BuffSystem);
+		_alchemy = memnew(AlchemySystem);
+		_alchemy->set_player(this);
 		// 凡人起步即会的基础武技（拳脚刀剑是凡人的本事）
 		_skills->learn(StringName("po_kong_zhan"));
 		_skills->learn(StringName("tu_jin_zhan"));
