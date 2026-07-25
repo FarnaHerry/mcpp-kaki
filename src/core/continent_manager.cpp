@@ -31,7 +31,20 @@ void ContinentManager::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_unlocked", "id"), &ContinentManager::is_unlocked);
 	ClassDB::bind_method(D_METHOD("can_travel", "id"), &ContinentManager::can_travel);
 	ClassDB::bind_method(D_METHOD("travel_to", "id"), &ContinentManager::travel_to);
+	ClassDB::bind_method(D_METHOD("travel_to_direct", "id"), &ContinentManager::travel_to_direct);
+	ClassDB::bind_method(D_METHOD("complete_travel"), &ContinentManager::complete_travel);
 	ClassDB::bind_method(D_METHOD("get_continent_list"), &ContinentManager::get_continent_list);
+}
+
+// 云海强渡（design/world-map.md）：跨洲必经之地，金丹飞行门控
+static const char *YUNHAI_SCENE = "res://scenes/continents/yunhai.tscn";
+static const Vector2 YUNHAI_SPAWN(60.0f, 180.0f);
+
+// 跨场景会话态（云海等非洲场景时保持上一洲身份）——函数局部 static，
+// 严禁文件级 static Dictionary/String 全局构造（引擎内存初始化前 segfault 教训）
+static String &_last_continent_id() {
+	static String s = "dongsheng";
+	return s;
 }
 
 const ContinentManager::Def *ContinentManager::find_def(const String &p_id) {
@@ -48,19 +61,26 @@ void ContinentManager::_ready() {
 	// 当前洲 = 当前根场景路径反推（main.tscn 即东胜神洲）
 	Node *cur = get_tree()->get_current_scene();
 	String scene_path = cur ? cur->get_scene_file_path() : String();
+	bool matched = false;
 	for (const Def &d : CONTINENT_DEFS) {
 		if (scene_path == d.scene) {
 			_current_id = d.id;
+			matched = true;
 			break;
 		}
 	}
-	if (_current_id.is_empty()) {
-		_current_id = "dongsheng"; // 未知场景（秘境等）按本洲计
+	if (matched) {
+		_last_continent_id() = _current_id;
+	} else {
+		_current_id = _last_continent_id(); // 云海等过渡场景：保持上一洲身份
 	}
 
-	SignalBus *bus = SignalBus::get_singleton();
-	if (bus) {
-		bus->emit_signal("continent_changed", _current_id, get_current_name());
+	// 只在真正踏上洲土时播报（云海过渡不触发横幅）
+	if (matched) {
+		SignalBus *bus = SignalBus::get_singleton();
+		if (bus) {
+			bus->emit_signal("continent_changed", _current_id, get_current_name());
+		}
 	}
 }
 
@@ -92,6 +112,28 @@ bool ContinentManager::travel_to(const String &p_id) {
 	GameManager *gm = GameManager::get_singleton();
 	if (!gm) return false;
 
+	// 云海强渡：检查点改写到云海起云台，目的洲记入 cp.travel_dest
+	// （随存档持久化——渡海途中存档/读档不丢目的地），登岸时 complete_travel 接力
+	Dictionary data = gm->collect_save_data();
+	Dictionary cp;
+	cp["position_x"] = YUNHAI_SPAWN.x;
+	cp["position_y"] = YUNHAI_SPAWN.y;
+	cp["scene_path"] = String(YUNHAI_SCENE);
+	cp["has_checkpoint"] = true;
+	cp["travel_dest"] = p_id;
+	data["checkpoint"] = cp;
+	GameManager::set_travel_bridge(data);
+	GameManager::set_travel_target(YUNHAI_SPAWN);
+	gm->request_scene_change(String(YUNHAI_SCENE), YUNHAI_SPAWN);
+	return true;
+}
+
+bool ContinentManager::travel_to_direct(const String &p_id) {
+	const Def *d = find_def(p_id);
+	if (!d || !can_travel(p_id)) return false;
+	GameManager *gm = GameManager::get_singleton();
+	if (!gm) return false;
+
 	// 存档桥：全量状态 → 新场景 GameManager 应用（满血到岸，落点=洲 spawn）
 	Dictionary data = gm->collect_save_data();
 	// 检查点改写到目的地（防死亡回上一洲；新场景 _process 也会用 travel spawn 覆盖）
@@ -100,6 +142,28 @@ bool ContinentManager::travel_to(const String &p_id) {
 	cp["position_y"] = d->spawn_y;
 	cp["scene_path"] = String(d->scene);
 	cp["has_checkpoint"] = true;
+	data["checkpoint"] = cp;
+	GameManager::set_travel_bridge(data);
+	GameManager::set_travel_target(Vector2(d->spawn_x, d->spawn_y));
+	gm->request_scene_change(String(d->scene), Vector2(d->spawn_x, d->spawn_y));
+	return true;
+}
+
+bool ContinentManager::complete_travel() {
+	GameManager *gm = GameManager::get_singleton();
+	if (!gm) return false;
+	String dest = gm->get_travel_dest();
+	const Def *d = dest.is_empty() ? nullptr : find_def(dest);
+	if (!d) return false;
+
+	// 登岸：检查点改写到目的洲，travel_dest 消耗掉（到岸即清）
+	Dictionary data = gm->collect_save_data();
+	Dictionary cp;
+	cp["position_x"] = d->spawn_x;
+	cp["position_y"] = d->spawn_y;
+	cp["scene_path"] = String(d->scene);
+	cp["has_checkpoint"] = true;
+	cp["travel_dest"] = String();
 	data["checkpoint"] = cp;
 	GameManager::set_travel_bridge(data);
 	GameManager::set_travel_target(Vector2(d->spawn_x, d->spawn_y));

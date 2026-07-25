@@ -91,6 +91,8 @@ void GameManager::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_checkpoint", "position", "scene_path"),
 	                     &GameManager::set_checkpoint, DEFVAL(""));
 	ClassDB::bind_method(D_METHOD("get_respawn_position"), &GameManager::get_respawn_position);
+	ClassDB::bind_method(D_METHOD("get_travel_dest"), &GameManager::get_travel_dest);
+	ClassDB::bind_method(D_METHOD("set_travel_dest", "id"), &GameManager::set_travel_dest);
 	ClassDB::bind_method(D_METHOD("trigger_respawn"), &GameManager::trigger_respawn);
 	ClassDB::bind_method(D_METHOD("on_player_died"), &GameManager::on_player_died);
 	ClassDB::bind_method(D_METHOD("request_scene_change", "scene_path", "spawn_pos"),
@@ -267,6 +269,7 @@ Dictionary GameManager::collect_save_data() const {
 		cp["position_y"] = _respawn_pos.y;
 		cp["scene_path"] = _respawn_scene;
 		cp["has_checkpoint"] = _has_checkpoint;
+		cp["travel_dest"] = _travel_dest; // 渡海目的地随档持久化（云海中途读档不丢）
 		data["checkpoint"] = cp;
 	}
 
@@ -405,6 +408,7 @@ void GameManager::_apply_save_dict(const Dictionary &data) {
 			float(cp.get("position_y", 0.0)));
 		_respawn_scene = String(cp.get("scene_path", ""));
 		_has_checkpoint = bool(cp.get("has_checkpoint", false));
+		_travel_dest = String(cp.get("travel_dest", ""));
 	}
 
 	// ---- Restore player ----

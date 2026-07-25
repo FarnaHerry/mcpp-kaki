@@ -70,7 +70,7 @@ func _process(delta) -> bool:
 			_gm().call("increment_kill_count")
 			_check(_cm().call("can_travel", "xiniuhe"), "金丹可去西牛贺洲")
 			_check(not _cm().call("can_travel", "dongsheng"), "不可去当前洲")
-			_check(_cm().call("travel_to", "xiniuhe"), "travel_to 受理")
+			_check(_cm().call("travel_to_direct", "xiniuhe"), "travel_to_direct 受理")
 			_next = _t + 1.5
 			_step = 2
 		2:
@@ -87,7 +87,7 @@ func _process(delta) -> bool:
 			print("[TEST] arrive pos: ", pos)
 			_check(abs(pos.x - 150.0) < 5.0, "落点=洲 spawn")
 			_gm().call("save_game", "auto") # 存一份检查点在西牛贺洲的档
-			_check(_cm().call("travel_to", "dongsheng"), "返程受理")
+			_check(_cm().call("travel_to_direct", "dongsheng"), "返程受理")
 			_next = _t + 1.5
 			_step = 4
 		4:

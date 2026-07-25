@@ -134,26 +134,30 @@ func _process(delta) -> bool:
 			_step = 11
 		11:
 			_check(_has_menu_label("▶ 西牛贺洲"), "金丹后再选西牛贺洲")
-			_press("interact") # → 旅行！
+			_press("interact") # → 旅行（云海强渡）
 			_next = _t + 1.5
 			_step = 12
 		12:
-			_check(_scene_path() == "res://scenes/continents/xiniuhe.tscn", "X 旅行切到西牛贺洲")
+			_check(_scene_path() == "res://scenes/continents/yunhai.tscn", "旅行先入云海")
 			_check(not paused, "旅行后未暂停（菜单已关）")
-			_check(_player() != null, "新场景玩家存在")
-			_next = _t + 0.8
+			_check(_player() != null, "云海玩家存在")
+			_check(String(_cm().call("get_current_id")) == "dongsheng", "云海中保持本洲身份")
+			# 飞抵登岸区
+			_player().global_position = Vector2(2300, 170)
+			_next = _t + 1.2
 			_step = 13
 		13:
+			_check(_scene_path() == "res://scenes/continents/xiniuhe.tscn", "登岸切到西牛贺洲")
+			_next = _t + 0.8
+			_step = 14
+		14:
 			_check(int(_cult().call("get_realm_index")) == 3, "境界保留（金丹）")
 			_check("西牛贺洲" in _hud_banner_text(), "入洲横幅：西牛贺洲")
 			_clear_enemies()
 			_press("menu")
-			_step = 14
-		14:
-			_press("right") # 新场景菜单回到第0页 → 能力
 			_step = 15
 		15:
-			_press("right")
+			_press("right") # 新场景菜单回到第0页 → 能力
 			_step = 16
 		16:
 			_press("right")
@@ -162,19 +166,27 @@ func _process(delta) -> bool:
 			_press("right")
 			_step = 18
 		18:
-			_press("right") # → 云游
+			_press("right")
 			_step = 19
 		19:
-			_check(_has_menu_label("—— 云游图 ——"), "西牛贺洲云游页")
-			_check(_has_menu_label("▶ 东胜神洲"), "默认选中东胜神洲（已解锁）")
-			_press("interact") # → 返程
-			_next = _t + 1.5
+			_press("right") # → 云游
 			_step = 20
 		20:
-			_check(_scene_path() == "res://scenes/main.tscn", "返程东胜神洲")
-			_next = _t + 0.8
+			_check(_has_menu_label("—— 云游图 ——"), "西牛贺洲云游页")
+			_check(_has_menu_label("▶ 东胜神洲"), "默认选中东胜神洲（已解锁）")
+			_press("interact") # → 返程（再过云海）
+			_next = _t + 1.5
 			_step = 21
 		21:
+			_check(_scene_path() == "res://scenes/continents/yunhai.tscn", "返程先入云海")
+			_player().global_position = Vector2(2300, 170)
+			_next = _t + 1.2
+			_step = 22
+		22:
+			_check(_scene_path() == "res://scenes/main.tscn", "登岸返回东胜神洲")
+			_next = _t + 0.8
+			_step = 23
+		23:
 			_check(int(_cult().call("get_realm_index")) == 3, "返程境界保留")
 			_check(String(_cm().call("get_current_id")) == "dongsheng", "当前洲=东胜神洲")
 			if _fail == 0:

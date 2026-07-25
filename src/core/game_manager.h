@@ -56,6 +56,8 @@ public:
 	void set_checkpoint(const Vector2 &p_position, const String &p_scene_path = "");
 	Vector2 get_respawn_position() const { return _respawn_pos; }
 	String get_respawn_scene() const { return _respawn_scene; }
+	String get_travel_dest() const { return _travel_dest; }              // 云海强渡目的洲（cp.travel_dest 持久化）
+	void set_travel_dest(const String &p_id) { _travel_dest = p_id; }
 	bool has_checkpoint() const { return _has_checkpoint; }
 
 	// ---- Respawn ----
@@ -109,6 +111,7 @@ private:
 	// Checkpoint
 	Vector2 _respawn_pos;
 	String _respawn_scene;
+	String _travel_dest; // 渡海目的地（空=非渡海中）；随 checkpoint 段存取
 	bool _has_checkpoint = false;
 
 	// 旅行桥：新场景启动后待应用的全量存档 + 落点

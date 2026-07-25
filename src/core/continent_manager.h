@@ -35,7 +35,9 @@ public:
 	String get_current_name() const;
 	bool is_unlocked(const String &p_id) const; // 境界够即解锁（读玩家境界）
 	bool can_travel(const String &p_id) const;  // 已解锁且非当前洲
-	bool travel_to(const String &p_id);         // 旅行（存档桥 → 切场景）
+	bool travel_to(const String &p_id);         // 旅行（经云海强渡 → 登岸 complete_travel）
+	bool travel_to_direct(const String &p_id);  // 直达（调试/harness，跳过云海）
+	bool complete_travel();                     // 云海登岸：前往 cp.travel_dest 记载的目的洲
 	Array get_continent_list() const;           // 云游图数据源
 
 	void _ready() override;
