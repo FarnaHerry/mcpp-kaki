@@ -36,6 +36,7 @@ namespace godot {
 		inline constexpr const char *Dash = "dash";
 		inline constexpr const char *Attack = "attack";
 		inline constexpr const char *Fly = "fly";
+		inline constexpr const char *Meditate = "meditate";
 	} // namespace PlayerStates
 
 	// ------- Idle -------
@@ -332,6 +333,78 @@ namespace godot {
 		}
 	};
 
+	// ------- Meditate（打坐：平常修炼 + 突破入口，Q 入坐/收功）-------
+	class PlayerMeditateState : public State<Player> {
+		double _sit_time = 0.0;    // 入坐时长（1s 后自动请求突破）
+		double _energy_frac = 0.0; // 修为小数积累（每帧增量可能 <1）
+		bool _bt_fired = false;    // 每次入坐最多请求一次突破（失败需重新入坐）
+	public:
+		void enter(Player *p) override {
+			_sit_time = 0.0;
+			_energy_frac = 0.0;
+			_bt_fired = false;
+			Vector2 vel = p->get_velocity();
+			vel.x = 0.0f;
+			p->set_velocity(vel);
+			SignalBus *bus = SignalBus::get_singleton();
+			if (bus) {
+				bus->emit_signal("interaction_prompt",
+					TXT("打坐中 · 修为+") + String::num(p->get_meditate_rate(), 1) +
+					TXT("/s · 灵力回复×3（移动/受击收功）"), true);
+			}
+		}
+		void exit(Player *p) override {
+			p->set_modulate(Color(1, 1, 1));
+			SignalBus *bus = SignalBus::get_singleton();
+			if (bus) {
+				bus->emit_signal("interaction_prompt", String(), false);
+			}
+		}
+
+		void physics_update(Player *p, double delta) override {
+			// 收功：离开地面 / 移动 / 跳 / 冲 / 攻（技能键本帧 _process 已施放，这里只负责收功）
+			if (!p->is_on_floor()) {
+				p->state_machine->transition_to(PlayerStates::Fall);
+				return;
+			}
+			if (Math::abs(p->get_move_input()) > 0.01f || p->jump_just_pressed() ||
+				p->dash_just_pressed() || p->attack_just_pressed()) {
+				p->state_machine->transition_to(PlayerStates::Idle);
+				return;
+			}
+
+			CultivationSystem *c = p->get_cultivation();
+			if (c) {
+				// 修为：纯打坐约 8 分钟满一境，击杀/丹药仍是主来源
+				_energy_frac += p->get_meditate_rate() * delta;
+				if (_energy_frac >= 1.0) {
+					int64_t whole = int64_t(_energy_frac);
+					_energy_frac -= double(whole);
+					c->accumulate_energy(whole);
+				}
+				// 灵力回复 ×3（基础 tick 在 _physics_process 已 ×1，这里补 ×2）
+				c->tick_mana_regen(delta * 2.0);
+
+				// 修为封顶（或 F5 调试无门槛）→ 入定 1s 后自动请求机缘突破
+				_sit_time += delta;
+				if (!_bt_fired && _sit_time >= 1.0 &&
+					(c->is_free_breakthrough() || (!c->is_max_realm() && c->get_realm_progress() >= 1.0))) {
+					_bt_fired = true;
+					SignalBus *bus = SignalBus::get_singleton();
+					if (bus) {
+						bus->emit_signal("breakthrough_requested");
+					}
+				}
+			}
+
+			// 灵气呼吸：靛蓝脉冲
+			float pulse = 0.5f + 0.5f * Math::sin(float(p->get_time()) * 3.0f);
+			p->set_modulate(Color(0.7f + 0.3f * pulse, 0.8f + 0.2f * pulse, 1.0f));
+
+			p->move_and_slide();
+		}
+	};
+
 	// ------- Wall Cling -------
 	class PlayerWallClingState : public State<Player> {
 	public:
@@ -569,6 +642,8 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("get_max_health"), &Player::get_max_health);
 		ClassDB::bind_method(D_METHOD("set_current_health", "v"), &Player::set_current_health);
 		ClassDB::bind_method(D_METHOD("is_invulnerable"), &Player::is_invulnerable);
+		ClassDB::bind_method(D_METHOD("is_meditating"), &Player::is_meditating);
+		ClassDB::bind_method(D_METHOD("get_meditate_rate"), &Player::get_meditate_rate);
 		ClassDB::bind_method(D_METHOD("get_time"), &Player::get_time);
 		ClassDB::bind_method(D_METHOD("_on_gongfa_changed"), &Player::_on_gongfa_changed);
 		ClassDB::bind_method(D_METHOD("_on_skills_changed"), &Player::_on_skills_changed);
@@ -636,6 +711,7 @@ namespace godot {
 		state_machine->add_state(PlayerStates::Dash, new PlayerDashState());
 		state_machine->add_state(PlayerStates::Attack, new PlayerAttackState());
 		state_machine->add_state(PlayerStates::Fly, new PlayerFlyState());
+		state_machine->add_state(PlayerStates::Meditate, new PlayerMeditateState());
 
 		state_machine->set_initial_state(PlayerStates::Idle);
 	}
@@ -710,11 +786,12 @@ namespace godot {
 			}
 		}
 
-		// Q 修炼：请求机缘突破（由 BreakthroughManager 统一受理，触发机缘事件）
+		// Q 打坐/收功：地面入坐修炼（修为+灵力回复）；修为封顶后打坐中自动请求机缘突破
 		if (Input::get_singleton()->is_action_just_pressed("cultivate")) {
-			SignalBus *bus = SignalBus::get_singleton();
-			if (bus) {
-				bus->emit_signal("breakthrough_requested");
+			if (is_meditating()) {
+				state_machine->transition_to(PlayerStates::Idle);
+			} else if (is_on_floor()) {
+				state_machine->transition_to(PlayerStates::Meditate);
 			}
 		}
 
@@ -879,6 +956,11 @@ namespace godot {
 		float actual_damage = DamageCalculator::compute(info, def);
 
 		current_health -= actual_damage;
+
+		// 受击收功（打坐被打断）
+		if (state_machine && state_machine->is_state(PlayerStates::Meditate)) {
+			state_machine->transition_to(PlayerStates::Idle);
+		}
 
 		// 炼体行为：承受伤害喂养功法熟练
 		if (_gongfa) {
@@ -1563,6 +1645,16 @@ namespace godot {
 		if (_cultivation) {
 			_cultivation->accumulate_energy(p_amount);
 		}
+	}
+
+	bool Player::is_meditating() const {
+		return state_machine && state_machine->is_state(PlayerStates::Meditate);
+	}
+
+	double Player::get_meditate_rate() const {
+		if (!_cultivation) return 0.0;
+		// max(5, 当前境界封顶×0.2%)每秒 —— 纯打坐约 8 分钟满一境
+		return Math::max(5.0, double(_cultivation->get_max_energy()) * 0.002);
 	}
 
 	// ---- Save / Load ----

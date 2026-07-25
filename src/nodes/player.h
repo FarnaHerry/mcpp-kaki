@@ -119,6 +119,10 @@ namespace godot {
 		void toggle_skill_page();
 		void gain_spiritual_energy(float p_amount);
 
+		// 打坐（Q）：平常修炼 + 突破入口。修为速率 max(5, 当前境界封顶×0.2%)/s
+		bool is_meditating() const;
+		double get_meditate_rate() const;
+
 		// 法宝系统（本命法宝：120%→150%温养 → 渡劫觉醒200%）
 		void set_benming_artifact(const StringName &p_item_id);
 		StringName get_benming_artifact() const { return _benming_item; }
