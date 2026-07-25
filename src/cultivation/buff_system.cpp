@@ -11,6 +11,7 @@ namespace godot {
 		{ "buff_bing_xin", "冰心",     300.0f, 0.0f,  0.0f,  ELEM_SHUI,  0.15f }, // 冰心丹：水抗+15%
 		{ "buff_chi_yan",  "赤焰",     300.0f, 0.15f, 0.0f,  ELEM_NONE,  0.0f  }, // 赤焰丹：攻击+15%
 		{ "buff_jin_gang", "金刚",     300.0f, 0.0f,  0.20f, ELEM_NONE,  0.0f  }, // 金刚丹：防御+20%
+		{ "buff_tu_dun",   "土盾",     12.0f,  0.0f,  0.30f, ELEM_NONE,  0.0f  }, // 土盾术：防御+30%（法术自buff）
 	};
 
 	const BuffSystem::Def *BuffSystem::find_def(const StringName &p_id) {

@@ -19,7 +19,8 @@ enum Element {
 	ELEM_SHUI,  // 水
 	ELEM_HUO,   // 火
 	ELEM_TU,    // 土
-	ELEM_COUNT, // 拓展位：雷/风/冰/毒…（数组容量预留 8）
+	ELEM_LEI,   // 雷（拓展位启用；不入五行克制环）
+	ELEM_COUNT, // 后续：风/冰/毒…（数组容量预留 8）
 	ELEM_CAPACITY = 8,
 };
 

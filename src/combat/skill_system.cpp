@@ -11,17 +11,34 @@ namespace godot {
 static const SkillSystem::Def SKILL_DEFS[] = {
 	// 武技（物理，冷却驱动，凡人可用）
 	{ "po_kong_zhan", "破空斩", SkillSystem::TYPE_MARTIAL, DMG_PHYSICAL, ELEM_NONE,
-	  0.0f, 0.0f, 3.0f, 2.5f, SkillSystem::FX_MELEE_SWING, 0, 0.0f, Color(), 0.0f },
+	  0.0f, 0.0f, 3.0f, 2.5f, SkillSystem::FX_MELEE_SWING, 0, 0.0f, Color(), 0.0f, nullptr },
 	{ "tu_jin_zhan", "突进斩", SkillSystem::TYPE_MARTIAL, DMG_PHYSICAL, ELEM_NONE,
-	  0.0f, 0.0f, 5.0f, 1.8f, SkillSystem::FX_LUNGE, 0, 0.0f, Color(), 0.0f },
+	  0.0f, 0.0f, 5.0f, 1.8f, SkillSystem::FX_LUNGE, 0, 0.0f, Color(), 0.0f, nullptr },
+	{ "xuan_feng_zhan", "旋风斩", SkillSystem::TYPE_MARTIAL, DMG_PHYSICAL, ELEM_NONE,
+	  0.0f, 0.0f, 6.0f, 3.0f, SkillSystem::FX_AOE_SWING, 1, 0.0f, Color(), 0.0f, nullptr },
+	{ "sheng_long_ji", "升龙击", SkillSystem::TYPE_MARTIAL, DMG_PHYSICAL, ELEM_NONE,
+	  0.0f, 0.0f, 5.0f, 2.2f, SkillSystem::FX_RISING, 1, 0.0f, Color(), 0.0f, nullptr },
 	// 法术（元素伤害，耗灵力，炼气解锁）
 	{ "huo_dan_shu", "火弹术", SkillSystem::TYPE_SPELL, DMG_ELEMENTAL, ELEM_HUO,
-	  15.0f, 0.0f, 2.0f, 2.0f, SkillSystem::FX_PROJECTILE, 1, 220.0f, Color(1.0f, 0.45f, 0.15f), 0.0f },
+	  15.0f, 0.0f, 2.0f, 2.0f, SkillSystem::FX_PROJECTILE, 1, 220.0f, Color(1.0f, 0.45f, 0.15f), 0.0f, nullptr },
 	{ "bing_zhui_shu", "冰锥术", SkillSystem::TYPE_SPELL, DMG_ELEMENTAL, ELEM_SHUI,
-	  25.0f, 0.0f, 4.0f, 3.0f, SkillSystem::FX_PROJECTILE, 1, 260.0f, Color(0.5f, 0.8f, 1.0f), 0.0f },
-	// 神通（法则产物，耗法则之力，化神解锁）——示例：缩地成寸（空间法则）
+	  25.0f, 0.0f, 4.0f, 3.0f, SkillSystem::FX_PROJECTILE, 1, 260.0f, Color(0.5f, 0.8f, 1.0f), 0.0f, nullptr },
+	{ "lei_zhou_shu", "雷咒术", SkillSystem::TYPE_SPELL, DMG_ELEMENTAL, ELEM_LEI,
+	  30.0f, 0.0f, 3.0f, 3.5f, SkillSystem::FX_PROJECTILE, 2, 300.0f, Color(0.9f, 0.9f, 0.3f), 0.0f, nullptr },
+	{ "tu_dun_shu", "土盾术", SkillSystem::TYPE_SPELL, DMG_PHYSICAL, ELEM_NONE,
+	  20.0f, 0.0f, 20.0f, 0.0f, SkillSystem::FX_SELF_BUFF, 2, 0.0f, Color(), 0.0f, "buff_tu_dun" },
+	{ "yu_jian_shu", "御剑术", SkillSystem::TYPE_SPELL, DMG_ELEMENTAL, ELEM_JIN,
+	  40.0f, 0.0f, 6.0f, 2.0f, SkillSystem::FX_PROJ_FAN, 3, 280.0f, Color(0.85f, 0.85f, 0.95f), 0.0f, nullptr },
+	// 神通（法则产物，耗法则之力，化神解锁）
 	{ "suo_di_cheng_cun", "缩地成寸", SkillSystem::TYPE_SHENTONG, DMG_PHYSICAL, ELEM_NONE,
-	  0.0f, 30.0f, 8.0f, 0.0f, SkillSystem::FX_BLINK, 5, 0.0f, Color(), 120.0f },
+	  0.0f, 30.0f, 8.0f, 0.0f, SkillSystem::FX_BLINK, 5, 0.0f, Color(), 120.0f, nullptr },
+	{ "jin_gang_bu_huai", "金刚不坏", SkillSystem::TYPE_SHENTONG, DMG_PHYSICAL, ELEM_NONE,
+	  0.0f, 40.0f, 30.0f, 0.0f, SkillSystem::FX_INVULN, 5, 0.0f, Color(), 2.5f, nullptr },
+	{ "san_mei_zhen_huo", "三昧真火", SkillSystem::TYPE_SHENTONG, DMG_ELEMENTAL, ELEM_HUO,
+	  0.0f, 35.0f, 12.0f, 6.0f, SkillSystem::FX_PROJECTILE, 5, 320.0f, Color(1.0f, 0.3f, 0.1f), 0.0f, nullptr },
+	// 仙法（仙元驱动，真仙解锁）——示例：天雷引
+	{ "tian_lei_yin", "天雷引", SkillSystem::TYPE_XIANFA, DMG_ELEMENTAL, ELEM_LEI,
+	  60.0f, 0.0f, 10.0f, 8.0f, SkillSystem::FX_PROJECTILE, 10, 340.0f, Color(1.0f, 1.0f, 0.6f), 0.0f, nullptr },
 };
 
 void SkillSystem::_bind_methods() {
@@ -137,6 +154,22 @@ void SkillSystem::_execute(const Def *p_def) {
 			break;
 		case FX_BLINK:
 			_player->exec_skill_blink(p_def->effect_param);
+			break;
+		case FX_AOE_SWING:
+			_player->exec_skill_aoe(p_def->power, p_def->category, p_def->element);
+			break;
+		case FX_RISING:
+			_player->exec_skill_rising(p_def->power, p_def->category, p_def->element);
+			break;
+		case FX_SELF_BUFF:
+			_player->exec_skill_self_buff(StringName(p_def->buff_id));
+			break;
+		case FX_PROJ_FAN:
+			_player->exec_skill_proj_fan(p_def->power, p_def->category, p_def->element,
+			                             p_def->proj_speed, p_def->proj_color);
+			break;
+		case FX_INVULN:
+			_player->exec_skill_invuln(p_def->effect_param);
 			break;
 	}
 }

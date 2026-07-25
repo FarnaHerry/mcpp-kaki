@@ -36,6 +36,11 @@ public:
 		FX_LUNGE,           // 突进 + 一挥
 		FX_PROJECTILE,      // 投射物
 		FX_BLINK,           // 瞬移（缩地成寸；effect_param=距离px）
+		FX_AOE_SWING,       // 旋风斩：双向大范围一挥（借 HitBox 放大）
+		FX_RISING,          // 升龙击：向上跃起 + 一挥
+		FX_SELF_BUFF,       // 自身增益（buff_id → BuffSystem）
+		FX_PROJ_FAN,        // 剑扇：3 发扇形投射物（±15°）
+		FX_INVULN,          // 金刚不坏：短时无敌（effect_param=秒）
 	};
 
 	struct Def {
@@ -52,7 +57,8 @@ public:
 		int min_realm;    // 解锁最低境界（CultivationSystem::Realm）
 		float proj_speed; // FX_PROJECTILE
 		Color proj_color; // FX_PROJECTILE
-		float effect_param; // FX_BLINK: 瞬移距离(px)
+		float effect_param; // FX_BLINK: 瞬移距离(px)；FX_INVULN: 无敌秒数
+		const char *buff_id; // FX_SELF_BUFF: BuffSystem def id（其余 FX 为 nullptr）
 	};
 
 	static const int SLOT_COUNT = 8; // A/S=武技 D/F=法术 G/H=法宝页占用 T=神通 Y=仙法

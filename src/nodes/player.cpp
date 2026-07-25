@@ -567,6 +567,8 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("get_current_health"), &Player::get_current_health);
 		ClassDB::bind_method(D_METHOD("get_max_health"), &Player::get_max_health);
 		ClassDB::bind_method(D_METHOD("set_current_health", "v"), &Player::set_current_health);
+		ClassDB::bind_method(D_METHOD("is_invulnerable"), &Player::is_invulnerable);
+		ClassDB::bind_method(D_METHOD("get_time"), &Player::get_time);
 	ClassDB::bind_method(D_METHOD("take_damage_typed", "amount", "cat", "elem", "source"), &Player::take_damage_typed);
 		ClassDB::bind_method(D_METHOD("gain_spiritual_energy", "amount"), &Player::gain_spiritual_energy);
 		ClassDB::bind_method(D_METHOD("on_attack_landed", "victim", "damage"), &Player::on_attack_landed);
@@ -697,6 +699,11 @@ namespace godot {
 				_hitbox->set_active(false);
 				_hitbox->damage_category = DMG_PHYSICAL;
 				_hitbox->element = ELEM_NONE;
+				if (_skill_hitbox_aoe) { // 旋风斩借用后还原变换
+					_skill_hitbox_aoe = false;
+					_hitbox->set_position(Vector2(0, 0));
+					_hitbox->set_scale(Vector2((float)facing_direction, 1.0f));
+				}
 			}
 		}
 
@@ -837,6 +844,7 @@ namespace godot {
 	}
 
 	void Player::_take_damage_typed(float p_amount, DamageCategory p_cat, Element p_elem, Node *p_source) {
+		if (is_invulnerable()) return; // 金刚不坏：无敌窗口全免
 		// DamageCalculator 统一结算：defense 来自装备 × 境界系数
 		float defense = get_equip_bonus_defense();
 		if (_cultivation) {
@@ -1075,6 +1083,9 @@ namespace godot {
 					_skills->assign(2, StringName("huo_dan_shu")); // D
 				if (_skills->get_slot_skill(3) == StringName())
 					_skills->assign(3, StringName("bing_zhui_shu")); // F
+				// 炼气武技精进：旋风斩/升龙击（v1 境界授予，后续改师傅/掉落）
+				_skills->learn(StringName("xuan_feng_zhan"));
+				_skills->learn(StringName("sheng_long_ji"));
 			}
 		}
 
@@ -1084,11 +1095,22 @@ namespace godot {
 			_artifacts->acquire(StringName("fei_jian"));
 			_artifacts->equip(1, StringName("fei_jian"));
 		}
+		// 筑基：雷咒术/土盾术
+		if (_skills && p_old_realm < CultivationSystem::FOUNDATION &&
+		    p_new_realm >= CultivationSystem::FOUNDATION) {
+			_skills->learn(StringName("lei_zhou_shu"));
+			_skills->learn(StringName("tu_dun_shu"));
+		}
 		// 金丹：赐照妖葫
 		if (_artifacts && p_old_realm < CultivationSystem::GOLDEN_CORE &&
 		    p_new_realm >= CultivationSystem::GOLDEN_CORE) {
 			_artifacts->acquire(StringName("zhao_yao_hu"));
 			_artifacts->equip(2, StringName("zhao_yao_hu"));
+		}
+		// 金丹：御剑术（剑扇三连）
+		if (_skills && p_old_realm < CultivationSystem::GOLDEN_CORE &&
+		    p_new_realm >= CultivationSystem::GOLDEN_CORE) {
+			_skills->learn(StringName("yu_jian_shu"));
 		}
 		// 元婴：赐玄铁塔（辅助型；次要栏满则持而未装，待换）
 		if (_artifacts && p_old_realm < CultivationSystem::NASCENT_SOUL &&
@@ -1102,12 +1124,20 @@ namespace godot {
 			_skills->learn(StringName("suo_di_cheng_cun"));
 			if (_skills->get_slot_skill(6) == StringName())
 				_skills->assign(6, StringName("suo_di_cheng_cun")); // T
+			// 金刚不坏（金之法则）/ 三昧真火（火之法则）
+			_skills->learn(StringName("jin_gang_bu_huai"));
+			_skills->learn(StringName("san_mei_zhen_huo"));
 		}
 
-		// 渡劫成仙：本命法宝觉醒（150% → 200%）
+		// 渡劫成仙：本命法宝觉醒（150% → 200%）+ 首个仙法（天雷引）
 		if (p_old_realm < CultivationSystem::TRUE_IMMORTAL &&
 		    p_new_realm >= CultivationSystem::TRUE_IMMORTAL) {
 			awaken_benming_artifact();
+			if (_skills) {
+				_skills->learn(StringName("tian_lei_yin"));
+				if (_skills->get_slot_skill(7) == StringName())
+					_skills->assign(7, StringName("tian_lei_yin")); // Y
+			}
 		}
 	}
 
@@ -1169,6 +1199,59 @@ namespace godot {
 		} else {
 			set_global_position(get_global_position() + motion);
 		}
+	}
+
+	void Player::exec_skill_aoe(float p_power, DamageCategory p_cat, Element p_elem) {
+		// 旋风斩：HitBox 双向放大（约 ±37px），窗口后还原变换
+		if (!_hitbox) return;
+		_skill_hitbox_aoe = true;
+		_hitbox->set_position(Vector2((float)-facing_direction * 18.0f, 0.0f));
+		exec_skill_melee(p_power, p_cat, p_elem);
+		_hitbox->set_scale(Vector2((float)facing_direction * 1.6f, 1.6f));
+		_skill_hitbox_until = _time + 0.22;
+	}
+
+	void Player::exec_skill_rising(float p_power, DamageCategory p_cat, Element p_elem) {
+		// 升龙击：向上跃起 + 一挥（对空手段）
+		Vector2 v = get_velocity();
+		v.y = -380.0f;
+		v.x = (float)facing_direction * 80.0f;
+		set_velocity(v);
+		exec_skill_melee(p_power, p_cat, p_elem);
+		_skill_hitbox_until = _time + 0.25;
+	}
+
+	void Player::exec_skill_self_buff(const StringName &p_buff_id) {
+		if (_buffs) {
+			_buffs->apply(p_buff_id); // 同名刷新不叠加
+		}
+	}
+
+	void Player::exec_skill_proj_fan(float p_power, DamageCategory p_cat, Element p_elem,
+	                                 float p_speed, const Color &p_color) {
+		// 御剑术：3 发扇形（±15°）
+		float base = (facing_direction > 0) ? 0.0f : (float)Math_PI;
+		static const float OFF[3] = { -0.26f, 0.0f, 0.26f };
+		float spell_mult = _gongfa ? _gongfa->get_spell_mult() : 1.0f;
+		for (int i = 0; i < 3; i++) {
+			Projectile *proj = memnew(Projectile);
+			proj->set_position(get_global_position() + Vector2((float)facing_direction * 14.0f, -4.0f));
+			proj->direction = Vector2(Math::cos(base + OFF[i]), Math::sin(base + OFF[i]));
+			proj->speed = p_speed;
+			proj->damage = get_effective_attack() * spell_mult * p_power;
+			proj->damage_category = p_cat;
+			proj->element = p_elem;
+			proj->visual_color = p_color;
+			proj->set_source(this);
+			proj->set_collision_mask_value(3, false);
+			proj->set_collision_mask_value(4, true);
+			proj->set_collision_mask_value(1, true);
+			get_parent()->add_child(proj);
+		}
+	}
+
+	void Player::exec_skill_invuln(float p_seconds) {
+		_invuln_until = _time + double(p_seconds);
 	}
 
 	// ---- 法宝系统（本命法宝）----

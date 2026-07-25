@@ -155,6 +155,13 @@ namespace godot {
 		void exec_skill_projectile(float p_power, DamageCategory p_cat, Element p_elem,
 		                           float p_speed, const Color &p_color);
 		void exec_skill_blink(float p_distance); // 神通·缩地成寸（碰撞安全瞬移）
+		void exec_skill_aoe(float p_power, DamageCategory p_cat, Element p_elem);     // 旋风斩：双向大范围
+		void exec_skill_rising(float p_power, DamageCategory p_cat, Element p_elem);  // 升龙击：上跃+一挥
+		void exec_skill_self_buff(const StringName &p_buff_id);                       // 土盾术：BuffSystem
+		void exec_skill_proj_fan(float p_power, DamageCategory p_cat, Element p_elem,
+		                         float p_speed, const Color &p_color);                // 御剑术：3 发扇形
+		void exec_skill_invuln(float p_seconds);                                      // 金刚不坏：短时无敌
+		bool is_invulnerable() const { return _time < _invuln_until; }
 
 		// Save / Load
 		void apply_save_data(const Dictionary &p_data);
@@ -184,7 +191,9 @@ namespace godot {
 		StringName _consumable_bar[CONSUMABLE_BAR_SLOTS]; // 数字键快捷栏（空 = StringName()）
 		int _skill_page = 0;
 		Inventory *_inventory = nullptr;
-		double _skill_hitbox_until = 0.0; // 技能借用 HitBox 的关闭时刻（_time 时基）
+		double _skill_hitbox_until = 0.0;
+		double _invuln_until = 0.0;   // 金刚不坏无敌截止（神通）
+		bool _skill_hitbox_aoe = false; // AOE 借用 HitBox 后需还原变换 // 技能借用 HitBox 的关闭时刻（_time 时基）
 		bool _interact_prompt_active = false; // 附近有可交互物（X 交互优先于普攻）
 		void _on_interaction_prompt(const String &p_text, bool p_show);
 
