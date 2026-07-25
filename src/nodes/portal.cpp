@@ -144,7 +144,7 @@ namespace godot {
         // Create exit portal inside the room
         _create_exit_portal();
 
-        _prompt_text = "[Space] Leave";
+        _prompt_text = "[X] Leave";
     }
 
     void Portal::_exit() {
@@ -166,13 +166,13 @@ namespace godot {
         // Unlock camera
         if (_camera) _camera->exit_room();
 
-        _prompt_text = "[Space] Enter";
+        _prompt_text = "[X] Enter";
     }
 
     void Portal::_create_exit_portal() {
         Portal *ep = memnew(Portal);
         ep->set_name("ExitPortal");
-        ep->_prompt_text = "[Space] Leave";
+        ep->_prompt_text = "[X] Leave";
         ep->_entrance_portal = this; // delegate back
         ep->_player = _player;
         ep->_camera = _camera;

@@ -19,7 +19,7 @@ namespace godot {
     // Usage from GDScript:
     //   var p = ClassDB.instantiate("Portal")
     //   p.target_scene = "res://scenes/rooms/town.tscn"
-    //   p.prompt_text = "[Space] Enter"
+    //   p.prompt_text = "[X] Enter"
     //   p.call("set_player", player)
     //   p.call("set_camera", camera)
     //   add_child(p)
@@ -63,7 +63,7 @@ namespace godot {
         // Configuration
         String _target_scene;
         String _spawn_marker = "SpawnEntrance";
-        String _prompt_text = "[Space] Enter";
+        String _prompt_text = "[X] Enter";
         Rect2 _room_bounds = Rect2(0, 0, 400, 270);
 
         // Dependencies

@@ -576,6 +576,7 @@ namespace godot {
 	ClassDB::bind_method(D_METHOD("get_artifacts"), &Player::get_artifacts);
 	ClassDB::bind_method(D_METHOD("get_skill_page"), &Player::get_skill_page);
 	ClassDB::bind_method(D_METHOD("toggle_skill_page"), &Player::toggle_skill_page);
+	ClassDB::bind_method(D_METHOD("_on_interaction_prompt", "text", "show"), &Player::_on_interaction_prompt);
 		ClassDB::bind_method(D_METHOD("get_ability_manager"), &Player::get_ability_manager);
 		ClassDB::bind_method(D_METHOD("equip_item", "inventory_slot"), &Player::equip_item);
 		ClassDB::bind_method(D_METHOD("unequip_item", "equip_slot"), &Player::unequip_item);
@@ -775,7 +776,16 @@ namespace godot {
 	}
 
 	bool Player::attack_just_pressed() const {
+		// X = 普攻+交互合一：附近有交互物时按 X（interact 含 X 键）交互优先，不出刀
+		if (_interact_prompt_active &&
+		    Input::get_singleton()->is_action_just_pressed("interact")) {
+			return false;
+		}
 		return Input::get_singleton()->is_action_just_pressed("attack");
+	}
+
+	void Player::_on_interaction_prompt(const String &p_text, bool p_show) {
+		_interact_prompt_active = p_show;
 	}
 
 	bool Player::attack_held() const {
@@ -955,6 +965,7 @@ namespace godot {
 		SignalBus *bus = SignalBus::get_singleton();
 		if (bus) {
 			bus->connect("enemy_killed", Callable(this, "_on_enemy_killed"));
+			bus->connect("interaction_prompt", Callable(this, "_on_interaction_prompt"));
 		}
 	}
 

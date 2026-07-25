@@ -168,6 +168,8 @@ namespace godot {
 		int _skill_page = 0;
 		Inventory *_inventory = nullptr;
 		double _skill_hitbox_until = 0.0; // 技能借用 HitBox 的关闭时刻（_time 时基）
+		bool _interact_prompt_active = false; // 附近有可交互物（X 交互优先于普攻）
+		void _on_interaction_prompt(const String &p_text, bool p_show);
 
 		void _refresh_max_health(bool p_refill);
 		void _on_gongfa_changed();
