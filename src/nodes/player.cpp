@@ -1637,6 +1637,9 @@ namespace godot {
 		if (def->buff_id != StringName() && _buffs) {
 			_buffs->apply(def->buff_id); // 同名刷新不叠加
 		}
+		if (def->learn_skill != StringName() && _skills) {
+			_skills->learn(def->learn_skill); // 秘籍/残卷：使用即悟（已会则 no-op）
+		}
 
 		SignalBus *bus = SignalBus::get_singleton();
 		if (bus) {

@@ -132,8 +132,8 @@ func _setup_game():
 		var fy = WC.spawn_enemy(self, Vector2(4020 + i * 160, 150 + i * 20), Color(0.6, 0.5, 0.9, 1), 110.0, 340.0, "GuXiao%d" % i)
 		fy.set("is_flying", true)
 		fy.set("max_health", 3.0); fy.set("current_health", 3.0)
-	WC.make_ground(self, 4400, 6000, 238)
-	WC.make_wall(self, 6000, 40, 270) # 世界尽头（东海之滨扩展时后移）
+	WC.make_ground(self, 4400, 9000, 238)
+	WC.make_wall(self, 9000, 40, 270) # 世界尽头（东海尽头；扩展时后移）
 	var lei = WC.spawn_enemy(self, Vector2(4600, 210), Color(0.7, 0.4, 0.9, 1), 90.0, 380.0, "LeiShou")
 	lei.set("is_ranged", true); lei.set("attack_range", 280.0); lei.set("preferred_distance", 180.0)
 	lei.set("attack_damage", 14.0); lei.set("attack_cooldown", 1.2)
@@ -159,6 +159,47 @@ func _setup_game():
 	WC.spawn_herb(self, Vector2(5680, 84), "wu_dao_cha", 1)
 	WC.spawn_item_pickup(self, Vector2(5600, 84), "qian_nian_ling_zhi", 1)
 	WC.spawn_item_pickup(self, Vector2(5750, 84), "spirit_stone", 10)
+
+	# ===== 花果山 (6000~8000)：桃林 + 水帘洞秘境（design/world-map.md 东胜神洲补完）=====
+	WC.make_landmark(self, 6050, 120, "花果山", Color(1.0, 0.6, 0.7, 1))
+	WC.create_checkpoint(self, 6200)
+	# 桃林：错落桃台（粉），仙桃结于台上
+	WC.make_platform(self, 6300, 180, 90)
+	WC.make_platform(self, 6500, 140, 90)
+	WC.make_platform(self, 6700, 180, 90)
+	WC.make_platform(self, 6900, 130, 90)
+	WC.make_platform(self, 7200, 170, 100)
+	WC.make_platform(self, 7500, 150, 90)
+	WC.spawn_item_pickup(self, Vector2(6500, 134), "xian_tao", 1)
+	WC.spawn_item_pickup(self, Vector2(6900, 124), "xian_tao", 1)
+	WC.spawn_item_pickup(self, Vector2(7500, 144), "xian_tao", 1)
+	WC.spawn_herb(self, Vector2(6300, 174), "ju_ling_cao", 2)
+	WC.spawn_herb(self, Vector2(7200, 164), "wu_dao_cha", 1)
+	# 猿怪：桃林泼猴（近战，轻捷）
+	for i in range(3):
+		var yuan = WC.spawn_enemy(self, Vector2(6400 + i * 500, 210), Color(0.75, 0.55, 0.35, 1), 95.0, 260.0, "YuanGuai%d" % i)
+		yuan.set("max_health", 5.0); yuan.set("current_health", 5.0)
+		yuan.set("attack_damage", 12.0)
+	# 水帘洞秘境入口（复用 Portal 房间模式；洞内另有乾坤）
+	WC.create_portal(self, 7000, "res://scenes/rooms/shuilian_dong.tscn", "[X] 入水帘洞", player, camera, hint)
+
+	# ===== 东海之滨 (8000~9000)：巡海夜叉 + 定海神针铁 =====
+	WC.make_landmark(self, 8050, 120, "东海之滨", Color(0.4, 0.7, 1.0, 1))
+	WC.create_checkpoint(self, 8200)
+	# 礁石台（近海错落）
+	WC.make_platform(self, 8350, 175, 80)
+	WC.make_platform(self, 8550, 135, 80)
+	WC.make_platform(self, 8750, 100, 90, false) # 神针礁石：非单向，跳台尽头
+	# 巡海夜叉（精英：远程钢叉，厚血）
+	for i in range(2):
+		var yecha = WC.spawn_enemy(self, Vector2(8300 + i * 350, 210), Color(0.2, 0.45, 0.7, 1), 80.0, 380.0, "XunHaiYeCha%d" % i)
+		yecha.set("is_ranged", true); yecha.set("attack_range", 300.0); yecha.set("preferred_distance", 190.0)
+		yecha.set("attack_damage", 16.0); yecha.set("attack_cooldown", 1.4)
+		yecha.set("max_health", 14.0); yecha.set("current_health", 14.0)
+	# 定海神针铁：沉于礁石之上，静待有缘
+	WC.spawn_item_pickup(self, Vector2(8750, 94), "ding_hai_shen_zhen", 1)
+	WC.spawn_herb(self, Vector2(8550, 129), "bing_xin_lian", 1)
+	WC.spawn_item_pickup(self, Vector2(8650, 232), "spirit_stone", 10)
 
 	print("东胜神洲 · 落霞山地")
 	print("Open world ready. Walk to portal markers and press X.")

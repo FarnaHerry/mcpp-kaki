@@ -31,9 +31,10 @@ func _process(delta) -> bool:
 			_next = _t + 0.5
 			# 地形存在性
 			for n in ["Platform_1400_190", "Platform_2300_104", "Wall_2650_130", "Wall_2750_90",
-			          "Wall_3894_238", "Wall_4406_238", "Ground_3900_4400", "Ground_4400_6000",
-			          "Wall_6000_40", "Platform_5600_90",
-			          "Checkpoint_1320", "Checkpoint_2820", "Checkpoint_4450", "Checkpoint_5250"]:
+			          "Wall_3894_238", "Wall_4406_238", "Ground_3900_4400", "Ground_4400_9000",
+			          "Wall_9000_40", "Platform_5600_90",
+			          "Checkpoint_1320", "Checkpoint_2820", "Checkpoint_4450", "Checkpoint_5250",
+			          "Checkpoint_6200", "Checkpoint_8200"]:
 				_check(root.find_child(n, true, false) != null, "terrain node: " + n)
 			# 主地面已扩到 3900（不到 4400，沟壑留缺）
 			var g = root.find_child("Ground", true, false)
@@ -73,7 +74,7 @@ func _process(delta) -> bool:
 				if c.has_method("get_herb_id"):
 					herbs.append(String(c.call("get_herb_id")))
 			print("[TEST] herbs: ", herbs)
-			_check(herbs.count("wu_dao_cha") == 2, "wu_dao_cha ×2 (悟道崖)")
+			_check(herbs.count("wu_dao_cha") == 3, "wu_dao_cha ×3 (悟道崖2+花果山1)")
 			_check(herbs.count("chi_yan_hua") == 2, "chi_yan_hua ×2 (幽谷底)")
 			_check(herbs.count("bing_xin_lian") >= 3, "bing_xin_lian ≥3 (旧1+竹台2)")
 			_check(herbs.count("jin_gang_teng") >= 3, "jin_gang_teng ≥3 (旧1+绝壁2)")

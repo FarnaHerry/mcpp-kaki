@@ -103,6 +103,9 @@ bin/              # 编译产物 (.so)，gitignored
   - 雷元素 ELEM_LEI：不入五行克制环
 - **五区地图** (scenes/main.tscn + scripts/bootstrap.gd) — 落霞村外围(0~1300)/青竹林(1300~2600 单向竹台跳跃)/断崖绝壁(2600~3900 墙跳烟囱)/幽谷(3900~5200 飞行沟壑3900~4400，谷底y=420)/谷深处(5200~6000 BOSS+悟道崖飞行高台y=90)；检查点×4(1320/2820/4450/5250)；新敌人 竹妖/崖枭/崖弓/谷枭/雷兽/幽谷螭龙(BOSS 30血)；草药全闭环(悟道茶×2/冰心莲/赤焰花/金刚藤摆点)
 - **四大部洲** (design/world-map.md，后西游设定) — **ContinentManager** (`src/core/continent_manager.*`)：洲定义表（东胜神洲main.tscn/西牛贺洲金丹/南赡部洲炼虚/北俱芦洲渡劫），`get_continent_list/can_travel/travel_to`；洲=根场景整景切换，**旅行桥**（GameManager 函数局部 static 收集存档→新场景 GameManager 应用，全恢复+落点；**严禁文件级 static Dictionary**——引擎内存初始化前构造必 segfault）；跨洲读档走同一桥；**WorldCommon** (`scripts/world_common.gd`，preload 无 class_name——CLI 全局缓存不可靠） 承载公共装配，各洲脚本只搭地形内容；HUD 洲名横幅（continent_changed→2.8s 淡入淡出）
+- **东胜神洲补完** — 花果山(6000~8000：桃林粉台+猿怪+仙桃)+水帘洞秘境(scenes/rooms/shuilian_dong.tscn + scripts/rooms/，Portal 房间模式，白猿老祖精英，秘藏**身外化身残卷**)+东海之滨(8000~9000：巡海夜叉精英远程+**定海神针铁**武器攻+25 地品)；世界尽头墙移至 9000；检查点 6200/8200
+- **秘籍物品管线** — Item 新字段 `learn_skill`：use_consumable 统一入口习得技能（数据驱动，残卷/秘籍通用）；新物品：仙桃(50%回血+300修为)/身外化身残卷(地品)/定海神针铁
+- **身外化身神通（占位）** — TYPE_SHENTONG，FX_SELF_BUFF→`buff_shen_wai`(30s 攻+35%)，化神可施(法则50/冷却60s)，**非境界授予**，水帘洞残卷习得；分身实体协同作战后做
 - **GameMenu 云游页** — 第6页「云游」（背包/能力/功法/技能/法宝/**云游**/炼丹/设置）：四洲列表（名/描述/【当前】/未解锁+条件话术），↑/↓选洲 X前往（先关菜单还原暂停再 travel_to）；ContinentManager 在 _open_menu 惰性查找（WorldCommon 创建顺序在 GameMenu 之后）
 - **ArtifactSystem** (`src/cultivation/artifact_system.*`) — 法宝：槽0=本命(镜像Player本命,飞升后锁定)+次要×2(飞升后+3)，威力系数本命1.2~2.0/次要1.0→1.2→1.5(两段温养)，攻击型祭出复用Skill效果管线(耗灵+冷却)，辅助型常驻被动入防御乘区；示例：飞剑(筑基)/照妖葫(金丹)/玄铁塔(元婴)；存档 pd["artifacts"]
 - **B键切页**: `Player._skill_page` + `skill_page_changed` 信号；法宝页 A~H=法宝槽0..5(T/Y两页通用)；页机制通用可扩技能多页

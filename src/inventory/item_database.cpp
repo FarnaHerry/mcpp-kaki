@@ -49,6 +49,7 @@ Dictionary ItemDatabase::get_item_info(const StringName &p_id) const {
 	d["mana_amount"] = it->mana_amount;
 	d["energy_amount"] = it->energy_amount;
 	d["buff_id"] = it->buff_id;
+	d["learn_skill"] = it->learn_skill;
 	return d;
 }
 
@@ -139,6 +140,49 @@ void ItemDatabase::_register_items() {
 		robe.max_stack = 1;
 		robe.defense_bonus = 3.0f;
 		_items[robe.id] = robe;
+	}
+
+	// ---- 花果山/东海之滨（design/world-map.md 东胜神洲补完）----
+
+	// 仙桃 — 花果山桃林灵果（大回血+修为）
+	{
+		Item peach;
+		peach.id = "xian_tao";
+		peach.name = TXT("仙桃");
+		peach.description = TXT("花果山桃林所结灵果，三千年一熟。食之气血充盈，修为精进。");
+		peach.type = Item::CONSUMABLE;
+		peach.max_stack = 10;
+		peach.grade = 1;
+		peach.heal_pct = 0.5f;
+		peach.energy_amount = 300.0f;
+		_items[peach.id] = peach;
+	}
+
+	// 身外化身残卷 — 水帘洞秘藏（使用习得神通「身外化身」）
+	{
+		Item scroll;
+		scroll.id = "shen_wai_can_juan";
+		scroll.name = TXT("身外化身残卷");
+		scroll.description = TXT("水帘洞石壁暗格所藏残卷，记载齐天大圣成名神通。参悟可习得「身外化身」。");
+		scroll.type = Item::CONSUMABLE;
+		scroll.max_stack = 1;
+		scroll.grade = 2;
+		scroll.learn_skill = StringName("shen_wai_hua_shen");
+		_items[scroll.id] = scroll;
+	}
+
+	// 定海神针铁 — 东海之滨镇海神铁（武器，重一万三千五百斤）
+	{
+		Item rod;
+		rod.id = "ding_hai_shen_zhen";
+		rod.name = TXT("定海神针铁");
+		rod.description = TXT("大禹治水时测定江海深浅的神铁，重一万三千五百斤。大圣归去后沉寂东海之滨，静待有缘。");
+		rod.type = Item::EQUIPMENT;
+		rod.equip_slot = Item::SLOT_WEAPON;
+		rod.max_stack = 1;
+		rod.grade = 2;
+		rod.attack_bonus = 25.0f;
+		_items[rod.id] = rod;
 	}
 
 	// ---- 草药（MATERIAL，design/alchemy.md 第二节）----
