@@ -25,6 +25,7 @@
 #include "nodes/game_hud.h"
 #include "nodes/inventory_panel.h"
 #include "nodes/item_pickup.h"
+#include "nodes/herb_node.h"
 #include "nodes/player.h"
 #include "nodes/portal.h"
 #include "nodes/game_menu.h"
@@ -58,6 +59,7 @@ void initialize_cpp_kaki_module(ModuleInitializationLevel p_level) {
 	GDREGISTER_CLASS(InventoryPanel);
 	GDREGISTER_CLASS(ItemDatabase);
 	GDREGISTER_CLASS(ItemPickup);
+	GDREGISTER_CLASS(HerbNode);
 	GDREGISTER_CLASS(SaveSystem);
 	GDREGISTER_CLASS(Inventory);
 	GDREGISTER_CLASS(DropSystem);

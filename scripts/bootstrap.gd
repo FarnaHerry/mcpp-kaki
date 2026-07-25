@@ -164,6 +164,17 @@ func _setup_game():
 	_spawn_item_pickup(Vector2(850, 220), "healing_pill", 2)
 	_spawn_item_pickup(Vector2(260, 220), "flying_sword", 1) # 筑基御剑飞行测试（出生点旁，金色菱形）
 
+	# ---- Herb Nodes (草药采集点，design/alchemy.md：前期区域撒 6~8 个凡级点) ----
+	_spawn_herb(Vector2(150, 214), "zhi_xue_cao", 1)
+	_spawn_herb(Vector2(450, 214), "zhi_xue_cao", 2)
+	_spawn_herb(Vector2(900, 214), "zhi_xue_cao", 1)
+	_spawn_herb(Vector2(250, 214), "ju_ling_cao", 1)
+	_spawn_herb(Vector2(600, 214), "ju_ling_cao", 2)
+	_spawn_herb(Vector2(1100, 214), "ju_ling_cao", 1)
+	# 灵级：高处/岩壁（跳跃/飞行门控）
+	_spawn_herb(Vector2(650, 130), "bing_xin_lian", 1)
+	_spawn_herb(Vector2(1180, 150), "jin_gang_teng", 1)
+
 	# ---- Key input for save/load test ----
 	set_process_input(true)
 
@@ -213,6 +224,15 @@ func _on_portal_prompt(text, show):
 		return
 	_interact_hint.text = text
 	_interact_hint.visible = show
+
+func _spawn_herb(pos, herb_id, qty):
+	var herb = ClassDB.instantiate("HerbNode")
+	if not herb: return
+	herb.name = "Herb_" + herb_id
+	herb.position = pos
+	herb.set("herb_id", herb_id)
+	herb.set("quantity", qty)
+	add_child(herb)
 
 func _spawn_item_pickup(pos, item_id, qty):
 	var pickup = ClassDB.instantiate("ItemPickup")

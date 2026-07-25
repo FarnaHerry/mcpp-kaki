@@ -87,9 +87,12 @@ std::vector<DropSystem::DropEntry> DropSystem::_roll_drops(
         table.push_back({ "healing_pill", 2, 3, 1.0f });
         table.push_back({ "foundation_pill", 1, 2, 0.8f });
         table.push_back({ "qi_pill", 1, 3, 0.6f });
+        table.push_back({ "qian_nian_ling_zhi", 1, 1, 1.0f }); // 千年灵芝保底 1（design/alchemy.md）
     } else {
         table.push_back({ "spirit_stone", 1, 3, 0.6f });
         table.push_back({ "healing_pill", 1, 1, 0.25f });
+        table.push_back({ "zhi_xue_cao", 1, 2, 0.15f }); // 小怪低概率草药
+        table.push_back({ "ju_ling_cao", 1, 2, 0.15f });
         if (p_is_ranged || p_is_flying) {
             table.push_back({ "qi_pill", 1, 2, 0.2f });
         }
