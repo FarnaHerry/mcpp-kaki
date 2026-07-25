@@ -21,6 +21,10 @@ void DamageNumbers::_ready() {
 	if (Engine::get_singleton()->is_editor_hint())
 		return;
 
+	// 纯 UI：暂停期间（渡劫三灾、突破叙事）DoT 仍在跳伤害，
+	// 数字必须照常上浮淡出，否则全冻在屏幕上
+	set_process_mode(Node::PROCESS_MODE_ALWAYS);
+
 	SignalBus *bus = SignalBus::get_singleton();
 	if (bus) {
 		bus->connect("damage_dealt", Callable(this, "_on_damage_dealt"));
@@ -51,6 +55,15 @@ void DamageNumbers::_on_damage_dealt(Vector2 p_world_pos, float p_amount, bool p
 	label->set_position(Vector2(-6.0f, -5.0f));
 	root->add_child(label);
 
+	// DoT（阴火等）高频刷伤害时兜底：超过 40 个丢最老
+	while (_active.size() >= 40) {
+		Entry &old_e = _active.front();
+		if (old_e.root && old_e.root->is_inside_tree()) {
+			old_e.root->queue_free();
+		}
+		_active.erase(_active.begin());
+	}
+
 	Entry e;
 	e.root = root;
 	e.drift_x = ox * 0.4f;
@@ -65,8 +78,19 @@ void DamageNumbers::_process(double p_delta) {
 		Entry &e = _active[i];
 		e.t += float(p_delta);
 		Node2D *root = e.root;
-		if (!root || !root->is_inside_tree()) {
+		if (!root) {
 			_active.erase(_active.begin() + i);
+			continue;
+		}
+		if (!root->is_inside_tree()) {
+			// add_child 是 deferred 的，可能尚未入树——宽限 0.5s，
+			// 超时说明父节点没了，主动销毁防永久残留
+			if (e.t > 0.5f) {
+				root->queue_free();
+				_active.erase(_active.begin() + i);
+				continue;
+			}
+			i++;
 			continue;
 		}
 		if (e.t >= LIFETIME) {
