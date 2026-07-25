@@ -74,6 +74,7 @@ void GameHUD::_ready() {
     _create_skill_bar();
     _create_consumable_bar();
     _create_law_bar();
+	_create_pressure_indicators();
 
     // Buff 行（生命条下方小行）
     _buff_label = memnew(Label);
@@ -346,6 +347,7 @@ void GameHUD::_process(double p_delta) {
     _update_skill_bar();
     _update_consumable_bar();
     _update_law_bar();
+	_update_pressure_indicators();
     _update_buff_label(p_delta);
 
     // 洲名横幅：2.8s 展示，末 0.8s 淡出
@@ -465,6 +467,80 @@ void GameHUD::_update_law_bar() {
 }
 
 // 数字键消耗品栏（技能栏上方一行：1~6 槽，名首字+数量；design/alchemy.md S6）
+
+// ============================================================
+// 威压/灵压冷却指示器（法则条下方；就绪亮色 / 冷却灰+秒）
+// ============================================================
+
+void GameHUD::_create_pressure_indicators() {
+	const float x0 = 480.0f - BAR_WIDTH - 8.0f; // same left edge as law bar
+	const float y = 20.0f;
+	const float W = 66.0f, H = 14.0f;
+
+	// V 威压
+	_wei_bg = memnew(ColorRect);
+	_wei_bg->set_position(Vector2(x0, y));
+	_wei_bg->set_size(Vector2(W, H));
+	_wei_bg->set_color(Color(0.12f, 0.10f, 0.05f, 0.85f));
+	add_child(_wei_bg);
+
+	_wei_label = memnew(Label);
+	_wei_label->set_text(TXT("V 威压"));
+	_wei_label->add_theme_font_size_override("font_size", FONT_SIZE_XS);
+	_wei_label->add_theme_color_override("font_color", Color(0.9f, 0.7f, 0.3f, 0.95f));
+	_wei_label->set_position(Vector2(x0 + 2, y - 1));
+	add_child(_wei_label);
+
+	// R 灵压
+	_lin_bg = memnew(ColorRect);
+	_lin_bg->set_position(Vector2(x0 + W + 4, y));
+	_lin_bg->set_size(Vector2(W, H));
+	_lin_bg->set_color(Color(0.10f, 0.06f, 0.14f, 0.85f));
+	add_child(_lin_bg);
+
+	_lin_label = memnew(Label);
+	_lin_label->set_text(TXT("R 灵压"));
+	_lin_label->add_theme_font_size_override("font_size", FONT_SIZE_XS);
+	_lin_label->add_theme_color_override("font_color", Color(0.7f, 0.5f, 0.95f, 0.95f));
+	_lin_label->set_position(Vector2(x0 + W + 6, y - 1));
+	add_child(_lin_label);
+}
+
+void GameHUD::_update_pressure_indicators() {
+	if (!_wei_bg || !_lin_bg) return;
+	if (!_player) return;
+
+	bool show = _hud_visible;
+	_wei_bg->set_visible(show);
+	_wei_label->set_visible(show);
+	_lin_bg->set_visible(show);
+	_lin_label->set_visible(show);
+	if (!show) return;
+
+	double wei_cd = _player->get_wei_cooldown_left();
+	double lin_cd = _player->get_lin_cooldown_left();
+
+	if (wei_cd > 0.05) {
+		_wei_label->set_text(vformat(TXT("V %.1fs"), wei_cd));
+		_wei_label->add_theme_color_override("font_color", Color(0.4f, 0.35f, 0.30f, 0.9f));
+		_wei_bg->set_color(Color(0.08f, 0.06f, 0.03f, 0.7f));
+	} else {
+		_wei_label->set_text(TXT("V 威压"));
+		_wei_label->add_theme_color_override("font_color", Color(1.0f, 0.85f, 0.35f, 0.95f));
+		_wei_bg->set_color(Color(0.18f, 0.14f, 0.05f, 0.85f));
+	}
+
+	if (lin_cd > 0.05) {
+		_lin_label->set_text(vformat(TXT("R %.1fs"), lin_cd));
+		_lin_label->add_theme_color_override("font_color", Color(0.40f, 0.30f, 0.35f, 0.9f));
+		_lin_bg->set_color(Color(0.06f, 0.03f, 0.10f, 0.7f));
+	} else {
+		_lin_label->set_text(TXT("R 灵压"));
+		_lin_label->add_theme_color_override("font_color", Color(0.85f, 0.65f, 1.0f, 0.95f));
+		_lin_bg->set_color(Color(0.12f, 0.07f, 0.18f, 0.85f));
+	}
+}
+
 void GameHUD::_create_consumable_bar() {
     const float SLOT_W = 20.0f, SLOT_GAP = 2.0f;
     const int N = 6;

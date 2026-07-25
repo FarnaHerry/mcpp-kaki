@@ -282,13 +282,32 @@ void GameMenu::_build_ability_page() {
 	build_column(ACTIVE_ROWS, 15, TXT("— 主动 —"), 60.0f);
 	build_column(PASSIVE_ROWS, 7, TXT("— 被动 —"), 280.0f);
 
-	Label *note = memnew(Label);
-	note->set_text(TXT("功法/武技/法术/神通/仙法 体系落地后入树"));
-	note->add_theme_font_size_override("font_size", 7);
-	note->add_theme_color_override("font_color", Color(0.5f, 0.5f, 0.5f));
-	note->set_position(Vector2(60, 240));
-	add_child(note);
-	_page_nodes.push_back(note);
+	// 威压/灵压（先天战技，不占 AbilityManager 槽；凡人期即可施放，仅灵力门控）
+	{
+		Label *ph = memnew(Label);
+		ph->set_text(TXT("— 战技 —"));
+		ph->add_theme_font_size_override("font_size", 9);
+		ph->add_theme_color_override("font_color", Color(0.9f, 0.75f, 0.4f));
+		ph->set_position(Vector2(60, 225));
+		add_child(ph);
+		_page_nodes.push_back(ph);
+
+		Label *v = memnew(Label);
+		v->set_text(TXT("✓ 威压 V  — 慑服低阶（耗灵30 cd8s）"));
+		v->add_theme_font_size_override("font_size", 8);
+		v->add_theme_color_override("font_color", Color(0.55f, 0.9f, 0.55f));
+		v->set_position(Vector2(60, 238));
+		add_child(v);
+		_page_nodes.push_back(v);
+
+		Label *r = memnew(Label);
+		r->set_text(TXT("✓ 灵压 R  — 法伤低阶/镇杀（耗灵60 cd15s）"));
+		r->add_theme_font_size_override("font_size", 8);
+		r->add_theme_color_override("font_color", Color(0.55f, 0.9f, 0.55f));
+		r->set_position(Vector2(60, 250));
+		add_child(r);
+		_page_nodes.push_back(r);
+	}
 }
 
 // ============================================================

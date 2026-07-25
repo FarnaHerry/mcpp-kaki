@@ -131,6 +131,12 @@ private:
     ColorRect *_law_fill = nullptr;
     Label *_law_label = nullptr;
 
+	// 威压/灵压冷却指示器（法则条下方：就绪亮色 / 冷却灰+秒）
+	ColorRect *_wei_bg = nullptr;
+	Label *_wei_label = nullptr;
+	ColorRect *_lin_bg = nullptr;
+	Label *_lin_label = nullptr;
+
     // Boss 血条（屏幕顶部居中；Boss 战触发时由 SignalBus 上报，死亡/玩家阵亡撤下）
     ColorRect *_boss_bg = nullptr;
     ColorRect *_boss_fill = nullptr;
@@ -152,6 +158,8 @@ private:
     void _update_consumable_bar();
     void _create_law_bar();
     void _create_boss_bar();
+	void _create_pressure_indicators();
+	void _update_pressure_indicators();
     void _update_skill_bar();
     void _update_law_bar();
     void _update_buff_label(double p_delta);
