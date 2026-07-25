@@ -75,17 +75,30 @@ public:
 	bool has_save(const String &p_slot_name = "auto") const;
 	Dictionary collect_save_data() const;
 
+	// ---- 跨场景旅行桥（design/world-map.md 洲切换）----
+	// 旧场景 collect_save_data → 静态桥 → change_scene → 新场景 GameManager 应用。
+	// 静态成员：场景切换后新 GameManager 实例仍能取到。
+	static void set_travel_bridge(const Dictionary &p_data);
+	static void set_travel_target(const Vector2 &p_spawn); // 到岸落点（不设=读档：落点/血量按存档）
+	bool has_pending_bridge() const { return !_pending_bridge.is_empty(); } // bootstrap 跳过初始检查点自动存档用
+
 	// ---- Enemy kill tracking ----
 	int get_kill_count() const { return _kill_count; }
 	void increment_kill_count();
 
 	void _ready() override;
+	void _process(double p_delta) override;
 
 protected:
 	static void _bind_methods();
 
 private:
 	static GameManager *_singleton;
+	// 跨场景旅行桥（洲切换时暂存全量存档）——函数内静态：
+	// Dictionary 全局静态会在引擎内存初始化前构造，必崩
+	static Dictionary &_bridge_storage();
+	static Vector2 _s_travel_spawn;
+	static bool _s_has_travel_spawn;
 
 	GameState _state = STATE_PLAYING;
 	Player *_player = nullptr;
@@ -97,6 +110,13 @@ private:
 	Vector2 _respawn_pos;
 	String _respawn_scene;
 	bool _has_checkpoint = false;
+
+	// 旅行桥：新场景启动后待应用的全量存档 + 落点
+	Dictionary _pending_bridge;
+	Vector2 _travel_spawn;
+	bool _has_travel_target = false;
+
+	void _apply_save_dict(const Dictionary &p_data); // load_game / 旅行桥共用的恢复逻辑
 
 	// Config
 	float _respawn_delay = 1.5f;

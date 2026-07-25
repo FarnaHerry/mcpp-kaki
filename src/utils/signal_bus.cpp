@@ -80,6 +80,9 @@ void SignalBus::_bind_methods() {
 	                      PropertyInfo(Variant::STRING, "to_scene")));
 	ADD_SIGNAL(MethodInfo("scene_transition_end",
 	                      PropertyInfo(Variant::STRING, "scene_path")));
+	ADD_SIGNAL(MethodInfo("continent_changed",
+	                      PropertyInfo(Variant::STRING, "continent_id"),
+	                      PropertyInfo(Variant::STRING, "continent_name")));
 
 	// ---- Interaction signals ----
 	ADD_SIGNAL(MethodInfo("interaction_prompt",

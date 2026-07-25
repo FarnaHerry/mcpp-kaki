@@ -18,6 +18,13 @@
 namespace godot {
 
 GameManager *GameManager::_singleton = nullptr;
+Vector2 GameManager::_s_travel_spawn;
+bool GameManager::_s_has_travel_spawn = false;
+
+Dictionary &GameManager::_bridge_storage() {
+	static Dictionary bridge;
+	return bridge;
+}
 
 void GameManager::_ready() {
 	if (Engine::get_singleton()->is_editor_hint())
@@ -28,6 +35,47 @@ void GameManager::_ready() {
 
 	// Create SaveSystem
 	_save_system = memnew(SaveSystem);
+
+	// 跨场景旅行桥：新场景启动，取出旧场景留下的全量存档（等 Player 创建后在 _process 应用）
+	if (!_bridge_storage().is_empty()) {
+		_pending_bridge = _bridge_storage();
+		_bridge_storage() = Dictionary();
+	}
+	if (_s_has_travel_spawn) {
+		_travel_spawn = _s_travel_spawn;
+		_has_travel_target = true;
+		_s_has_travel_spawn = false;
+	}
+	set_process(true);
+}
+
+void GameManager::set_travel_bridge(const Dictionary &p_data) {
+	_bridge_storage() = p_data;
+}
+
+void GameManager::set_travel_target(const Vector2 &p_spawn) {
+	_s_travel_spawn = p_spawn;
+	_s_has_travel_spawn = true;
+}
+
+void GameManager::_process(double p_delta) {
+	if (_pending_bridge.is_empty() || !_player) return;
+	Dictionary data = _pending_bridge;
+	_pending_bridge = Dictionary();
+	_apply_save_dict(data);
+	// 落点优先：到岸 spawn（读档则落在存档原位置）；旅行到岸满血（旅行不是死亡）
+	if (_has_travel_target) {
+		_has_travel_target = false;
+		_player->set_global_position(_travel_spawn);
+		_respawn_pos = _travel_spawn;
+		_player->current_health = _player->max_health;
+		if (_signal_bus) {
+			_signal_bus->emit_signal("player_health_changed",
+				_player->current_health, _player->max_health);
+		}
+	}
+	// 到岸即检查点（不触发自动存档——读档/旅行不该反手写档）
+	_has_checkpoint = true;
 }
 
 void GameManager::_bind_methods() {
@@ -54,6 +102,7 @@ void GameManager::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("save_game", "slot_name"), &GameManager::save_game, DEFVAL("auto"));
 	ClassDB::bind_method(D_METHOD("load_game", "slot_name"), &GameManager::load_game, DEFVAL("auto"));
 	ClassDB::bind_method(D_METHOD("has_save", "slot_name"), &GameManager::has_save, DEFVAL("auto"));
+	ClassDB::bind_method(D_METHOD("has_pending_bridge"), &GameManager::has_pending_bridge);
 
 	ADD_SIGNAL(MethodInfo("respawn_triggered",
 	                      PropertyInfo(Variant::VECTOR2, "position")));
@@ -331,6 +380,23 @@ void GameManager::load_game(const String &p_slot_name) {
 		return;
 	}
 
+	// 跨洲读档：检查点在别的洲 → 走旅行桥切场景（新场景 _process 应用同一份数据）
+	{
+		Dictionary cp0 = data.get("checkpoint", Dictionary());
+		String target_scene = String(cp0.get("scene_path", ""));
+		Node *cur = get_tree()->get_current_scene();
+		String cur_scene = cur ? cur->get_scene_file_path() : String();
+		if (!target_scene.is_empty() && target_scene != cur_scene) {
+			set_travel_bridge(data); // 不设 travel target：落点=存档原位置、血量按存档
+			Vector2 pos(float(cp0.get("position_x", 0.0)), float(cp0.get("position_y", 0.0)));
+			request_scene_change(target_scene, pos);
+			return;
+		}
+	}
+	_apply_save_dict(data);
+}
+
+void GameManager::_apply_save_dict(const Dictionary &data) {
 	// ---- Restore checkpoint ----
 	Dictionary cp = data.get("checkpoint", Dictionary());
 	if (!cp.is_empty()) {
@@ -376,6 +442,11 @@ void GameManager::load_game(const String &p_slot_name) {
 			int(cd.get("focus", 0)));
 		_player->get_cultivation()->set_hunyuan(
 			bool(cd.get("hunyuan", false)));
+	}
+
+	// ---- Restore 玩家子系统（功法/技能/法宝/buff/消耗品栏；生命由下方统一回填）----
+	if (!pd.is_empty()) {
+		_player->apply_save_data(pd);
 	}
 
 	// ---- 回填存档生命（在境界恢复之后，避免被突破回满覆盖）----

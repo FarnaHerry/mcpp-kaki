@@ -1,146 +1,48 @@
-# Open world Metroidvania — Portal-based room entry (composition pattern).
+# 东胜神洲·落霞山地（主场景；design/world-map.md 四大部洲之本洲）
+# 公共装配（管理器/玩家/相机）在 WorldCommon，本文件只搭本洲地形与内容。
 extends Node2D
 
-var _interact_hint = null
+const WC = preload("res://scripts/world_common.gd")
 
 func _ready():
 	call_deferred("_setup_game")
 
-func _make_sprite(parent, color, size, pos=Vector2.ZERO):
-	var poly = Polygon2D.new()
-	poly.name = "Polygon2D"
-	poly.color = color
-	var half = size * 0.5
-	poly.polygon = PackedVector2Array([Vector2(-half.x, -half.y), Vector2(half.x, -half.y), Vector2(half.x, half.y), Vector2(-half.x, half.y)])
-	poly.position = pos
-	parent.add_child(poly)
+func _input(event):
+	WC.handle_input(self, event)
 
 func _setup_game():
-	# ---- SignalBus (global signal hub) ----
-	var signal_bus = ClassDB.instantiate("SignalBus")
-	signal_bus.name = "SignalBus"
-	add_child(signal_bus)
-
-	# ---- ItemDatabase (must exist before any pickup is created) ----
-	var item_db = ClassDB.instantiate("ItemDatabase")
-	item_db.name = "ItemDatabase"
-	add_child(item_db)
-
-	# ---- GameManager (game state controller) ----
-	var game_mgr = ClassDB.instantiate("GameManager")
-	game_mgr.name = "GameManager"
-	add_child(game_mgr)
-
-	# ---- DropSystem (enemy loot drops) ----
-	var drop_system = ClassDB.instantiate("DropSystem")
-	drop_system.name = "DropSystem"
-	add_child(drop_system)
-
-	# ---- BreakthroughManager (机缘突破事件唯一入口) ----
-	var breakthrough_mgr = ClassDB.instantiate("BreakthroughManager")
-	breakthrough_mgr.name = "BreakthroughManager"
-	add_child(breakthrough_mgr)
-
-	# ---- DamageNumbers (伤害数字显示) ----
-	var dmg_numbers = ClassDB.instantiate("DamageNumbers")
-	dmg_numbers.name = "DamageNumbers"
-	add_child(dmg_numbers)
-
-	# ---- HUD (must be created after SignalBus so it can connect signals) ----
-	var hud = ClassDB.instantiate("GameHUD")
-	hud.name = "GameHUD"
-	add_child(hud)
-
-	# ---- Telemetry Panel (debug readout, F3) ----
-	var telemetry = ClassDB.instantiate("TelemetryPanel")
-	telemetry.name = "TelemetryPanel"
-	add_child(telemetry)
-
-	# ---- Inventory Panel (I-key overlay) ----
-	var inv_panel = ClassDB.instantiate("InventoryPanel")
-	inv_panel.name = "InventoryPanel"
-	add_child(inv_panel)
-
-	# ---- Game Menu (ESC 多页管理菜单: 背包/能力/功法/技能/法宝/设置) ----
-	var game_menu = ClassDB.instantiate("GameMenu")
-	game_menu.name = "GameMenu"
-	add_child(game_menu)
-
-	# ---- Camera ----
-	var camera = ClassDB.instantiate("CameraRoom2D")
-	camera.name = "CameraRoom2D"
-	add_child(camera)
-	game_mgr.call("set_camera", camera)
-
-	# ---- Player ----
-	var player = ClassDB.instantiate("Player")
-	player.name = "Player"
-	player.position = Vector2(200, 200)
-
-	var shape = CollisionShape2D.new()
-	var capsule = CapsuleShape2D.new()
-	capsule.radius = 8.0; capsule.height = 18.0
-	shape.shape = capsule
-	player.add_child(shape)
-	_make_sprite(player, Color(0.2, 0.4, 0.9, 1), Vector2(16, 28))
-	add_child(player)
-	camera.call("set_follow_target", player)
-	game_mgr.call("set_player", player)
-	inv_panel.call("set_player", player)
-	telemetry.call("set_player", player) # telemetry data source
-
-	# Set initial checkpoint (auto-saves here)
-	game_mgr.call("set_checkpoint", Vector2(200, 200), "")
-
-	# Connect player death to GameManager
-	if player.has_signal("player_died"):
-		player.connect("player_died", game_mgr.on_player_died)
-
-	# ---- Interact Hint (must exist before portals connect portal_prompt) ----
-	var hint_layer = CanvasLayer.new()
-	add_child(hint_layer)
-	_interact_hint = Label.new()
-	_interact_hint.position = Vector2(200, 210)
-	_interact_hint.add_theme_font_size_override("font_size", 16)
-	_interact_hint.add_theme_color_override("font_color", Color(1, 1, 0.5, 1))
-	_interact_hint.visible = false
-	hint_layer.add_child(_interact_hint)
+	var ctx = WC.setup(self)
+	var player = ctx.player
+	var camera = ctx.camera
+	var hint = ctx.hint
 
 	# ---- Portals (composition: each portal owns its scene lifecycle) ----
-	# Town portal at x=600
-	_create_portal(600, "res://scenes/rooms/town.tscn", "[X] Enter Town", player, camera)
-	# Cave portal at x=1000
-	_create_portal(1000, "res://scenes/rooms/cave.tscn", "[X] Enter Cave", player, camera)
+	WC.create_portal(self, 600, "res://scenes/rooms/town.tscn", "[X] Enter Town", player, camera, hint)
+	WC.create_portal(self, 1000, "res://scenes/rooms/cave.tscn", "[X] Enter Cave", player, camera, hint)
 
 	# ---- Enemies (variety: melee, archer, flyer, boss) ----
-	# Melee grunt
-	_spawn_enemy(Vector2(350, 200), Color(0.9, 0.2, 0.2, 1), 60.0, 200.0)
-	# Melee grunt (tougher)
-	var e2 = _spawn_enemy(Vector2(500, 200), Color(0.9, 0.3, 0.1, 1), 55.0, 200.0)
+	WC.spawn_enemy(self, Vector2(350, 200), Color(0.9, 0.2, 0.2, 1), 60.0, 200.0)
+	var e2 = WC.spawn_enemy(self, Vector2(500, 200), Color(0.9, 0.3, 0.1, 1), 55.0, 200.0)
 	e2.set("max_health", 2.0); e2.set("current_health", 2.0)
-	# Archer — stays at range, shoots projectiles
-	var archer = _spawn_enemy(Vector2(750, 200), Color(0.2, 0.8, 0.2, 1), 80.0, 380.0)
+	var archer = WC.spawn_enemy(self, Vector2(750, 200), Color(0.2, 0.8, 0.2, 1), 80.0, 380.0)
 	archer.set("is_ranged", true)
 	archer.set("attack_range", 300.0)
 	archer.set("preferred_distance", 200.0)
 	archer.set("attack_damage", 8.0)
 	archer.set("attack_cooldown", 1.5)
-	# Flying enemy — hovers in the air
-	var flyer = _spawn_enemy(Vector2(650, 150), Color(0.7, 0.3, 1.0, 1), 100.0, 300.0)
+	var flyer = WC.spawn_enemy(self, Vector2(650, 150), Color(0.7, 0.3, 1.0, 1), 100.0, 300.0)
 	flyer.set("is_flying", true)
 	flyer.set("attack_range", 50.0)
 	flyer.set("attack_damage", 12.0)
-	# Melee grunt near cave
-	_spawn_enemy(Vector2(950, 200), Color(0.9, 0.2, 0.2, 1), 65.0, 200.0)
-	# Archer near cave
-	var archer2 = _spawn_enemy(Vector2(1050, 200), Color(0.2, 0.8, 0.2, 1), 70.0, 350.0)
+	WC.spawn_enemy(self, Vector2(950, 200), Color(0.9, 0.2, 0.2, 1), 65.0, 200.0)
+	var archer2 = WC.spawn_enemy(self, Vector2(1050, 200), Color(0.2, 0.8, 0.2, 1), 70.0, 350.0)
 	archer2.set("is_ranged", true)
 	archer2.set("attack_range", 280.0)
 	archer2.set("preferred_distance", 180.0)
 	archer2.set("attack_damage", 10.0)
 	archer2.set("attack_cooldown", 1.3)
-	# BOSS — large, multi-phase, special attacks
-	var boss = _spawn_enemy(Vector2(1200, 195), Color(1.0, 0.1, 0.1, 1), 40.0, 500.0)
+	# BOSS — 赤瞳魔狼（落霞村外围守关）
+	var boss = WC.spawn_enemy(self, Vector2(1200, 195), Color(1.0, 0.1, 0.1, 1), 40.0, 500.0)
 	boss.set("is_boss", true)
 	boss.set("display_name", "赤瞳魔狼")
 	# 属性注册后才真正生效；_ready 的 ×5 已过（add_child 时 is_boss 还是 false），
@@ -149,276 +51,116 @@ func _setup_game():
 	boss.set("attack_damage", 20.0)
 	boss.set("attack_cooldown", 1.2)
 	boss.set("detection_radius", 500.0)
-	# Boss visual: bigger sprite
 	boss.get_node("Polygon2D").scale = Vector2(1.5, 1.5)
-	boss.connect("boss_died", _on_boss_died)
+	boss.connect("boss_died", Callable(WC, "on_boss_died"))
 
-	# ---- Item Pickups (test items scattered on the ground) ----
-	_spawn_item_pickup(Vector2(250, 220), "healing_pill", 1)
-	_spawn_item_pickup(Vector2(300, 220), "qi_pill", 1)
-	_spawn_item_pickup(Vector2(400, 220), "spirit_stone", 3)
-	_spawn_item_pickup(Vector2(450, 220), "healing_pill", 1)
-	_spawn_item_pickup(Vector2(550, 220), "qi_pill", 2)
-	_spawn_item_pickup(Vector2(700, 220), "foundation_pill", 1)
-	_spawn_item_pickup(Vector2(800, 220), "spirit_stone", 5)
-	_spawn_item_pickup(Vector2(850, 220), "healing_pill", 2)
-	_spawn_item_pickup(Vector2(260, 220), "flying_sword", 1) # 筑基御剑飞行测试（出生点旁，金色菱形）
+	# ---- Item Pickups ----
+	WC.spawn_item_pickup(self, Vector2(250, 220), "healing_pill", 1)
+	WC.spawn_item_pickup(self, Vector2(300, 220), "qi_pill", 1)
+	WC.spawn_item_pickup(self, Vector2(400, 220), "spirit_stone", 3)
+	WC.spawn_item_pickup(self, Vector2(450, 220), "healing_pill", 1)
+	WC.spawn_item_pickup(self, Vector2(550, 220), "qi_pill", 2)
+	WC.spawn_item_pickup(self, Vector2(700, 220), "foundation_pill", 1)
+	WC.spawn_item_pickup(self, Vector2(800, 220), "spirit_stone", 5)
+	WC.spawn_item_pickup(self, Vector2(850, 220), "healing_pill", 2)
+	WC.spawn_item_pickup(self, Vector2(260, 220), "flying_sword", 1) # 筑基御剑飞行（出生点旁）
 
-	# ---- Herb Nodes (草药采集点，design/alchemy.md：前期区域撒 6~8 个凡级点) ----
-	_spawn_herb(Vector2(150, 214), "zhi_xue_cao", 1)
-	_spawn_herb(Vector2(450, 214), "zhi_xue_cao", 2)
-	_spawn_herb(Vector2(900, 214), "zhi_xue_cao", 1)
-	_spawn_herb(Vector2(250, 214), "ju_ling_cao", 1)
-	_spawn_herb(Vector2(600, 214), "ju_ling_cao", 2)
-	_spawn_herb(Vector2(1100, 214), "ju_ling_cao", 1)
-	# 灵级：高处/岩壁（跳跃/飞行门控）
-	_spawn_herb(Vector2(650, 130), "bing_xin_lian", 1)
-	_spawn_herb(Vector2(1180, 150), "jin_gang_teng", 1)
+	# ---- Herb Nodes（凡级前期 + 灵级高处）----
+	WC.spawn_herb(self, Vector2(150, 214), "zhi_xue_cao", 1)
+	WC.spawn_herb(self, Vector2(450, 214), "zhi_xue_cao", 2)
+	WC.spawn_herb(self, Vector2(900, 214), "zhi_xue_cao", 1)
+	WC.spawn_herb(self, Vector2(250, 214), "ju_ling_cao", 1)
+	WC.spawn_herb(self, Vector2(600, 214), "ju_ling_cao", 2)
+	WC.spawn_herb(self, Vector2(1100, 214), "ju_ling_cao", 1)
+	WC.spawn_herb(self, Vector2(650, 130), "bing_xin_lian", 1)
+	WC.spawn_herb(self, Vector2(1180, 150), "jin_gang_teng", 1)
 
-	# ===== 地图扩展：五区（design/world-skills.md）=====
+	# ===== 五区（design/world-skills.md）=====
 
 	# ---- 青竹林 (1300~2600)：跳跃门控竹台 ----
-	_make_platform(1400, 190, 80)
-	_make_platform(1550, 152, 80)
-	_make_platform(1700, 114, 80)
-	_make_platform(1900, 180, 90)
-	_make_platform(2100, 142, 90)
-	_make_platform(2300, 104, 90)
-	_spawn_herb(Vector2(1700, 108), "bing_xin_lian", 1)
-	_spawn_herb(Vector2(2300, 98), "bing_xin_lian", 1)
-	var z1 = _spawn_enemy(Vector2(1500, 210), Color(0.3, 0.7, 0.3, 1), 70.0, 220.0, "ZhuYao1")
+	WC.make_platform(self, 1400, 190, 80)
+	WC.make_platform(self, 1550, 152, 80)
+	WC.make_platform(self, 1700, 114, 80)
+	WC.make_platform(self, 1900, 180, 90)
+	WC.make_platform(self, 2100, 142, 90)
+	WC.make_platform(self, 2300, 104, 90)
+	WC.spawn_herb(self, Vector2(1700, 108), "bing_xin_lian", 1)
+	WC.spawn_herb(self, Vector2(2300, 98), "bing_xin_lian", 1)
+	var z1 = WC.spawn_enemy(self, Vector2(1500, 210), Color(0.3, 0.7, 0.3, 1), 70.0, 220.0, "ZhuYao1")
 	z1.set("max_health", 4.0); z1.set("current_health", 4.0)
-	var z2 = _spawn_enemy(Vector2(1850, 210), Color(0.3, 0.7, 0.3, 1), 70.0, 220.0, "ZhuYao2")
+	var z2 = WC.spawn_enemy(self, Vector2(1850, 210), Color(0.3, 0.7, 0.3, 1), 70.0, 220.0, "ZhuYao2")
 	z2.set("max_health", 4.0); z2.set("current_health", 4.0)
-	var z3 = _spawn_enemy(Vector2(2200, 210), Color(0.35, 0.75, 0.35, 1), 75.0, 240.0, "ZhuYao3")
+	var z3 = WC.spawn_enemy(self, Vector2(2200, 210), Color(0.35, 0.75, 0.35, 1), 75.0, 240.0, "ZhuYao3")
 	z3.set("max_health", 5.0); z3.set("current_health", 5.0)
-	var owl1 = _spawn_enemy(Vector2(1650, 100), Color(0.6, 0.5, 0.9, 1), 110.0, 320.0, "YaXiao1")
+	var owl1 = WC.spawn_enemy(self, Vector2(1650, 100), Color(0.6, 0.5, 0.9, 1), 110.0, 320.0, "YaXiao1")
 	owl1.set("is_flying", true)
 	owl1.set("max_health", 3.0); owl1.set("current_health", 3.0)
-	_create_checkpoint(1320)
+	WC.create_checkpoint(self, 1320)
 
 	# ---- 断崖绝壁 (2600~3900)：墙跳门控（交错高墙+墙顶落脚台）----
-	_make_wall(2650, 130, 238)
-	_make_platform(2650, 124, 44, false) # 墙 A 顶落脚台
-	_make_wall(2750, 90, 238)
-	_make_platform(2750, 84, 44, false)  # 墙 B 顶落脚台
-	_make_platform(2900, 180, 70)
-	_make_platform(3200, 150, 70)
-	_spawn_herb(Vector2(2650, 118), "jin_gang_teng", 1)
-	_spawn_herb(Vector2(2750, 78), "jin_gang_teng", 1)
-	var ya1 = _spawn_enemy(Vector2(2900, 172), Color(0.5, 0.5, 0.2, 1), 60.0, 350.0, "YaGong1")
+	WC.make_wall(self, 2650, 130, 238)
+	WC.make_platform(self, 2650, 124, 44, false) # 墙 A 顶落脚台
+	WC.make_wall(self, 2750, 90, 238)
+	WC.make_platform(self, 2750, 84, 44, false)  # 墙 B 顶落脚台
+	WC.make_platform(self, 2900, 180, 70)
+	WC.make_platform(self, 3200, 150, 70)
+	WC.spawn_herb(self, Vector2(2650, 118), "jin_gang_teng", 1)
+	WC.spawn_herb(self, Vector2(2750, 78), "jin_gang_teng", 1)
+	var ya1 = WC.spawn_enemy(self, Vector2(2900, 172), Color(0.5, 0.5, 0.2, 1), 60.0, 350.0, "YaGong1")
 	ya1.set("is_ranged", true); ya1.set("attack_range", 280.0); ya1.set("preferred_distance", 180.0)
 	ya1.set("attack_damage", 10.0)
-	var ya2 = _spawn_enemy(Vector2(3200, 142), Color(0.5, 0.5, 0.2, 1), 60.0, 350.0, "YaGong2")
+	var ya2 = WC.spawn_enemy(self, Vector2(3200, 142), Color(0.5, 0.5, 0.2, 1), 60.0, 350.0, "YaGong2")
 	ya2.set("is_ranged", true); ya2.set("attack_range", 280.0); ya2.set("preferred_distance", 180.0)
 	ya2.set("attack_damage", 10.0)
-	var r1 = _spawn_enemy(Vector2(3000, 210), Color(0.6, 0.3, 0.2, 1), 80.0, 240.0, "YanGui1")
+	var r1 = WC.spawn_enemy(self, Vector2(3000, 210), Color(0.6, 0.3, 0.2, 1), 80.0, 240.0, "YanGui1")
 	r1.set("max_health", 5.0); r1.set("current_health", 5.0)
-	var r2 = _spawn_enemy(Vector2(3400, 210), Color(0.6, 0.3, 0.2, 1), 80.0, 240.0, "YanGui2")
+	var r2 = WC.spawn_enemy(self, Vector2(3400, 210), Color(0.6, 0.3, 0.2, 1), 80.0, 240.0, "YanGui2")
 	r2.set("max_health", 5.0); r2.set("current_health", 5.0)
-	_create_checkpoint(2820)
+	WC.create_checkpoint(self, 2820)
 
 	# ---- 幽谷 (3900~5200)：飞行门控大沟壑（3900~4400，谷底 y=420）----
-	_make_wall(3894, 238, 420)
-	_make_wall(4406, 238, 420)
-	_make_ground(3900, 4400, 420)
-	_make_platform(3980, 356, 60)
-	_make_platform(4180, 306, 60)
-	_make_platform(4060, 254, 60)
-	_make_platform(4300, 356, 60)
-	_spawn_herb(Vector2(4050, 414), "chi_yan_hua", 2)
-	_spawn_herb(Vector2(4300, 414), "chi_yan_hua", 1)
+	WC.make_wall(self, 3894, 238, 420)
+	WC.make_wall(self, 4406, 238, 420)
+	WC.make_ground(self, 3900, 4400, 420)
+	WC.make_platform(self, 3980, 356, 60)
+	WC.make_platform(self, 4180, 306, 60)
+	WC.make_platform(self, 4060, 254, 60)
+	WC.make_platform(self, 4300, 356, 60)
+	WC.spawn_herb(self, Vector2(4050, 414), "chi_yan_hua", 2)
+	WC.spawn_herb(self, Vector2(4300, 414), "chi_yan_hua", 1)
 	for i in range(3):
-		var fy = _spawn_enemy(Vector2(4020 + i * 160, 150 + i * 20), Color(0.6, 0.5, 0.9, 1), 110.0, 340.0, "GuXiao%d" % i)
+		var fy = WC.spawn_enemy(self, Vector2(4020 + i * 160, 150 + i * 20), Color(0.6, 0.5, 0.9, 1), 110.0, 340.0, "GuXiao%d" % i)
 		fy.set("is_flying", true)
 		fy.set("max_health", 3.0); fy.set("current_health", 3.0)
-	_make_ground(4400, 6000, 238)
-	_make_wall(6000, 40, 270) # 世界尽头
-	var lei = _spawn_enemy(Vector2(4600, 210), Color(0.7, 0.4, 0.9, 1), 90.0, 380.0, "LeiShou")
+	WC.make_ground(self, 4400, 6000, 238)
+	WC.make_wall(self, 6000, 40, 270) # 世界尽头（东海之滨扩展时后移）
+	var lei = WC.spawn_enemy(self, Vector2(4600, 210), Color(0.7, 0.4, 0.9, 1), 90.0, 380.0, "LeiShou")
 	lei.set("is_ranged", true); lei.set("attack_range", 280.0); lei.set("preferred_distance", 180.0)
 	lei.set("attack_damage", 14.0); lei.set("attack_cooldown", 1.2)
 	lei.set("max_health", 8.0); lei.set("current_health", 8.0)
-	var g1 = _spawn_enemy(Vector2(4800, 210), Color(0.5, 0.3, 0.3, 1), 85.0, 240.0, "GuTu1")
+	var g1 = WC.spawn_enemy(self, Vector2(4800, 210), Color(0.5, 0.3, 0.3, 1), 85.0, 240.0, "GuTu1")
 	g1.set("max_health", 6.0); g1.set("current_health", 6.0)
-	_create_checkpoint(4450)
-	_spawn_herb(Vector2(5000, 232), "ju_ling_cao", 2)
+	WC.create_checkpoint(self, 4450)
+	WC.spawn_herb(self, Vector2(5000, 232), "ju_ling_cao", 2)
 
 	# ---- 谷深处 (5200~6000)：BOSS 幽谷螭龙 + 悟道崖（飞行高台）----
-	_create_checkpoint(5250)
-	var chi = _spawn_enemy(Vector2(5500, 195), Color(0.2, 0.6, 0.6, 1), 45.0, 450.0, "Boss_ChiLong")
+	WC.create_checkpoint(self, 5250)
+	var chi = WC.spawn_enemy(self, Vector2(5500, 195), Color(0.2, 0.6, 0.6, 1), 45.0, 450.0, "Boss_ChiLong")
 	chi.set("is_boss", true)
 	chi.set("display_name", "幽谷螭龙")
 	chi.set("max_health", 30.0); chi.set("current_health", 30.0)
 	chi.set("attack_damage", 24.0)
 	chi.set("attack_cooldown", 1.1)
 	chi.get_node("Polygon2D").scale = Vector2(1.8, 1.8)
-	chi.connect("boss_died", _on_boss_died)
+	chi.connect("boss_died", Callable(WC, "on_boss_died"))
 	# 悟道崖：y=90 高台（跳跃/墙跳不可达，飞行门控）
-	_make_platform(5600, 90, 300, false)
-	_spawn_herb(Vector2(5520, 84), "wu_dao_cha", 1)
-	_spawn_herb(Vector2(5680, 84), "wu_dao_cha", 1)
-	_spawn_item_pickup(Vector2(5600, 84), "qian_nian_ling_zhi", 1)
-	_spawn_item_pickup(Vector2(5750, 84), "spirit_stone", 10)
+	WC.make_platform(self, 5600, 90, 300, false)
+	WC.spawn_herb(self, Vector2(5520, 84), "wu_dao_cha", 1)
+	WC.spawn_herb(self, Vector2(5680, 84), "wu_dao_cha", 1)
+	WC.spawn_item_pickup(self, Vector2(5600, 84), "qian_nian_ling_zhi", 1)
+	WC.spawn_item_pickup(self, Vector2(5750, 84), "spirit_stone", 10)
 
-	# ---- Key input for save/load test ----
-	set_process_input(true)
-
+	print("东胜神洲 · 落霞山地")
 	print("Open world ready. Walk to portal markers and press X.")
 	print("Pick up items by walking over diamond markers.")
 	print("Autosave on checkpoint. Press F6 to reload from last save.")
-
-func _input(event):
-	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_F6:
-			# Reload from last autosave
-			var gm = get_node_or_null("GameManager")
-			if gm and gm.has_save("auto"):
-				gm.load_game("auto")
-				print("Loaded from auto-save!")
-			else:
-				print("No save file found.")
-
-# ---- 地形 helper（design/world-skills.md）----
-func _make_platform(x, y, w, one_way=true):
-	var body = StaticBody2D.new()
-	body.name = "Platform_%d_%d" % [x, y]
-	body.position = Vector2(x, y)
-	if one_way:
-		body.set_collision_layer_value(1, false)
-		body.set_collision_layer_value(2, true)
-	var shape = CollisionShape2D.new()
-	var rect = RectangleShape2D.new()
-	rect.size = Vector2(w, 6)
-	shape.shape = rect
-	shape.one_way_collision = one_way
-	body.add_child(shape)
-	_make_sprite(body, Color(0.35, 0.4, 0.2, 1), Vector2(w, 6))
-	add_child(body)
-	return body
-
-func _make_wall(x, y_top, y_bottom, color=Color(0.22, 0.18, 0.15, 1)):
-	var h = y_bottom - y_top
-	var body = StaticBody2D.new()
-	body.name = "Wall_%d_%d" % [x, y_top]
-	body.position = Vector2(x, (y_top + y_bottom) / 2.0)
-	var shape = CollisionShape2D.new()
-	var rect = RectangleShape2D.new()
-	rect.size = Vector2(12, h)
-	shape.shape = rect
-	body.add_child(shape)
-	_make_sprite(body, color, Vector2(12, h))
-	add_child(body)
-	return body
-
-func _make_ground(x0, x1, y=238.0):
-	var w = x1 - x0
-	var body = StaticBody2D.new()
-	body.name = "Ground_%d_%d" % [x0, x1]
-	body.position = Vector2((x0 + x1) / 2.0, y)
-	var shape = CollisionShape2D.new()
-	var rect = RectangleShape2D.new()
-	rect.size = Vector2(w, 24)
-	shape.shape = rect
-	body.add_child(shape)
-	_make_sprite(body, Color(0.25, 0.2, 0.15, 1), Vector2(w, 24), Vector2(0, 12))
-	add_child(body)
-	return body
-
-func _create_checkpoint(x, y=210):
-	var area = Area2D.new()
-	area.name = "Checkpoint_%d" % x
-	area.position = Vector2(x, y)
-	area.set_collision_layer_value(1, false)
-	area.set_collision_mask_value(3, true)
-	var shape = CollisionShape2D.new()
-	var rect = RectangleShape2D.new()
-	rect.size = Vector2(24, 60)
-	shape.shape = rect
-	area.add_child(shape)
-	var marker = Polygon2D.new()
-	marker.color = Color(0.4, 0.8, 0.9, 0.5)
-	marker.polygon = PackedVector2Array([Vector2(-5, -22), Vector2(5, -22), Vector2(5, 8), Vector2(-5, 8)])
-	area.add_child(marker)
-	area.connect("body_entered", _on_checkpoint_entered.bind(area))
-	add_child(area)
-
-func _on_checkpoint_entered(body, area):
-	if body.name != "Player":
-		return
-	var gm = get_node_or_null("GameManager")
-	if gm:
-		gm.call("set_checkpoint", area.global_position + Vector2(0, 12), "")
-
-func _create_portal(x, scene_path, prompt, player, camera):
-	var portal = ClassDB.instantiate("Portal")
-	portal.position = Vector2(x, 210)  # near ground level
-	portal.set("target_scene", scene_path)
-	portal.set("prompt_text", prompt)
-	portal.set_collision_mask_value(3, true)  # detect Player
-	portal.call("set_player", player)
-	portal.call("set_camera", camera)
-
-	# Tall collision shape covering player height range
-	var ds = CollisionShape2D.new()
-	var dr = RectangleShape2D.new()
-	dr.size = Vector2(32, 80)
-	ds.shape = dr
-	portal.add_child(ds)
-
-	# Visual marker on ground at player feet level
-	var marker = Polygon2D.new()
-	marker.color = Color(0.8, 0.7, 0.3, 0.5)
-	marker.polygon = PackedVector2Array([Vector2(-16, 25), Vector2(16, 25), Vector2(16, 35), Vector2(-16, 35)])
-	add_child(marker)
-	marker.position = Vector2(x, 210)
-
-	portal.connect("portal_prompt", _on_portal_prompt)
-	add_child(portal)
-
-func _on_portal_prompt(text, show):
-	if _interact_hint == null:
-		return
-	_interact_hint.text = text
-	_interact_hint.visible = show
-
-func _spawn_herb(pos, herb_id, qty):
-	var herb = ClassDB.instantiate("HerbNode")
-	if not herb: return
-	herb.name = "Herb_" + herb_id
-	herb.position = pos
-	herb.set("herb_id", herb_id)
-	herb.set("quantity", qty)
-	add_child(herb)
-
-func _spawn_item_pickup(pos, item_id, qty):
-	var pickup = ClassDB.instantiate("ItemPickup")
-	if not pickup: return
-	pickup.position = pos
-	pickup.set("item_id", item_id)
-	pickup.set("quantity", qty)
-	add_child(pickup)
-
-func _spawn_enemy(pos, color, speed, detect_range, ename=""):
-	var enemy = ClassDB.instantiate("Enemy")
-	if not enemy: return
-	if ename != "":
-		enemy.name = ename
-	enemy.position = pos
-	enemy.set("move_speed", speed)
-	enemy.set("detection_radius", detect_range)
-	enemy.set("attack_range", 35.0)
-	var eshape = CollisionShape2D.new()
-	var ecap = CapsuleShape2D.new()
-	ecap.radius = 10.0; ecap.height = 20.0
-	eshape.shape = ecap
-	enemy.add_child(eshape)
-	_make_sprite(enemy, color, Vector2(20, 28))
-	enemy.connect("enemy_died", _on_enemy_died)
-	add_child(enemy)
-	return enemy
-
-func _on_enemy_died():
-	print("Enemy killed!")
-
-func _on_boss_died():
-	print("BOSS DEFEATED!")
