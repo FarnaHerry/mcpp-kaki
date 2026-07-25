@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/templates/hash_map.hpp>
@@ -41,6 +43,7 @@ public:
 	// 信号：gongfa_changed（层数/装配变化，Player 刷新面板用）
 
 	static const Def *find_def(const StringName &p_id);
+	static void ensure_defs_loaded();
 	static String grade_name(Grade p_g);
 
 	// 装配（自动按系入槽；旧功法熟练保留在 _known）
@@ -74,6 +77,8 @@ private:
 	SlotState _slots[SCHOOL_COUNT];
 	// 换下的功法熟练保留：id → (layer, prof)
 	HashMap<StringName, std::pair<int, float>> _known;
+	static std::vector<Def> s_defs;
+	static bool s_defs_loaded;
 
 	float _slot_mult(School p_s, float Def::*p_field) const;
 	void _feed_slot(School p_s, float p_amount);

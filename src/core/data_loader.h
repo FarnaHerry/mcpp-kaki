@@ -25,8 +25,23 @@ public:
 
 	// ---- Skills ----
 	Dictionary get_skill(const StringName &p_id) const;
-	Array get_all_skills() const; // [{id,name,type,...}, ...]
-	Array get_skills_of_type(int p_type) const; // filtered by SkillType
+	Array get_all_skills() const;
+	Array get_skills_of_type(int p_type) const;
+
+	// ---- Buffs ----
+	Dictionary get_buff(const StringName &p_id) const;
+	Array get_all_buffs() const;
+
+	// ---- Gongfas ----
+	Dictionary get_gongfa(const StringName &p_id) const;
+	Array get_all_gongfas() const;
+
+	// ---- Sects ----
+	Dictionary get_sect(const StringName &p_id) const;
+	Array get_all_sects() const;
+
+	// ---- Drops ----
+	Dictionary get_drop_table() const; // {boss:[...], normal:[...], normal_ranged:[...]}
 
 protected:
 	static void _bind_methods();
@@ -34,8 +49,12 @@ protected:
 private:
 	HashMap<StringName, Dictionary> _items;
 	HashMap<StringName, Dictionary> _skills;
+	HashMap<StringName, Dictionary> _buffs;
+	HashMap<StringName, Dictionary> _gongfas;
+	HashMap<StringName, Dictionary> _sects;
+	Dictionary _drop_table; // {boss:Array, normal:Array, normal_ranged:Array}
 
-	void _load_json(const String &p_path, HashMap<StringName, Dictionary> &r_out);
+	void _load_json_array(const String &p_path, HashMap<StringName, Dictionary> &r_out);
 };
 
 } // namespace godot

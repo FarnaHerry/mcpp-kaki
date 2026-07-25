@@ -6,8 +6,11 @@
 #include "../utils/text.h"
 
 #include "../core/data_loader.h"
+#include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
+
+#include <string>
 
 namespace godot {
 
@@ -79,11 +82,52 @@ void SkillSystem::ensure_defs_loaded() {
 	if (s_defs_loaded) return;
 	s_defs_loaded = true;
 
-	// TODO: Try DataLoader (JSON) first — needs string storage for const char* Def fields.
-	// DataLoader is available via SceneTree::get_current_scene()->find_child("DataLoader").
-	// The JSON file data/skills.json has all 24 skills ready; the conversion requires
-	// either: (a) storing strings in a parallel std::vector<std::string>, or
-	// (b) changing Def fields to StringName (blocked by static-init segfault in SKILL_DEFS[]).
+	// String storage for JSON-loaded defs (must outlive Def pointers)
+	static std::vector<std::string> s_strings;
+
+	// Try DataLoader (JSON external data) first
+	SceneTree *st = Object::cast_to<SceneTree>(Engine::get_singleton()->get_main_loop());
+	Node *scene = st ? st->get_current_scene() : nullptr;
+	DataLoader *dl = scene ? Object::cast_to<DataLoader>(scene->find_child("DataLoader", true, false)) : nullptr;
+
+	if (dl) {
+		Array all = dl->get_all_skills();
+		if (all.size() > 0) {
+			s_strings.reserve(all.size() * 3); // id + name + buff_id per skill
+			for (int i = 0; i < all.size(); i++) {
+				Dictionary d = all[i];
+				// Extract strings into persistent storage
+				s_strings.push_back(String(d["id"]).utf8().get_data());
+				s_strings.push_back(String(d["name"]).utf8().get_data());
+				StringName bid = d["buff_id"];
+				s_strings.push_back(bid.is_empty() ? "" : String(bid).utf8().get_data());
+
+				Def def;
+				def.id = s_strings[s_strings.size() - 3].c_str();
+				def.name = s_strings[s_strings.size() - 2].c_str();
+				def.type = SkillType(int(d["type"]));
+				def.category = DamageCategory(int(d["category"]));
+				def.element = Element(int(d["element"]));
+				def.mana_cost = float(d["mana_cost"]);
+				def.law_cost = float(d["law_cost"]);
+				def.cooldown = float(d["cooldown"]);
+				def.power = float(d["power"]);
+				def.effect = EffectKind(int(d["effect"]));
+				def.min_realm = int(d["min_realm"]);
+				def.proj_speed = float(d["proj_speed"]);
+				Array c = d["proj_color"];
+				def.proj_color = Color(float(c[0]), float(c[1]), float(c[2]), float(c[3]));
+				def.effect_param = float(d["effect_param"]);
+				def.buff_id = s_strings.back().empty() ? nullptr : s_strings.back().c_str();
+				def.passive_stat = PassiveStat(int(d["passive_stat"]));
+				def.passive_value = float(d["passive_value"]);
+				s_defs.push_back(def);
+			}
+			return;
+		}
+	}
+
+	// Fallback: hardcoded static array
 	for (const Def &d : SKILL_DEFS) {
 		s_defs.push_back(d);
 	}

@@ -16,21 +16,41 @@ void DataLoader::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_skill", "id"), &DataLoader::get_skill);
 	ClassDB::bind_method(D_METHOD("get_all_skills"), &DataLoader::get_all_skills);
 	ClassDB::bind_method(D_METHOD("get_skills_of_type", "type"), &DataLoader::get_skills_of_type);
+	ClassDB::bind_method(D_METHOD("get_buff", "id"), &DataLoader::get_buff);
+	ClassDB::bind_method(D_METHOD("get_all_buffs"), &DataLoader::get_all_buffs);
+	ClassDB::bind_method(D_METHOD("get_gongfa", "id"), &DataLoader::get_gongfa);
+	ClassDB::bind_method(D_METHOD("get_all_gongfas"), &DataLoader::get_all_gongfas);
+	ClassDB::bind_method(D_METHOD("get_sect", "id"), &DataLoader::get_sect);
+	ClassDB::bind_method(D_METHOD("get_all_sects"), &DataLoader::get_all_sects);
+	ClassDB::bind_method(D_METHOD("get_drop_table"), &DataLoader::get_drop_table);
 }
 
 void DataLoader::_ready() {
 	if (Engine::get_singleton()->is_editor_hint())
 		return;
 
-	_load_json("res://data/items.json", _items);
-	_load_json("res://data/skills.json", _skills);
+	_load_json_array("res://data/items.json", _items);
+	_load_json_array("res://data/skills.json", _skills);
+	_load_json_array("res://data/buffs.json", _buffs);
+	_load_json_array("res://data/gongfas.json", _gongfas);
+	_load_json_array("res://data/sects.json", _sects);
+
+	// Drops structured differently (object with named arrays, not {id,...} array)
+	if (FileAccess::file_exists("res://data/drops.json")) {
+		String raw = FileAccess::get_file_as_string("res://data/drops.json");
+		Variant p = JSON::parse_string(raw);
+		if (p.get_type() == Variant::DICTIONARY) {
+			_drop_table = p;
+		}
+	}
 
 	UtilityFunctions::print(
-		vformat(TXT("DataLoader: %d items, %d skills loaded"),
-			_items.size(), _skills.size()));
+		vformat(TXT("DataLoader: %d items, %d skills, %d buffs, %d gongfas, %d sects, drops=%s"),
+			_items.size(), _skills.size(), _buffs.size(), _gongfas.size(), _sects.size(),
+			_drop_table.is_empty() ? TXT("no") : TXT("yes")));
 }
 
-void DataLoader::_load_json(const String &p_path, HashMap<StringName, Dictionary> &r_out) {
+void DataLoader::_load_json_array(const String &p_path, HashMap<StringName, Dictionary> &r_out) {
 	if (!FileAccess::file_exists(p_path)) {
 		UtilityFunctions::printerr(TXT("DataLoader: file not found — "), p_path);
 		return;
@@ -63,9 +83,7 @@ Dictionary DataLoader::get_item(const StringName &p_id) const {
 
 Array DataLoader::get_all_items() const {
 	Array arr;
-	for (const auto &kv : _items) {
-		arr.append(kv.value);
-	}
+	for (const auto &kv : _items) arr.append(kv.value);
 	return arr;
 }
 
@@ -77,9 +95,7 @@ Dictionary DataLoader::get_skill(const StringName &p_id) const {
 
 Array DataLoader::get_all_skills() const {
 	Array arr;
-	for (const auto &kv : _skills) {
-		arr.append(kv.value);
-	}
+	for (const auto &kv : _skills) arr.append(kv.value);
 	return arr;
 }
 
@@ -87,11 +103,49 @@ Array DataLoader::get_skills_of_type(int p_type) const {
 	Array arr;
 	for (const auto &kv : _skills) {
 		Dictionary d = kv.value;
-		if (d.has("type") && int(d["type"]) == p_type) {
-			arr.append(d);
-		}
+		if (d.has("type") && int(d["type"]) == p_type) arr.append(d);
 	}
 	return arr;
+}
+
+Dictionary DataLoader::get_buff(const StringName &p_id) const {
+	auto it = _buffs.find(p_id);
+	if (it) return it->value;
+	return Dictionary();
+}
+
+Array DataLoader::get_all_buffs() const {
+	Array arr;
+	for (const auto &kv : _buffs) arr.append(kv.value);
+	return arr;
+}
+
+Dictionary DataLoader::get_gongfa(const StringName &p_id) const {
+	auto it = _gongfas.find(p_id);
+	if (it) return it->value;
+	return Dictionary();
+}
+
+Array DataLoader::get_all_gongfas() const {
+	Array arr;
+	for (const auto &kv : _gongfas) arr.append(kv.value);
+	return arr;
+}
+
+Dictionary DataLoader::get_sect(const StringName &p_id) const {
+	auto it = _sects.find(p_id);
+	if (it) return it->value;
+	return Dictionary();
+}
+
+Array DataLoader::get_all_sects() const {
+	Array arr;
+	for (const auto &kv : _sects) arr.append(kv.value);
+	return arr;
+}
+
+Dictionary DataLoader::get_drop_table() const {
+	return _drop_table;
 }
 
 } // namespace godot

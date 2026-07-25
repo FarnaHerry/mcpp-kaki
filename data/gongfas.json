@@ -1,0 +1,8 @@
+[
+  {"id":"mang_niu_jin","name":"莽牛劲","school":0,"grade":0,"max_layer":3,"hp":0.04,"def":0.03,"atk":0.02,"mana":0,"regen":0,"spell":0,"spd":0},
+  {"id":"tie_bu_shan","name":"铁布衫","school":0,"grade":1,"max_layer":5,"hp":0.06,"def":0.05,"atk":0.03,"mana":0,"regen":0,"spell":0,"spd":0},
+  {"id":"jin_gang_jue","name":"金刚诀","school":0,"grade":2,"max_layer":7,"hp":0.09,"def":0.08,"atk":0.05,"mana":0,"regen":0,"spell":0,"spd":0},
+  {"id":"tu_na_jue","name":"吐纳诀","school":1,"grade":0,"max_layer":3,"hp":0,"def":0,"atk":0,"mana":0.05,"regen":0.04,"spell":0.03,"spd":0.01},
+  {"id":"zi_xia_gong","name":"紫霞功","school":1,"grade":1,"max_layer":5,"hp":0,"def":0,"atk":0,"mana":0.08,"regen":0.06,"spell":0.05,"spd":0.02},
+  {"id":"tai_xuan_jing","name":"太玄经","school":1,"grade":2,"max_layer":7,"hp":0,"def":0,"atk":0,"mana":0.12,"regen":0.09,"spell":0.08,"spd":0.03}
+]

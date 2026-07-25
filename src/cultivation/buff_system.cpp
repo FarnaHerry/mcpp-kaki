@@ -2,6 +2,11 @@
 
 #include "../utils/signal_bus.h"
 #include "../utils/text.h"
+#include "../core/data_loader.h"
+#include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/scene_tree.hpp>
+#include <godot_cpp/variant/utility_functions.hpp>
+#include <string>
 
 namespace godot {
 

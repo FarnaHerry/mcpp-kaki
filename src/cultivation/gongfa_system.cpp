@@ -1,6 +1,11 @@
 #include "gongfa_system.h"
 
 #include "../utils/text.h"
+#include "../core/data_loader.h"
+#include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/scene_tree.hpp>
+#include <godot_cpp/variant/utility_functions.hpp>
+#include <string>
 
 #include <godot_cpp/core/class_db.hpp>
 
@@ -24,6 +29,41 @@ static const GongfaSystem::Def GONGFA_DEFS[] = {
 	  0, 0, 0,  0.12f, 0.09f, 0.08f, 0.03f },
 };
 
+std::vector<GongfaSystem::Def> GongfaSystem::s_defs;
+bool GongfaSystem::s_defs_loaded = false;
+
+void GongfaSystem::ensure_defs_loaded() {
+	if (s_defs_loaded) return;
+	s_defs_loaded = true;
+	static std::vector<std::string> s_strings;
+	SceneTree *st = Object::cast_to<SceneTree>(Engine::get_singleton()->get_main_loop());
+	Node *scene = st ? st->get_current_scene() : nullptr;
+	DataLoader *dl = scene ? Object::cast_to<DataLoader>(scene->find_child("DataLoader", true, false)) : nullptr;
+	if (dl) {
+		Array all = dl->get_all_gongfas();
+		if (all.size() > 0) {
+			s_strings.reserve(all.size() * 2);
+			for (int i = 0; i < all.size(); i++) {
+				Dictionary d = all[i];
+				s_strings.push_back(String(d["id"]).utf8().get_data());
+				s_strings.push_back(String(d["name"]).utf8().get_data());
+				Def def;
+				def.id = s_strings[s_strings.size() - 2].c_str();
+				def.name = s_strings[s_strings.size() - 1].c_str();
+				def.school = School(int(d["school"]));
+				def.grade = Grade(int(d["grade"]));
+				def.max_layer = int(d["max_layer"]);
+				def.hp = float(d["hp"]); def.def = float(d["def"]); def.atk = float(d["atk"]);
+				def.mana = float(d["mana"]); def.regen = float(d["regen"]);
+				def.spell = float(d["spell"]); def.spd = float(d["spd"]);
+				s_defs.push_back(def);
+			}
+			return;
+		}
+	}
+	for (const Def &d : GONGFA_DEFS) { s_defs.push_back(d); }
+}
+
 void GongfaSystem::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("equip_gongfa", "id"), &GongfaSystem::equip_gongfa);
 	ClassDB::bind_method(D_METHOD("feed", "school", "base"), &GongfaSystem::feed);
@@ -38,7 +78,8 @@ void GongfaSystem::_bind_methods() {
 }
 
 const GongfaSystem::Def *GongfaSystem::find_def(const StringName &p_id) {
-	for (const Def &d : GONGFA_DEFS) {
+	ensure_defs_loaded();
+	for (const Def &d : s_defs) {
 		if (StringName(d.id) == p_id) return &d;
 	}
 	return nullptr;

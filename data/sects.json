@@ -1,0 +1,6 @@
+[
+  {"id":"shushan","name":"蜀山剑派","desc":"剑修攻伐，一剑破万法。","skill_id":"wan_jian_gui_zong","atk":[0.06,0.10,0.15],"mana":[0,0,0],"regen":[0,0,0],"hp":[0,0,0],"def":[0,0,0],"kill_xp":[0,0,0]},
+  {"id":"kunlun","name":"昆仑道宗","desc":"练气长生，道法自然。","skill_id":"tai_qing_shen_guang","atk":[0,0,0],"mana":[0.10,0.16,0.24],"regen":[0.10,0.15,0.22],"hp":[0,0,0],"def":[0,0,0],"kill_xp":[0,0,0]},
+  {"id":"penglai","name":"蓬莱仙岛","desc":"性命双修，寿与天齐。","skill_id":"xuan_gui_hu_ti","atk":[0,0,0],"mana":[0,0,0],"regen":[0,0,0],"hp":[0.08,0.12,0.18],"def":[0.04,0.06,0.10],"kill_xp":[0,0,0]},
+  {"id":"moluo","name":"魔罗教","desc":"杀伐精进，以战养战。","skill_id":"xue_ying_zhan","atk":[0.03,0.05,0.08],"mana":[0,0,0],"regen":[0,0,0],"hp":[0,0,0],"def":[0,0,0],"kill_xp":[0.15,0.25,0.40]}
+]

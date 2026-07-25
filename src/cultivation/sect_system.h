@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/array.hpp>
@@ -36,6 +38,7 @@ public:
 	};
 
 	static const Def *find_def(const StringName &p_id);
+	static void ensure_defs_loaded();
 	static String rank_name(int p_rank);
 
 	bool in_sect() const { return _sect_id != StringName(); }
@@ -67,6 +70,8 @@ protected:
 
 private:
 	StringName _sect_id;   // 空 = 散修
+	static std::vector<Def> s_defs;
+	static bool s_defs_loaded;
 	int _contribution = 0;
 };
 

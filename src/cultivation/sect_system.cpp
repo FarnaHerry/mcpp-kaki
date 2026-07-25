@@ -1,6 +1,11 @@
 #include "sect_system.h"
 
 #include "../utils/text.h"
+#include "../core/data_loader.h"
+#include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/scene_tree.hpp>
+#include <godot_cpp/variant/utility_functions.hpp>
+#include <string>
 
 namespace godot {
 
@@ -16,6 +21,46 @@ static const SectSystem::Def SECT_DEFS[] = {
 	{ "moluo", "魔罗教", "杀伐精进，以战养战。", "xue_ying_zhan",
 	  { 0.03f, 0.05f, 0.08f }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0.15f, 0.25f, 0.40f } },
 };
+
+std::vector<SectSystem::Def> SectSystem::s_defs;
+bool SectSystem::s_defs_loaded = false;
+
+void SectSystem::ensure_defs_loaded() {
+	if (s_defs_loaded) return;
+	s_defs_loaded = true;
+	static std::vector<std::string> s_strings;
+	SceneTree *st = Object::cast_to<SceneTree>(Engine::get_singleton()->get_main_loop());
+	Node *scene = st ? st->get_current_scene() : nullptr;
+	DataLoader *dl = scene ? Object::cast_to<DataLoader>(scene->find_child("DataLoader", true, false)) : nullptr;
+	if (dl) {
+		Array all = dl->get_all_sects();
+		if (all.size() > 0) {
+			s_strings.reserve(all.size() * 4);
+			for (int i = 0; i < all.size(); i++) {
+				Dictionary d = all[i];
+				s_strings.push_back(String(d["id"]).utf8().get_data());
+				s_strings.push_back(String(d["name"]).utf8().get_data());
+				s_strings.push_back(String(d["desc"]).utf8().get_data());
+				s_strings.push_back(String(d["skill_id"]).utf8().get_data());
+				Def def;
+				def.id = s_strings[s_strings.size() - 4].c_str();
+				def.name = s_strings[s_strings.size() - 3].c_str();
+				def.desc = s_strings[s_strings.size() - 2].c_str();
+				def.skill_id = s_strings[s_strings.size() - 1].c_str();
+				Array arr;
+				arr = d["atk"]; for (int j = 0; j < 3; j++) def.atk[j] = float(arr[j]);
+				arr = d["mana"]; for (int j = 0; j < 3; j++) def.mana[j] = float(arr[j]);
+				arr = d["regen"]; for (int j = 0; j < 3; j++) def.regen[j] = float(arr[j]);
+				arr = d["hp"]; for (int j = 0; j < 3; j++) def.hp[j] = float(arr[j]);
+				arr = d["def"]; for (int j = 0; j < 3; j++) def.def[j] = float(arr[j]);
+				arr = d["kill_xp"]; for (int j = 0; j < 3; j++) def.kill_xp[j] = float(arr[j]);
+				s_defs.push_back(def);
+			}
+			return;
+		}
+	}
+	for (const Def &d : SECT_DEFS) { s_defs.push_back(d); }
+}
 
 static const int RANK_COST[SectSystem::RANK_COUNT] = { 0, 100, 300 }; // 外门/内门/真传
 
@@ -42,7 +87,8 @@ void SectSystem::_bind_methods() {
 }
 
 const SectSystem::Def *SectSystem::find_def(const StringName &p_id) {
-	for (const Def &d : SECT_DEFS) {
+	ensure_defs_loaded();
+	for (const Def &d : s_defs) {
 		if (p_id == StringName(d.id)) return &d;
 	}
 	return nullptr;

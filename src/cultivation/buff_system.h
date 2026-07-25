@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/templates/hash_map.hpp>
@@ -37,6 +39,7 @@ public:
 	};
 
 	static const Def *find_def(const StringName &p_id);
+	static void ensure_defs_loaded();
 
 	// 施加/刷新：同名只刷新时间，不叠加
 	bool apply(const StringName &p_id);
@@ -59,6 +62,8 @@ protected:
 	static void _bind_methods();
 
 private:
+	static std::vector<Def> s_defs;
+	static bool s_defs_loaded;
 	std::vector<Active> _active;
 	float _sum_atk = 0.0f;
 	float _sum_def = 0.0f;
