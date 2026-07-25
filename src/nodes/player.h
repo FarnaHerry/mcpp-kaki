@@ -199,6 +199,8 @@ namespace godot {
 
 		void _refresh_max_health(bool p_refill);
 		void _on_gongfa_changed();
+		void _on_skills_changed();
+		void _refresh_regen_mults();
 		void _on_enemy_killed(Object *p_enemy, Object *p_killer);
 		void _take_damage_typed(float p_amount, DamageCategory p_cat, Element p_elem, Node *p_source);
 

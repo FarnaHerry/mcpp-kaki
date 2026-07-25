@@ -29,6 +29,17 @@ public:
 		TYPE_SPELL,       // 法术（灵力驱动）
 		TYPE_SHENTONG,    // 神通（法则之力，步骤5）
 		TYPE_XIANFA,      // 仙法（仙元，步骤5）
+		TYPE_PASSIVE,     // 被动（学会即常驻，不占槽；数值走乘区，添头级）
+	};
+
+	enum PassiveStat {
+		PAS_NONE = 0,
+		PAS_ATK,        // 攻击乘区
+		PAS_SPD,        // 移动速度
+		PAS_DEF,        // 防御乘区
+		PAS_MANA_REGEN, // 灵力回复
+		PAS_FLY_SPEED,  // 飞行速度
+		PAS_LAW_REGEN,  // 法则之力回复
 	};
 
 	enum EffectKind {
@@ -59,7 +70,18 @@ public:
 		Color proj_color; // FX_PROJECTILE
 		float effect_param; // FX_BLINK: 瞬移距离(px)；FX_INVULN: 无敌秒数
 		const char *buff_id; // FX_SELF_BUFF: BuffSystem def id（其余 FX 为 nullptr）
+		// 被动（TYPE_PASSIVE 专用）
+		PassiveStat passive_stat;
+		float passive_value; // 比例加值（0.10 = +10%）
 	};
+
+	// 被动乘区（已悟被动 Σ 加值后 +1；Player 各结算点消费）
+	float get_passive_atk_mult() const { return 1.0f + _passive_sum(PAS_ATK); }
+	float get_passive_spd_mult() const { return 1.0f + _passive_sum(PAS_SPD); }
+	float get_passive_def_mult() const { return 1.0f + _passive_sum(PAS_DEF); }
+	float get_passive_mana_regen_mult() const { return 1.0f + _passive_sum(PAS_MANA_REGEN); }
+	float get_passive_fly_mult() const { return 1.0f + _passive_sum(PAS_FLY_SPEED); }
+	float get_passive_law_regen_mult() const { return 1.0f + _passive_sum(PAS_LAW_REGEN); }
 
 	static const int SLOT_COUNT = 8; // A/S=武技 D/F=法术 G/H=法宝页占用 T=神通 Y=仙法
 	// 槽位许可的技能类型（G/H 在战斗页闲置，B 切法宝页后映射法宝槽）
@@ -101,6 +123,7 @@ protected:
 	static void _bind_methods();
 
 private:
+	float _passive_sum(PassiveStat p_stat) const;
 	Player *_player = nullptr;
 	HashSet<StringName> _known;
 	StringName _slots[SLOT_COUNT];

@@ -323,7 +323,7 @@ namespace godot {
 	void CultivationSystem::tick_law_regen(double p_delta) {
 		if (get_law_power_max() <= 0.0) return;
 		if (_law_power >= LAW_POWER_MAX) return;
-		_law_power = Math::min(_law_power + LAW_REGEN_PER_SEC * p_delta, LAW_POWER_MAX);
+		_law_power = Math::min(_law_power + LAW_REGEN_PER_SEC * _law_regen_mult * p_delta, LAW_POWER_MAX);
 		_emit_law_changed();
 	}
 

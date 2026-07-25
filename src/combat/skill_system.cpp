@@ -11,34 +11,47 @@ namespace godot {
 static const SkillSystem::Def SKILL_DEFS[] = {
 	// 武技（物理，冷却驱动，凡人可用）
 	{ "po_kong_zhan", "破空斩", SkillSystem::TYPE_MARTIAL, DMG_PHYSICAL, ELEM_NONE,
-	  0.0f, 0.0f, 3.0f, 2.5f, SkillSystem::FX_MELEE_SWING, 0, 0.0f, Color(), 0.0f, nullptr },
+	  0.0f, 0.0f, 3.0f, 2.5f, SkillSystem::FX_MELEE_SWING, 0, 0.0f, Color(), 0.0f, nullptr, SkillSystem::PAS_NONE, 0.0f },
 	{ "tu_jin_zhan", "突进斩", SkillSystem::TYPE_MARTIAL, DMG_PHYSICAL, ELEM_NONE,
-	  0.0f, 0.0f, 5.0f, 1.8f, SkillSystem::FX_LUNGE, 0, 0.0f, Color(), 0.0f, nullptr },
+	  0.0f, 0.0f, 5.0f, 1.8f, SkillSystem::FX_LUNGE, 0, 0.0f, Color(), 0.0f, nullptr, SkillSystem::PAS_NONE, 0.0f },
 	{ "xuan_feng_zhan", "旋风斩", SkillSystem::TYPE_MARTIAL, DMG_PHYSICAL, ELEM_NONE,
-	  0.0f, 0.0f, 6.0f, 3.0f, SkillSystem::FX_AOE_SWING, 1, 0.0f, Color(), 0.0f, nullptr },
+	  0.0f, 0.0f, 6.0f, 3.0f, SkillSystem::FX_AOE_SWING, 1, 0.0f, Color(), 0.0f, nullptr, SkillSystem::PAS_NONE, 0.0f },
 	{ "sheng_long_ji", "升龙击", SkillSystem::TYPE_MARTIAL, DMG_PHYSICAL, ELEM_NONE,
-	  0.0f, 0.0f, 5.0f, 2.2f, SkillSystem::FX_RISING, 1, 0.0f, Color(), 0.0f, nullptr },
+	  0.0f, 0.0f, 5.0f, 2.2f, SkillSystem::FX_RISING, 1, 0.0f, Color(), 0.0f, nullptr, SkillSystem::PAS_NONE, 0.0f },
 	// 法术（元素伤害，耗灵力，炼气解锁）
 	{ "huo_dan_shu", "火弹术", SkillSystem::TYPE_SPELL, DMG_ELEMENTAL, ELEM_HUO,
-	  15.0f, 0.0f, 2.0f, 2.0f, SkillSystem::FX_PROJECTILE, 1, 220.0f, Color(1.0f, 0.45f, 0.15f), 0.0f, nullptr },
+	  15.0f, 0.0f, 2.0f, 2.0f, SkillSystem::FX_PROJECTILE, 1, 220.0f, Color(1.0f, 0.45f, 0.15f), 0.0f, nullptr, SkillSystem::PAS_NONE, 0.0f },
 	{ "bing_zhui_shu", "冰锥术", SkillSystem::TYPE_SPELL, DMG_ELEMENTAL, ELEM_SHUI,
-	  25.0f, 0.0f, 4.0f, 3.0f, SkillSystem::FX_PROJECTILE, 1, 260.0f, Color(0.5f, 0.8f, 1.0f), 0.0f, nullptr },
+	  25.0f, 0.0f, 4.0f, 3.0f, SkillSystem::FX_PROJECTILE, 1, 260.0f, Color(0.5f, 0.8f, 1.0f), 0.0f, nullptr, SkillSystem::PAS_NONE, 0.0f },
 	{ "lei_zhou_shu", "雷咒术", SkillSystem::TYPE_SPELL, DMG_ELEMENTAL, ELEM_LEI,
-	  30.0f, 0.0f, 3.0f, 3.5f, SkillSystem::FX_PROJECTILE, 2, 300.0f, Color(0.9f, 0.9f, 0.3f), 0.0f, nullptr },
+	  30.0f, 0.0f, 3.0f, 3.5f, SkillSystem::FX_PROJECTILE, 2, 300.0f, Color(0.9f, 0.9f, 0.3f), 0.0f, nullptr, SkillSystem::PAS_NONE, 0.0f },
 	{ "tu_dun_shu", "土盾术", SkillSystem::TYPE_SPELL, DMG_PHYSICAL, ELEM_NONE,
-	  20.0f, 0.0f, 20.0f, 0.0f, SkillSystem::FX_SELF_BUFF, 2, 0.0f, Color(), 0.0f, "buff_tu_dun" },
+	  20.0f, 0.0f, 20.0f, 0.0f, SkillSystem::FX_SELF_BUFF, 2, 0.0f, Color(), 0.0f, "buff_tu_dun", SkillSystem::PAS_NONE, 0.0f },
 	{ "yu_jian_shu", "御剑术", SkillSystem::TYPE_SPELL, DMG_ELEMENTAL, ELEM_JIN,
-	  40.0f, 0.0f, 6.0f, 2.0f, SkillSystem::FX_PROJ_FAN, 3, 280.0f, Color(0.85f, 0.85f, 0.95f), 0.0f, nullptr },
+	  40.0f, 0.0f, 6.0f, 2.0f, SkillSystem::FX_PROJ_FAN, 3, 280.0f, Color(0.85f, 0.85f, 0.95f), 0.0f, nullptr, SkillSystem::PAS_NONE, 0.0f },
 	// 神通（法则产物，耗法则之力，化神解锁）
 	{ "suo_di_cheng_cun", "缩地成寸", SkillSystem::TYPE_SHENTONG, DMG_PHYSICAL, ELEM_NONE,
-	  0.0f, 30.0f, 8.0f, 0.0f, SkillSystem::FX_BLINK, 5, 0.0f, Color(), 120.0f, nullptr },
+	  0.0f, 30.0f, 8.0f, 0.0f, SkillSystem::FX_BLINK, 5, 0.0f, Color(), 120.0f, nullptr, SkillSystem::PAS_NONE, 0.0f },
 	{ "jin_gang_bu_huai", "金刚不坏", SkillSystem::TYPE_SHENTONG, DMG_PHYSICAL, ELEM_NONE,
-	  0.0f, 40.0f, 30.0f, 0.0f, SkillSystem::FX_INVULN, 5, 0.0f, Color(), 2.5f, nullptr },
+	  0.0f, 40.0f, 30.0f, 0.0f, SkillSystem::FX_INVULN, 5, 0.0f, Color(), 2.5f, nullptr, SkillSystem::PAS_NONE, 0.0f },
 	{ "san_mei_zhen_huo", "三昧真火", SkillSystem::TYPE_SHENTONG, DMG_ELEMENTAL, ELEM_HUO,
-	  0.0f, 35.0f, 12.0f, 6.0f, SkillSystem::FX_PROJECTILE, 5, 320.0f, Color(1.0f, 0.3f, 0.1f), 0.0f, nullptr },
+	  0.0f, 35.0f, 12.0f, 6.0f, SkillSystem::FX_PROJECTILE, 5, 320.0f, Color(1.0f, 0.3f, 0.1f), 0.0f, nullptr, SkillSystem::PAS_NONE, 0.0f },
 	// 仙法（仙元驱动，真仙解锁）——示例：天雷引
 	{ "tian_lei_yin", "天雷引", SkillSystem::TYPE_XIANFA, DMG_ELEMENTAL, ELEM_LEI,
-	  60.0f, 0.0f, 10.0f, 8.0f, SkillSystem::FX_PROJECTILE, 10, 340.0f, Color(1.0f, 1.0f, 0.6f), 0.0f, nullptr },
+	  60.0f, 0.0f, 10.0f, 8.0f, SkillSystem::FX_PROJECTILE, 10, 340.0f, Color(1.0f, 1.0f, 0.6f), 0.0f, nullptr, SkillSystem::PAS_NONE, 0.0f },
+	// 被动（学会即常驻不占槽，乘区添头 10~25%；design/world-skills.md 第三节）
+	{ "shen_xing", "神行百变", SkillSystem::TYPE_PASSIVE, DMG_PHYSICAL, ELEM_NONE,
+	  0.0f, 0.0f, 0.0f, 0.0f, SkillSystem::FX_MELEE_SWING, 1, 0.0f, Color(), 0.0f, nullptr, SkillSystem::PAS_SPD, 0.12f },
+	{ "jian_xin", "剑心通明", SkillSystem::TYPE_PASSIVE, DMG_PHYSICAL, ELEM_NONE,
+	  0.0f, 0.0f, 0.0f, 0.0f, SkillSystem::FX_MELEE_SWING, 2, 0.0f, Color(), 0.0f, nullptr, SkillSystem::PAS_ATK, 0.10f },
+	{ "tie_bu_shan", "铁布衫", SkillSystem::TYPE_PASSIVE, DMG_PHYSICAL, ELEM_NONE,
+	  0.0f, 0.0f, 0.0f, 0.0f, SkillSystem::FX_MELEE_SWING, 3, 0.0f, Color(), 0.0f, nullptr, SkillSystem::PAS_DEF, 0.15f },
+	{ "ling_tai", "灵台清明", SkillSystem::TYPE_PASSIVE, DMG_PHYSICAL, ELEM_NONE,
+	  0.0f, 0.0f, 0.0f, 0.0f, SkillSystem::FX_MELEE_SWING, 3, 0.0f, Color(), 0.0f, nullptr, SkillSystem::PAS_MANA_REGEN, 0.25f },
+	{ "feng_lei_yi", "风雷双翼", SkillSystem::TYPE_PASSIVE, DMG_PHYSICAL, ELEM_NONE,
+	  0.0f, 0.0f, 0.0f, 0.0f, SkillSystem::FX_MELEE_SWING, 4, 0.0f, Color(), 0.0f, nullptr, SkillSystem::PAS_FLY_SPEED, 0.15f },
+	{ "dao_fa_zi_ran", "道法自然", SkillSystem::TYPE_PASSIVE, DMG_PHYSICAL, ELEM_NONE,
+	  0.0f, 0.0f, 0.0f, 0.0f, SkillSystem::FX_MELEE_SWING, 5, 0.0f, Color(), 0.0f, nullptr, SkillSystem::PAS_LAW_REGEN, 0.25f },
 };
 
 void SkillSystem::_bind_methods() {
@@ -48,11 +61,27 @@ void SkillSystem::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("cast_slot", "slot"), &SkillSystem::cast_slot);
 	ClassDB::bind_method(D_METHOD("get_slot_info", "slot"), &SkillSystem::get_slot_info);
 	ClassDB::bind_method(D_METHOD("get_known_list"), &SkillSystem::get_known_list);
+	ClassDB::bind_method(D_METHOD("get_passive_atk_mult"), &SkillSystem::get_passive_atk_mult);
+	ClassDB::bind_method(D_METHOD("get_passive_spd_mult"), &SkillSystem::get_passive_spd_mult);
+	ClassDB::bind_method(D_METHOD("get_passive_def_mult"), &SkillSystem::get_passive_def_mult);
+	ClassDB::bind_method(D_METHOD("get_passive_mana_regen_mult"), &SkillSystem::get_passive_mana_regen_mult);
+	ClassDB::bind_method(D_METHOD("get_passive_fly_mult"), &SkillSystem::get_passive_fly_mult);
+	ClassDB::bind_method(D_METHOD("get_passive_law_regen_mult"), &SkillSystem::get_passive_law_regen_mult);
 	ClassDB::bind_method(D_METHOD("save_to_dict"), &SkillSystem::save_to_dict);
 	ClassDB::bind_method(D_METHOD("load_from_dict", "data"), &SkillSystem::load_from_dict);
 
 	ADD_SIGNAL(MethodInfo("skill_cast", PropertyInfo(Variant::STRING_NAME, "id")));
 	ADD_SIGNAL(MethodInfo("skills_changed"));
+}
+
+float SkillSystem::_passive_sum(PassiveStat p_stat) const {
+	float sum = 0.0f;
+	for (const Def &d : SKILL_DEFS) {
+		if (d.type == TYPE_PASSIVE && d.passive_stat == p_stat && _known.has(StringName(d.id))) {
+			sum += d.passive_value;
+		}
+	}
+	return sum;
 }
 
 const SkillSystem::Def *SkillSystem::find_def(const StringName &p_id) {
@@ -68,6 +97,7 @@ String SkillSystem::type_name(SkillType p_t) {
 		case TYPE_SPELL: return TXT("法术");
 		case TYPE_SHENTONG: return TXT("神通");
 		case TYPE_XIANFA: return TXT("仙法");
+		case TYPE_PASSIVE: return TXT("被动");
 	}
 	return TXT("?");
 }

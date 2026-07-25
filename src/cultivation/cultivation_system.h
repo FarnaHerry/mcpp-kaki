@@ -118,6 +118,7 @@ namespace godot {
 		// 功法等外部系统的倍率挂钩（默认 1.0，GongfaSystem 驱动）
 		void set_mana_max_mult(double p_m) { _mana_max_mult = p_m; _emit_mana_changed(); }
 		void set_mana_regen_mult(double p_m) { _mana_regen_mult = p_m; }
+		void set_law_regen_mult(double p_m) { _law_regen_mult = p_m; } // 被动（道法自然）乘区
 
 		// 法则之力（design/gongfa-skills.md 第四节，已敲定：独立能量条）：
 		// 化神「初触法则」后解锁，与灵力池分离——神通只耗法则之力。
@@ -201,7 +202,8 @@ namespace godot {
 		static constexpr double LAW_POWER_MAX = 100.0;
 		static constexpr double LAW_REGEN_PER_SEC = 3.0;
 		double _mana_max_mult = 1.0;   // 功法倍率（练气）
-		double _mana_regen_mult = 1.0; // 功法回灵倍率
+		double _mana_regen_mult = 1.0;
+		double _law_regen_mult = 1.0;   // 法则回复乘区（被动）
 		ImmortalType _immortal_type = TYPE_HUMAN; // 凡尘默认人仙
 		Sect _sect = SECT_NONE;
 		Origin _origin = ORIGIN_MORTAL;

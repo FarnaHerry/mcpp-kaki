@@ -319,7 +319,8 @@ namespace godot {
 			// 自由二维移动（无重力，渐加速；速度随境界速度倍率成长）
 			float spd_mult = p->get_cultivation()
 				? p->get_cultivation()->get_speed_multiplier() : 1.0f;
-			float top_speed = p->fly_speed * spd_mult;
+			float top_speed = p->fly_speed * spd_mult *
+				(p->get_skills() ? p->get_skills()->get_passive_fly_mult() : 1.0f); // 被动（风雷双翼）
 			float ix = p->get_move_input();
 			float iy = p->get_fly_input();
 			Vector2 vel = p->get_velocity();
@@ -569,6 +570,8 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("set_current_health", "v"), &Player::set_current_health);
 		ClassDB::bind_method(D_METHOD("is_invulnerable"), &Player::is_invulnerable);
 		ClassDB::bind_method(D_METHOD("get_time"), &Player::get_time);
+		ClassDB::bind_method(D_METHOD("_on_gongfa_changed"), &Player::_on_gongfa_changed);
+		ClassDB::bind_method(D_METHOD("_on_skills_changed"), &Player::_on_skills_changed);
 	ClassDB::bind_method(D_METHOD("take_damage_typed", "amount", "cat", "elem", "source"), &Player::take_damage_typed);
 		ClassDB::bind_method(D_METHOD("gain_spiritual_energy", "amount"), &Player::gain_spiritual_energy);
 		ClassDB::bind_method(D_METHOD("on_attack_landed", "victim", "damage"), &Player::on_attack_landed);
@@ -859,6 +862,9 @@ namespace godot {
 		if (_buffs) {
 			defense *= _buffs->get_def_mult(); // buff（金刚丹等）乘区
 		}
+		if (_skills) {
+			defense *= _skills->get_passive_def_mult(); // 被动（铁布衫）乘区
+		}
 		DamageInfo info;
 		info.base_amount = p_amount;
 		info.category = p_cat;
@@ -976,6 +982,7 @@ namespace godot {
 		_gongfa->connect("gongfa_changed", Callable(this, "_on_gongfa_changed"));
 		_skills = memnew(SkillSystem);
 		_skills->set_player(this);
+		_skills->connect("skills_changed", Callable(this, "_on_skills_changed"));
 		_artifacts = memnew(ArtifactSystem);
 		_artifacts->set_player(this);
 		_buffs = memnew(BuffSystem);
@@ -1027,10 +1034,23 @@ namespace godot {
 	void Player::_on_gongfa_changed() {
 		_refresh_max_health(false);
 		_update_move_speed();
-		if (_cultivation && _gongfa) {
-			_cultivation->set_mana_max_mult(_gongfa->get_mana_mult());
-			_cultivation->set_mana_regen_mult(_gongfa->get_regen_mult());
-		}
+		_refresh_regen_mults();
+	}
+
+	// 灵力/法则回复乘区 = 功法 × 被动（灵台清明/道法自然）；功法或技能变化时刷新
+	void Player::_refresh_regen_mults() {
+		if (!_cultivation) return;
+		float gm = _gongfa ? _gongfa->get_mana_mult() : 1.0f;
+		float gr = _gongfa ? _gongfa->get_regen_mult() : 1.0f;
+		float pr = _skills ? _skills->get_passive_mana_regen_mult() : 1.0f;
+		float pl = _skills ? _skills->get_passive_law_regen_mult() : 1.0f;
+		_cultivation->set_mana_max_mult(gm);
+		_cultivation->set_mana_regen_mult(gr * pr);
+		_cultivation->set_law_regen_mult(pl);
+	}
+
+	void Player::_on_skills_changed() {
+		_refresh_regen_mults();
 	}
 
 	void Player::_on_enemy_killed(Object *p_enemy, Object *p_killer) {
@@ -1086,6 +1106,7 @@ namespace godot {
 				// 炼气武技精进：旋风斩/升龙击（v1 境界授予，后续改师傅/掉落）
 				_skills->learn(StringName("xuan_feng_zhan"));
 				_skills->learn(StringName("sheng_long_ji"));
+				_skills->learn(StringName("shen_xing")); // 被动：神行百变
 			}
 		}
 
@@ -1100,6 +1121,7 @@ namespace godot {
 		    p_new_realm >= CultivationSystem::FOUNDATION) {
 			_skills->learn(StringName("lei_zhou_shu"));
 			_skills->learn(StringName("tu_dun_shu"));
+			_skills->learn(StringName("jian_xin")); // 被动：剑心通明
 		}
 		// 金丹：赐照妖葫
 		if (_artifacts && p_old_realm < CultivationSystem::GOLDEN_CORE &&
@@ -1111,11 +1133,18 @@ namespace godot {
 		if (_skills && p_old_realm < CultivationSystem::GOLDEN_CORE &&
 		    p_new_realm >= CultivationSystem::GOLDEN_CORE) {
 			_skills->learn(StringName("yu_jian_shu"));
+			_skills->learn(StringName("tie_bu_shan")); // 被动：铁布衫
+			_skills->learn(StringName("ling_tai"));    // 被动：灵台清明
 		}
 		// 元婴：赐玄铁塔（辅助型；次要栏满则持而未装，待换）
 		if (_artifacts && p_old_realm < CultivationSystem::NASCENT_SOUL &&
 		    p_new_realm >= CultivationSystem::NASCENT_SOUL) {
 			_artifacts->acquire(StringName("xuan_tie_ta"));
+		}
+		// 元婴：被动 风雷双翼
+		if (_skills && p_old_realm < CultivationSystem::NASCENT_SOUL &&
+		    p_new_realm >= CultivationSystem::NASCENT_SOUL) {
+			_skills->learn(StringName("feng_lei_yi"));
 		}
 
 		// 化神「初触法则」：授予首个神通（缩地成寸·空间法则），装神通槽 T
@@ -1127,6 +1156,7 @@ namespace godot {
 			// 金刚不坏（金之法则）/ 三昧真火（火之法则）
 			_skills->learn(StringName("jin_gang_bu_huai"));
 			_skills->learn(StringName("san_mei_zhen_huo"));
+			_skills->learn(StringName("dao_fa_zi_ran")); // 被动：道法自然
 		}
 
 		// 渡劫成仙：本命法宝觉醒（150% → 200%）+ 首个仙法（天雷引）
@@ -1300,6 +1330,9 @@ namespace godot {
 		if (_gongfa) {
 			move_speed *= _gongfa->get_speed_mult(); // 功法（练气）乘区
 		}
+		if (_skills) {
+			move_speed *= _skills->get_passive_spd_mult(); // 被动（神行百变）乘区
+		}
 	}
 
 	// ---- Equipment ----
@@ -1315,6 +1348,9 @@ namespace godot {
 		}
 		if (_buffs) {
 			atk *= _buffs->get_atk_mult(); // buff（赤焰丹等）乘区
+		}
+		if (_skills) {
+			atk *= _skills->get_passive_atk_mult(); // 被动（剑心通明）乘区
 		}
 		atk *= get_benming_coeff(); // 本命法宝加成
 		return atk;
