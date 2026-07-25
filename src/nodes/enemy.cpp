@@ -121,7 +121,7 @@ namespace godot {
 
 	class EnemyChaseState : public State<Enemy> {
 	public:
-		void enter(Enemy *e) override {}
+		void enter(Enemy *e) override { e->_activate_boss_hud(); }
 		void exit(Enemy *e) override {}
 
 		void physics_update(Enemy *e, double delta) override {
@@ -353,6 +353,11 @@ namespace godot {
 	class EnemyDeathState : public State<Enemy> {
 	public:
 		void enter(Enemy *e) override {
+			// Boss 战结束：撤下 HUD Boss 条
+			if (e->_boss_hud_active) {
+				SignalBus *bus = SignalBus::get_singleton();
+				if (bus) bus->emit_signal("boss_fight_ended");
+			}
 			// Boss: big energy reward
 			float energy = e->is_boss ? 150.0f : 15.0f;
 
@@ -393,6 +398,8 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("set_is_boss", "v"), &Enemy::set_is_boss);
 		ClassDB::bind_method(D_METHOD("set_no_drops", "v"), &Enemy::set_no_drops);
 		ClassDB::bind_method(D_METHOD("set_show_hp_bar", "v"), &Enemy::set_show_hp_bar);
+		ClassDB::bind_method(D_METHOD("set_display_name", "v"), &Enemy::set_display_name);
+		ClassDB::bind_method(D_METHOD("get_display_name"), &Enemy::get_display_name);
 		ClassDB::bind_method(D_METHOD("set_preferred_distance", "v"), &Enemy::set_preferred_distance);
 		ClassDB::bind_method(D_METHOD("get_move_speed"), &Enemy::get_move_speed);
 		ClassDB::bind_method(D_METHOD("get_detection_radius"), &Enemy::get_detection_radius);
@@ -418,6 +425,7 @@ namespace godot {
 		ADD_PROPERTY(PropertyInfo(Variant::BOOL, "is_boss"), "set_is_boss", "get_is_boss");
 		ADD_PROPERTY(PropertyInfo(Variant::BOOL, "no_drops"), "set_no_drops", "get_no_drops");
 		ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_hp_bar"), "set_show_hp_bar", "get_show_hp_bar");
+		ADD_PROPERTY(PropertyInfo(Variant::STRING, "display_name"), "set_display_name", "get_display_name");
 		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "preferred_distance"), "set_preferred_distance", "get_preferred_distance");
 
 		ADD_SIGNAL(MethodInfo("enemy_died"));
@@ -438,8 +446,7 @@ namespace godot {
 
 		_setup_collision();
 		_create_hitboxes();
-		if (show_hp_bar)
-			_create_hp_bar();
+		// Boss 血条不再画在头顶——经 SignalBus 上报 GameHUD 顶部居中条
 		_find_player();
 
 		state_machine = new StateMachine<Enemy>(this);
@@ -469,27 +476,18 @@ namespace godot {
 		_time += p_delta;
 		state_machine->process_update(p_delta);
 
-		// 头顶血条（秘境劫敌/Boss）
-		if (_hp_bar_fill) {
-			float frac = (max_health > 0.0f) ? (current_health / max_health) : 0.0f;
-			Vector2 s = _hp_bar_fill->get_size();
-			s.x = 28.0f * Math::clamp(frac, 0.0f, 1.0f);
-			_hp_bar_fill->set_size(s);
-		}
 	}
 
-	void Enemy::_create_hp_bar() {
-		ColorRect *bg = memnew(ColorRect);
-		bg->set_position(Vector2(-14, -26));
-		bg->set_size(Vector2(28, 4));
-		bg->set_color(Color(0.1f, 0.1f, 0.1f, 0.85f));
-		add_child(bg);
-
-		_hp_bar_fill = memnew(ColorRect);
-		_hp_bar_fill->set_position(Vector2(-14, -26));
-		_hp_bar_fill->set_size(Vector2(28, 4));
-		_hp_bar_fill->set_color(Color(0.85f, 0.15f, 0.15f, 1));
-		add_child(_hp_bar_fill);
+	void Enemy::_activate_boss_hud() {
+		// Boss 战触发（aggro 或首次受击）：上报 HUD 顶部 Boss 条
+		if (_boss_hud_active || !(is_boss || show_hp_bar))
+			return;
+		_boss_hud_active = true;
+		SignalBus *bus = SignalBus::get_singleton();
+		if (bus) {
+			String name = display_name.is_empty() ? String(get_name()) : display_name;
+			bus->emit_signal("boss_fight_update", name, current_health, max_health);
+		}
 	}
 
 	void Enemy::_setup_collision() {
@@ -571,6 +569,7 @@ namespace godot {
 	}
 
 	void Enemy::_apply_damage(float p_amount, DamageCategory p_cat, Element p_elem, Node *p_source) {
+		_activate_boss_hud(); // 受击也触发（先下手为强）
 		// DamageCalculator 统一结算（防御/法抗/元素抗 + 五行克制）
 		DamageInfo info;
 		info.base_amount = p_amount;
@@ -584,6 +583,13 @@ namespace godot {
 		float actual = DamageCalculator::compute(info, def);
 
 		current_health -= actual;
+		if (_boss_hud_active) {
+			SignalBus *bus = SignalBus::get_singleton();
+			if (bus) {
+				String name = display_name.is_empty() ? String(get_name()) : display_name;
+				bus->emit_signal("boss_fight_update", name, current_health, max_health);
+			}
+		}
 
 		// 伤害数字显示
 		{

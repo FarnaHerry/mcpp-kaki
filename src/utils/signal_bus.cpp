@@ -31,6 +31,9 @@ void SignalBus::_bind_methods() {
 	                      PropertyInfo(Variant::INT, "final_count")));
 	ADD_SIGNAL(MethodInfo("boss_died"));
 	// 伤害结算广播（伤害数字显示等）。is_player_victim=true 表示玩家挨打。
+	ADD_SIGNAL(MethodInfo("boss_fight_update", PropertyInfo(Variant::STRING, "name"),
+	                      PropertyInfo(Variant::FLOAT, "current"), PropertyInfo(Variant::FLOAT, "max")));
+	ADD_SIGNAL(MethodInfo("boss_fight_ended"));
 	ADD_SIGNAL(MethodInfo("law_power_changed", PropertyInfo(Variant::FLOAT, "current"), PropertyInfo(Variant::FLOAT, "max")));
 	ADD_SIGNAL(MethodInfo("skill_page_changed", PropertyInfo(Variant::INT, "page")));
 	ADD_SIGNAL(MethodInfo("damage_dealt",

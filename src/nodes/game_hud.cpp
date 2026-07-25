@@ -42,6 +42,11 @@ void GameHUD::_bind_methods() {
                          &GameHUD::on_interaction_prompt);
     ClassDB::bind_method(D_METHOD("on_player_died"), &GameHUD::on_player_died);
     ClassDB::bind_method(D_METHOD("on_player_respawned"), &GameHUD::on_player_respawned);
+    ClassDB::bind_method(D_METHOD("on_boss_fight_update", "name", "current", "max"),
+                         &GameHUD::on_boss_fight_update);
+    ClassDB::bind_method(D_METHOD("on_boss_fight_ended"), &GameHUD::on_boss_fight_ended);
+    ClassDB::bind_method(D_METHOD("is_boss_bar_visible"), &GameHUD::is_boss_bar_visible);
+    ClassDB::bind_method(D_METHOD("get_boss_bar_name"), &GameHUD::get_boss_bar_name);
     ClassDB::bind_method(D_METHOD("set_hud_visible", "visible"), &GameHUD::set_hud_visible);
     ClassDB::bind_method(D_METHOD("is_hud_visible"), &GameHUD::is_hud_visible);
     ClassDB::bind_method(D_METHOD("set_all_visible", "visible"), &GameHUD::set_all_visible);
@@ -63,6 +68,7 @@ void GameHUD::_ready() {
     _create_death_overlay();
     _create_skill_bar();
     _create_law_bar();
+    _create_boss_bar();
 
     set_process_unhandled_input(true);
     set_process(true); // 技能栏冷却轮询
@@ -78,6 +84,8 @@ void GameHUD::_ready() {
         bus->connect("combo_ended", Callable(this, "on_combo_ended"));
         bus->connect("interaction_prompt", Callable(this, "on_interaction_prompt"));
         bus->connect("player_died", Callable(this, "on_player_died"));
+        bus->connect("boss_fight_update", Callable(this, "on_boss_fight_update"));
+        bus->connect("boss_fight_ended", Callable(this, "on_boss_fight_ended"));
         bus->connect("player_respawned", Callable(this, "on_player_respawned"));
     }
 }
@@ -400,6 +408,60 @@ void GameHUD::_update_skill_bar() {
 }
 
 // ============================================================
+// Boss 血条（顶部居中；SignalBus 驱动）
+// ============================================================
+
+void GameHUD::_create_boss_bar() {
+    const float W = 240.0f, H = 8.0f;
+    const float x = (480.0f - W) * 0.5f, y = 8.0f;
+
+    _boss_bg = memnew(ColorRect);
+    _boss_bg->set_position(Vector2(x, y));
+    _boss_bg->set_size(Vector2(W, H));
+    _boss_bg->set_color(Color(0.10f, 0.06f, 0.06f, 0.88f));
+    add_child(_boss_bg);
+
+    _boss_fill = memnew(ColorRect);
+    _boss_fill->set_position(Vector2(x, y));
+    _boss_fill->set_size(Vector2(W, H));
+    _boss_fill->set_color(Color(0.80f, 0.12f, 0.12f, 1.0f));
+    add_child(_boss_fill);
+
+    _boss_name = memnew(Label);
+    _boss_name->set_text("");
+    _boss_name->add_theme_font_size_override("font_size", FONT_SIZE_XS);
+    _boss_name->add_theme_color_override("font_color", Color(1.0f, 0.85f, 0.75f, 0.95f));
+    _boss_name->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
+    _boss_name->set_position(Vector2(x, y + H + 1));
+    _boss_name->set_size(Vector2(W, 12));
+    add_child(_boss_name);
+
+    _boss_bg->set_visible(false);
+    _boss_fill->set_visible(false);
+    _boss_name->set_visible(false);
+}
+
+void GameHUD::on_boss_fight_update(const String &p_name, double p_current, double p_max) {
+    if (!_boss_bg || p_max <= 0.0)
+        return;
+    float frac = Math::clamp(float(p_current / p_max), 0.0f, 1.0f);
+    _boss_fill->set_size(Vector2(240.0f * frac, 8.0f));
+    _boss_name->set_text(p_name);
+    bool show = _hud_visible && p_current > 0.0;
+    _boss_bg->set_visible(show);
+    _boss_fill->set_visible(show);
+    _boss_name->set_visible(show);
+}
+
+void GameHUD::on_boss_fight_ended() {
+    if (!_boss_bg)
+        return;
+    _boss_bg->set_visible(false);
+    _boss_fill->set_visible(false);
+    _boss_name->set_visible(false);
+}
+
+// ============================================================
 // Input
 // ============================================================
 
@@ -585,6 +647,7 @@ void GameHUD::on_interaction_prompt(const String &p_text, bool p_show) {
 }
 
 void GameHUD::on_player_died() {
+    on_boss_fight_ended(); // 玩家阵亡即撤下 Boss 条
     if (_death_overlay) {
         _death_overlay->set_visible(true);
     }

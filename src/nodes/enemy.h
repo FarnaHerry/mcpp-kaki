@@ -38,7 +38,8 @@ namespace godot {
 		bool is_flying = false;       // true = ignores gravity, hovers
 		bool is_boss = false;         // true = boss: more HP, phases, special attacks
 		bool no_drops = false;        // true = 死亡不掉落（心魔/三尸等幻境之敌）
-		bool show_hp_bar = false;     // true = 头顶显示血条（秘境劫敌/Boss 用）
+		bool show_hp_bar = false;     // true = Boss 血条上 HUD（秘境劫敌用；is_boss 同效）
+		String display_name;          // Boss 血条标题（空则回退节点名）
 		float preferred_distance = 0.0f; // ideal combat range (0 = melee)
 
 		// Boss
@@ -70,6 +71,9 @@ namespace godot {
 		bool can_special() const;
 		void update_facing_to_player();
 
+		void _activate_boss_hud();         // aggro/受击时上报 HUD Boss 条（状态类需访问，公开）
+		bool _boss_hud_active = false;     // 已上报 HUD Boss 条（避免重复 started）
+
 		void take_damage(float p_amount, Node *p_source);
 		void take_damage_typed(float p_amount, int p_cat, int p_elem, Node *p_source); // 投射物用（Variant 可传 int）
 		void take_hit(const HitBox *p_hitbox, Node *p_source); // HitBox 驱动（含伤害类别/元素）
@@ -91,6 +95,8 @@ namespace godot {
 		void set_is_boss(bool v) { is_boss = v; }
 		void set_no_drops(bool v) { no_drops = v; }
 		void set_show_hp_bar(bool v) { show_hp_bar = v; }
+		void set_display_name(const String &v) { display_name = v; }
+		String get_display_name() const { return display_name; }
 		void set_preferred_distance(float v) { preferred_distance = v; }
 		float get_move_speed() const { return move_speed; }
 		float get_detection_radius() const { return detection_radius; }
@@ -121,12 +127,9 @@ namespace godot {
 		double _time = 0.0;
 		HitBox *_hitbox = nullptr;
 		HurtBox *_hurtbox = nullptr;
-		ColorRect *_hp_bar_fill = nullptr; // show_hp_bar 时创建
-
 		void _setup_collision();
 		void _find_player();
 		void _create_hitboxes();
-		void _create_hp_bar();
 		void _apply_damage(float p_amount, DamageCategory p_cat, Element p_elem, Node *p_source);
 	};
 

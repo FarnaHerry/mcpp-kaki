@@ -44,6 +44,10 @@ public:
     void on_interaction_prompt(const String &p_text, bool p_show);
     void on_player_died();
     void on_player_respawned();
+    void on_boss_fight_update(const String &p_name, double p_current, double p_max);
+    void on_boss_fight_ended();
+    bool is_boss_bar_visible() const { return _boss_bg && _boss_bg->is_visible(); }
+    String get_boss_bar_name() const { return _boss_name ? _boss_name->get_text() : String(); }
 
     // Visibility switches
     void set_hud_visible(bool p_visible);
@@ -113,6 +117,11 @@ private:
     ColorRect *_law_fill = nullptr;
     Label *_law_label = nullptr;
 
+    // Boss 血条（屏幕顶部居中；Boss 战触发时由 SignalBus 上报，死亡/玩家阵亡撤下）
+    ColorRect *_boss_bg = nullptr;
+    ColorRect *_boss_fill = nullptr;
+    Label *_boss_name = nullptr;
+
     // Visibility switch
     bool _hud_visible = true;
 
@@ -126,6 +135,7 @@ private:
     void _create_death_overlay();
     void _create_skill_bar();
     void _create_law_bar();
+    void _create_boss_bar();
     void _update_skill_bar();
     void _update_law_bar();
     void _update_bar(ColorRect *p_fill, float p_current, float p_max, bool p_horizontal = true);

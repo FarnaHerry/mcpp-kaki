@@ -142,6 +142,7 @@ func _setup_game():
 	# BOSS — large, multi-phase, special attacks
 	var boss = _spawn_enemy(Vector2(1200, 195), Color(1.0, 0.1, 0.1, 1), 40.0, 500.0)
 	boss.set("is_boss", true)
+	boss.set("display_name", "赤瞳魔狼")
 	# 属性注册后才真正生效；_ready 的 ×5 已过（add_child 时 is_boss 还是 false），
 	# 这里直接给最终值 3×5=15
 	boss.set("max_health", 15.0); boss.set("current_health", 15.0)
