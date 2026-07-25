@@ -573,6 +573,8 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("_on_hurtbox_hit", "hitbox", "source"), &Player::_on_hurtbox_hit);
 		ClassDB::bind_method(D_METHOD("pickup_item", "item_id", "qty"), &Player::pickup_item, DEFVAL(1));
 		ClassDB::bind_method(D_METHOD("use_consumable", "item_id"), &Player::use_consumable);
+		ClassDB::bind_method(D_METHOD("get_consumable_bar_slot", "idx"), &Player::get_consumable_bar_slot);
+		ClassDB::bind_method(D_METHOD("use_consumable_bar_slot", "idx"), &Player::use_consumable_bar_slot);
 		ClassDB::bind_method(D_METHOD("get_inventory"), &Player::get_inventory);
 		ClassDB::bind_method(D_METHOD("get_cultivation"), &Player::get_cultivation);
 	ClassDB::bind_method(D_METHOD("get_gongfa"), &Player::get_gongfa);
@@ -675,6 +677,16 @@ namespace godot {
 				if (_artifacts) _artifacts->activate_slot(i);
 			} else {
 				if (_skills) _skills->cast_slot(i);
+			}
+		}
+
+		// 数字键消耗品栏（1~6 直接磕，绕过背包）
+		static const char *BAR_ACTIONS[6] = {
+			"consume_1", "consume_2", "consume_3", "consume_4", "consume_5", "consume_6"
+		};
+		for (int i = 0; i < 6; i++) {
+			if (input->is_action_just_pressed(BAR_ACTIONS[i])) {
+				use_consumable_bar_slot(i);
 			}
 		}
 
@@ -1329,6 +1341,23 @@ namespace godot {
 			bus->emit_signal("item_picked_up", String(p_item_id), p_qty);
 		}
 
+		// 消耗品自动入快捷栏：已存在→不动；否则找空位或已耗尽槽（首个）
+		if (def->type == Item::CONSUMABLE) {
+			bool in_bar = false;
+			for (int i = 0; i < CONSUMABLE_BAR_SLOTS; i++) {
+				if (_consumable_bar[i] == p_item_id) { in_bar = true; break; }
+			}
+			if (!in_bar) {
+				for (int i = 0; i < CONSUMABLE_BAR_SLOTS; i++) {
+					if (_consumable_bar[i] == StringName() ||
+					    _inventory->get_item_count(_consumable_bar[i]) == 0) {
+						_consumable_bar[i] = p_item_id;
+						break;
+					}
+				}
+			}
+		}
+
 		// Auto-use consumables if conditions are met
 		if (def->type == Item::CONSUMABLE) {
 			bool should_use = false;
@@ -1398,6 +1427,17 @@ namespace godot {
 		return true;
 	}
 
+	StringName Player::get_consumable_bar_slot(int p_idx) const {
+		if (p_idx < 0 || p_idx >= CONSUMABLE_BAR_SLOTS) return StringName();
+		return _consumable_bar[p_idx];
+	}
+
+	bool Player::use_consumable_bar_slot(int p_idx) {
+		if (p_idx < 0 || p_idx >= CONSUMABLE_BAR_SLOTS) return false;
+		if (_consumable_bar[p_idx] == StringName()) return false;
+		return use_consumable(_consumable_bar[p_idx]);
+	}
+
 	// ---- Cultivation ----
 
 	void Player::gain_spiritual_energy(float p_amount) {
@@ -1429,6 +1469,12 @@ namespace godot {
 		}
 		if (p_data.has("buffs") && _buffs) {
 			_buffs->load_from_dict(p_data["buffs"]);
+		}
+		if (p_data.has("consumable_bar")) {
+			Array bar = p_data["consumable_bar"];
+			for (int i = 0; i < CONSUMABLE_BAR_SLOTS && i < bar.size(); i++) {
+				_consumable_bar[i] = StringName(bar[i]);
+			}
 		}
 
 		// Position

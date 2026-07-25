@@ -116,6 +116,8 @@ private:
     std::vector<CanvasItem *> _skill_bar_nodes;
     std::vector<Label *> _skill_name_labels; // 6 槽技能名（空槽显示 ·）
     std::vector<Label *> _skill_cd_labels;   // 6 槽冷却剩余
+    std::vector<Label *> _bar_name_labels;   // 消耗品栏 6 槽（物品名首字）
+    std::vector<Label *> _bar_count_labels;  // 消耗品栏数量
     class Player *_player = nullptr;         // 惰性缓存（技能栏轮询）
     Label *_page_badge = nullptr;            // 法宝页提示（B 切页，战斗页隐藏）
 
@@ -141,6 +143,8 @@ private:
     void _create_interact_prompt();
     void _create_death_overlay();
     void _create_skill_bar();
+    void _create_consumable_bar();
+    void _update_consumable_bar();
     void _create_law_bar();
     void _create_boss_bar();
     void _update_skill_bar();

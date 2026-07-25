@@ -136,6 +136,11 @@ namespace godot {
 		// 消耗品唯一入口：扣数量 + 应用全部效果（回血/回灵/修为/buff），拾取自动用/背包面板/快捷栏统一走这里
 		bool use_consumable(const StringName &p_item_id);
 
+		// 数字键消耗品栏（design/alchemy.md S6：1~6 快捷栏，拾取消耗品自动入栏首个空位）
+		static constexpr int CONSUMABLE_BAR_SLOTS = 6;
+		StringName get_consumable_bar_slot(int p_idx) const;
+		bool use_consumable_bar_slot(int p_idx); // 数字键直接磕（绕过背包）
+
 		// Equipment
 		bool equip_item(int p_inventory_slot);
 		bool unequip_item(int p_equip_slot);
@@ -176,6 +181,7 @@ namespace godot {
 		ArtifactSystem *_artifacts = nullptr;
 		BuffSystem *_buffs = nullptr;
 		AlchemySystem *_alchemy = nullptr;
+		StringName _consumable_bar[CONSUMABLE_BAR_SLOTS]; // 数字键快捷栏（空 = StringName()）
 		int _skill_page = 0;
 		Inventory *_inventory = nullptr;
 		double _skill_hitbox_until = 0.0; // 技能借用 HitBox 的关闭时刻（_time 时基）

@@ -4,6 +4,9 @@
 #include "../cultivation/artifact_system.h"
 #include "../cultivation/cultivation_system.h"
 #include "player.h"
+#include "../inventory/inventory.h"
+#include "../inventory/item.h"
+#include "../inventory/item_database.h"
 #include "../utils/signal_bus.h"
 
 #include <godot_cpp/classes/engine.hpp>
@@ -68,6 +71,7 @@ void GameHUD::_ready() {
     _create_interact_prompt();
     _create_death_overlay();
     _create_skill_bar();
+    _create_consumable_bar();
     _create_law_bar();
 
     // Buff 行（生命条下方小行）
@@ -326,6 +330,7 @@ void GameHUD::_process(double p_delta) {
     if (Engine::get_singleton()->is_editor_hint())
         return;
     _update_skill_bar();
+    _update_consumable_bar();
     _update_law_bar();
     _update_buff_label(p_delta);
 }
@@ -420,6 +425,78 @@ void GameHUD::_update_law_bar() {
     double cur = cult->get_law_power();
     _law_fill->set_size(Vector2(BAR_WIDTH * float(cur / max_law), 10.0f));
     _law_label->set_text(TXT("法则 ") + String::num_int64(int64_t(cur)) + TXT("/") + String::num_int64(int64_t(max_law)));
+}
+
+// 数字键消耗品栏（技能栏上方一行：1~6 槽，名首字+数量；design/alchemy.md S6）
+void GameHUD::_create_consumable_bar() {
+    const float SLOT_W = 20.0f, SLOT_GAP = 2.0f;
+    const int N = 6;
+    const float total_w = N * SLOT_W + (N - 1) * SLOT_GAP; // 130
+    const float x0 = (480.0f - total_w) * 0.5f;
+    const float y = 270.0f - 24.0f - 23.0f; // 技能栏上方
+
+    for (int i = 0; i < N; i++) {
+        float x = x0 + i * (SLOT_W + SLOT_GAP);
+
+        ColorRect *slot = memnew(ColorRect);
+        slot->set_position(Vector2(x, y));
+        slot->set_size(Vector2(SLOT_W, SLOT_W));
+        slot->set_color(Color(0.25f, 0.35f, 0.25f, 0.85f));
+        add_child(slot);
+        _skill_bar_nodes.push_back(slot);
+
+        Label *key = memnew(Label);
+        key->set_text(String::num_int64(i + 1)); // ASCII 数字无需 TXT
+        key->add_theme_font_size_override("font_size", 8);
+        key->add_theme_color_override("font_color", Color(0.75f, 0.75f, 0.75f, 0.9f));
+        key->set_position(Vector2(x + 1, y + 1));
+        add_child(key);
+        _skill_bar_nodes.push_back(key);
+
+        Label *name = memnew(Label);
+        name->set_text(TXT("·"));
+        name->add_theme_font_size_override("font_size", 10);
+        name->add_theme_color_override("font_color", Color(1, 1, 1, 0.95f));
+        name->set_position(Vector2(x + 6, y + 4));
+        add_child(name);
+        _skill_bar_nodes.push_back(name);
+        _bar_name_labels.push_back(name);
+
+        Label *count = memnew(Label);
+        count->set_text("");
+        count->add_theme_font_size_override("font_size", 8);
+        count->add_theme_color_override("font_color", Color(1.0f, 0.95f, 0.6f, 0.95f));
+        count->set_position(Vector2(x + 12, y + 12));
+        add_child(count);
+        _skill_bar_nodes.push_back(count);
+        _bar_count_labels.push_back(count);
+    }
+}
+
+void GameHUD::_update_consumable_bar() {
+    if (_bar_name_labels.empty())
+        return;
+    if (!_player)
+        return; // _update_skill_bar 先行缓存
+    Inventory *inv = _player->get_inventory();
+    ItemDatabase *db = ItemDatabase::get_singleton();
+    for (int i = 0; i < (int)_bar_name_labels.size(); i++) {
+        StringName id = _player->get_consumable_bar_slot(i);
+        if (id == StringName()) {
+            _bar_name_labels[i]->set_text(TXT("·"));
+            _bar_name_labels[i]->add_theme_color_override("font_color", Color(1, 1, 1, 0.35f));
+            _bar_count_labels[i]->set_text("");
+            continue;
+        }
+        const Item *def = db ? db->get_item(id) : nullptr;
+        String name = def ? def->name : String(id);
+        _bar_name_labels[i]->set_text(name.substr(0, 1));
+        int qty = inv ? inv->get_item_count(id) : 0;
+        _bar_count_labels[i]->set_text(qty > 0 ? String::num_int64(qty) : "");
+        // 耗尽暗显
+        _bar_name_labels[i]->add_theme_color_override("font_color",
+            qty > 0 ? Color(1, 1, 1, 0.95f) : Color(1, 1, 1, 0.35f));
+    }
 }
 
 void GameHUD::_update_skill_bar() {

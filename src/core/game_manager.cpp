@@ -239,6 +239,13 @@ Dictionary GameManager::collect_save_data() const {
 		if (_player->get_buffs()) {
 			pd["buffs"] = _player->get_buffs()->save_to_dict();
 		}
+		{
+			Array bar;
+			for (int i = 0; i < Player::CONSUMABLE_BAR_SLOTS; i++) {
+				bar.push_back(String(_player->get_consumable_bar_slot(i)));
+			}
+			pd["consumable_bar"] = bar;
+		}
 		}
 		data["player"] = pd;
 
