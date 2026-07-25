@@ -107,7 +107,7 @@ bin/              # 编译产物 (.so)，gitignored
 
 ### Input Map
 
-方向键移动（WASD 已腾出给技能槽，DNF 式），J 攻击，K 跳跃（空中再按=飞行），L 冲刺，E 使用/装备，Space 交互/确认，I 背包，Q 修炼突破，ESC 多页菜单；技能槽：A/S 武技、D/F 法术、T 神通、Y 仙法（预留），B 切法宝页（A~H=法宝槽）
+方向键移动（WASD 已腾出给技能槽，DNF 式），X 攻击，C 跳跃（空中再按=飞行），Z 冲刺，E 使用/装备，Space 交互/确认，I 背包，Q 修炼突破，ESC 多页菜单；技能槽：A/S 武技、D/F 法术、T 神通、Y 仙法（预留），B 切法宝页（A~H=法宝槽）
 
 ### Collision Layers
 
