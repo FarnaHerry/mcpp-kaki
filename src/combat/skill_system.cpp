@@ -249,6 +249,8 @@ Array SkillSystem::get_known_list() const {
 			d["law_cost"] = def.law_cost;
 			d["power"] = def.power;
 			d["min_realm"] = def.min_realm;
+			d["passive_stat"] = int(def.passive_stat);
+			d["passive_value"] = def.passive_value;
 			out.append(d);
 		}
 	}

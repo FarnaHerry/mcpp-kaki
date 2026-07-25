@@ -355,15 +355,29 @@ void GameMenu::_build_gongfa_page() {
 }
 
 // ============================================================
-// 技能页（槽位总览 + 已学列表；装配交互后续做）
+// 技能页（槽位总览 + 主动装配交互 + 被动分区）
 // ============================================================
+
+Array GameMenu::_skill_active_knowns() const {
+	Array out;
+	SkillSystem *skills = _player ? _player->get_skills() : nullptr;
+	if (!skills) return out;
+	Array known = skills->get_known_list();
+	for (int i = 0; i < known.size(); i++) {
+		Dictionary k = known[i];
+		if (int(k.get("type", -1)) != SkillSystem::TYPE_PASSIVE) {
+			out.append(k);
+		}
+	}
+	return out;
+}
 
 void GameMenu::_build_skill_page() {
 	Label *title = memnew(Label);
 	title->set_text(TXT("—— 技能 ——"));
 	title->add_theme_font_size_override("font_size", 13);
 	title->add_theme_color_override("font_color", Color(1.0f, 0.9f, 0.5f));
-	title->set_position(Vector2(195, 36));
+	title->set_position(Vector2(195, 32));
 	add_child(title);
 	_page_nodes.push_back(title);
 
@@ -380,6 +394,9 @@ void GameMenu::_build_skill_page() {
 	Color head_c(1.0f, 0.85f, 0.5f);
 	Color body_c(0.85f, 0.85f, 0.85f);
 	Color dim_c(0.55f, 0.55f, 0.55f);
+	Color sel_c(1.0f, 0.95f, 0.6f);
+	Color ok_c(0.6f, 1.0f, 0.6f);
+	Color bad_c(1.0f, 0.5f, 0.5f);
 
 	SkillSystem *skills = _player ? _player->get_skills() : nullptr;
 
@@ -387,7 +404,7 @@ void GameMenu::_build_skill_page() {
 	static const char *KEYS[SkillSystem::SLOT_COUNT] = { "A", "S", "D", "F", "G", "H", "T", "Y" };
 	static const char *GNAMES[5] = { "武技", "法术", "法宝", "神通", "仙法" };
 	for (int group = 0; group < 5; group++) {
-		add_line(TXT("— ") + TXT(GNAMES[group]) + TXT(" —"), 40.0f + group * 90.0f, 60.0f, 10, head_c);
+		add_line(TXT("— ") + TXT(GNAMES[group]) + TXT(" —"), 40.0f + group * 90.0f, 54.0f, 10, head_c);
 		int first = group < 3 ? group * 2 : group + 3; // 0/2/4/6/7
 		int count = group < 3 ? 2 : 1;
 		for (int k = 0; k < count; k++) {
@@ -399,34 +416,105 @@ void GameMenu::_build_skill_page() {
 			} else {
 				text += TXT("（空）");
 			}
-			add_line(text, 40.0f + group * 90.0f, 76.0f + k * 14, 9, body_c);
+			add_line(text, 40.0f + group * 90.0f, 69.0f + k * 13, 9, body_c);
 		}
 	}
 
-	// 已学技能列表
-	add_line(TXT("已学:"), 70.0f, 130.0f, 9, head_c);
-	if (skills) {
-		Array known = skills->get_known_list();
-		float y = 146.0f;
-		for (int i = 0; i < known.size(); i++) {
-			Dictionary k = known[i];
-			String line = String(k.get("type_name", "")) + TXT(" · ") + String(k.get("name", "")) +
-				TXT("  倍率×") + String::num(float(k.get("power", 1.0f)), 1) +
-				TXT("  冷却") + String::num(float(k.get("cooldown", 0.0f)), 1) + TXT("s");
+	// 主动技能列表（↑/↓ 选择，A/S/D/F/T/Y 装配到对应槽）
+	add_line(TXT("已学主动:"), 40.0f, 102.0f, 9, head_c);
+	Array actives = _skill_active_knowns();
+	const int VISIBLE = 9;
+	if (actives.is_empty()) {
+		add_line(TXT("（尚未习得任何技能）"), 40.0f, 118.0f, 9, dim_c);
+	} else {
+		_skill_sel = CLAMP(_skill_sel, 0, (int)actives.size() - 1);
+		int scroll = actives.size() > VISIBLE ? CLAMP(_skill_sel - VISIBLE / 2, 0, (int)actives.size() - VISIBLE) : 0;
+		for (int row = 0; row < VISIBLE && scroll + row < actives.size(); row++) {
+			int i = scroll + row;
+			Dictionary k = actives[i];
+			String line = (i == _skill_sel ? TXT("▶ ") : TXT("  ")) + String(k.get("name", "")) +
+				TXT(" · ") + String(k.get("type_name", "")) +
+				TXT(" ×") + String::num(float(k.get("power", 1.0f)), 1) +
+				TXT(" 冷却") + String::num(float(k.get("cooldown", 0.0f)), 1) + TXT("s");
 			float mana = float(k.get("mana_cost", 0.0f));
 			if (mana > 0.0f) {
-				line += TXT("  灵力") + String::num_int64(int64_t(mana));
+				line += TXT(" 灵") + String::num_int64(int64_t(mana));
 			}
-			add_line(line, 70.0f, y, 9, body_c);
-			y += 14.0f;
-		}
-		if (known.is_empty()) {
-			add_line(TXT("（尚未习得任何技能）"), 70.0f, 146.0f, 9, dim_c);
+			float law = float(k.get("law_cost", 0.0f));
+			if (law > 0.0f) {
+				line += TXT(" 法则") + String::num_int64(int64_t(law));
+			}
+			add_line(line, 40.0f, 118.0f + row * 13, 9, i == _skill_sel ? sel_c : body_c);
 		}
 	}
 
-	add_line(TXT("武技冷却驱动不耗灵力（凡人可用）；法术耗灵力，炼气起。"), 70.0f, 226.0f, 8, dim_c);
-	add_line(TXT("神通耗法则之力（化神，独立能量条）；仙法耗仙元（真仙）；B 键切法宝页。"), 70.0f, 240.0f, 8, dim_c);
+	// 被动分区（学会即常驻，不占槽；数值走乘区）
+	add_line(TXT("已悟被动:"), 285.0f, 102.0f, 9, head_c);
+	static const char *PAS_NAMES[7] = { "", "攻击", "移速", "防御", "回灵", "飞速", "法则回复" };
+	if (skills) {
+		Array known = skills->get_known_list();
+		float y = 118.0f;
+		int shown = 0;
+		for (int i = 0; i < known.size(); i++) {
+			Dictionary k = known[i];
+			if (int(k.get("type", -1)) != SkillSystem::TYPE_PASSIVE) continue;
+			int ps = CLAMP(int(k.get("passive_stat", 0)), 0, 6);
+			int pct = int(Math::round(float(k.get("passive_value", 0.0f)) * 100.0f));
+			String line = String(k.get("name", "")) + TXT("  ") + TXT(PAS_NAMES[ps]) +
+				TXT("+") + String::num_int64(pct) + TXT("%");
+			add_line(line, 285.0f, y, 9, body_c);
+			y += 13.0f;
+			shown++;
+		}
+		if (shown == 0) {
+			add_line(TXT("（尚未悟得被动）"), 285.0f, 118.0f, 9, dim_c);
+		}
+	}
+
+	// 装配结果提示 / 操作说明
+	if (!_skill_msg.is_empty()) {
+		bool ok = _skill_msg.contains(TXT("已装配"));
+		add_line(_skill_msg, 40.0f, 248.0f, 9, ok ? ok_c : bad_c);
+	} else {
+		add_line(TXT("↑/↓ 选择主动技，按 A/S/D/F/T/Y 装入对应槽；G/H 留给法宝页（B 键切换）。"), 40.0f, 248.0f, 8, dim_c);
+	}
+}
+
+void GameMenu::_handle_skill_input() {
+	SkillSystem *skills = _player ? _player->get_skills() : nullptr;
+	if (!skills) return;
+	Input *input = Input::get_singleton();
+	Array actives = _skill_active_knowns();
+	int count = actives.size();
+	if (count == 0) return;
+	_skill_sel = CLAMP(_skill_sel, 0, count - 1);
+	if (input->is_action_just_pressed(TXT("up"))) {
+		_skill_sel = (_skill_sel - 1 + count) % count;
+		_rebuild_page();
+	}
+	if (input->is_action_just_pressed(TXT("down"))) {
+		_skill_sel = (_skill_sel + 1) % count;
+		_rebuild_page();
+	}
+	// 按槽键装配当前选中技能（G/H 槽留给法宝页，不参与装配）
+	static const char *SLOT_ACTIONS[6] = { "skill_a", "skill_s", "skill_d", "skill_f", "skill_t", "skill_y" };
+	static const int SLOT_IDX[6] = { 0, 1, 2, 3, 6, 7 };
+	static const char *SLOT_KEYS[6] = { "A", "S", "D", "F", "T", "Y" };
+	for (int i = 0; i < 6; i++) {
+		if (input->is_action_just_pressed(TXT(SLOT_ACTIONS[i]))) {
+			Dictionary k = actives[_skill_sel];
+			StringName id = StringName(String(k.get("id", "")));
+			if (skills->assign(SLOT_IDX[i], id)) {
+				_skill_msg = TXT("已装配 [") + SLOT_KEYS[i] + TXT("] ") + String(k.get("name", ""));
+			} else {
+				_skill_msg = String(k.get("name", "")) + TXT(" 是") + String(k.get("type_name", "")) +
+					TXT("，与 [") + SLOT_KEYS[i] + TXT("] 槽类型不符");
+			}
+			_skill_msg_t = 2.5f;
+			_rebuild_page();
+			break;
+		}
+	}
 }
 
 // ============================================================
@@ -766,6 +854,14 @@ void GameMenu::_process(double p_delta) {
 		}
 	}
 
+	if (_skill_msg_t > 0.0f) {
+		_skill_msg_t -= float(p_delta);
+		if (_skill_msg_t <= 0.0f && _page == PAGE_SKILL) {
+			_skill_msg = String();
+			_rebuild_page();
+		}
+	}
+
 	if (input->is_action_just_pressed(TXT("menu"))) {
 		_close_menu();
 		return;
@@ -796,6 +892,9 @@ void GameMenu::_process(double p_delta) {
 			break;
 		case PAGE_ALCHEMY:
 			_handle_alchemy_input();
+			break;
+		case PAGE_SKILL:
+			_handle_skill_input();
 			break;
 		case PAGE_SETTINGS:
 			_handle_settings_input();

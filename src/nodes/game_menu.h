@@ -1,6 +1,7 @@
 #pragma once
 
 #include <godot_cpp/classes/canvas_layer.hpp>
+#include <godot_cpp/variant/array.hpp>
 
 #include <vector>
 
@@ -45,6 +46,13 @@ class GameMenu : public CanvasLayer {
 	String _alchemy_msg;
 	float _alchemy_msg_t = 0.0f;
 	void _handle_alchemy_input();
+
+	// 技能页状态（主动装配：↑/↓ 选已学主动，A/S/D/F/T/Y 装入对应槽）
+	int _skill_sel = 0;
+	String _skill_msg;
+	float _skill_msg_t = 0.0f;
+	Array _skill_active_knowns() const; // 已学列表过滤掉被动（保持定义表顺序）
+	void _handle_skill_input();
 
 	// 设置页状态
 	int _settings_sel = 0;
