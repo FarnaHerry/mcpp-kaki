@@ -103,11 +103,16 @@ bin/              # 编译产物 (.so)，gitignored
 - **法则之力** (CultivationSystem) — 化神解锁独立能量条(max100,回复3/s+击杀+10)，神通唯一消耗源；HUD右上角紫条；存档 cd["law_power"]
 - **GameMenu** (`src/nodes/game_menu.*`) — ESC 多页管理菜单（背包/能力/功法/技能/法宝/设置），托管 InventoryPanel（外部驱动 ext_navigate/ext_use）；能力页=主动/被动分区技能树总览（只读 v1）；设置页含音量(持久化 user://settings.cfg)/保存/退出；嵌套暂停安全（还原原暂停状态）；页签条独立 CanvasLayer 130
 - **HUD 底部技能栏**: 武技[A/S] 法术[D/F] 法宝[G/H] 空槽占位（技能系统落地后填充）
+- **BuffSystem** (`src/cultivation/buff_system.*`) — 丹药/食物/状态统一 Buff：def 表（冰心水抗15%/赤焰攻15%/金刚防20%, 300s）、同名刷新不叠加、到期自消、攻/防/元素抗性乘区钩子、HUD buff 行（名+秒）、存档 pd["buffs"]
+- **AlchemySystem** (`src/cultivation/alchemy_system.*`) — 炼丹：丹炉随身，7 固定配方，成功率字段 v1=100%（失败机制预留），地品金丹门控，每炉喂练气+5；GameMenu 第6页「炼丹」（↑/↓选方 E炼制，材料够=亮/不够=灰）
+- **草药** — Item grade 字段（0凡/1灵/2地）；7 草药（MATERIAL）；**HerbNode** (`src/nodes/`) 采集点（[X] 采集入包+喂练气+2，枯萎，房间重进刷新）；小怪掉止血草/聚灵草，Boss 千年灵芝保底
+- **use_consumable 统一入口** — Player::use_consumable(item_id)：扣数量+回血/比例回血/回灵(mana_amount)/修为(energy_amount)/buff；拾取自动用、背包面板、数字键栏全部走这里；聚气丹已迁移为回灵50
+- **数字键消耗品栏** — 1~6 快捷栏（consume_1..6），拾取消耗品自动入栏（首个空位/耗尽槽），HUD 技能栏上方一行（名首字+数量），存档 pd["consumable_bar"]
 - **调试键**: F3 遥测 / F4 HUD / F5 突破无经验门槛开关 / F6 读档 / Q 突破
 
 ### Input Map
 
-方向键移动（WASD 已腾出给技能槽，DNF 式），X 攻击，C 跳跃（空中再按=飞行），Z 冲刺，E 使用/装备，Space 交互/确认，I 背包，Q 修炼突破，ESC 多页菜单；技能槽：A/S 武技、D/F 法术、T 神通、Y 仙法（预留），B 切法宝页（A~H=法宝槽）
+方向键移动（WASD 已腾出给技能槽，DNF 式），X 普攻+交互合一（交互优先，采集/传送门都用 X），C 跳跃（空中再按=飞行），Z 冲刺，E 使用/装备，Space 确认副键，I 背包，Q 修炼突破，ESC 多页菜单；技能槽：A/S 武技、D/F 法术、T 神通、Y 仙法（预留），B 切法宝页（A~H=法宝槽）；数字键 1~6 消耗品快捷栏
 
 ### Collision Layers
 
