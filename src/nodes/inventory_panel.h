@@ -35,6 +35,7 @@ public:
 	void set_external_drive(bool p_on) { _external_drive = p_on; }
 	void ext_navigate(int p_dir); // +1 下 / -1 上
 	void ext_use();               // 使用/装备当前选中
+	void set_selected_index(int p_idx) { _selected_index = p_idx; } // 测试/外部驱动
 
 	// Rebuild the item list (called on inventory_changed)
 	// item_picked_up/item_used signals carry (item_id, qty) — accepted and ignored

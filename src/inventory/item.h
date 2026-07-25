@@ -32,7 +32,11 @@ struct Item {
 
 	// ---- Consumable effects (only relevant for CONSUMABLE type) ----
 	float heal_amount = 0.0f;
-	float energy_amount = 0.0f;
+	float heal_pct = 0.0f;      // 按比例回血（0.5 = 50%）
+	float mana_amount = 0.0f;   // 回灵力（法力池）
+	float energy_amount = 0.0f; // 修为经验（accumulate_energy，到顶卡境界）
+	StringName buff_id;         // 增益 buff（BuffSystem def id）
+	int grade = 0;              // 品级：0凡 1灵 2地 3天
 	float breakthrough_bonus = 0.0f; // 机缘突破事件的加成（事件系统实现后生效）
 
 	// ---- Equipment bonuses (only relevant for EQUIPMENT type) ----

@@ -85,6 +85,9 @@ namespace godot {
 		void take_hit(const HitBox *p_hitbox, Node *p_source); // HitBox 驱动（含伤害类别/元素）
 		float get_effective_attack() const;
 		bool is_dead() const { return current_health <= 0.0f; }
+		float get_current_health() const { return current_health; }
+		float get_max_health() const { return max_health; }
+		void set_current_health(float p_v) { current_health = p_v; }
 
 		StateMachine<Player> *state_machine = nullptr;
 		InputBuffer jump_buffer;
@@ -126,6 +129,8 @@ namespace godot {
 		// Inventory
 		Inventory *get_inventory() const { return _inventory; }
 		void pickup_item(const StringName &p_item_id, int p_qty = 1);
+		// 消耗品唯一入口：扣数量 + 应用全部效果（回血/回灵/修为/buff），拾取自动用/背包面板/快捷栏统一走这里
+		bool use_consumable(const StringName &p_item_id);
 
 		// Equipment
 		bool equip_item(int p_inventory_slot);

@@ -19,6 +19,12 @@ static const char *EQUIP_SLOT_NAMES[] = { "武器", "护甲", "饰品" };
 
 void InventoryPanel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_player", "player"), &InventoryPanel::set_player);
+	ClassDB::bind_method(D_METHOD("ext_navigate", "dir"), &InventoryPanel::ext_navigate);
+	ClassDB::bind_method(D_METHOD("ext_use"), &InventoryPanel::ext_use);
+	ClassDB::bind_method(D_METHOD("set_selected_index", "idx"), &InventoryPanel::set_selected_index);
+	ClassDB::bind_method(D_METHOD("ext_navigate", "dir"), &InventoryPanel::ext_navigate);
+	ClassDB::bind_method(D_METHOD("ext_use"), &InventoryPanel::ext_use);
+	ClassDB::bind_method(D_METHOD("set_selected_index", "idx"), &InventoryPanel::set_selected_index);
 	ClassDB::bind_method(D_METHOD("toggle"), &InventoryPanel::toggle);
 	ClassDB::bind_method(D_METHOD("refresh", "item_id", "qty"), &InventoryPanel::refresh,
 		DEFVAL(String()), DEFVAL(0));
@@ -221,24 +227,8 @@ void InventoryPanel::ext_use() {
 	if (!def) return;
 
 	if (def->type == Item::CONSUMABLE) {
-		if (inv->use_item(_selected_index)) {
-			if (def->heal_amount > 0.0f) {
-				_player->current_health = Math::min(
-					_player->current_health + def->heal_amount,
-					_player->max_health);
-				if (_signal_bus) {
-					_signal_bus->emit_signal("player_health_changed",
-						_player->current_health, _player->max_health);
-					_signal_bus->emit_signal("item_used", String(item_id), 1);
-				}
-			}
-			if (def->energy_amount > 0.0f && _player->get_cultivation()) {
-				_player->get_cultivation()->accumulate_energy(def->energy_amount);
-				if (_signal_bus) {
-					_signal_bus->emit_signal("item_used", String(item_id), 1);
-				}
-			}
-		}
+		// 消耗品效果统一走 Player::use_consumable（自动用/快捷栏同口径）
+		_player->use_consumable(item_id);
 	} else if (def->type == Item::EQUIPMENT) {
 		_player->equip_item(_selected_index);
 		if (_signal_bus) {

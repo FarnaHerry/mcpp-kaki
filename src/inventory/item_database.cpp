@@ -30,6 +30,26 @@ void ItemDatabase::_ready() {
 void ItemDatabase::_bind_methods() {
 	// get_item returns const Item* which godot-cpp can't bind — only for C++ use
 	ClassDB::bind_method(D_METHOD("get_item_count"), &ItemDatabase::get_item_count);
+	ClassDB::bind_method(D_METHOD("has_item", "id"), &ItemDatabase::has_item);
+	ClassDB::bind_method(D_METHOD("get_item_info", "id"), &ItemDatabase::get_item_info);
+}
+
+Dictionary ItemDatabase::get_item_info(const StringName &p_id) const {
+	Dictionary d;
+	const Item *it = get_item(p_id);
+	if (!it) return d;
+	d["id"] = it->id;
+	d["name"] = it->name;
+	d["description"] = it->description;
+	d["type"] = (int)it->type;
+	d["max_stack"] = it->max_stack;
+	d["grade"] = it->grade;
+	d["heal_amount"] = it->heal_amount;
+	d["heal_pct"] = it->heal_pct;
+	d["mana_amount"] = it->mana_amount;
+	d["energy_amount"] = it->energy_amount;
+	d["buff_id"] = it->buff_id;
+	return d;
 }
 
 void ItemDatabase::_register_items() {
@@ -52,10 +72,10 @@ void ItemDatabase::_register_items() {
 		Item pill;
 		pill.id = "qi_pill";
 		pill.name = TXT("聚气丹");
-		pill.description = TXT("吸收后获得 50 点灵力。修炼者日常必备。");
+		pill.description = TXT("吸收后恢复 50 点灵力。修炼者日常必备。");
 		pill.type = Item::CONSUMABLE;
 		pill.max_stack = 30;
-		pill.energy_amount = 50.0f;
+		pill.mana_amount = 50.0f;
 		_items[pill.id] = pill;
 	}
 
@@ -119,6 +139,94 @@ void ItemDatabase::_register_items() {
 		robe.max_stack = 1;
 		robe.defense_bonus = 3.0f;
 		_items[robe.id] = robe;
+	}
+
+	// ---- 草药（MATERIAL，design/alchemy.md 第二节）----
+
+	auto herb = [&](const char *id, const char *name, const char *desc, int grade) {
+		Item h;
+		h.id = id;
+		h.name = TXT(name);
+		h.description = TXT(desc);
+		h.type = Item::MATERIAL;
+		h.max_stack = 99;
+		h.grade = grade;
+		_items[h.id] = h;
+	};
+	herb("zhi_xue_cao", "止血草", "最常见的药草，捣汁可止血生肌。回春丹主材。", 0);
+	herb("ju_ling_cao", "聚灵草", "叶脉含灵气脉络，凝聚天地灵气。聚气丹主材。", 0);
+	herb("bing_xin_lian", "冰心莲", "生于高寒之地的雪莲，触手生凉。冰心丹主材。", 1);
+	herb("chi_yan_hua", "赤焰花", "洞穴深处吞吐地火的红花。赤焰丹主材。", 1);
+	herb("jin_gang_teng", "金刚藤", "攀于绝壁的铁色藤蔓，坚逾精钢。金刚丹主材。", 1);
+	herb("wu_dao_cha", "悟道茶", "传说古修坐化处生出的茶树，一叶一悟。悟道丹主材。", 2);
+	herb("qian_nian_ling_zhi", "千年灵芝", "千年灵木根际所生紫芝，药力浑厚。大还丹主材。", 2);
+
+	// ---- 新丹药（CONSUMABLE，design/alchemy.md 第三节配方产物）----
+
+	// 冰心丹 — 水抗 buff
+	{
+		Item pill;
+		pill.id = "bing_xin_dan";
+		pill.name = TXT("冰心丹");
+		pill.description = TXT("服之百脉清凉，水寒不侵。水抗+15%，持续 300 息。");
+		pill.type = Item::CONSUMABLE;
+		pill.max_stack = 10;
+		pill.grade = 1;
+		pill.buff_id = "buff_bing_xin";
+		_items[pill.id] = pill;
+	}
+
+	// 赤焰丹 — 攻击 buff
+	{
+		Item pill;
+		pill.id = "chi_yan_dan";
+		pill.name = TXT("赤焰丹");
+		pill.description = TXT("地火炼就，服之气血沸腾。攻击+15%，持续 300 息。");
+		pill.type = Item::CONSUMABLE;
+		pill.max_stack = 10;
+		pill.grade = 1;
+		pill.buff_id = "buff_chi_yan";
+		_items[pill.id] = pill;
+	}
+
+	// 金刚丹 — 防御 buff
+	{
+		Item pill;
+		pill.id = "jin_gang_dan";
+		pill.name = TXT("金刚丹");
+		pill.description = TXT("金铁之气淬体，刀枪难伤。防御+20%，持续 300 息。");
+		pill.type = Item::CONSUMABLE;
+		pill.max_stack = 10;
+		pill.grade = 1;
+		pill.buff_id = "buff_jin_gang";
+		_items[pill.id] = pill;
+	}
+
+	// 悟道丹 — 修为
+	{
+		Item pill;
+		pill.id = "wu_dao_dan";
+		pill.name = TXT("悟道丹");
+		pill.description = TXT("一叶一悟，豁然开朗。修为+200。");
+		pill.type = Item::CONSUMABLE;
+		pill.max_stack = 5;
+		pill.grade = 2;
+		pill.energy_amount = 200.0f;
+		_items[pill.id] = pill;
+	}
+
+	// 大还丹 — 大回血+修为
+	{
+		Item pill;
+		pill.id = "da_huan_dan";
+		pill.name = TXT("大还丹");
+		pill.description = TXT("生死人肉白骨。恢复 50% 生命，修为+100。");
+		pill.type = Item::CONSUMABLE;
+		pill.max_stack = 5;
+		pill.grade = 2;
+		pill.heal_pct = 0.5f;
+		pill.energy_amount = 100.0f;
+		_items[pill.id] = pill;
 	}
 }
 

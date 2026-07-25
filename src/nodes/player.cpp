@@ -564,11 +564,15 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("get_move_input"), &Player::get_move_input);
 		ClassDB::bind_method(D_METHOD("get_gravity"), &Player::get_gravity);
 		ClassDB::bind_method(D_METHOD("take_damage", "amount", "source"), &Player::take_damage);
+		ClassDB::bind_method(D_METHOD("get_current_health"), &Player::get_current_health);
+		ClassDB::bind_method(D_METHOD("get_max_health"), &Player::get_max_health);
+		ClassDB::bind_method(D_METHOD("set_current_health", "v"), &Player::set_current_health);
 	ClassDB::bind_method(D_METHOD("take_damage_typed", "amount", "cat", "elem", "source"), &Player::take_damage_typed);
 		ClassDB::bind_method(D_METHOD("gain_spiritual_energy", "amount"), &Player::gain_spiritual_energy);
 		ClassDB::bind_method(D_METHOD("on_attack_landed", "victim", "damage"), &Player::on_attack_landed);
 		ClassDB::bind_method(D_METHOD("_on_hurtbox_hit", "hitbox", "source"), &Player::_on_hurtbox_hit);
 		ClassDB::bind_method(D_METHOD("pickup_item", "item_id", "qty"), &Player::pickup_item, DEFVAL(1));
+		ClassDB::bind_method(D_METHOD("use_consumable", "item_id"), &Player::use_consumable);
 		ClassDB::bind_method(D_METHOD("get_inventory"), &Player::get_inventory);
 		ClassDB::bind_method(D_METHOD("get_cultivation"), &Player::get_cultivation);
 	ClassDB::bind_method(D_METHOD("get_gongfa"), &Player::get_gongfa);
@@ -1314,7 +1318,7 @@ namespace godot {
 			bool should_use = false;
 
 			// Auto-use healing pills when below 70% health
-			if (def->heal_amount > 0.0f && current_health < max_health * 0.7f) {
+			if ((def->heal_amount > 0.0f || def->heal_pct > 0.0f) && current_health < max_health * 0.7f) {
 				should_use = true;
 			}
 			// Auto-use energy pills when below 50% max energy
@@ -1324,31 +1328,58 @@ namespace godot {
 			}
 
 			if (should_use) {
-				// Find the item slot and use it
-				for (int i = 0; i < _inventory->get_capacity(); i++) {
-					Dictionary slot = _inventory->get_slot(i);
-					if (!slot.is_empty() && StringName(slot["id"]) == p_item_id) {
-						if (_inventory->use_item(i)) {
-							// Apply effect
-							if (def->heal_amount > 0.0f) {
-								current_health = Math::min(current_health + def->heal_amount, max_health);
-								if (bus) {
-									bus->emit_signal("player_health_changed", current_health, max_health);
-									bus->emit_signal("item_used", String(p_item_id), 1);
-								}
-							}
-							if (def->energy_amount > 0.0f && _cultivation) {
-								_cultivation->accumulate_energy(def->energy_amount);
-								if (bus) {
-									bus->emit_signal("item_used", String(p_item_id), 1);
-								}
-							}
-						}
-						break;
-					}
-				}
+				use_consumable(p_item_id);
 			}
 		}
+	}
+
+	bool Player::use_consumable(const StringName &p_item_id) {
+		if (!_inventory) return false;
+
+		const Item *def = ItemDatabase::get_singleton()->get_item(p_item_id);
+		if (!def || def->type != Item::CONSUMABLE) return false;
+
+		// Find the item slot
+		int slot = -1;
+		for (int i = 0; i < _inventory->get_capacity(); i++) {
+			Dictionary sd = _inventory->get_slot(i);
+			if (!sd.is_empty() && StringName(sd["id"]) == p_item_id) {
+				slot = i;
+				break;
+			}
+		}
+		if (slot < 0) return false;
+
+		if (!_inventory->use_item(slot)) return false;
+
+		// Apply effects
+		bool health_changed = false;
+		if (def->heal_amount > 0.0f) {
+			current_health = Math::min(current_health + def->heal_amount, max_health);
+			health_changed = true;
+		}
+		if (def->heal_pct > 0.0f) {
+			current_health = Math::min(current_health + max_health * def->heal_pct, max_health);
+			health_changed = true;
+		}
+		if (def->mana_amount > 0.0f && _cultivation) {
+			_cultivation->restore_mana(def->mana_amount);
+		}
+		if (def->energy_amount > 0.0f && _cultivation) {
+			_cultivation->accumulate_energy(def->energy_amount);
+		}
+		if (def->buff_id != StringName()) {
+			// TODO 步骤C：BuffSystem 接入后在此 apply(def->buff_id)
+		}
+
+		SignalBus *bus = SignalBus::get_singleton();
+		if (bus) {
+			if (health_changed) {
+				bus->emit_signal("player_health_changed", current_health, max_health);
+			}
+			bus->emit_signal("item_used", String(p_item_id), 1);
+		}
+		return true;
 	}
 
 	// ---- Cultivation ----
