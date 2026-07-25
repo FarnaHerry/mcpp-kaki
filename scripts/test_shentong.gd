@@ -64,6 +64,7 @@ func _process(delta) -> bool:
 			var law1 = float(cult.call("get_law_power"))
 			print("[TEST] blink cast=", ok, " x ", x0, "->", x1, " law ", law0, "->", law1)
 			_check(ok, "shentong cast succeeds")
+			_check(int(cult.call("get_realm_index")) >= 5, "realm unchanged after blink")
 			_check(x1 - x0 > 60.0, "blink moved player forward")
 			_check(abs(law0 - law1 - 30.0) < 0.01, "shentong consumed 30 law power")
 			_check(not bool(sk.call("cast_slot", 6)), "shentong cooldown blocks recast")

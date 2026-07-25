@@ -168,11 +168,11 @@ func _setup_game():
 
 	print("Open world ready. Walk to portal markers and press F.")
 	print("Pick up items by walking over diamond markers.")
-	print("Autosave on checkpoint. Press R to reload from last save.")
+	print("Autosave on checkpoint. Press F6 to reload from last save.")
 
 func _input(event):
 	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_R:
+		if event.keycode == KEY_F6:
 			# Reload from last autosave
 			var gm = get_node_or_null("GameManager")
 			if gm and gm.has_save("auto"):
