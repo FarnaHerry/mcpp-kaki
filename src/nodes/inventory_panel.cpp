@@ -22,9 +22,6 @@ void InventoryPanel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("ext_navigate", "dir"), &InventoryPanel::ext_navigate);
 	ClassDB::bind_method(D_METHOD("ext_use"), &InventoryPanel::ext_use);
 	ClassDB::bind_method(D_METHOD("set_selected_index", "idx"), &InventoryPanel::set_selected_index);
-	ClassDB::bind_method(D_METHOD("ext_navigate", "dir"), &InventoryPanel::ext_navigate);
-	ClassDB::bind_method(D_METHOD("ext_use"), &InventoryPanel::ext_use);
-	ClassDB::bind_method(D_METHOD("set_selected_index", "idx"), &InventoryPanel::set_selected_index);
 	ClassDB::bind_method(D_METHOD("toggle"), &InventoryPanel::toggle);
 	ClassDB::bind_method(D_METHOD("refresh", "item_id", "qty"), &InventoryPanel::refresh,
 		DEFVAL(String()), DEFVAL(0));
