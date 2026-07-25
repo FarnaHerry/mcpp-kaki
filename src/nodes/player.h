@@ -9,6 +9,7 @@
 #include "../combat/damage_types.h"
 #include "../cultivation/gongfa_system.h"
 #include "../cultivation/buff_system.h"
+#include "../cultivation/sect_system.h"
 #include "../cultivation/alchemy_system.h"
 #include "../inventory/inventory.h"
 #include "../utils/state_machine.h"
@@ -115,6 +116,9 @@ namespace godot {
 		SkillSystem *get_skills() const { return _skills; }
 		ArtifactSystem *get_artifacts() const { return _artifacts; }
 		BuffSystem *get_buffs() const { return _buffs; }
+		SectSystem *get_sect_system() const { return _sect; }
+		bool join_sect(const StringName &p_sect_id); // 拜师（炼气门槛；授专属技）
+		void leave_sect();                           // 叛门（贡献清零，技能保留）
 		AlchemySystem *get_alchemy() const { return _alchemy; }
 		// B 键技能页：0=战斗页(A/S武技 D/F法术) 1=法宝页(A~H=法宝槽0..5)
 		int get_skill_page() const { return _skill_page; }
@@ -194,6 +198,7 @@ namespace godot {
 		SkillSystem *_skills = nullptr;
 		ArtifactSystem *_artifacts = nullptr;
 		BuffSystem *_buffs = nullptr;
+		SectSystem *_sect = nullptr;
 		AlchemySystem *_alchemy = nullptr;
 		StringName _consumable_bar[CONSUMABLE_BAR_SLOTS]; // 数字键快捷栏（空 = StringName()）
 		int _skill_page = 0;

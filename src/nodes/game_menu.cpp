@@ -5,6 +5,7 @@
 #include "../combat/skill_system.h"
 #include "../cultivation/artifact_system.h"
 #include "../cultivation/alchemy_system.h"
+#include "../cultivation/sect_system.h"
 #include "../core/continent_manager.h"
 #include "../inventory/inventory.h"
 #include "../inventory/item.h"
@@ -25,7 +26,7 @@
 
 namespace godot {
 
-static const char *TAB_NAMES[] = { "背包", "能力", "功法", "技能", "法宝", "云游", "炼丹", "设置" };
+static const char *TAB_NAMES[] = { "背包", "能力", "功法", "技能", "法宝", "宗门", "云游", "炼丹", "设置" };
 
 void GameMenu::_bind_methods() {
 }
@@ -167,6 +168,11 @@ void GameMenu::_rebuild_page() {
 			if (_inv_panel) _inv_panel->close();
 			_build_artifact_page();
 			_set_hint(TXT("←/→ 切换页  ESC 关闭"));
+			break;
+		case PAGE_SECT:
+			if (_inv_panel) _inv_panel->close();
+			_build_sect_page();
+			_set_hint(TXT("←/→ 切换页  ↑/↓ 选宗  X 拜入/叛门  ESC 关闭"));
 			break;
 		case PAGE_TRAVEL:
 			if (_inv_panel) _inv_panel->close();
@@ -607,6 +613,137 @@ void GameMenu::_build_artifact_page() {
 }
 
 // ============================================================
+// 宗门页（design/sect-pressure.md：未入门=四宗列表拜师；已入门=信息总览+叛门）
+// ============================================================
+
+void GameMenu::_build_sect_page() {
+	auto add_line = [&](const String &text, float x, float y, int size, const Color &c) {
+		Label *l = memnew(Label);
+		l->set_text(text);
+		l->add_theme_font_size_override("font_size", size);
+		l->add_theme_color_override("font_color", c);
+		l->set_position(Vector2(x, y));
+		add_child(l);
+		_page_nodes.push_back(l);
+	};
+
+	Color head_c(1.0f, 0.85f, 0.5f);
+	Color body_c(0.85f, 0.85f, 0.85f);
+	Color dim_c(0.5f, 0.5f, 0.5f);
+	Color sel_c(1.0f, 0.95f, 0.6f);
+	Color ok_c(0.6f, 1.0f, 0.6f);
+	Color bad_c(1.0f, 0.5f, 0.5f);
+
+	Label *title = memnew(Label);
+	title->set_text(TXT("—— 宗门 ——"));
+	title->add_theme_font_size_override("font_size", 13);
+	title->add_theme_color_override("font_color", Color(1.0f, 0.9f, 0.5f));
+	title->set_position(Vector2(195, 32));
+	add_child(title);
+	_page_nodes.push_back(title);
+
+	SectSystem *sect = _player ? _player->get_sect_system() : nullptr;
+	auto pct = [](float m) { return String::num((m - 1.0f) * 100.0f, 0) + TXT("%"); };
+
+	if (sect && sect->in_sect()) {
+		// 已入门：信息总览
+		Dictionary info = sect->get_sect_info();
+		add_line(String(info["name"]) + TXT("  ") + String(info["rank_name"]), 70.0f, 58.0f, 11, head_c);
+		add_line(String(info["desc"]), 70.0f, 76.0f, 8, dim_c);
+		int contrib = info["contribution"];
+		int next = info["next_rank_cost"];
+		String prog = TXT("贡献 ") + String::num_int64(contrib);
+		prog += next >= 0 ? TXT(" / 晋阶需 ") + String::num_int64(next) : TXT("（已至真传）");
+		add_line(prog, 70.0f, 92.0f, 9, body_c);
+
+		add_line(TXT("宗门加成:"), 70.0f, 116.0f, 9, head_c);
+		PackedStringArray bonus;
+		if (sect->get_atk_mult() > 1.0f) bonus.append(TXT("攻击+") + pct(sect->get_atk_mult()));
+		if (sect->get_mana_mult() > 1.0f) bonus.append(TXT("灵力+") + pct(sect->get_mana_mult()));
+		if (sect->get_regen_mult() > 1.0f) bonus.append(TXT("回灵+") + pct(sect->get_regen_mult()));
+		if (sect->get_hp_mult() > 1.0f) bonus.append(TXT("生命+") + pct(sect->get_hp_mult()));
+		if (sect->get_def_mult() > 1.0f) bonus.append(TXT("防御+") + pct(sect->get_def_mult()));
+		if (sect->get_kill_xp_mult() > 1.0f) bonus.append(TXT("击杀修为+") + pct(sect->get_kill_xp_mult()));
+		add_line(bonus.is_empty() ? TXT("（无）") : String("  ").join(bonus), 70.0f, 132.0f, 9, body_c);
+
+		const SectSystem::Def *def = SectSystem::find_def(sect->get_sect_id());
+		if (def) {
+			add_line(TXT("入门已授专属技（见技能页，可自由装配）"), 70.0f, 156.0f, 8, dim_c);
+		}
+		add_line(TXT("击杀 +1 贡献，Boss +10；内门 100 / 真传 300。"), 70.0f, 196.0f, 8, dim_c);
+		add_line(TXT("叛门贡献清零，已学技能保留（逐出师门不夺修为）。"), 70.0f, 210.0f, 8, dim_c);
+		if (!_sect_msg.is_empty()) {
+			add_line(_sect_msg, 70.0f, 236.0f, 9, bad_c);
+		} else {
+			add_line(TXT("按 X 叛出师门"), 70.0f, 236.0f, 9, bad_c);
+		}
+	} else {
+		// 未入门：四宗列表
+		add_line(TXT("散修 · 无门无派"), 70.0f, 54.0f, 10, dim_c);
+		Array list = sect ? sect->get_sect_list() : Array();
+		_sect_sel = CLAMP(_sect_sel, 0, (int)list.size() - 1);
+		static const char *BONUS_LINE[4] = {
+			"攻 +6/10/15% ｜ 专属：万剑归宗（武技）",
+			"灵力+10/16/24% 回灵+10/15/22% ｜ 专属：太清神光（法术）",
+			"生命+8/12/18% 防+4/6/10% ｜ 专属：玄龟护体（法术）",
+			"击杀修为+15/25/40% 攻+3/5/8% ｜ 专属：血影斩（武技）",
+		};
+		for (int i = 0; i < list.size(); i++) {
+			Dictionary c = list[i];
+			bool is_sel = (i == _sect_sel);
+			float y = 76.0f + i * 34;
+			add_line((is_sel ? TXT("▶ ") : TXT("  ")) + String(c["name"]), 70.0f, y, 10, is_sel ? sel_c : body_c);
+			add_line(TXT("    ") + String(c["desc"]) + TXT("  ") + TXT(BONUS_LINE[i]), 70.0f, y + 14, 8, dim_c);
+		}
+		if (!_sect_msg.is_empty()) {
+			bool ok = _sect_msg.contains(TXT("拜入"));
+			add_line(_sect_msg, 70.0f, 240.0f, 9, ok ? ok_c : bad_c);
+		} else {
+			add_line(TXT("炼气起可拜师。加成随职位升：外门→内门(100)→真传(300)。"), 70.0f, 240.0f, 8, dim_c);
+		}
+	}
+}
+
+void GameMenu::_handle_sect_input() {
+	SectSystem *sect = _player ? _player->get_sect_system() : nullptr;
+	if (!sect) return;
+	Input *input = Input::get_singleton();
+	if (sect->in_sect()) {
+		if (input->is_action_just_pressed(TXT("interact"))) {
+			String name = String(sect->get_sect_info().get("name", ""));
+			_player->leave_sect();
+			_sect_msg = TXT("已叛出") + name;
+			_sect_msg_t = 2.5f;
+			_rebuild_page();
+		}
+		return;
+	}
+	Array list = sect->get_sect_list();
+	int count = list.size();
+	if (count == 0) return;
+	_sect_sel = CLAMP(_sect_sel, 0, count - 1);
+	if (input->is_action_just_pressed(TXT("up"))) {
+		_sect_sel = (_sect_sel - 1 + count) % count;
+		_rebuild_page();
+	}
+	if (input->is_action_just_pressed(TXT("down"))) {
+		_sect_sel = (_sect_sel + 1) % count;
+		_rebuild_page();
+	}
+	if (input->is_action_just_pressed(TXT("interact"))) {
+		Dictionary c = list[_sect_sel];
+		StringName id = StringName(String(c["id"]));
+		if (_player->join_sect(id)) {
+			_sect_msg = TXT("已拜入") + String(c["name"]);
+		} else {
+			_sect_msg = TXT("炼气期方可拜师");
+		}
+		_sect_msg_t = 2.5f;
+		_rebuild_page();
+	}
+}
+
+// ============================================================
 // 云游页（design/world-map.md：四大部洲列表 → X 前往已解锁洲）
 // ============================================================
 
@@ -974,6 +1111,14 @@ void GameMenu::_process(double p_delta) {
 		}
 	}
 
+	if (_sect_msg_t > 0.0f) {
+		_sect_msg_t -= float(p_delta);
+		if (_sect_msg_t <= 0.0f && _page == PAGE_SECT) {
+			_sect_msg = String();
+			_rebuild_page();
+		}
+	}
+
 	if (_travel_msg_t > 0.0f) {
 		_travel_msg_t -= float(p_delta);
 		if (_travel_msg_t <= 0.0f && _page == PAGE_TRAVEL) {
@@ -1015,6 +1160,9 @@ void GameMenu::_process(double p_delta) {
 			break;
 		case PAGE_SKILL:
 			_handle_skill_input();
+			break;
+		case PAGE_SECT:
+			_handle_sect_input();
 			break;
 		case PAGE_TRAVEL:
 			_handle_travel_input();

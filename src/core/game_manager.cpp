@@ -291,6 +291,9 @@ Dictionary GameManager::collect_save_data() const {
 		if (_player->get_buffs()) {
 			pd["buffs"] = _player->get_buffs()->save_to_dict();
 		}
+		if (_player->get_sect_system()) {
+			pd["sect"] = _player->get_sect_system()->save_to_dict();
+		}
 		{
 			Array bar;
 			for (int i = 0; i < Player::CONSUMABLE_BAR_SLOTS; i++) {

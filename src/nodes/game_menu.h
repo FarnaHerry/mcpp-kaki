@@ -25,7 +25,7 @@ class ContinentManager;
 class GameMenu : public CanvasLayer {
 	GDCLASS(GameMenu, CanvasLayer)
 
-	enum Page { PAGE_INVENTORY = 0, PAGE_ABILITY, PAGE_GONGFA, PAGE_SKILL, PAGE_ARTIFACT, PAGE_TRAVEL, PAGE_ALCHEMY, PAGE_SETTINGS, PAGE_COUNT };
+	enum Page { PAGE_INVENTORY = 0, PAGE_ABILITY, PAGE_GONGFA, PAGE_SKILL, PAGE_ARTIFACT, PAGE_SECT, PAGE_TRAVEL, PAGE_ALCHEMY, PAGE_SETTINGS, PAGE_COUNT };
 
 	// 页签条（独立高层级 CanvasLayer，背包页压在 InventoryPanel 之上仍可见）
 	CanvasLayer *_tabs_layer = nullptr;
@@ -55,6 +55,12 @@ class GameMenu : public CanvasLayer {
 	Array _skill_active_knowns() const; // 已学列表过滤掉被动（保持定义表顺序）
 	void _handle_skill_input();
 
+	// 宗门页状态（未入门=四宗列表选宗拜入；已入门=信息总览+X叛门）
+	int _sect_sel = 0;
+	String _sect_msg;
+	float _sect_msg_t = 0.0f;
+	void _handle_sect_input();
+
 	// 云游页状态（四洲列表：↑/↓ 选洲，X 前往已解锁洲）
 	int _travel_sel = 0;
 	String _travel_msg;
@@ -79,6 +85,7 @@ class GameMenu : public CanvasLayer {
 	void _build_gongfa_page();
 	void _build_skill_page();
 	void _build_artifact_page();
+	void _build_sect_page();
 	void _build_travel_page();
 	void _build_alchemy_page();
 	void _build_settings_page();

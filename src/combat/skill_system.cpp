@@ -43,6 +43,15 @@ static const SkillSystem::Def SKILL_DEFS[] = {
 	// 仙法（仙元驱动，真仙解锁）——示例：天雷引
 	{ "tian_lei_yin", "天雷引", SkillSystem::TYPE_XIANFA, DMG_ELEMENTAL, ELEM_LEI,
 	  60.0f, 0.0f, 10.0f, 8.0f, SkillSystem::FX_PROJECTILE, 10, 340.0f, Color(1.0f, 1.0f, 0.6f), 0.0f, nullptr, SkillSystem::PAS_NONE, 0.0f },
+	// 宗门专属技（design/sect-pressure.md：拜入即授，非境界授予）
+	{ "wan_jian_gui_zong", "万剑归宗", SkillSystem::TYPE_MARTIAL, DMG_ELEMENTAL, ELEM_JIN,
+	  0.0f, 0.0f, 8.0f, 5.0f, SkillSystem::FX_PROJ_FAN, 1, 300.0f, Color(1.0f, 0.85f, 0.3f), 0.0f, nullptr, SkillSystem::PAS_NONE, 0.0f },
+	{ "tai_qing_shen_guang", "太清神光", SkillSystem::TYPE_SPELL, DMG_ELEMENTAL, ELEM_SHUI,
+	  30.0f, 0.0f, 4.0f, 7.0f, SkillSystem::FX_PROJECTILE, 1, 300.0f, Color(0.6f, 1.0f, 0.9f), 0.0f, nullptr, SkillSystem::PAS_NONE, 0.0f },
+	{ "xuan_gui_hu_ti", "玄龟护体", SkillSystem::TYPE_SPELL, DMG_PHYSICAL, ELEM_NONE,
+	  25.0f, 0.0f, 20.0f, 0.0f, SkillSystem::FX_SELF_BUFF, 1, 0.0f, Color(), 0.0f, "buff_xuan_gui", SkillSystem::PAS_NONE, 0.0f },
+	{ "xue_ying_zhan", "血影斩", SkillSystem::TYPE_MARTIAL, DMG_PHYSICAL, ELEM_NONE,
+	  0.0f, 0.0f, 4.0f, 6.0f, SkillSystem::FX_LUNGE, 1, 0.0f, Color(0.8f, 0.1f, 0.15f), 0.0f, nullptr, SkillSystem::PAS_NONE, 0.0f },
 	// 被动（学会即常驻不占槽，乘区添头 10~25%；design/world-skills.md 第三节）
 	{ "shen_xing", "神行百变", SkillSystem::TYPE_PASSIVE, DMG_PHYSICAL, ELEM_NONE,
 	  0.0f, 0.0f, 0.0f, 0.0f, SkillSystem::FX_MELEE_SWING, 1, 0.0f, Color(), 0.0f, nullptr, SkillSystem::PAS_SPD, 0.12f },

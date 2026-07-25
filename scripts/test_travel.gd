@@ -104,6 +104,9 @@ func _process(delta) -> bool:
 			_press("right") # → 法宝
 			_step = 5
 		5:
+			_press("right") # → 宗门
+			_step = 55
+		55:
 			_press("right") # → 云游
 			_step = 6
 		6:
@@ -169,6 +172,9 @@ func _process(delta) -> bool:
 			_press("right")
 			_step = 19
 		19:
+			_press("right") # → 宗门
+			_step = 56
+		56:
 			_press("right") # → 云游
 			_step = 20
 		20:

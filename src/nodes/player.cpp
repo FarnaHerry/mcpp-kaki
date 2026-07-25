@@ -1,5 +1,7 @@
 #include "player.h"
 
+#include "enemy.h"
+
 #include "../combat/combo_chain.h"
 #include "../combat/damage_calculator.h"
 #include "../combat/hitbox.h"
@@ -660,12 +662,16 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("get_state_name"), &Player::get_state_name);
 		ClassDB::bind_method(D_METHOD("get_time"), &Player::get_time);
 		ClassDB::bind_method(D_METHOD("_on_gongfa_changed"), &Player::_on_gongfa_changed);
+		ClassDB::bind_method(D_METHOD("_on_enemy_killed", "enemy", "killer"), &Player::_on_enemy_killed);
 		ClassDB::bind_method(D_METHOD("_on_skills_changed"), &Player::_on_skills_changed);
 	ClassDB::bind_method(D_METHOD("take_damage_typed", "amount", "cat", "elem", "source"), &Player::take_damage_typed);
 		ClassDB::bind_method(D_METHOD("gain_spiritual_energy", "amount"), &Player::gain_spiritual_energy);
 		ClassDB::bind_method(D_METHOD("on_attack_landed", "victim", "damage"), &Player::on_attack_landed);
 		ClassDB::bind_method(D_METHOD("_on_hurtbox_hit", "hitbox", "source"), &Player::_on_hurtbox_hit);
 		ClassDB::bind_method(D_METHOD("pickup_item", "item_id", "qty"), &Player::pickup_item, DEFVAL(1));
+		ClassDB::bind_method(D_METHOD("join_sect", "sect_id"), &Player::join_sect);
+		ClassDB::bind_method(D_METHOD("leave_sect"), &Player::leave_sect);
+		ClassDB::bind_method(D_METHOD("get_sect_system"), &Player::get_sect_system);
 		ClassDB::bind_method(D_METHOD("use_consumable", "item_id"), &Player::use_consumable);
 		ClassDB::bind_method(D_METHOD("get_consumable_bar_slot", "idx"), &Player::get_consumable_bar_slot);
 		ClassDB::bind_method(D_METHOD("use_consumable_bar_slot", "idx"), &Player::use_consumable_bar_slot);
@@ -962,6 +968,9 @@ namespace godot {
 		if (_skills) {
 			defense *= _skills->get_passive_def_mult(); // 被动（铁布衫）乘区
 		}
+		if (_sect) {
+			defense *= _sect->get_def_mult(); // 宗门（蓬莱）乘区
+		}
 		DamageInfo info;
 		info.base_amount = p_amount;
 		info.category = p_cat;
@@ -1088,6 +1097,7 @@ namespace godot {
 		_artifacts = memnew(ArtifactSystem);
 		_artifacts->set_player(this);
 		_buffs = memnew(BuffSystem);
+		_sect = memnew(SectSystem);
 		_alchemy = memnew(AlchemySystem);
 		_alchemy->set_player(this);
 		// 凡人起步即会的基础武技（拳脚刀剑是凡人的本事）
@@ -1121,6 +1131,9 @@ namespace godot {
 		if (_gongfa) {
 			max_health *= _gongfa->get_hp_mult();
 		}
+		if (_sect) {
+			max_health *= _sect->get_hp_mult(); // 宗门（蓬莱）乘区
+		}
 		if (p_refill) {
 			current_health = max_health;
 		} else if (max_health > old_max) {
@@ -1146,8 +1159,10 @@ namespace godot {
 		float gr = _gongfa ? _gongfa->get_regen_mult() : 1.0f;
 		float pr = _skills ? _skills->get_passive_mana_regen_mult() : 1.0f;
 		float pl = _skills ? _skills->get_passive_law_regen_mult() : 1.0f;
-		_cultivation->set_mana_max_mult(gm);
-		_cultivation->set_mana_regen_mult(gr * pr);
+		float sm = _sect ? _sect->get_mana_mult() : 1.0f;  // 宗门（昆仑）灵力上限
+		float sr = _sect ? _sect->get_regen_mult() : 1.0f; // 宗门（昆仑）回灵
+		_cultivation->set_mana_max_mult(gm * sm);
+		_cultivation->set_mana_regen_mult(gr * pr * sr);
 		_cultivation->set_law_regen_mult(pl);
 	}
 
@@ -1167,6 +1182,17 @@ namespace godot {
 		// 战斗行为回复法则之力
 		if (p_killer == this && _cultivation) {
 			_cultivation->restore_law_power(10.0);
+		}
+		// 宗门：贡献 + 魔罗教杀伐修为（base 15/150 的加值部分，Enemy 处已发基础修为）
+		if (p_killer == this && _sect && _sect->in_sect()) {
+			Enemy *e = Object::cast_to<Enemy>(p_enemy);
+			bool boss = e ? e->is_boss : false;
+			_sect->on_kill(boss);
+			float bonus_mult = _sect->get_kill_xp_mult() - 1.0f;
+			if (bonus_mult > 0.0f && _cultivation) {
+				float base = boss ? 150.0f : 15.0f;
+				_cultivation->accumulate_energy(base * bonus_mult);
+			}
 		}
 	}
 
@@ -1454,6 +1480,9 @@ namespace godot {
 		if (_skills) {
 			atk *= _skills->get_passive_atk_mult(); // 被动（剑心通明）乘区
 		}
+		if (_sect) {
+			atk *= _sect->get_atk_mult(); // 宗门（蜀山/魔罗）乘区
+		}
 		atk *= get_benming_coeff(); // 本命法宝加成
 		return atk;
 	}
@@ -1599,6 +1628,28 @@ namespace godot {
 		}
 	}
 
+	// ---- 宗门（design/sect-pressure.md）----
+
+	bool Player::join_sect(const StringName &p_sect_id) {
+		if (!_sect || !_cultivation) return false;
+		if (!_sect->join(p_sect_id, _cultivation->get_realm_index())) return false;
+		// 入门专属技：拜入即授
+		const SectSystem::Def *def = SectSystem::find_def(p_sect_id);
+		if (def && _skills) {
+			_skills->learn(StringName(def->skill_id));
+		}
+		_refresh_max_health(false);
+		_refresh_regen_mults();
+		return true;
+	}
+
+	void Player::leave_sect() {
+		if (!_sect) return;
+		_sect->leave(); // 贡献清零；已学专属技保留（逐出师门不夺修为）
+		_refresh_max_health(false);
+		_refresh_regen_mults();
+	}
+
 	bool Player::use_consumable(const StringName &p_item_id) {
 		if (!_inventory) return false;
 
@@ -1707,6 +1758,11 @@ namespace godot {
 		}
 		if (p_data.has("buffs") && _buffs) {
 			_buffs->load_from_dict(p_data["buffs"]);
+		}
+		if (p_data.has("sect") && _sect) {
+			_sect->load_from_dict(p_data["sect"]);
+			_refresh_max_health(false);
+			_refresh_regen_mults();
 		}
 		if (p_data.has("consumable_bar")) {
 			Array bar = p_data["consumable_bar"];

@@ -13,6 +13,7 @@ namespace godot {
 		{ "buff_jin_gang", "金刚",     300.0f, 0.0f,  0.20f, ELEM_NONE,  0.0f  }, // 金刚丹：防御+20%
 		{ "buff_tu_dun",   "土盾",     12.0f,  0.0f,  0.30f, ELEM_NONE,  0.0f  }, // 土盾术：防御+30%（法术自buff）
 		{ "buff_shen_wai", "身外化身", 30.0f,  0.35f, 0.0f,  ELEM_NONE,  0.0f  }, // 身外化身：毫毛助威，攻击+35%（神通自buff）
+		{ "buff_xuan_gui", "玄龟护体", 30.0f,  0.0f,  0.25f, ELEM_NONE,  0.0f  }, // 玄龟护体：防御+25%（蓬莱法术自buff）
 	};
 
 	const BuffSystem::Def *BuffSystem::find_def(const StringName &p_id) {
