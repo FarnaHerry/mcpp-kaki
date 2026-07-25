@@ -5,6 +5,10 @@
 #include "../nodes/player.h"
 #include "../utils/text.h"
 
+#include "../core/data_loader.h"
+#include <godot_cpp/classes/scene_tree.hpp>
+#include <godot_cpp/variant/utility_functions.hpp>
+
 namespace godot {
 
 // 技能定义表（v1 静态表；示例 武技×2 + 法术×2）
@@ -67,6 +71,24 @@ static const SkillSystem::Def SKILL_DEFS[] = {
 	  0.0f, 0.0f, 0.0f, 0.0f, SkillSystem::FX_MELEE_SWING, 5, 0.0f, Color(), 0.0f, nullptr, SkillSystem::PAS_LAW_REGEN, 0.25f },
 };
 
+// Runtime definition cache (populated from SKILL_DEFS at first use)
+std::vector<SkillSystem::Def> SkillSystem::s_defs;
+bool SkillSystem::s_defs_loaded = false;
+
+void SkillSystem::ensure_defs_loaded() {
+	if (s_defs_loaded) return;
+	s_defs_loaded = true;
+
+	// TODO: Try DataLoader (JSON) first — needs string storage for const char* Def fields.
+	// DataLoader is available via SceneTree::get_current_scene()->find_child("DataLoader").
+	// The JSON file data/skills.json has all 24 skills ready; the conversion requires
+	// either: (a) storing strings in a parallel std::vector<std::string>, or
+	// (b) changing Def fields to StringName (blocked by static-init segfault in SKILL_DEFS[]).
+	for (const Def &d : SKILL_DEFS) {
+		s_defs.push_back(d);
+	}
+}
+
 void SkillSystem::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("learn", "id"), &SkillSystem::learn);
 	ClassDB::bind_method(D_METHOD("is_known", "id"), &SkillSystem::is_known);
@@ -89,7 +111,7 @@ void SkillSystem::_bind_methods() {
 
 float SkillSystem::_passive_sum(PassiveStat p_stat) const {
 	float sum = 0.0f;
-	for (const Def &d : SKILL_DEFS) {
+	ensure_defs_loaded(); for (const Def &d : s_defs) {
 		if (d.type == TYPE_PASSIVE && d.passive_stat == p_stat && _known.has(StringName(d.id))) {
 			sum += d.passive_value;
 		}
@@ -98,7 +120,7 @@ float SkillSystem::_passive_sum(PassiveStat p_stat) const {
 }
 
 const SkillSystem::Def *SkillSystem::find_def(const StringName &p_id) {
-	for (const Def &d : SKILL_DEFS) {
+	ensure_defs_loaded(); for (const Def &d : s_defs) {
 		if (StringName(d.id) == p_id) return &d;
 	}
 	return nullptr;
@@ -250,7 +272,7 @@ Dictionary SkillSystem::get_slot_info(int p_slot) const {
 
 Array SkillSystem::get_known_list() const {
 	Array out;
-	for (const Def &def : SKILL_DEFS) {
+	ensure_defs_loaded(); for (const Def &def : s_defs) {
 		if (_known.has(StringName(def.id))) {
 			Dictionary d;
 			d["id"] = String(def.id);

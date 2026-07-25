@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/templates/hash_map.hpp>
@@ -97,6 +99,7 @@ public:
 
 	static const Def *find_def(const StringName &p_id);
 	static String type_name(SkillType p_t);
+	static void ensure_defs_loaded(); // lazy-init s_defs from SKILL_DEFS
 
 	void set_player(Player *p) { _player = p; }
 
@@ -131,6 +134,8 @@ private:
 
 	double _now() const;
 	void _execute(const Def *p_def);
+	static std::vector<Def> s_defs;
+	static bool s_defs_loaded;
 };
 
 } // namespace godot
