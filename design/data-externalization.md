@@ -8,9 +8,9 @@
 | P1 | Buff | data/buffs.json (6) | BuffSystem::ensure_defs_loaded → DataLoader | ✅ |
 | P1 | 功法 | data/gongfas.json (6) | GongfaSystem::ensure_defs_loaded → DataLoader | ✅ |
 | P1 | 宗门 | data/sects.json (4) | SectSystem::ensure_defs_loaded → DataLoader | ✅ |
-| P1 | 掉落 | data/drops.json | DropSystem::_roll_drops → DataLoader | ✅ |
-| P2 | 配方 | data/recipes.json (7) | DataLoader 已加载, AlchemySystem 缓存就绪 | ⏸️ |
-| P2 | 洲 | data/continents.json (4) | DataLoader 已加载, ContinentManager 缓存就绪 | ⏸️ |
+| P2 | 掉落 | data/drops.json | DropSystem::_roll_drops → DataLoader | ✅ |
+| P2 | 配方 | data/recipes.json (7) | DataLoader 已加载, JSON 就绪 | ⏸️ |
+| P2 | 洲 | data/continents.json (4) | DataLoader 已加载, JSON 就绪 | ⏸️ |
 | P2 | 境界 | — | 待做 | ❌ |
 | P3 | 事件 | — | 待做 | ❌ |
 | P3 | 能力 | — | 待做 | ❌ |
