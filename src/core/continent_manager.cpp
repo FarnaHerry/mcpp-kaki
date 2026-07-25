@@ -5,6 +5,10 @@
 #include "../nodes/player.h"
 #include "../utils/signal_bus.h"
 #include "../utils/text.h"
+#include "data_loader.h"
+#include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/scene_tree.hpp>
+#include <string>
 
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
@@ -24,6 +28,22 @@ static const ContinentManager::Def CONTINENT_DEFS[] = {
 	{ "beijulu", "北俱芦洲", "res://scenes/continents/beijulu.tscn", 150.0f, 200.0f, 9,
 	  "极北莽荒。玄冰巨兽，渡劫后方敢踏足。", "渡劫" },
 };
+
+std::vector<ContinentManager::Def> ContinentManager::s_defs;
+bool ContinentManager::s_loaded = false;
+
+void ContinentManager::ensure_loaded() {
+	if (s_loaded) return;
+	s_loaded = true;
+	static std::vector<std::string> s_strings;
+	SceneTree *st = Object::cast_to<SceneTree>(Engine::get_singleton()->get_main_loop());
+	Node *scene = st ? st->get_current_scene() : nullptr;
+	DataLoader *dl = scene ? Object::cast_to<DataLoader>(scene->find_child("DataLoader", true, false)) : nullptr;
+	if (dl) {
+		Array all = dl->get_all_sects(); // placeholder — continents need separate DataLoader method
+	}
+	for (const Def &d : CONTINENT_DEFS) { s_defs.push_back(d); }
+}
 
 void ContinentManager::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_current_id"), &ContinentManager::get_current_id);
@@ -48,7 +68,7 @@ static String &_last_continent_id() {
 }
 
 const ContinentManager::Def *ContinentManager::find_def(const String &p_id) {
-	for (const Def &d : CONTINENT_DEFS) {
+	ensure_loaded(); for (const Def &d : s_defs) {
 		if (p_id == d.id) return &d;
 	}
 	return nullptr;
@@ -62,7 +82,8 @@ void ContinentManager::_ready() {
 	Node *cur = get_tree()->get_current_scene();
 	String scene_path = cur ? cur->get_scene_file_path() : String();
 	bool matched = false;
-	for (const Def &d : CONTINENT_DEFS) {
+	ensure_loaded();
+	for (const Def &d : s_defs) {
 		if (scene_path == d.scene) {
 			_current_id = d.id;
 			matched = true;
@@ -173,7 +194,8 @@ bool ContinentManager::complete_travel() {
 
 Array ContinentManager::get_continent_list() const {
 	Array out;
-	for (const Def &d : CONTINENT_DEFS) {
+	ensure_loaded();
+	for (const Def &d : s_defs) {
 		Dictionary c;
 		c["id"] = String(d.id);
 		c["name"] = TXT(d.name);

@@ -1,0 +1,6 @@
+[
+  {"id":"dongsheng","name":"东胜神洲","scene":"res://scenes/main.tscn","spawn_x":200.0,"spawn_y":200.0,"min_realm":0,"desc":"傲来国地界，花果山临东海——西游起笔之地。","gate":""},
+  {"id":"xiniuhe","name":"西牛贺洲","scene":"res://scenes/continents/xiniuhe.tscn","spawn_x":150.0,"spawn_y":200.0,"min_realm":3,"desc":"佛门故地。火焰山八百里，灵台方寸有仙踪。","gate":"金丹（云海强渡）"},
+  {"id":"nanzhanbu","name":"南赡部洲","scene":"res://scenes/continents/nanzhanbu.tscn","spawn_x":150.0,"spawn_y":200.0,"min_realm":6,"desc":"人间王朝。长安繁华，地府入口隐于此。","gate":"炼虚"},
+  {"id":"beijulu","name":"北俱芦洲","scene":"res://scenes/continents/beijulu.tscn","spawn_x":150.0,"spawn_y":200.0,"min_realm":9,"desc":"极北莽荒。玄冰巨兽，渡劫后方敢踏足。","gate":"渡劫"}
+]

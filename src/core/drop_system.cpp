@@ -1,10 +1,12 @@
 #include "drop_system.h"
+#include "data_loader.h"
 
 #include "../nodes/enemy.h"
 #include "../nodes/item_pickup.h"
 #include "../utils/signal_bus.h"
 
 #include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
@@ -75,26 +77,50 @@ void DropSystem::_do_spawn_drops(const Vector2 &p_pos, bool p_is_boss,
 
 std::vector<DropSystem::DropEntry> DropSystem::_roll_drops(
         bool p_is_boss, bool p_is_ranged, bool p_is_flying) {
-    // ============================================================
-    // v1 掉落表（按敌人种类）
-    // 后续所有级别（凡尘/仙阶）、所有类别（丹药/材料/法宝/装备）
-    // 的掉落都在此扩展，或迁移为 .tres 数据驱动。
-    // ============================================================
     std::vector<DropEntry> table;
 
-    if (p_is_boss) {
-        table.push_back({ "spirit_stone", 5, 10, 1.0f });
-        table.push_back({ "healing_pill", 2, 3, 1.0f });
-        table.push_back({ "foundation_pill", 1, 2, 0.8f });
-        table.push_back({ "qi_pill", 1, 3, 0.6f });
-        table.push_back({ "qian_nian_ling_zhi", 1, 1, 1.0f }); // 千年灵芝保底 1（design/alchemy.md）
-    } else {
-        table.push_back({ "spirit_stone", 1, 3, 0.6f });
-        table.push_back({ "healing_pill", 1, 1, 0.25f });
-        table.push_back({ "zhi_xue_cao", 1, 2, 0.15f }); // 小怪低概率草药
-        table.push_back({ "ju_ling_cao", 1, 2, 0.15f });
-        if (p_is_ranged || p_is_flying) {
-            table.push_back({ "qi_pill", 1, 2, 0.2f });
+    // Try DataLoader JSON first
+    SceneTree *st = Object::cast_to<SceneTree>(Engine::get_singleton()->get_main_loop());
+    Node *scene = st ? st->get_current_scene() : nullptr;
+    DataLoader *dl = scene ? Object::cast_to<DataLoader>(scene->find_child("DataLoader", true, false)) : nullptr;
+
+    auto parse = [&](const String &key) {
+        if (!dl) return;
+        Dictionary dt = dl->get_drop_table();
+        if (!dt.has(key)) return;
+        Array arr = dt[key];
+        for (int i = 0; i < arr.size(); i++) {
+            Dictionary d = arr[i];
+            table.push_back({
+                StringName(d["item"]),
+                int(d["min"]), int(d["max"]),
+                float(d["chance"])
+            });
+        }
+    };
+
+    if (dl) {
+        parse(p_is_boss ? "boss" : "normal");
+        if (!p_is_boss && (p_is_ranged || p_is_flying))
+            parse("normal_ranged");
+    }
+
+    // Fallback: hardcoded table
+    if (table.empty()) {
+        if (p_is_boss) {
+            table.push_back({ "spirit_stone", 5, 10, 1.0f });
+            table.push_back({ "healing_pill", 2, 3, 1.0f });
+            table.push_back({ "foundation_pill", 1, 2, 0.8f });
+            table.push_back({ "qi_pill", 1, 3, 0.6f });
+            table.push_back({ "qian_nian_ling_zhi", 1, 1, 1.0f });
+        } else {
+            table.push_back({ "spirit_stone", 1, 3, 0.6f });
+            table.push_back({ "healing_pill", 1, 1, 0.25f });
+            table.push_back({ "zhi_xue_cao", 1, 2, 0.15f });
+            table.push_back({ "ju_ling_cao", 1, 2, 0.15f });
+            if (p_is_ranged || p_is_flying) {
+                table.push_back({ "qi_pill", 1, 2, 0.2f });
+            }
         }
     }
 

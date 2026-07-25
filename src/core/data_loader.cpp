@@ -34,6 +34,8 @@ void DataLoader::_ready() {
 	_load_json_array("res://data/buffs.json", _buffs);
 	_load_json_array("res://data/gongfas.json", _gongfas);
 	_load_json_array("res://data/sects.json", _sects);
+	_load_json_array("res://data/recipes.json", _recipes);
+	_load_json_array("res://data/continents.json", _continents);
 
 	// Drops structured differently (object with named arrays, not {id,...} array)
 	if (FileAccess::file_exists("res://data/drops.json")) {
@@ -45,8 +47,9 @@ void DataLoader::_ready() {
 	}
 
 	UtilityFunctions::print(
-		vformat(TXT("DataLoader: %d items, %d skills, %d buffs, %d gongfas, %d sects, drops=%s"),
+		vformat(TXT("DataLoader: %d items, %d skills, %d buffs, %d gongfas, %d sects, %d recipes, %d continents, drops=%s"),
 			_items.size(), _skills.size(), _buffs.size(), _gongfas.size(), _sects.size(),
+			_recipes.size(), _continents.size(),
 			_drop_table.is_empty() ? TXT("no") : TXT("yes")));
 }
 
@@ -146,6 +149,30 @@ Array DataLoader::get_all_sects() const {
 
 Dictionary DataLoader::get_drop_table() const {
 	return _drop_table;
+}
+
+Dictionary DataLoader::get_recipe(const StringName &p_id) const {
+	auto it = _recipes.find(p_id);
+	if (it) return it->value;
+	return Dictionary();
+}
+
+Array DataLoader::get_all_recipes() const {
+	Array arr;
+	for (const auto &kv : _recipes) arr.append(kv.value);
+	return arr;
+}
+
+Dictionary DataLoader::get_continent(const StringName &p_id) const {
+	auto it = _continents.find(p_id);
+	if (it) return it->value;
+	return Dictionary();
+}
+
+Array DataLoader::get_all_continents() const {
+	Array arr;
+	for (const auto &kv : _continents) arr.append(kv.value);
+	return arr;
 }
 
 } // namespace godot

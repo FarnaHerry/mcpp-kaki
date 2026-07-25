@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/array.hpp>
@@ -35,6 +37,7 @@ public:
 	};
 
 	static const Recipe *find_recipe(const StringName &p_id);
+	static void ensure_loaded();
 	static int get_recipe_count();
 	static const Recipe *get_recipe(int p_idx);
 

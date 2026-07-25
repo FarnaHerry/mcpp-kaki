@@ -1,5 +1,6 @@
 #ifndef CPP_KAKI_CONTINENT_MANAGER_H
 #define CPP_KAKI_CONTINENT_MANAGER_H
+#include <vector>
 
 #include <godot_cpp/classes/node.hpp>
 #include <godot_cpp/variant/array.hpp>
@@ -30,6 +31,7 @@ public:
 	};
 
 	static const Def *find_def(const String &p_id);
+	static void ensure_loaded();
 
 	String get_current_id() const { return _current_id; }
 	String get_current_name() const;
@@ -46,6 +48,8 @@ protected:
 	static void _bind_methods();
 
 private:
+	static std::vector<Def> s_defs;
+	static bool s_loaded;
 	String _current_id;
 
 	Player *_find_player() const;
