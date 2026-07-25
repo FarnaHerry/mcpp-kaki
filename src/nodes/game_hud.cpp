@@ -34,6 +34,7 @@ void GameHUD::_bind_methods() {
     ClassDB::bind_method(D_METHOD("on_player_health_changed", "current", "max"),
                          &GameHUD::on_player_health_changed);
     ClassDB::bind_method(D_METHOD("on_buffs_changed", "active"), &GameHUD::on_buffs_changed);
+    ClassDB::bind_method(D_METHOD("on_continent_changed", "id", "name"), &GameHUD::on_continent_changed);
     ClassDB::bind_method(D_METHOD("on_spiritual_energy_changed", "current", "max", "progress"),
                          &GameHUD::on_spiritual_energy_changed);
     ClassDB::bind_method(D_METHOD("on_mana_changed", "current", "max"),
@@ -84,6 +85,18 @@ void GameHUD::_ready() {
     add_child(_buff_label);
     _create_boss_bar();
 
+    // 洲名横幅（进入新洲时大字淡入淡出，不随 _hud_visible 隐藏——过场也要看得到）
+    _continent_label = memnew(Label);
+    _continent_label->set_position(Vector2(0, 78));
+    _continent_label->set_size(Vector2(480, 30));
+    _continent_label->set_horizontal_alignment(HorizontalAlignment::HORIZONTAL_ALIGNMENT_CENTER);
+    _continent_label->add_theme_font_size_override("font_size", 18);
+    _continent_label->add_theme_color_override("font_color", Color(1.0f, 0.92f, 0.6f, 1.0f));
+    _continent_label->add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9f));
+    _continent_label->add_theme_constant_override("outline_size", 4);
+    _continent_label->set_visible(false);
+    add_child(_continent_label);
+
     set_process_unhandled_input(true);
     set_process(true); // 技能栏冷却轮询
 
@@ -102,6 +115,7 @@ void GameHUD::_ready() {
         bus->connect("boss_fight_ended", Callable(this, "on_boss_fight_ended"));
         bus->connect("player_respawned", Callable(this, "on_player_respawned"));
         bus->connect("buffs_changed", Callable(this, "on_buffs_changed"));
+        bus->connect("continent_changed", Callable(this, "on_continent_changed"));
     }
 }
 
@@ -333,6 +347,29 @@ void GameHUD::_process(double p_delta) {
     _update_consumable_bar();
     _update_law_bar();
     _update_buff_label(p_delta);
+
+    // 洲名横幅：2.8s 展示，末 0.8s 淡出
+    if (_continent_banner_t > 0.0f && _continent_label) {
+        _continent_banner_t -= (float)p_delta;
+        if (_continent_banner_t <= 0.0f) {
+            _continent_banner_t = 0.0f;
+            _continent_label->set_visible(false);
+        } else if (_continent_banner_t < 0.8f) {
+            Color c = _continent_label->get_theme_color("font_color");
+            c.a = _continent_banner_t / 0.8f;
+            _continent_label->add_theme_color_override("font_color", c);
+        }
+    }
+}
+
+void GameHUD::on_continent_changed(const String &p_id, const String &p_name) {
+    if (!_continent_label) return;
+    _continent_label->set_text(TXT("—— ") + p_name + TXT(" ——"));
+    Color c = _continent_label->get_theme_color("font_color");
+    c.a = 1.0f;
+    _continent_label->add_theme_color_override("font_color", c);
+    _continent_label->set_visible(true);
+    _continent_banner_t = 2.8f;
 }
 
 void GameHUD::on_buffs_changed(const Array &p_active) {

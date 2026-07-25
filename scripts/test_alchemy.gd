@@ -87,13 +87,13 @@ func _process(delta) -> bool:
 			_next = _t + 0.2
 			Input.action_release("menu")
 			Input.action_press("right")
-		7, 9, 11, 13:
+		7, 9, 11, 13, 15:
 			_next = _t + 0.2
 			Input.action_release("right")
 			Input.action_press("right")
-		8, 10, 12:
+		8, 10, 12, 14:
 			_next = _t + 0.2 # 间隔帧：释放后不立刻再按，保证 just_pressed 语义
-		14:
+		16:
 			_next = _t + 0.3
 			Input.action_release("right")
 			var menu = root.find_child("GameMenu", true, false)
@@ -103,7 +103,7 @@ func _process(delta) -> bool:
 					found = true
 			_check(found, "alchemy page title exists in GameMenu")
 			Input.action_press("menu")
-		15:
+		17:
 			_next = _t + 0.2
 			Input.action_release("menu")
 			if _fail == 0:

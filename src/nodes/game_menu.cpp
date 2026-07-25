@@ -5,6 +5,7 @@
 #include "../combat/skill_system.h"
 #include "../cultivation/artifact_system.h"
 #include "../cultivation/alchemy_system.h"
+#include "../core/continent_manager.h"
 #include "../inventory/inventory.h"
 #include "../inventory/item.h"
 #include "../inventory/item_database.h"
@@ -24,7 +25,7 @@
 
 namespace godot {
 
-static const char *TAB_NAMES[] = { "背包", "能力", "功法", "技能", "法宝", "炼丹", "设置" };
+static const char *TAB_NAMES[] = { "背包", "能力", "功法", "技能", "法宝", "云游", "炼丹", "设置" };
 
 void GameMenu::_bind_methods() {
 }
@@ -90,6 +91,10 @@ void GameMenu::_open_menu(int p_page) {
 	_restore_pause = get_tree()->is_paused();
 	get_tree()->set_pause(true);
 	_player = _find_player();
+	// 云游页数据源：惰性查找（WorldCommon 中 ContinentManager 在 GameMenu 之后创建，
+	// _ready 时还未存在；且旅行换场景后本对象整个重建）
+	Node *scene = get_tree()->get_current_scene();
+	_continent_mgr = scene ? Object::cast_to<ContinentManager>(scene->find_child("ContinentManager", true, false)) : nullptr;
 	_page = p_page;
 	_dim->set_visible(true);
 	_tabs_layer->set_visible(true);
@@ -162,6 +167,11 @@ void GameMenu::_rebuild_page() {
 			if (_inv_panel) _inv_panel->close();
 			_build_artifact_page();
 			_set_hint(TXT("←/→ 切换页  ESC 关闭"));
+			break;
+		case PAGE_TRAVEL:
+			if (_inv_panel) _inv_panel->close();
+			_build_travel_page();
+			_set_hint(TXT("←/→ 切换页  ↑/↓ 选洲  X 前往  ESC 关闭"));
 			break;
 		case PAGE_ALCHEMY:
 			if (_inv_panel) _inv_panel->close();
@@ -597,6 +607,108 @@ void GameMenu::_build_artifact_page() {
 }
 
 // ============================================================
+// 云游页（design/world-map.md：四大部洲列表 → X 前往已解锁洲）
+// ============================================================
+
+void GameMenu::_build_travel_page() {
+	auto add_line = [&](const String &text, float x, float y, int size, const Color &c) {
+		Label *l = memnew(Label);
+		l->set_text(text);
+		l->add_theme_font_size_override("font_size", size);
+		l->add_theme_color_override("font_color", c);
+		l->set_position(Vector2(x, y));
+		add_child(l);
+		_page_nodes.push_back(l);
+	};
+
+	Color head_c(1.0f, 0.85f, 0.5f);
+	Color body_c(0.85f, 0.85f, 0.85f);
+	Color dim_c(0.5f, 0.5f, 0.5f);
+	Color sel_c(1.0f, 0.95f, 0.6f);
+	Color cur_c(0.6f, 1.0f, 0.6f);
+	Color lock_c(0.45f, 0.45f, 0.45f);
+	Color ok_c(0.6f, 1.0f, 0.6f);
+	Color bad_c(1.0f, 0.5f, 0.5f);
+
+	Label *title = memnew(Label);
+	title->set_text(TXT("—— 云游图 ——"));
+	title->add_theme_font_size_override("font_size", 13);
+	title->add_theme_color_override("font_color", Color(1.0f, 0.9f, 0.5f));
+	title->set_position(Vector2(185, 32));
+	add_child(title);
+	_page_nodes.push_back(title);
+
+	if (!_continent_mgr) {
+		add_line(TXT("（云路未通）"), 70.0f, 60.0f, 9, dim_c);
+		return;
+	}
+
+	Array list = _continent_mgr->get_continent_list();
+	_travel_sel = CLAMP(_travel_sel, 0, (int)list.size() - 1);
+	for (int i = 0; i < list.size(); i++) {
+		Dictionary c = list[i];
+		bool unlocked = c["unlocked"];
+		bool current = c["current"];
+		bool is_sel = (i == _travel_sel);
+		float y = 62.0f + i * 34;
+
+		String line1 = (is_sel ? TXT("▶ ") : TXT("  ")) + String(c["name"]);
+		if (current) line1 += TXT("  【当前】");
+		else if (!unlocked) line1 += TXT("  未解锁");
+		Color c1 = is_sel ? sel_c : (current ? cur_c : (unlocked ? body_c : lock_c));
+		add_line(line1, 70.0f, y, 10, c1);
+
+		String line2 = TXT("    ") + String(c["desc"]);
+		if (!unlocked) {
+			line2 += TXT("  ｜ 条件：") + String(c["gate"]);
+		}
+		add_line(line2, 70.0f, y + 14, 8, dim_c);
+	}
+
+	// 云游结果提示 / 说明
+	if (!_travel_msg.is_empty()) {
+		bool ok = _travel_msg.contains(TXT("已在此洲"));
+		add_line(_travel_msg, 70.0f, 250.0f, 9, ok ? ok_c : bad_c);
+	} else {
+		add_line(TXT("四大部洲，云游四方。境界不足者，云海难渡。"), 70.0f, 250.0f, 8, dim_c);
+	}
+}
+
+void GameMenu::_handle_travel_input() {
+	if (!_continent_mgr) return;
+	Input *input = Input::get_singleton();
+	Array list = _continent_mgr->get_continent_list();
+	int count = list.size();
+	if (count == 0) return;
+	_travel_sel = CLAMP(_travel_sel, 0, count - 1);
+	if (input->is_action_just_pressed(TXT("up"))) {
+		_travel_sel = (_travel_sel - 1 + count) % count;
+		_rebuild_page();
+	}
+	if (input->is_action_just_pressed(TXT("down"))) {
+		_travel_sel = (_travel_sel + 1) % count;
+		_rebuild_page();
+	}
+	if (input->is_action_just_pressed(TXT("interact"))) {
+		Dictionary c = list[_travel_sel];
+		String id = c["id"];
+		if (bool(c["current"])) {
+			_travel_msg = TXT("已在此洲");
+			_travel_msg_t = 2.0f;
+			_rebuild_page();
+		} else if (_continent_mgr->can_travel(id)) {
+			// 先关菜单还原暂停，再切场景（本节点随场景释放）
+			_close_menu();
+			_continent_mgr->travel_to(id);
+		} else {
+			_travel_msg = String(c["name"]) + TXT(" 未解锁：") + String(c["gate"]);
+			_travel_msg_t = 2.5f;
+			_rebuild_page();
+		}
+	}
+}
+
+// ============================================================
 // 设置页
 // ============================================================
 
@@ -862,6 +974,14 @@ void GameMenu::_process(double p_delta) {
 		}
 	}
 
+	if (_travel_msg_t > 0.0f) {
+		_travel_msg_t -= float(p_delta);
+		if (_travel_msg_t <= 0.0f && _page == PAGE_TRAVEL) {
+			_travel_msg = String();
+			_rebuild_page();
+		}
+	}
+
 	if (input->is_action_just_pressed(TXT("menu"))) {
 		_close_menu();
 		return;
@@ -895,6 +1015,9 @@ void GameMenu::_process(double p_delta) {
 			break;
 		case PAGE_SKILL:
 			_handle_skill_input();
+			break;
+		case PAGE_TRAVEL:
+			_handle_travel_input();
 			break;
 		case PAGE_SETTINGS:
 			_handle_settings_input();

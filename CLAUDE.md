@@ -102,10 +102,12 @@ bin/              # 编译产物 (.so)，gitignored
   - 被动 TYPE_PASSIVE×6（学会即常驻不占槽，乘区添头）：神行百变(炼气,速12%)/剑心通明(筑基,攻10%)/铁布衫(金丹,防15%)/灵台清明(金丹,回灵25%)/风雷双翼(元婴,飞速15%)/道法自然(化神,法则回复25%)；挂钩 攻→get_effective_attack / 防→take_damage / 速→_update_move_speed / 飞速→FlyState / 回灵→mana_regen_mult(功法×被动) / 法则→_law_regen_mult
   - 雷元素 ELEM_LEI：不入五行克制环
 - **五区地图** (scenes/main.tscn + scripts/bootstrap.gd) — 落霞村外围(0~1300)/青竹林(1300~2600 单向竹台跳跃)/断崖绝壁(2600~3900 墙跳烟囱)/幽谷(3900~5200 飞行沟壑3900~4400，谷底y=420)/谷深处(5200~6000 BOSS+悟道崖飞行高台y=90)；检查点×4(1320/2820/4450/5250)；新敌人 竹妖/崖枭/崖弓/谷枭/雷兽/幽谷螭龙(BOSS 30血)；草药全闭环(悟道茶×2/冰心莲/赤焰花/金刚藤摆点)
+- **四大部洲** (design/world-map.md，后西游设定) — **ContinentManager** (`src/core/continent_manager.*`)：洲定义表（东胜神洲main.tscn/西牛贺洲金丹/南赡部洲炼虚/北俱芦洲渡劫），`get_continent_list/can_travel/travel_to`；洲=根场景整景切换，**旅行桥**（GameManager 函数局部 static 收集存档→新场景 GameManager 应用，全恢复+落点；**严禁文件级 static Dictionary**——引擎内存初始化前构造必 segfault）；跨洲读档走同一桥；**WorldCommon** (`scripts/world_common.gd`，preload 无 class_name——CLI 全局缓存不可靠） 承载公共装配，各洲脚本只搭地形内容；HUD 洲名横幅（continent_changed→2.8s 淡入淡出）
+- **GameMenu 云游页** — 第6页「云游」（背包/能力/功法/技能/法宝/**云游**/炼丹/设置）：四洲列表（名/描述/【当前】/未解锁+条件话术），↑/↓选洲 X前往（先关菜单还原暂停再 travel_to）；ContinentManager 在 _open_menu 惰性查找（WorldCommon 创建顺序在 GameMenu 之后）
 - **ArtifactSystem** (`src/cultivation/artifact_system.*`) — 法宝：槽0=本命(镜像Player本命,飞升后锁定)+次要×2(飞升后+3)，威力系数本命1.2~2.0/次要1.0→1.2→1.5(两段温养)，攻击型祭出复用Skill效果管线(耗灵+冷却)，辅助型常驻被动入防御乘区；示例：飞剑(筑基)/照妖葫(金丹)/玄铁塔(元婴)；存档 pd["artifacts"]
 - **B键切页**: `Player._skill_page` + `skill_page_changed` 信号；法宝页 A~H=法宝槽0..5(T/Y两页通用)；页机制通用可扩技能多页
 - **法则之力** (CultivationSystem) — 化神解锁独立能量条(max100,回复3/s+击杀+10)，神通唯一消耗源；HUD右上角紫条；存档 cd["law_power"]
-- **GameMenu** (`src/nodes/game_menu.*`) — ESC 多页管理菜单（背包/能力/功法/技能/法宝/设置），托管 InventoryPanel（外部驱动 ext_navigate/ext_use）；能力页=主动/被动分区技能树总览（只读 v1）；技能页=主动装配（↑/↓选已学主动，A/S/D/F/T/Y 装入对应槽，类型不符拒装提示）+被动分区（名+效果%）；设置页含音量(持久化 user://settings.cfg)/保存/退出；嵌套暂停安全（还原原暂停状态）；页签条独立 CanvasLayer 130
+- **GameMenu** (`src/nodes/game_menu.*`) — ESC 多页管理菜单（背包/能力/功法/技能/法宝/云游/炼丹/设置），托管 InventoryPanel（外部驱动 ext_navigate/ext_use）；能力页=主动/被动分区技能树总览（只读 v1）；技能页=主动装配（↑/↓选已学主动，A/S/D/F/T/Y 装入对应槽，类型不符拒装提示）+被动分区（名+效果%）；设置页含音量(持久化 user://settings.cfg)/保存/退出；嵌套暂停安全（还原原暂停状态）；页签条独立 CanvasLayer 130
 - **HUD 底部技能栏**: 武技[A/S] 法术[D/F] 法宝[G/H]（技能系统已填充：显示装配技能名+冷却）
 - **BuffSystem** (`src/cultivation/buff_system.*`) — 丹药/食物/状态统一 Buff：def 表（冰心水抗15%/赤焰攻15%/金刚防20%, 300s）、同名刷新不叠加、到期自消、攻/防/元素抗性乘区钩子、HUD buff 行（名+秒）、存档 pd["buffs"]
 - **AlchemySystem** (`src/cultivation/alchemy_system.*`) — 炼丹：丹炉随身，7 固定配方，成功率字段 v1=100%（失败机制预留），地品金丹门控，每炉喂练气+5；GameMenu 第6页「炼丹」（↑/↓选方 X炼制，材料够=亮/不够=灰）
