@@ -42,7 +42,7 @@ namespace godot {
 	// ------- Idle -------
 	class PlayerIdleState : public State<Player> {
 	public:
-		void enter(Player *p) override { p->was_flying = false; }
+		void enter(Player *p) override { p->was_flying = false; p->air_jump_used = false; }
 		void exit(Player *p) override {}
 
 		void physics_update(Player *p, double delta) override {
@@ -91,7 +91,7 @@ namespace godot {
 	// ------- Run -------
 	class PlayerRunState : public State<Player> {
 	public:
-		void enter(Player *p) override {}
+		void enter(Player *p) override { p->air_jump_used = false; }
 		void exit(Player *p) override {}
 
 		void physics_update(Player *p, double delta) override {
@@ -190,10 +190,17 @@ namespace godot {
 				return;
 			}
 
-			// 空中再按跳：进入飞行（筑基借法器 / 金丹以上）
-			if (p->jump_just_pressed() && p->can_fly()) {
-				p->state_machine->transition_to(PlayerStates::Fly);
-				return;
+			// 空中再按跳：先用二段跳（炼气），已用则进入飞行（筑基借法器 / 金丹以上）
+			if (p->jump_just_pressed()) {
+				if (p->can_air_jump()) {
+					p->air_jump_used = true;
+					p->state_machine->transition_to(PlayerStates::Jump);
+					return;
+				}
+				if (p->can_fly()) {
+					p->state_machine->transition_to(PlayerStates::Fly);
+					return;
+				}
 			}
 
 			p->set_velocity(vel);
@@ -226,8 +233,13 @@ namespace godot {
 				    (p->get_time() - p->left_ground_time) <= p->coyote_time) {
 					p->state_machine->transition_to(PlayerStates::Jump);
 					return;
+				} else if (p->can_air_jump()) {
+					// 二段跳（炼气解锁，每离地一次；攀墙刷新）
+					p->air_jump_used = true;
+					p->state_machine->transition_to(PlayerStates::Jump);
+					return;
 				} else if (p->can_fly()) {
-					// 空中再按跳：进入飞行
+					// 二段跳已用，再按跳：进入飞行
 					p->state_machine->transition_to(PlayerStates::Fly);
 					return;
 				} else {
@@ -409,8 +421,9 @@ namespace godot {
 	class PlayerWallClingState : public State<Player> {
 	public:
 		void enter(Player *p) override {
-			// Reset dash on wall cling (classic metroidvania feel)
+			// Reset dash + air jump on wall cling (classic metroidvania feel)
 			p->dash_cooldown_end = 0.0;
+			p->air_jump_used = false;
 		}
 
 		void exit(Player *p) override {}
@@ -644,6 +657,7 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("is_invulnerable"), &Player::is_invulnerable);
 		ClassDB::bind_method(D_METHOD("is_meditating"), &Player::is_meditating);
 		ClassDB::bind_method(D_METHOD("get_meditate_rate"), &Player::get_meditate_rate);
+		ClassDB::bind_method(D_METHOD("get_state_name"), &Player::get_state_name);
 		ClassDB::bind_method(D_METHOD("get_time"), &Player::get_time);
 		ClassDB::bind_method(D_METHOD("_on_gongfa_changed"), &Player::_on_gongfa_changed);
 		ClassDB::bind_method(D_METHOD("_on_skills_changed"), &Player::_on_skills_changed);
@@ -839,7 +853,13 @@ namespace godot {
 		return Math::clamp(val, -1.0f, 1.0f);
 	}
 
-	// ---- 飞行 ----
+	// ---- 二段跳 / 飞行 ----
+
+	bool Player::can_air_jump() const {
+		// 炼气解锁二段跳：每离地一次（落地/攀墙刷新）
+		return !air_jump_used && _abilities &&
+			_abilities->has_ability(StringName(AbilityManager::ABILITY_DOUBLE_JUMP));
+	}
 
 	bool Player::can_fly() const {
 		if (!_abilities)
@@ -1655,6 +1675,10 @@ namespace godot {
 		if (!_cultivation) return 0.0;
 		// max(5, 当前境界封顶×0.2%)每秒 —— 纯打坐约 8 分钟满一境
 		return Math::max(5.0, double(_cultivation->get_max_energy()) * 0.002);
+	}
+
+	String Player::get_state_name() const {
+		return state_machine ? String(state_machine->get_current_name()) : String();
 	}
 
 	// ---- Save / Load ----

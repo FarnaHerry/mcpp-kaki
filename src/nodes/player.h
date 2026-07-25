@@ -62,6 +62,7 @@ namespace godot {
 		// Accessors
 		float get_gravity() const;
 		float get_move_input() const;
+		bool can_air_jump() const;         // 炼气二段跳（未用 + 已解锁）
 		bool jump_just_pressed() const;
 		bool jump_held() const;
 		bool dash_just_pressed() const;
@@ -78,6 +79,7 @@ namespace godot {
 		float fly_speed = 260.0f;          // 飞行极速（渐加速到达）
 		float fly_acceleration = 250.0f;   // 飞行加速度（px/s²，低 = 起步慢、逐渐加快）
 		bool was_flying = false;           // 攻击/冲刺等动作后是否恢复飞行
+		bool air_jump_used = false;        // 二段跳已用（落地/攀墙刷新）
 
 		// 赑风（三灾之一）：神魂受扰，水平输入反转（由 TribulationController 设置）
 		bool input_inverted = false;
@@ -122,6 +124,7 @@ namespace godot {
 		// 打坐（Q）：平常修炼 + 突破入口。修为速率 max(5, 当前境界封顶×0.2%)/s
 		bool is_meditating() const;
 		double get_meditate_rate() const;
+		String get_state_name() const; // FSM 当前态名（harness 用）
 
 		// 法宝系统（本命法宝：120%→150%温养 → 渡劫觉醒200%）
 		void set_benming_artifact(const StringName &p_item_id);
