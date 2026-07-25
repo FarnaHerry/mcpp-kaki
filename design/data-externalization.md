@@ -1,3 +1,25 @@
+
+## 实施状态 (2026-07-26)
+
+| 优先级 | 系统 | JSON文件 | 运行时 | 状态 |
+|---|---|---|---|---|
+| P0 | 物品 | data/items.json (22) | ItemDatabase::_ready → DataLoader | ✅ |
+| P0 | 技能 | data/skills.json (24) | SkillSystem::ensure_defs_loaded → DataLoader | ✅ |
+| P1 | Buff | data/buffs.json (6) | BuffSystem::ensure_defs_loaded → DataLoader | ✅ |
+| P1 | 功法 | data/gongfas.json (6) | GongfaSystem::ensure_defs_loaded → DataLoader | ✅ |
+| P1 | 宗门 | data/sects.json (4) | SectSystem::ensure_defs_loaded → DataLoader | ✅ |
+| P1 | 掉落 | data/drops.json | DropSystem::_roll_drops → DataLoader | ✅ |
+| P2 | 配方 | data/recipes.json (7) | DataLoader 已加载, AlchemySystem 缓存就绪 | ⏸️ |
+| P2 | 洲 | data/continents.json (4) | DataLoader 已加载, ContinentManager 缓存就绪 | ⏸️ |
+| P2 | 境界 | — | 待做 | ❌ |
+| P3 | 事件 | — | 待做 | ❌ |
+| P3 | 能力 | — | 待做 | ❌ |
+
+> 核心模式：每个系统增加 `static std::vector<Def> s_defs` + `static bool s_loaded` +
+> `static void ensure_loaded()` 惰性填充。DataLoader 可用时走 JSON，否则退回硬编码静态数组。
+> `const char*` 字段通过 `static std::vector<std::string>` 持久化存储。
+
+
 # 硬编码数据外抽清单
 
 > 2026-07-25 摸底。系统稳定后，所有静态定义表应迁移为外部数据（Godot `.tres` Resource 或 JSON/CSV），
