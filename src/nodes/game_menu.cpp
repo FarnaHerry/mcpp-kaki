@@ -141,7 +141,7 @@ void GameMenu::_rebuild_page() {
 	switch (_page) {
 		case PAGE_INVENTORY:
 			if (_inv_panel) _inv_panel->open();
-			_set_hint(TXT("←/→ 切换页  ↑/↓ 选择  E 使用/装备  ESC 关闭"));
+			_set_hint(TXT("←/→ 切换页  ↑/↓ 选择  X 使用/装备  ESC 关闭"));
 			break;
 		case PAGE_ABILITY:
 			if (_inv_panel) _inv_panel->close();
@@ -166,12 +166,12 @@ void GameMenu::_rebuild_page() {
 		case PAGE_ALCHEMY:
 			if (_inv_panel) _inv_panel->close();
 			_build_alchemy_page();
-			_set_hint(TXT("←/→ 切换页  ↑/↓ 选方  E 炼制  ESC 关闭"));
+			_set_hint(TXT("←/→ 切换页  ↑/↓ 选方  X 炼制  ESC 关闭"));
 			break;
 		case PAGE_SETTINGS:
 			if (_inv_panel) _inv_panel->close();
 			_build_settings_page();
-			_set_hint(TXT("←/→ 切换页  ↑/↓ 选择  ←/→ 调节  F 确认  ESC 关闭"));
+			_set_hint(TXT("←/→ 切换页  ↑/↓ 选择  ←/→ 调节  X 确认  ESC 关闭"));
 			break;
 	}
 }
@@ -601,7 +601,7 @@ void GameMenu::_build_artifact_page() {
 // ============================================================
 
 // ============================================================
-// 炼丹页（design/alchemy.md：丹炉随身，配方列表 → 材料够=亮/不够=灰 → E 炼制）
+// 炼丹页（design/alchemy.md：丹炉随身，配方列表 → 材料够=亮/不够=灰 → X 炼制）
 // ============================================================
 
 void GameMenu::_build_alchemy_page() {
@@ -703,7 +703,7 @@ void GameMenu::_handle_alchemy_input() {
 		_alchemy_sel = (_alchemy_sel + 1) % count;
 		_rebuild_page();
 	}
-	if (input->is_action_just_pressed(TXT("action"))) {
+	if (input->is_action_just_pressed(TXT("interact"))) {
 		Array recipes = al->get_recipe_list();
 		int sel = CLAMP(_alchemy_sel, 0, (int)recipes.size() - 1);
 		if (sel >= 0) {
@@ -777,7 +777,7 @@ void GameMenu::_handle_settings_input() {
 			_apply_volume(); _save_settings(); _refresh_settings_page();
 		}
 	}
-	if (input->is_action_just_pressed(TXT("interact")) || input->is_action_just_pressed(TXT("action"))) {
+	if (input->is_action_just_pressed(TXT("interact"))) {
 		switch (_settings_sel) {
 			case 0:
 				_volume = CLAMP(_volume + 0.1f, 0.0f, 1.0f);
@@ -888,7 +888,7 @@ void GameMenu::_process(double p_delta) {
 		case PAGE_INVENTORY:
 			if (input->is_action_just_pressed(TXT("up")))   _inv_panel->ext_navigate(-1);
 			if (input->is_action_just_pressed(TXT("down"))) _inv_panel->ext_navigate(+1);
-			if (input->is_action_just_pressed(TXT("action"))) _inv_panel->ext_use();
+			if (input->is_action_just_pressed(TXT("interact"))) _inv_panel->ext_use();
 			break;
 		case PAGE_ALCHEMY:
 			_handle_alchemy_input();

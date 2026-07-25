@@ -126,9 +126,9 @@ void InventoryPanel::refresh(const String &p_item_id, int p_qty) {
 			if (slot_idx == _selected_index) {
 				txt = "> " + txt;
 				if (def && def->type == Item::CONSUMABLE) {
-					txt += TXT("  [E]使用");
+					txt += TXT("  [X]使用");
 				} else if (def && def->type == Item::EQUIPMENT) {
-					txt += TXT("  [E]装备");
+					txt += TXT("  [X]装备");
 				}
 				_item_labels[i]->add_theme_color_override("font_color",
 					Color(1.0f, 1.0f, 0.3f, 1));
