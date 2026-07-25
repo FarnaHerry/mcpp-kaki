@@ -108,9 +108,9 @@ func _setup_game():
 
 	# ---- Portals (composition: each portal owns its scene lifecycle) ----
 	# Town portal at x=600
-	_create_portal(600, "res://scenes/rooms/town.tscn", "[F] Enter Town", player, camera)
+	_create_portal(600, "res://scenes/rooms/town.tscn", "[Space] Enter Town", player, camera)
 	# Cave portal at x=1000
-	_create_portal(1000, "res://scenes/rooms/cave.tscn", "[F] Enter Cave", player, camera)
+	_create_portal(1000, "res://scenes/rooms/cave.tscn", "[Space] Enter Cave", player, camera)
 
 	# ---- Enemies (variety: melee, archer, flyer, boss) ----
 	# Melee grunt

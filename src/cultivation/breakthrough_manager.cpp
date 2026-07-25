@@ -229,7 +229,7 @@ namespace godot {
 		_hint_mode = false;
 		_title_label->set_text(p_title);
 		_body_label->set_text(_lines.empty() ? TXT("") : _lines[0]);
-		_hint_label->set_text(TXT("[F] 继续"));
+		_hint_label->set_text(TXT("[Space] 继续"));
 		_overlay->set_visible(true);
 		if (p_pause)
 			get_tree()->set_pause(true);
@@ -241,7 +241,7 @@ namespace godot {
 		_hint_timer = 2.5;
 		_title_label->set_text(TXT(""));
 		_body_label->set_text(p_text);
-		_hint_label->set_text(TXT("[F] 关闭"));
+		_hint_label->set_text(TXT("[Space] 关闭"));
 		_overlay->set_visible(true);
 	}
 
