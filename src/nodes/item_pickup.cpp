@@ -1,5 +1,6 @@
 #include "item_pickup.h"
 
+#include "../cultivation/ability_manager.h"
 #include "../inventory/item.h"
 #include "../inventory/item_database.h"
 #include "../utils/signal_bus.h"
@@ -9,9 +10,15 @@
 #include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/polygon2d.hpp>
 #include <godot_cpp/classes/rectangle_shape2d.hpp>
+#include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/core/class_db.hpp>
 
 namespace godot {
+
+// 纳戒磁吸范围与参数
+static constexpr float MAGNET_RANGE = 150.0f;      // 生效距离 (px)
+static constexpr float MAGNET_ACCEL = 80.0f;       // 加速度 (px/s²)
+static constexpr float MAGNET_MAX_SPEED = 200.0f;   // 最高吸附速度
 
 void ItemPickup::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_item_id", "id"), &ItemPickup::set_item_id);
@@ -20,7 +27,6 @@ void ItemPickup::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_quantity"), &ItemPickup::get_quantity);
 	ClassDB::bind_method(D_METHOD("_on_body_entered", "body"), &ItemPickup::_on_body_entered);
 
-	// 必须注册为属性——bootstrap 用 pickup.set("item_id", ...) 赋值
 	ADD_PROPERTY(PropertyInfo(Variant::STRING_NAME, "item_id"), "set_item_id", "get_item_id");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "quantity"), "set_quantity", "get_quantity");
 }
@@ -29,16 +35,13 @@ void ItemPickup::_ready() {
 	if (Engine::get_singleton()->is_editor_hint())
 		return;
 
-	// Detect Player body (layer 3) — USE body_entered not area_entered
-	set_collision_layer_value(1, false); // Not on any body layer
-	set_collision_mask_value(3, true);   // Detect Player body layer
-	// Deferred: DropSystem may spawn pickups during physics callbacks
+	set_collision_layer_value(1, false);
+	set_collision_mask_value(3, true);
 	set_deferred("monitoring", true);
 	set_deferred("monitorable", false);
 
 	connect("body_entered", Callable(this, "_on_body_entered"));
 
-	// Create collision shape (small pickup radius)
 	CollisionShape2D *shape = memnew(CollisionShape2D);
 	Ref<RectangleShape2D> rect;
 	rect.instantiate();
@@ -47,6 +50,44 @@ void ItemPickup::_ready() {
 	add_child(shape);
 
 	_create_visual();
+}
+
+void ItemPickup::_physics_process(double p_delta) {
+	if (Engine::get_singleton()->is_editor_hint())
+		return;
+
+	// Lazy-find player once
+	if (!_player_checked) {
+		_player_checked = true;
+		Node *scene = get_tree()->get_current_scene();
+		if (scene) {
+			_player_cache = Object::cast_to<Node2D>(scene->find_child("Player", true, false));
+		}
+	}
+	if (!_player_cache)
+		return;
+
+	// Check 纳戒 unlocked
+	Object *am = _player_cache->call("get_ability_manager");
+	if (!am)
+		return;
+	bool has_ring = am->call("has_ability", StringName(AbilityManager::ABILITY_STORAGE_RING));
+	if (!has_ring)
+		return;
+
+	// Magnet pull toward player
+	Vector2 to_player = _player_cache->get_global_position() - get_global_position();
+	float dist = to_player.length();
+	if (dist > MAGNET_RANGE || dist < 4.0f)
+		return;
+
+	Vector2 dir = to_player.normalized();
+	_magnet_speed += MAGNET_ACCEL * float(p_delta);
+	if (_magnet_speed > MAGNET_MAX_SPEED)
+		_magnet_speed = MAGNET_MAX_SPEED;
+
+	Vector2 vel = dir * _magnet_speed;
+	set_global_position(get_global_position() + vel * float(p_delta));
 }
 
 void ItemPickup::_create_visual() {

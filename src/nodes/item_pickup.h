@@ -30,6 +30,7 @@ public:
 	int get_quantity() const { return _quantity; }
 
 	void _ready() override;
+	void _physics_process(double p_delta) override;
 	void _on_body_entered(Node2D *p_body);
 
 protected:
@@ -38,6 +39,9 @@ protected:
 private:
 	StringName _item_id;
 	int _quantity = 1;
+	class Node2D *_player_cache = nullptr;
+	bool _player_checked = false;
+	float _magnet_speed = 0.0f; // current pull speed (accelerates)
 
 	void _create_visual();
 };
