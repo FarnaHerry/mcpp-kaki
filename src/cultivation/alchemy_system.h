@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include <vector>
+
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/array.hpp>
@@ -57,6 +59,8 @@ protected:
 	static void _bind_methods();
 
 private:
+	static std::vector<Recipe> s_recipes;
+	static bool s_loaded;
 	Player *_player = nullptr;
 	String _last_message;
 };

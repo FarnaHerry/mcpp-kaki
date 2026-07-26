@@ -11,6 +11,10 @@
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <string>
+#include "../core/data_loader.h"
+#include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/scene_tree.hpp>
+#include <string>
 
 #include <godot_cpp/variant/utility_functions.hpp>
 
@@ -41,6 +45,103 @@ namespace godot {
 		  { "qian_nian_ling_zhi", "bing_xin_lian", nullptr }, { 1, 1, 0 }, 2,
 		  2, 3, 1.0f, "回血50%+修为100" },
 	};
+// Runtime cache (DataLoader JSON or static fallback)
+std::vector<AlchemySystem::Recipe> AlchemySystem::s_recipes;
+bool AlchemySystem::s_loaded = false;
+
+void AlchemySystem::ensure_loaded() {
+	if (s_loaded) return;
+	s_loaded = true;
+	static std::vector<std::string> s_strings;
+	SceneTree *st = Object::cast_to<SceneTree>(Engine::get_singleton()->get_main_loop());
+	Node *scene = st ? st->get_current_scene() : nullptr;
+	DataLoader *dl = scene ? Object::cast_to<DataLoader>(scene->find_child("DataLoader", true, false)) : nullptr;
+	if (dl) {
+		Array all = dl->get_all_recipes();
+		if (all.size() > 0) {
+			for (int i = 0; i < all.size(); i++) {
+				Dictionary d = all[i];
+				// Push all strings first, then reference by index
+				int base = (int)s_strings.size();
+				s_strings.push_back(String(d["id"]).utf8().get_data());
+				s_strings.push_back(String(d["name"]).utf8().get_data());
+				s_strings.push_back(String(d["desc"]).utf8().get_data());
+				Array mats = d["mats"];
+				for (int j = 0; j < 3; j++) {
+					String m = (j < mats.size()) ? String(mats[j]) : String();
+					s_strings.push_back(m.is_empty() ? "" : m.utf8().get_data());
+				}
+				Recipe r;
+				r.id = s_strings[base].c_str();
+				r.name = s_strings[base + 1].c_str();
+				r.effect_desc = s_strings[base + 2].c_str();
+				for (int j = 0; j < 3; j++) {
+					r.mat_id[j] = s_strings[base + 3 + j].empty() ? nullptr : s_strings[base + 3 + j].c_str();
+				}
+				Array counts = d["counts"];
+				for (int j = 0; j < 3; j++) {
+					r.mat_qty[j] = (j < counts.size()) ? int(counts[j]) : 0;
+				}
+				r.mat_count = int(d["mat_count"]);
+				r.grade = int(d["grade"]);
+				r.min_realm = int(d["min_realm"]);
+				r.success_rate = float(d["success_rate"]);
+				s_recipes.push_back(r);
+			}
+			return;
+		}
+	}
+	for (const Recipe &r : RECIPES) { s_recipes.push_back(r); }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	static constexpr int RECIPE_COUNT = sizeof(RECIPES) / sizeof(RECIPES[0]);
 
 	const AlchemySystem::Recipe *AlchemySystem::find_recipe(const StringName &p_id) {
