@@ -33,6 +33,7 @@ public:
 
 	void _ready() override;
 	void _process(double p_delta) override;
+	void _physics_process(double p_delta) override;
 	void _on_body_entered(Node2D *p_body);
 	void _on_body_exited(Node2D *p_body);
 
@@ -45,6 +46,9 @@ private:
 	bool _harvested = false;
 	Player *_player = nullptr;
 	Polygon2D *_visual = nullptr;
+	float _magnet_speed = 0.0f;       // 纳戒磁吸当前速度
+	bool _ring_checked = false;       // 已检查纳戒能力
+	bool _has_ring = false;           // 缓存纳戒解锁状态
 
 	void _create_visual();
 	void _harvest();
