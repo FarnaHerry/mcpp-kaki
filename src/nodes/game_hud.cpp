@@ -545,8 +545,8 @@ void GameHUD::_create_consumable_bar() {
     const float SLOT_W = 20.0f, SLOT_GAP = 2.0f;
     const int N = 6;
     const float total_w = N * SLOT_W + (N - 1) * SLOT_GAP; // 130
-    const float x0 = (480.0f - total_w) * 0.5f;
-    const float y = 270.0f - 24.0f - 23.0f; // 技能栏上方
+    const float x0 = 8.0f; // 左下角，与生命条对齐
+    const float y = 270.0f - 24.0f; // 屏幕底部
 
     for (int i = 0; i < N; i++) {
         float x = x0 + i * (SLOT_W + SLOT_GAP);
