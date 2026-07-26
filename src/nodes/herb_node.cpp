@@ -2,6 +2,7 @@
 
 #include "player.h"
 #include "../cultivation/ability_manager.h"
+#include "../cultivation/cultivation_system.h"
 #include "../cultivation/gongfa_system.h"
 #include "../inventory/item.h"
 #include "../inventory/item_database.h"
@@ -17,10 +18,14 @@
 
 namespace godot {
 
-// 纳戒磁吸参数（与 ItemPickup 一致）
-static constexpr float HERB_MAGNET_RANGE = 150.0f;
-static constexpr float HERB_MAGNET_ACCEL = 80.0f;
-static constexpr float HERB_MAGNET_MAX_SPEED = 200.0f;
+// 纳戒磁吸基础参数（随境界缩放：base × (1 + realm × 0.3)）
+static constexpr float HERB_MAGNET_RANGE_BASE = 120.0f;
+static constexpr float HERB_MAGNET_ACCEL_BASE = 60.0f;
+static constexpr float HERB_MAGNET_MAX_SPEED_BASE = 150.0f;
+
+static float _herb_magnet_mult(int p_realm) {
+	return 1.0f + float(p_realm) * 0.3f;
+}
 
 void HerbNode::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_herb_id", "id"), &HerbNode::set_herb_id);
@@ -140,17 +145,24 @@ void HerbNode::_physics_process(double p_delta) {
 		_has_ring = am && am->has_ability(StringName(AbilityManager::ABILITY_STORAGE_RING));
 	}
 
-	// 纳戒磁吸
+	// 纳戒磁吸（速度随境界缩放）
 	if (!_has_ring || !_player) return;
 
 	Vector2 to_player = _player->get_global_position() - get_global_position();
 	float dist = to_player.length();
-	if (dist > HERB_MAGNET_RANGE || dist < 4.0f) return;
+
+	int realm = _player->get_cultivation() ? _player->get_cultivation()->get_realm_index() : 1;
+	float mult = _herb_magnet_mult(realm);
+	float range = HERB_MAGNET_RANGE_BASE * mult;
+	float accel = HERB_MAGNET_ACCEL_BASE * mult;
+	float max_spd = HERB_MAGNET_MAX_SPEED_BASE * mult;
+
+	if (dist > range || dist < 4.0f) return;
 
 	Vector2 dir = to_player.normalized();
-	_magnet_speed += HERB_MAGNET_ACCEL * float(p_delta);
-	if (_magnet_speed > HERB_MAGNET_MAX_SPEED)
-		_magnet_speed = HERB_MAGNET_MAX_SPEED;
+	_magnet_speed += accel * float(p_delta);
+	if (_magnet_speed > max_spd)
+		_magnet_speed = max_spd;
 
 	set_global_position(get_global_position() + dir * _magnet_speed * float(p_delta));
 }

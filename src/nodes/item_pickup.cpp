@@ -15,10 +15,14 @@
 
 namespace godot {
 
-// 纳戒磁吸范围与参数
-static constexpr float MAGNET_RANGE = 150.0f;      // 生效距离 (px)
-static constexpr float MAGNET_ACCEL = 80.0f;       // 加速度 (px/s²)
-static constexpr float MAGNET_MAX_SPEED = 200.0f;   // 最高吸附速度
+// 纳戒磁吸基础参数（随境界缩放：base × (1 + realm × 0.3)）
+static constexpr float MAGNET_RANGE_BASE = 120.0f;
+static constexpr float MAGNET_ACCEL_BASE = 60.0f;
+static constexpr float MAGNET_MAX_SPEED_BASE = 150.0f;
+
+static float _magnet_mult(int p_realm) {
+	return 1.0f + float(p_realm) * 0.3f; // 炼气 1.3x → 天尊 4.6x
+}
 
 void ItemPickup::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_item_id", "id"), &ItemPickup::set_item_id);
@@ -75,16 +79,26 @@ void ItemPickup::_physics_process(double p_delta) {
 	if (!has_ring)
 		return;
 
-	// Magnet pull toward player
+	// Magnet pull toward player (speed scales with realm)
 	Vector2 to_player = _player_cache->get_global_position() - get_global_position();
 	float dist = to_player.length();
-	if (dist > MAGNET_RANGE || dist < 4.0f)
+
+	// Get realm for scaling
+	int realm = 1;
+	Object *cult = _player_cache->call("get_cultivation");
+	if (cult) realm = cult->call("get_realm_index");
+	float mult = _magnet_mult(realm);
+	float range = MAGNET_RANGE_BASE * mult;
+	float accel = MAGNET_ACCEL_BASE * mult;
+	float max_spd = MAGNET_MAX_SPEED_BASE * mult;
+
+	if (dist > range || dist < 4.0f)
 		return;
 
 	Vector2 dir = to_player.normalized();
-	_magnet_speed += MAGNET_ACCEL * float(p_delta);
-	if (_magnet_speed > MAGNET_MAX_SPEED)
-		_magnet_speed = MAGNET_MAX_SPEED;
+	_magnet_speed += accel * float(p_delta);
+	if (_magnet_speed > max_spd)
+		_magnet_speed = max_spd;
 
 	Vector2 vel = dir * _magnet_speed;
 	set_global_position(get_global_position() + vel * float(p_delta));
