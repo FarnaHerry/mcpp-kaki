@@ -122,6 +122,12 @@ bin/              # 编译产物 (.so)，gitignored
 - **数字键消耗品栏** — 1~6 快捷栏（consume_1..6），拾取消耗品自动入栏（首个空位/耗尽槽），HUD 技能栏上方一行（名首字+数量），存档 pd["consumable_bar"]
 - **调试键**: F3 遥测 / F4 HUD / F5 突破无经验门槛开关 / F6 读档 / Q 突破
 - **潜伏 bug 教训**: `Player::_on_enemy_killed` 通过 `connect("enemy_killed", Callable(this, "_on_enemy_killed"))` 连接，但从未 `ClassDB::bind_method` → Callable 解析失败静默无效 → 击杀喂功法/法宝温养/法则击杀回复全部静默失效（自实现以来一直无效，2026-07-25 修复）
+- **DataLoader** (`src/core/data_loader.*`) — 启动时加载 `data/*.json`（9 表）到 HashMap 缓存，各系统 `ensure_loaded()` 惰性初始化，优先 JSON 不可用时退回硬编码。已接入：items(22)/skills(24)/buffs(6)/gongfas(6)/sects(4)/drops/recipes(7)/continents(4)；events(10) 就绪待 BreakthroughManager 侧接入
+- **数据外抽** (`design/data-externalization.md`) — 全系统摸底 16 系统/170+ 条，P0-P2 已全部 JSON 化（8 系统完全 JSON 驱动）
+- **纳戒磁吸** (`src/nodes/item_pickup.*` + `herb_node.*`) — 炼气解锁后 150px 内掉落物/草药自动飞向玩家，渐加速，接触即拾取（草药跳过 X 交互）；速度随境界缩放 `1 + realm × 0.3`（炼气 1.3x → 天尊 4.6x）；未解锁时零开销
+- **HUD 消耗品栏** 移至屏幕左下角（x=8, y=246），右端(x=138)对接技能栏左端
+- **HUD V/R 冷却指示器** 位于法则条下方（右上角），就绪亮色/冷却灰+秒数
+- **GameMenu 能力页** 新增「战技」分区（威压 V / 灵压 R，始终可用）
 
 ### Input Map
 
