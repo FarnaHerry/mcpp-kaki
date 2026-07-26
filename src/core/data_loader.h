@@ -51,6 +51,9 @@ public:
 	Dictionary get_continent(const StringName &p_id) const;
 	Array get_all_continents() const;
 
+	// ---- Events ----
+	Dictionary get_event(int p_realm) const; // breakthrough event by realm index
+
 protected:
 	static void _bind_methods();
 
@@ -62,6 +65,7 @@ private:
 	HashMap<StringName, Dictionary> _sects;
 	HashMap<StringName, Dictionary> _recipes;
 	HashMap<StringName, Dictionary> _continents;
+	HashMap<int, Dictionary> _events; // keyed by realm index
 	Dictionary _drop_table;
 
 	void _load_json_array(const String &p_path, HashMap<StringName, Dictionary> &r_out);

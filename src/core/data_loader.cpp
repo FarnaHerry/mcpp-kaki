@@ -37,6 +37,19 @@ void DataLoader::_ready() {
 	_load_json_array("res://data/recipes.json", _recipes);
 	_load_json_array("res://data/continents.json", _continents);
 
+	// Events: keyed by realm index, not string id
+	if (FileAccess::file_exists("res://data/events.json")) {
+		String raw = FileAccess::get_file_as_string("res://data/events.json");
+		Variant p = JSON::parse_string(raw);
+		if (p.get_type() == Variant::ARRAY) {
+			Array arr = p;
+			for (int i = 0; i < arr.size(); i++) {
+				Dictionary d = arr[i];
+				_events[int(d["realm"])] = d;
+			}
+		}
+	}
+
 	// Drops structured differently (object with named arrays, not {id,...} array)
 	if (FileAccess::file_exists("res://data/drops.json")) {
 		String raw = FileAccess::get_file_as_string("res://data/drops.json");
@@ -47,9 +60,9 @@ void DataLoader::_ready() {
 	}
 
 	UtilityFunctions::print(
-		vformat(TXT("DataLoader: %d items, %d skills, %d buffs, %d gongfas, %d sects, %d recipes, %d continents, drops=%s"),
+		vformat(TXT("DataLoader: %d items, %d skills, %d buffs, %d gongfas, %d sects, %d recipes, %d continents, %d events, drops=%s"),
 			_items.size(), _skills.size(), _buffs.size(), _gongfas.size(), _sects.size(),
-			_recipes.size(), _continents.size(),
+			_recipes.size(), _continents.size(), _events.size(),
 			_drop_table.is_empty() ? TXT("no") : TXT("yes")));
 }
 
@@ -173,6 +186,12 @@ Array DataLoader::get_all_continents() const {
 	Array arr;
 	for (const auto &kv : _continents) arr.append(kv.value);
 	return arr;
+}
+
+Dictionary DataLoader::get_event(int p_realm) const {
+	HashMap<int, Dictionary>::ConstIterator it = _events.find(p_realm);
+	if (it) return it->value;
+	return Dictionary();
 }
 
 } // namespace godot
