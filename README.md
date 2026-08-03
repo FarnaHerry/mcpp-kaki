@@ -4,7 +4,7 @@
 
 A xianxia (cultivation fantasy) 2D action game in the Metroidvania style, built with **Godot 4.6 + C++ GDExtension**.
 
-所有游戏逻辑用 C++ 编写（不使用 GDScript），构建系统用 **mcpp**（现代 C++23 模块化构建工具），C++ 标准为 C++23。
+所有游戏逻辑用 C++ 编写（不使用 GDScript），构建系统用 **mcpp**（现代 C++23 模块化构建工具）。全项目（含 godot-cpp 官方绑定）统一使用 **C++23** 标准编译。
 
 ---
 
@@ -16,7 +16,7 @@ A xianxia (cultivation fantasy) 2D action game in the Metroidvania style, built 
 - **能力门控探索**：炼气纳戒、筑基御剑飞行、化神缩地成寸等境界解锁
 - **四大部洲世界**：东胜神洲（花果山/水帘洞/东海之滨）、云海强渡旅行、五区地图（竹台跳跃/墙跳/飞行沟壑）
 - **数据驱动**：物品/技能/功法/宗门/掉落/配方/洲全部外置为 `data/*.json`
-- **模块化 C++**：自己的代码用 C++20 模块（`import`）组织，godot-cpp 官方绑定保持头文件
+- **模块化 C++**：自己的代码用 C++ 模块（`import`，C++20 特性）组织，在 C++23 下编译；godot-cpp 官方绑定保持头文件
 
 ## 🛠 技术栈 / Tech Stack
 
@@ -24,7 +24,7 @@ A xianxia (cultivation fantasy) 2D action game in the Metroidvania style, built 
 |---|---|
 | Godot | 4.6 (config_version=5), gl_compatibility (2D) |
 | 分辨率 | 480×270 内部 → 1920×1080 canvas_items stretch, Nearest pixel art |
-| 语言 | C++23 (GDExtension), 少量 GDScript 仅做场景装配 |
+| 语言 | C++23（全项目统一，含 godot-cpp 官方绑定）；少量 GDScript 仅做场景装配 |
 | 构建 | **mcpp** (C++23 模块化构建工具) |
 | 绑定 | godot-cpp 官方子模块 |
 
@@ -46,7 +46,7 @@ godot-cpp/         # Git 子模块（官方绑定，勿改）
 bin/               # 编译产物（gitignored）
 ```
 
-> **模块化说明**：约 70% 的类已用 C++20 模块化（`import mcpp_kaki.*`）。绑定 godot 内置类指针（`Node*`/`Node2D*`/`Object*`）的节点类（Player/Enemy 等）保持头文件——这是 C++20 模块与 godot-cpp 绑定模板的已知限制。
+> **模块化说明**：约 70% 的类已用 C++ 模块（C++20 特性，C++23 编译）组织（`import mcpp_kaki.*`），godot-cpp 官方绑定同样以 C++23 编译。绑定 godot 内置类指针（`Node*`/`Node2D*`/`Object*`）的节点类（Player/Enemy 等）保持头文件——这是 C++ 模块与 godot-cpp 绑定模板的已知限制。
 
 ## 📦 环境要求 / Requirements
 
