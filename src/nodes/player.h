@@ -5,26 +5,15 @@
 #include <godot_cpp/classes/input.hpp>
 #include <godot_cpp/variant/color.hpp>
 
-#include "../combat/combo_chain.h"
-#include "../combat/damage_types.h"
-#include "../cultivation/gongfa_system.h"
-#include "../cultivation/buff_system.h"
-#include "../cultivation/sect_system.h"
-#include "../cultivation/alchemy_system.h"
-#include "../inventory/inventory.h"
+import mcpp_kaki.combat;
+import mcpp_kaki.inventory;
+import mcpp_kaki.cultivation;
 #include "../utils/state_machine.h"
 #include "../utils/input_buffer.h"
 
 namespace godot {
 
-	class HitBox;
-	class HurtBox;
-	class CultivationSystem;
-	class AbilityManager;
-	class SkillSystem;
-	class ArtifactSystem;
-
-	class Player : public CharacterBody2D {
+class Player : public CharacterBody2D {
 		GDCLASS(Player, CharacterBody2D);
 
 	public:

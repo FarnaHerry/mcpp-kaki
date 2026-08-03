@@ -1,24 +1,29 @@
-#ifndef CPP_KAKI_HERB_NODE_H
-#define CPP_KAKI_HERB_NODE_H
+#ifndef CPP_KAKI_HERBNODE_H
+#define CPP_KAKI_HERBNODE_H
 
 #include <godot_cpp/classes/area2d.hpp>
+#include <godot_cpp/classes/camera2d.hpp>
+#include <godot_cpp/classes/canvas_item.hpp>
+#include <godot_cpp/classes/canvas_layer.hpp>
+#include <godot_cpp/classes/color_rect.hpp>
+#include <godot_cpp/classes/input_event.hpp>
+#include <godot_cpp/classes/label.hpp>
+#include <godot_cpp/classes/node.hpp>
+#include <godot_cpp/classes/node2d.hpp>
+#include <godot_cpp/classes/polygon2d.hpp>
+#include <godot_cpp/variant/array.hpp>
+#include <godot_cpp/variant/color.hpp>
+#include <godot_cpp/variant/rect2.hpp>
+#include <godot_cpp/variant/string.hpp>
 #include <godot_cpp/variant/string_name.hpp>
+#include <godot_cpp/variant/vector2.hpp>
+
+#include "../utils/text.h"
 
 namespace godot {
 
 class Player;
-class Polygon2D;
 
-// 草药采集点（design/alchemy.md 第二节，已定稿）：
-//   - 靠近显示「[X] 采集 ·止血草」（interaction_prompt 信号，X=普攻+交互合一，交互优先）
-//   - X 采集 → 入背包 + 喂练气熟练（+2，量少不刷），节点枯萎
-//   - 刷新：v1 不存档，房间重进即刷新（节点随场景重建）
-//
-// Usage from GDScript:
-//   var herb = ClassDB.instantiate("HerbNode")
-//   herb.set("herb_id", "zhi_xue_cao")
-//   herb.position = Vector2(300, 218)
-//   add_child(herb)
 class HerbNode : public Area2D {
 	GDCLASS(HerbNode, Area2D);
 
@@ -46,9 +51,9 @@ private:
 	bool _harvested = false;
 	Player *_player = nullptr;
 	Polygon2D *_visual = nullptr;
-	float _magnet_speed = 0.0f;       // 纳戒磁吸当前速度
-	bool _ring_checked = false;       // 已检查纳戒能力
-	bool _has_ring = false;           // 缓存纳戒解锁状态
+	float _magnet_speed = 0.0f;
+	bool _ring_checked = false;
+	bool _has_ring = false;
 
 	void _create_visual();
 	void _harvest();
@@ -56,4 +61,4 @@ private:
 
 } // namespace godot
 
-#endif // CPP_KAKI_HERB_NODE_H
+#endif // CPP_KAKI_HERBNODE_H

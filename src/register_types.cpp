@@ -1,44 +1,28 @@
 #include "register_types.h"
+#include "nodes/player.h"
+#include "nodes/enemy.h"
 
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/godot.hpp>
 
-#include "combat/hitbox.h"
-#include "combat/hurtbox.h"
-#include "combat/projectile.h"
-#include "combat/skill_system.h"
+import mcpp_kaki.combat;
 #include "core/game_manager.h"
-#include "core/continent_manager.h"
-#include "core/data_loader.h"
+import mcpp_kaki.core;
 #include "core/drop_system.h"
-#include "core/save_system.h"
-#include "cultivation/ability_manager.h"
-#include "cultivation/artifact_system.h"
-#include "cultivation/buff_system.h"
-#include "cultivation/sect_system.h"
-#include "cultivation/alchemy_system.h"
-#include "cultivation/breakthrough_manager.h"
-#include "cultivation/cultivation_system.h"
-#include "cultivation/gongfa_system.h"
-#include "cultivation/tribulation_controller.h"
-#include "inventory/inventory.h"
-#include "inventory/item_database.h"
+import mcpp_kaki.core;
 #include "nodes/camera_room_2d.h"
-#include "nodes/damage_numbers.h"
-#include "nodes/enemy.h"
-#include "nodes/game_hud.h"
-#include "nodes/inventory_panel.h"
 #include "nodes/item_pickup.h"
 #include "nodes/herb_node.h"
-#include "nodes/player.h"
 #include "nodes/portal.h"
-#include "nodes/game_menu.h"
 #include "nodes/telemetry_panel.h"
-#include "utils/signal_bus.h"
+import mcpp_kaki.nodes;
+import mcpp_kaki.cultivation;
+import mcpp_kaki.inventory;
+import mcpp_kaki.utils;
 
 using namespace godot;
 
-void initialize_cpp_kaki_module(ModuleInitializationLevel p_level) {
+void initialize_mcpp_kaki_module(ModuleInitializationLevel p_level) {
 	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
 		return;
 	}
@@ -58,6 +42,7 @@ void initialize_cpp_kaki_module(ModuleInitializationLevel p_level) {
 	GDREGISTER_CLASS(SectSystem);
 	GDREGISTER_CLASS(AlchemySystem);
 	GDREGISTER_CLASS(AbilityManager);
+	GDREGISTER_CLASS(Localization);
 	GDREGISTER_CLASS(SignalBus);
 	GDREGISTER_CLASS(GameManager);
 	GDREGISTER_CLASS(ContinentManager);
@@ -77,22 +62,22 @@ void initialize_cpp_kaki_module(ModuleInitializationLevel p_level) {
 	GDREGISTER_CLASS(GameMenu);
 }
 
-void uninitialize_cpp_kaki_module(ModuleInitializationLevel p_level) {
+void uninitialize_mcpp_kaki_module(ModuleInitializationLevel p_level) {
 	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
 		return;
 	}
 }
 
 extern "C" {
-	GDExtensionBool GDE_EXPORT cpp_kaki_library_init(
+	GDExtensionBool GDE_EXPORT mcpp_kaki_library_init(
 		GDExtensionInterfaceGetProcAddress p_get_proc_address,
 		GDExtensionClassLibraryPtr p_library,
 		GDExtensionInitialization *r_initialization) {
 
 		GDExtensionBinding::InitObject init_obj(p_get_proc_address, p_library, r_initialization);
 
-		init_obj.register_initializer(initialize_cpp_kaki_module);
-		init_obj.register_terminator(uninitialize_cpp_kaki_module);
+		init_obj.register_initializer(initialize_mcpp_kaki_module);
+		init_obj.register_terminator(uninitialize_mcpp_kaki_module);
 		init_obj.set_minimum_library_initialization_level(MODULE_INITIALIZATION_LEVEL_SCENE);
 
 		return init_obj.init();

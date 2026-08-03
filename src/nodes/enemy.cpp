@@ -1,10 +1,5 @@
 #include "enemy.h"
 
-#include "../combat/damage_calculator.h"
-#include "../combat/hitbox.h"
-#include "../combat/hurtbox.h"
-#include "../combat/projectile.h"
-#include "../utils/signal_bus.h"
 
 #include <cmath>
 #include <cstdlib>
@@ -18,6 +13,8 @@
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/core/class_db.hpp>
 
+import mcpp_kaki.combat;
+import mcpp_kaki.utils;
 namespace godot {
 
 	namespace EnemyStates {

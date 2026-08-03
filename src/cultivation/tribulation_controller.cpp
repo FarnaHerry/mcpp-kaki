@@ -1,6 +1,6 @@
-#include "tribulation_controller.h"
-
+module;
 #include "../nodes/player.h"
+
 #include "../utils/text.h"
 
 #include <godot_cpp/classes/canvas_layer.hpp>
@@ -9,6 +9,7 @@
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
+module mcpp_kaki.cultivation;
 namespace godot {
 
 	TribulationController::TribulationController() {
@@ -75,10 +76,10 @@ namespace godot {
 
 	String TribulationController::_phase_title() const {
 		switch (_phase) {
-			case PHASE_THUNDER: return TXT("第一灾 · 天雷 —— 明心见性，预先躲避");
-			case PHASE_FIRE:    return TXT("第二灾 · 阴火 —— 自涌泉烧起，直透泥垣");
-			case PHASE_WIND:    return TXT("第三灾 · 赑风 —— 神魂颠倒，稳住道心");
-			default:            return TXT("");
+			case PHASE_THUNDER: return LOC("第一灾 · 天雷 —— 明心见性，预先躲避");
+			case PHASE_FIRE:    return LOC("第二灾 · 阴火 —— 自涌泉烧起，直透泥垣");
+			case PHASE_WIND:    return LOC("第三灾 · 赑风 —— 神魂颠倒，稳住道心");
+			default:            return LOC("");
 		}
 	}
 
@@ -87,11 +88,11 @@ namespace godot {
 			return;
 		String txt = _phase_title();
 		if (_phase == PHASE_FIRE) {
-			txt += TXT("（剩余 ") + String::num_int64((int64_t)(FIRE_DURATION - _phase_elapsed) + 1) + TXT("s）");
+			txt += LOC("（剩余 ") + String::num_int64((int64_t)(FIRE_DURATION - _phase_elapsed) + 1) + LOC("s）");
 		} else if (_phase == PHASE_WIND) {
-			txt += TXT("（剩余 ") + String::num_int64((int64_t)(WIND_DURATION - _phase_elapsed) + 1) + TXT("s）");
+			txt += LOC("（剩余 ") + String::num_int64((int64_t)(WIND_DURATION - _phase_elapsed) + 1) + LOC("s）");
 		} else if (_phase == PHASE_THUNDER) {
-			txt += TXT("（") + String::num_int64(_strikes_spawned) + "/" + String::num_int64(THUNDER_COUNT) + TXT("）");
+			txt += LOC("（") + String::num_int64(_strikes_spawned) + "/" + String::num_int64(THUNDER_COUNT) + LOC("）");
 		}
 		_phase_label->set_text(txt);
 	}

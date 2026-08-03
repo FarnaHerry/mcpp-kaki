@@ -1,8 +1,18 @@
-#include "signal_bus.h"
+// mcpp-kaki utils module implementation unit.
+// Implements SignalBus / Localization / g_localization declared in utils.cppm.
+module;
 
+#include <godot_cpp/classes/config_file.hpp>
+#include <godot_cpp/classes/file_access.hpp>
+#include <godot_cpp/classes/json.hpp>
 #include <godot_cpp/core/class_db.hpp>
+#include <godot_cpp/variant/utility_functions.hpp>
+
+module mcpp_kaki.utils;
 
 namespace godot {
+
+// ---------------- SignalBus ----------------
 
 SignalBus *SignalBus::_singleton = nullptr;
 
@@ -102,6 +112,92 @@ void SignalBus::_bind_methods() {
 	                      PropertyInfo(Variant::STRING, "slot_name")));
 	ADD_SIGNAL(MethodInfo("save_error",
 	                      PropertyInfo(Variant::STRING, "message")));
+
+	// ---- Localization ----
+	ADD_SIGNAL(MethodInfo("language_changed",
+	                      PropertyInfo(Variant::STRING, "locale")));
+}
+
+// ---------------- Localization ----------------
+
+Localization *g_localization = nullptr;
+
+Localization *Localization::_singleton = nullptr;
+
+void Localization::_ready() {
+	_singleton = this;
+	g_localization = this;
+	_load_translations();
+
+	// Load persisted language preference
+	Ref<ConfigFile> cfg;
+	cfg.instantiate();
+	if (cfg->load("user://settings.cfg") == OK) {
+		String saved = cfg->get_value("language", "locale", "zh");
+		_language = (saved == "en") ? "en" : "zh";
+	}
+}
+
+void Localization::_load_translations() {
+	_table.clear();
+
+	String path = "res://data/locale_en.json";
+	if (!FileAccess::file_exists(path)) {
+		UtilityFunctions::printerr("Localization: ", path, " not found.");
+		return;
+	}
+
+	String raw = FileAccess::get_file_as_string(path);
+	Variant parsed = JSON::parse_string(raw);
+	if (parsed.get_type() != Variant::DICTIONARY) {
+		UtilityFunctions::printerr("Localization: ", path, " is not a JSON object.");
+		return;
+	}
+
+	Dictionary dict = parsed;
+	Array keys = dict.keys();
+	for (int i = 0; i < keys.size(); i++) {
+		String key = keys[i];
+		String val = dict[keys[i]];
+		if (!key.is_empty() && !val.is_empty()) {
+			_table[key] = val;
+		}
+	}
+
+	UtilityFunctions::print("Localization: loaded ", _table.size(), " entries from ", path);
+}
+
+String Localization::translate(const String &p_key) const {
+	// In Chinese mode, always return empty → LOC() falls back to Chinese
+	if (_language == "zh") return String();
+
+	HashMap<String, String>::ConstIterator it = _table.find(p_key);
+	if (it != _table.end()) {
+		return it->value;
+	}
+	return String(); // not found → LOC() fallback handles it
+}
+
+void Localization::set_language(const String &p_lang) {
+	if (_language == p_lang) return;
+	_language = p_lang;
+
+	// Persist
+	Ref<ConfigFile> cfg;
+	cfg.instantiate();
+	cfg->set_value("language", "locale", _language);
+	cfg->save("user://settings.cfg");
+
+	// Notify UI
+	SignalBus *sb = SignalBus::get_singleton();
+	if (sb) {
+		sb->emit_signal("language_changed", p_lang);
+	}
+}
+
+void Localization::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_language", "lang"), &Localization::set_language);
+	ClassDB::bind_method(D_METHOD("get_language"), &Localization::get_language);
 }
 
 } // namespace godot

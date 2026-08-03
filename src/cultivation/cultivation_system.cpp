@@ -1,10 +1,12 @@
-#include "cultivation_system.h"
-#include "title_composer.h"
-#include "../utils/signal_bus.h"
+module;
 
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/core/math.hpp>
 
+#include "../utils/text.h"
+
+module mcpp_kaki.cultivation;
+import mcpp_kaki.utils;
 namespace godot {
 
 	// 渡劫成功、灵力转仙元时的初始仙元
@@ -146,16 +148,16 @@ namespace godot {
 			// 混元一气：混元 + 门派 + 金仙
 			if (_hunyuan && _current_realm == GOLDEN_IMMORTAL) {
 				if (_sect == SECT_SANXIAN)
-					return TXT("混元散仙");
-				return TXT("混元") + get_sect_name() + TXT("金仙");
+					return LOC("混元散仙");
+				return LOC("混元") + get_sect_name() + LOC("金仙");
 			}
 			// 门派称号：大罗真仙 / 太乙金仙；散仙无门派
 			if (_sect == SECT_SANXIAN)
-				return TXT("散仙");
+				return LOC("散仙");
 			if (_sect != SECT_NONE)
-				return get_sect_name() + TXT(base);
+				return get_sect_name() + LOC(base);
 		}
-		return TXT(base);
+		return LOC(base);
 	}
 
 	String CultivationSystem::get_full_title() const {
@@ -209,55 +211,55 @@ namespace godot {
 
 	String CultivationSystem::get_stage_name() const {
 		switch (get_stage()) {
-			case STAGE_EARLY:      return TXT("前期");
-			case STAGE_MID:        return TXT("中期");
-			case STAGE_LATE:       return TXT("后期");
-			case STAGE_DA_YUANMAN: return TXT("大圆满");
+			case STAGE_EARLY:      return LOC("前期");
+			case STAGE_MID:        return LOC("中期");
+			case STAGE_LATE:       return LOC("后期");
+			case STAGE_DA_YUANMAN: return LOC("大圆满");
 		}
-		return TXT("");
+		return LOC("");
 	}
 
 	String CultivationSystem::get_immortal_type_name() const {
 		switch (_immortal_type) {
-			case TYPE_GHOST:  return TXT("鬼仙");
-			case TYPE_HUMAN:  return TXT("人仙");
-			case TYPE_EARTH:  return TXT("地仙");
-			case TYPE_SPIRIT: return TXT("神仙");
-			case TYPE_CELE:   return TXT("天仙");
-			default:          return TXT("");
+			case TYPE_GHOST:  return LOC("鬼仙");
+			case TYPE_HUMAN:  return LOC("人仙");
+			case TYPE_EARTH:  return LOC("地仙");
+			case TYPE_SPIRIT: return LOC("神仙");
+			case TYPE_CELE:   return LOC("天仙");
+			default:          return LOC("");
 		}
 	}
 
 	String CultivationSystem::get_sect_name() const {
 		switch (_sect) {
-			case SECT_DA_LUO:  return TXT("大罗");
-			case SECT_TAI_YI:  return TXT("太乙");
-			case SECT_SANXIAN: return TXT("散仙");
-			default:           return TXT("");
+			case SECT_DA_LUO:  return LOC("大罗");
+			case SECT_TAI_YI:  return LOC("太乙");
+			case SECT_SANXIAN: return LOC("散仙");
+			default:           return LOC("");
 		}
 	}
 
 	String CultivationSystem::get_origin_name() const {
 		switch (_origin) {
-			case ORIGIN_INNATE: return TXT("先天神圣");
-			default:            return TXT("后天修炼");
+			case ORIGIN_INNATE: return LOC("先天神圣");
+			default:            return LOC("后天修炼");
 		}
 	}
 
 	String CultivationSystem::get_buddhist_rank_name() const {
 		switch (_buddhist_rank) {
-			case RANK_LUO_HAN: return TXT("罗汉");
-			case RANK_PU_SA:   return TXT("菩萨");
-			case RANK_FO:      return TXT("佛");
-			default:           return TXT("");
+			case RANK_LUO_HAN: return LOC("罗汉");
+			case RANK_PU_SA:   return LOC("菩萨");
+			case RANK_FO:      return LOC("佛");
+			default:           return LOC("");
 		}
 	}
 
 	String CultivationSystem::get_focus_name() const {
 		switch (_focus) {
-			case FOCUS_BODY:   return TXT("肉身成圣");
-			case FOCUS_SPIRIT: return TXT("元神修炼");
-			default:           return TXT("");
+			case FOCUS_BODY:   return LOC("肉身成圣");
+			case FOCUS_SPIRIT: return LOC("元神修炼");
+			default:           return LOC("");
 		}
 	}
 

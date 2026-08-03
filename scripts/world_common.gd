@@ -24,6 +24,10 @@ static func setup(root: Node) -> Dictionary:
 	signal_bus.name = "SignalBus"
 	root.add_child(signal_bus)
 
+	var localization = ClassDB.instantiate("Localization")
+	localization.name = "Localization"
+	root.add_child(localization)
+
 	var data_loader = ClassDB.instantiate("DataLoader")
 	data_loader.name = "DataLoader"
 	root.add_child(data_loader)

@@ -1,8 +1,8 @@
-#include "inventory.h"
-#include "item.h"
-#include "item_database.h"
+module;
 
 #include <godot_cpp/core/class_db.hpp>
+
+module mcpp_kaki.inventory;
 
 namespace godot {
 

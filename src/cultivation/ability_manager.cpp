@@ -1,8 +1,8 @@
-#include "ability_manager.h"
-#include "cultivation_system.h"
+module;
 
 #include <godot_cpp/core/class_db.hpp>
 
+module mcpp_kaki.cultivation;
 namespace godot {
 
     const char *AbilityManager::ABILITY_DOUBLE_JUMP = "double_jump";

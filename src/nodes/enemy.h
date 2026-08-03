@@ -3,17 +3,15 @@
 
 #include <godot_cpp/classes/character_body2d.hpp>
 
-#include "../combat/damage_types.h"
+import mcpp_kaki.combat;
 #include "../utils/state_machine.h"
 
 namespace godot {
 
-	class HitBox;
-	class HurtBox;
 	class ColorRect;
 	class Node2D;
 
-	class Enemy : public CharacterBody2D {
+class Enemy : public CharacterBody2D {
 		GDCLASS(Enemy, CharacterBody2D);
 
 	public:

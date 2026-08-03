@@ -6,12 +6,13 @@
 #include <godot_cpp/variant/string.hpp>
 #include <godot_cpp/variant/vector2.hpp>
 
+import mcpp_kaki.utils;
+import mcpp_kaki.core;
+
 namespace godot {
 
 class Player;
 class CameraRoom2D;
-class SignalBus;
-class SaveSystem;
 
 // Global game manager — autoload singleton.
 // Owns high-level game state: pause, death/respawn, checkpoints, scene flow, save/load.

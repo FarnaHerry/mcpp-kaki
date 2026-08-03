@@ -1,11 +1,8 @@
-#include "continent_manager.h"
+module;
 
 #include "game_manager.h"
-#include "../cultivation/cultivation_system.h"
 #include "../nodes/player.h"
-#include "../utils/signal_bus.h"
 #include "../utils/text.h"
-#include "data_loader.h"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <string>
@@ -14,6 +11,9 @@
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/core/class_db.hpp>
 
+module mcpp_kaki.core;
+import mcpp_kaki.cultivation;
+import mcpp_kaki.utils;
 namespace godot {
 
 // 四大部洲注册表（design/world-map.md）：东胜神洲开局，金丹云海入西牛贺，
@@ -107,7 +107,7 @@ void ContinentManager::_ready() {
 
 String ContinentManager::get_current_name() const {
 	const Def *d = find_def(_current_id);
-	return d ? TXT(d->name) : String();
+	return d ? LOC(d->name) : String();
 }
 
 Player *ContinentManager::_find_player() const {
@@ -198,10 +198,10 @@ Array ContinentManager::get_continent_list() const {
 	for (const Def &d : s_defs) {
 		Dictionary c;
 		c["id"] = String(d.id);
-		c["name"] = TXT(d.name);
-		c["desc"] = TXT(d.desc);
+		c["name"] = LOC(d.name);
+		c["desc"] = LOC(d.desc);
 		c["min_realm"] = d.min_realm;
-		c["gate"] = TXT(d.gate);
+		c["gate"] = LOC(d.gate);
 		c["unlocked"] = is_unlocked(d.id);
 		c["current"] = _current_id == String(d.id);
 		out.push_back(c);

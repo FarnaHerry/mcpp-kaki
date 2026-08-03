@@ -1,6 +1,7 @@
 #include "portal.h"
 #include "camera_room_2d.h"
-#include "../utils/signal_bus.h"
+#include "../nodes/player.h"
+#include "../utils/text.h"
 
 #include <godot_cpp/classes/collision_shape2d.hpp>
 #include <godot_cpp/classes/engine.hpp>
@@ -13,6 +14,7 @@
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/core/class_db.hpp>
 
+import mcpp_kaki.utils;
 namespace godot {
 
     void Portal::_bind_methods() {
@@ -78,10 +80,6 @@ namespace godot {
             _player = p_body;
         emit_signal("portal_prompt", _prompt_text, true);
 
-        SignalBus *bus = SignalBus::get_singleton();
-        if (bus) {
-            bus->emit_signal("interaction_prompt", _prompt_text, true);
-        }
     }
 
     void Portal::_on_body_exited(Node2D *p_body) {
@@ -90,10 +88,6 @@ namespace godot {
         _player_inside = false;
         emit_signal("portal_prompt", "", false);
 
-        SignalBus *bus = SignalBus::get_singleton();
-        if (bus) {
-            bus->emit_signal("interaction_prompt", "", false);
-        }
     }
 
     // ============================================================
@@ -144,7 +138,7 @@ namespace godot {
         // Create exit portal inside the room
         _create_exit_portal();
 
-        _prompt_text = "[X] Leave";
+        _prompt_text = LOC("[X] 离开");
     }
 
     void Portal::_exit() {
@@ -166,13 +160,13 @@ namespace godot {
         // Unlock camera
         if (_camera) _camera->exit_room();
 
-        _prompt_text = "[X] Enter";
+        _prompt_text = LOC("[X] 进入");
     }
 
     void Portal::_create_exit_portal() {
         Portal *ep = memnew(Portal);
         ep->set_name("ExitPortal");
-        ep->_prompt_text = "[X] Leave";
+        ep->_prompt_text = LOC("[X] 离开");
         ep->_entrance_portal = this; // delegate back
         ep->_player = _player;
         ep->_camera = _camera;

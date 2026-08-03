@@ -1,12 +1,13 @@
-#include "sect_system.h"
+module;
 
 #include "../utils/text.h"
-#include "../core/data_loader.h"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <string>
 
+module mcpp_kaki.cultivation;
+import mcpp_kaki.core;
 namespace godot {
 
 // 宗门注册表（design/sect-pressure.md 第一节）
@@ -96,10 +97,10 @@ const SectSystem::Def *SectSystem::find_def(const StringName &p_id) {
 
 String SectSystem::rank_name(int p_rank) {
 	switch (p_rank) {
-		case RANK_OUTER: return TXT("外门弟子");
-		case RANK_INNER: return TXT("内门弟子");
-		case RANK_TRUE:  return TXT("真传弟子");
-		default:         return TXT("散修");
+		case RANK_OUTER: return LOC("外门弟子");
+		case RANK_INNER: return LOC("内门弟子");
+		case RANK_TRUE:  return LOC("真传弟子");
+		default:         return LOC("散修");
 	}
 }
 
@@ -171,8 +172,8 @@ Array SectSystem::get_sect_list() const {
 	for (const Def &d : SECT_DEFS) {
 		Dictionary c;
 		c["id"] = String(d.id);
-		c["name"] = TXT(d.name);
-		c["desc"] = TXT(d.desc);
+		c["name"] = LOC(d.name);
+		c["desc"] = LOC(d.desc);
 		c["skill_id"] = String(d.skill_id);
 		c["joined"] = _sect_id == StringName(d.id);
 		out.push_back(c);
@@ -186,8 +187,8 @@ Dictionary SectSystem::get_sect_info() const {
 	const Def *def = find_def(_sect_id);
 	if (!def) return d;
 	d["id"] = String(def->id);
-	d["name"] = TXT(def->name);
-	d["desc"] = TXT(def->desc);
+	d["name"] = LOC(def->name);
+	d["desc"] = LOC(def->desc);
 	d["rank"] = get_rank();
 	d["rank_name"] = get_rank_name();
 	d["contribution"] = _contribution;

@@ -1,13 +1,23 @@
-#include "game_hud.h"
+module;
+#include "../utils/text.h"
+#include "../nodes/player.h"
+#include <godot_cpp/classes/collision_shape2d.hpp>
+#include <godot_cpp/classes/color_rect.hpp>
+#include <godot_cpp/classes/input_event.hpp>
+#include <godot_cpp/classes/label.hpp>
+#include <godot_cpp/classes/canvas_layer.hpp>
+#include <godot_cpp/classes/polygon2d.hpp>
+#include <godot_cpp/classes/node2d.hpp>
+#include <godot_cpp/classes/area2d.hpp>
+#include <godot_cpp/classes/canvas_item.hpp>
+#include <godot_cpp/classes/rectangle_shape2d.hpp>
+#include <godot_cpp/classes/circle_shape2d.hpp>
+#include <godot_cpp/classes/capsule_shape2d.hpp>
+#include <godot_cpp/classes/collision_shape2d.hpp>
+#include <godot_cpp/variant/array.hpp>
+#include <godot_cpp/variant/color.hpp>
+#include <godot_cpp/variant/rect2.hpp>
 
-#include "../combat/skill_system.h"
-#include "../cultivation/artifact_system.h"
-#include "../cultivation/cultivation_system.h"
-#include "player.h"
-#include "../inventory/inventory.h"
-#include "../inventory/item.h"
-#include "../inventory/item_database.h"
-#include "../utils/signal_bus.h"
 
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
@@ -16,6 +26,11 @@
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
+module mcpp_kaki.nodes;
+import mcpp_kaki.combat;
+import mcpp_kaki.cultivation;
+import mcpp_kaki.inventory;
+import mcpp_kaki.utils;
 namespace godot {
 
 // Layout constants (480×270 viewport)
@@ -117,6 +132,7 @@ void GameHUD::_ready() {
         bus->connect("player_respawned", Callable(this, "on_player_respawned"));
         bus->connect("buffs_changed", Callable(this, "on_buffs_changed"));
         bus->connect("continent_changed", Callable(this, "on_continent_changed"));
+	        bus->connect("language_changed", Callable(this, "_on_language_changed"));
     }
 }
 
@@ -157,7 +173,7 @@ static void _build_bar(CanvasLayer *p_parent, float p_y, const Color &p_fill_col
 
 void GameHUD::_create_health_bar() {
     _build_bar(this, HEALTH_BAR_Y, _health_color,
-               _health_bg, _health_fill, _health_label, TXT("生命 100/100"));
+               _health_bg, _health_fill, _health_label, LOC("生命 100/100"));
     _health_bg->set_name("HealthBg");
     _health_fill->set_name("HealthFill");
     _health_label->set_name("HealthLabel");
@@ -165,7 +181,7 @@ void GameHUD::_create_health_bar() {
 
 void GameHUD::_create_energy_bar() {
     _build_bar(this, ENERGY_BAR_Y, _energy_color,
-               _energy_bg, _energy_fill, _energy_label, TXT("灵力 0/0"));
+               _energy_bg, _energy_fill, _energy_label, LOC("灵力 0/0"));
     _energy_bg->set_name("ManaBg");
     _energy_fill->set_name("ManaFill");
     _energy_label->set_name("ManaLabel");
@@ -174,7 +190,7 @@ void GameHUD::_create_energy_bar() {
 
 void GameHUD::_create_xp_bar() {
     _build_bar(this, XP_BAR_Y, _xp_color,
-               _xp_bg, _xp_fill, _xp_label, TXT("修为 0%"));
+               _xp_bg, _xp_fill, _xp_label, LOC("修为 0%"));
     _xp_bg->set_name("XpBg");
     _xp_fill->set_name("XpFill");
     _xp_label->set_name("XpLabel");
@@ -191,7 +207,7 @@ void GameHUD::_create_realm_label() {
     _realm_label->set_position(Vector2(BAR_X, REALM_LABEL_Y));
     _realm_label->add_theme_font_size_override("font_size", FONT_SIZE_MD);
     _realm_label->add_theme_color_override("font_color", Color(1.0f, 0.85f, 0.3f, 1));
-    _realm_label->set_text(TXT("凡人"));
+    _realm_label->set_text(LOC("凡人"));
     add_child(_realm_label);
 }
 
@@ -203,7 +219,7 @@ void GameHUD::_create_jiyuan_label() {
     _jiyuan_label->add_theme_color_override("font_color", Color(1.0f, 0.95f, 0.4f, 1));
     _jiyuan_label->add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9f));
     _jiyuan_label->add_theme_constant_override("outline_size", 2);
-    _jiyuan_label->set_text(TXT("机缘已至 [Q]"));
+    _jiyuan_label->set_text(LOC("机缘已至 [Q]"));
     _jiyuan_label->set_visible(false);
     add_child(_jiyuan_label);
 }
@@ -297,7 +313,7 @@ void GameHUD::_create_skill_bar() {
 
         // 技能名（槽中央，空槽显示 ·；名字取首字，像素屏宽所限）
         Label *name = memnew(Label);
-        name->set_text(TXT("·"));
+        name->set_text(LOC("·"));
         name->add_theme_font_size_override("font_size", 8);
         name->add_theme_color_override("font_color", Color(1.0f, 1.0f, 1.0f, 0.95f));
         name->set_position(Vector2(x + 6, y + 7));
@@ -317,7 +333,7 @@ void GameHUD::_create_skill_bar() {
 
         if (SLOTS[i].caption) {
             Label *cap = memnew(Label);
-            cap->set_text(TXT(SLOTS[i].caption));
+            cap->set_text(LOC(SLOTS[i].caption));
             cap->add_theme_font_size_override("font_size", 7);
             cap->add_theme_color_override("font_color", Color(0.6f, 0.6f, 0.6f, 0.9f));
             cap->set_position(Vector2(x + 2, y - 10));
@@ -328,7 +344,7 @@ void GameHUD::_create_skill_bar() {
 
     // 法宝页徽标（B 切换；仅法宝页显示）
     _page_badge = memnew(Label);
-    _page_badge->set_text(TXT("法宝页 [B 返回]"));
+    _page_badge->set_text(LOC("法宝页 [B 返回]"));
     _page_badge->add_theme_font_size_override("font_size", 8);
     _page_badge->add_theme_color_override("font_color", Color(1.0f, 0.85f, 0.4f, 0.95f));
     _page_badge->set_position(Vector2(x0 + total_w + 8.0f, y + 6.0f));
@@ -366,12 +382,25 @@ void GameHUD::_process(double p_delta) {
 
 void GameHUD::on_continent_changed(const String &p_id, const String &p_name) {
     if (!_continent_label) return;
-    _continent_label->set_text(TXT("—— ") + p_name + TXT(" ——"));
+    _continent_label->set_text(LOC("—— ") + LOC(p_name) + LOC(" ——"));
     Color c = _continent_label->get_theme_color("font_color");
     c.a = 1.0f;
     _continent_label->add_theme_color_override("font_color", c);
     _continent_label->set_visible(true);
     _continent_banner_t = 2.8f;
+}
+
+void GameHUD::_on_language_changed(const String &p_locale) {
+    // Refresh static labels that are set once in _create_* methods
+    if (_realm_label) _realm_label->set_text(LOC("凡人"));
+    if (_jiyuan_label) _jiyuan_label->set_text(LOC("机缘已至 [Q]"));
+    if (_page_badge) _page_badge->set_text(LOC("法宝页 [B 返回]"));
+    _mana_prefix = LOC("灵力");
+    _realm_name = LOC("凡人");
+    _refresh_mana_label();
+    _refresh_xp_label();
+    _refresh_realm_label();
+    _update_buff_label(0.0f);
 }
 
 void GameHUD::on_buffs_changed(const Array &p_active) {
@@ -410,7 +439,7 @@ void GameHUD::_update_buff_label(double p_delta) {
     for (int i = 0; i < _buffs.size(); i++) {
         Dictionary d = _buffs[i];
         if (i > 0) text += "  ";
-        text += String(d["name"]) + " " + String::num_int64((int64_t)Math::ceil(float(d["remaining"]))) + "s";
+        text += LOC(String(d["name"])) + " " + String::num_int64((int64_t)Math::ceil(float(d["remaining"]))) + "s";
     }
     _buff_label->set_text(text);
     _buff_label->set_visible(_hud_visible);
@@ -435,7 +464,7 @@ void GameHUD::_create_law_bar() {
     add_child(_law_fill);
 
     _law_label = memnew(Label);
-    _law_label->set_text(TXT("法则"));
+    _law_label->set_text(LOC("法则"));
     _law_label->add_theme_font_size_override("font_size", FONT_SIZE_XS);
     _law_label->add_theme_color_override("font_color", Color(0.85f, 0.70f, 1.0f, 0.95f));
     _law_label->set_position(Vector2(x + 2, y - 1));
@@ -463,7 +492,7 @@ void GameHUD::_update_law_bar() {
         return;
     double cur = cult->get_law_power();
     _law_fill->set_size(Vector2(BAR_WIDTH * float(cur / max_law), 10.0f));
-    _law_label->set_text(TXT("法则 ") + String::num_int64(int64_t(cur)) + TXT("/") + String::num_int64(int64_t(max_law)));
+    _law_label->set_text(LOC("法则 ") + String::num_int64(int64_t(cur)) + LOC("/") + String::num_int64(int64_t(max_law)));
 }
 
 // 数字键消耗品栏（技能栏上方一行：1~6 槽，名首字+数量；design/alchemy.md S6）
@@ -485,7 +514,7 @@ void GameHUD::_create_pressure_indicators() {
 	add_child(_wei_bg);
 
 	_wei_label = memnew(Label);
-	_wei_label->set_text(TXT("V 威压"));
+	_wei_label->set_text(LOC("V 威压"));
 	_wei_label->add_theme_font_size_override("font_size", FONT_SIZE_XS);
 	_wei_label->add_theme_color_override("font_color", Color(0.9f, 0.7f, 0.3f, 0.95f));
 	_wei_label->set_position(Vector2(x0 + 2, y - 1));
@@ -499,7 +528,7 @@ void GameHUD::_create_pressure_indicators() {
 	add_child(_lin_bg);
 
 	_lin_label = memnew(Label);
-	_lin_label->set_text(TXT("R 灵压"));
+	_lin_label->set_text(LOC("R 灵压"));
 	_lin_label->add_theme_font_size_override("font_size", FONT_SIZE_XS);
 	_lin_label->add_theme_color_override("font_color", Color(0.7f, 0.5f, 0.95f, 0.95f));
 	_lin_label->set_position(Vector2(x0 + W + 6, y - 1));
@@ -521,21 +550,21 @@ void GameHUD::_update_pressure_indicators() {
 	double lin_cd = _player->get_lin_cooldown_left();
 
 	if (wei_cd > 0.05) {
-		_wei_label->set_text(vformat(TXT("V %.1fs"), wei_cd));
+		_wei_label->set_text(vformat(LOC("V %.1fs"), wei_cd));
 		_wei_label->add_theme_color_override("font_color", Color(0.4f, 0.35f, 0.30f, 0.9f));
 		_wei_bg->set_color(Color(0.08f, 0.06f, 0.03f, 0.7f));
 	} else {
-		_wei_label->set_text(TXT("V 威压"));
+		_wei_label->set_text(LOC("V 威压"));
 		_wei_label->add_theme_color_override("font_color", Color(1.0f, 0.85f, 0.35f, 0.95f));
 		_wei_bg->set_color(Color(0.18f, 0.14f, 0.05f, 0.85f));
 	}
 
 	if (lin_cd > 0.05) {
-		_lin_label->set_text(vformat(TXT("R %.1fs"), lin_cd));
+		_lin_label->set_text(vformat(LOC("R %.1fs"), lin_cd));
 		_lin_label->add_theme_color_override("font_color", Color(0.40f, 0.30f, 0.35f, 0.9f));
 		_lin_bg->set_color(Color(0.06f, 0.03f, 0.10f, 0.7f));
 	} else {
-		_lin_label->set_text(TXT("R 灵压"));
+		_lin_label->set_text(LOC("R 灵压"));
 		_lin_label->add_theme_color_override("font_color", Color(0.85f, 0.65f, 1.0f, 0.95f));
 		_lin_bg->set_color(Color(0.12f, 0.07f, 0.18f, 0.85f));
 	}
@@ -567,7 +596,7 @@ void GameHUD::_create_consumable_bar() {
         _skill_bar_nodes.push_back(key);
 
         Label *name = memnew(Label);
-        name->set_text(TXT("·"));
+        name->set_text(LOC("·"));
         name->add_theme_font_size_override("font_size", 10);
         name->add_theme_color_override("font_color", Color(1, 1, 1, 0.95f));
         name->set_position(Vector2(x + 6, y + 4));
@@ -596,13 +625,13 @@ void GameHUD::_update_consumable_bar() {
     for (int i = 0; i < (int)_bar_name_labels.size(); i++) {
         StringName id = _player->get_consumable_bar_slot(i);
         if (id == StringName()) {
-            _bar_name_labels[i]->set_text(TXT("·"));
+            _bar_name_labels[i]->set_text(LOC("·"));
             _bar_name_labels[i]->add_theme_color_override("font_color", Color(1, 1, 1, 0.35f));
             _bar_count_labels[i]->set_text("");
             continue;
         }
         const Item *def = db ? db->get_item(id) : nullptr;
-        String name = def ? def->name : String(id);
+        String name = def ? LOC(def->name) : String(id);
         _bar_name_labels[i]->set_text(name.substr(0, 1));
         int qty = inv ? inv->get_item_count(id) : 0;
         _bar_count_labels[i]->set_text(qty > 0 ? String::num_int64(qty) : "");
@@ -633,12 +662,12 @@ void GameHUD::_update_skill_bar() {
             ? (arts ? arts->get_slot_info(i) : Dictionary())
             : (skills ? skills->get_slot_info(i) : Dictionary());
         if (info.is_empty() || info.has("locked")) {
-            _skill_name_labels[i]->set_text(info.has("locked") ? TXT("×") : TXT("·"));
+            _skill_name_labels[i]->set_text(info.has("locked") ? LOC("×") : LOC("·"));
             _skill_cd_labels[i]->set_text("");
             continue;
         }
         String name = info.get("name", "");
-        _skill_name_labels[i]->set_text(name.is_empty() ? TXT("·") : name.substr(0, 1));
+        _skill_name_labels[i]->set_text(name.is_empty() ? LOC("·") : name.substr(0, 1));
         double rem = double(info.get("cd_remaining", 0.0));
         Color ready_c = artifact_side ? Color(1.0f, 0.85f, 0.4f, 0.95f) : Color(1, 1, 1, 0.95f);
         if (rem > 0.05) {
@@ -690,7 +719,7 @@ void GameHUD::on_boss_fight_update(const String &p_name, double p_current, doubl
         return;
     float frac = Math::clamp(float(p_current / p_max), 0.0f, 1.0f);
     _boss_fill->set_size(Vector2(240.0f * frac, 8.0f));
-    _boss_name->set_text(p_name);
+    _boss_name->set_text(LOC(p_name));
     bool show = _hud_visible && p_current > 0.0;
     _boss_bg->set_visible(show);
     _boss_fill->set_visible(show);
@@ -786,7 +815,7 @@ void GameHUD::on_player_health_changed(float p_current, float p_max) {
 
     if (_health_label) {
         _health_label->set_text(
-            TXT("生命 ") + String::num_int64(int(p_current)) + "/" + String::num_int64(int(p_max)));
+            LOC("生命 ") + String::num_int64(int(p_current)) + "/" + String::num_int64(int(p_max)));
     }
 }
 
@@ -801,7 +830,7 @@ void GameHUD::_refresh_mana_label() {
 void GameHUD::_refresh_xp_label() {
     if (_xp_label) {
         _xp_label->set_text(
-            TXT("修为 ") + String::num_int64(int64_t(_xp_progress * 100.0f)) + "%");
+            LOC("修为 ") + String::num_int64(int64_t(_xp_progress * 100.0f)) + "%");
     }
 }
 
@@ -842,7 +871,7 @@ void GameHUD::on_realm_changed(int p_old_realm, int p_new_realm, const String &p
 
     // 法力体系随境界切换：凡尘用灵力，仙级用仙元
     String new_prefix = p_new_realm >= CultivationSystem::TRUE_IMMORTAL
-        ? TXT("仙元") : TXT("灵力");
+        ? LOC("仙元") : LOC("灵力");
     if (new_prefix != _mana_prefix) {
         _mana_prefix = new_prefix;
         _refresh_mana_label();

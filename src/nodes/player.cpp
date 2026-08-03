@@ -1,19 +1,8 @@
 #include "player.h"
-
 #include "enemy.h"
 
-#include "../combat/combo_chain.h"
-#include "../combat/damage_calculator.h"
-#include "../combat/hitbox.h"
-#include "../combat/hurtbox.h"
-#include "../combat/projectile.h"
-#include "../combat/skill_system.h"
-#include "../cultivation/artifact_system.h"
-#include "../cultivation/ability_manager.h"
-#include "../cultivation/cultivation_system.h"
-#include "../inventory/item.h"
-#include "../inventory/item_database.h"
-#include "../utils/signal_bus.h"
+
+#include "../utils/text.h"
 
 #include <godot_cpp/classes/collision_shape2d.hpp>
 #include <godot_cpp/classes/polygon2d.hpp>
@@ -25,6 +14,10 @@
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
+import mcpp_kaki.combat;
+import mcpp_kaki.cultivation;
+import mcpp_kaki.inventory;
+import mcpp_kaki.utils;
 namespace godot {
 
 	// ============================================================
@@ -364,8 +357,8 @@ namespace godot {
 			SignalBus *bus = SignalBus::get_singleton();
 			if (bus) {
 				bus->emit_signal("interaction_prompt",
-					TXT("打坐中 · 修为+") + String::num(p->get_meditate_rate(), 1) +
-					TXT("/s · 灵力回复×3（移动/受击收功）"), true);
+					LOC("打坐中 · 修为+") + String::num(p->get_meditate_rate(), 1) +
+					LOC("/s · 灵力回复×3（移动/受击收功）"), true);
 			}
 		}
 		void exit(Player *p) override {
@@ -1867,7 +1860,7 @@ namespace godot {
 			current_health -= rebound;
 			SignalBus *bus = SignalBus::get_singleton();
 			if (bus) {
-				bus->emit_signal("interaction_prompt", TXT("对方有高人坐镇，威压反噬！"), true);
+				bus->emit_signal("interaction_prompt", LOC("对方有高人坐镇，威压反噬！"), true);
 				bus->emit_signal("player_health_changed", current_health, max_health);
 			}
 			if (current_health <= 0.0f) {
@@ -1879,12 +1872,12 @@ namespace godot {
 			SignalBus *bus = SignalBus::get_singleton();
 			if (bus) {
 				bus->emit_signal("interaction_prompt",
-					vformat(TXT("威压：慑服 %d 名敌人"), hit), true);
+					vformat(LOC("威压：慑服 %d 名敌人"), hit), true);
 			}
 		} else {
 			SignalBus *bus = SignalBus::get_singleton();
 			if (bus) {
-				bus->emit_signal("interaction_prompt", TXT("威压：范围内无低阶敌人"), true);
+				bus->emit_signal("interaction_prompt", LOC("威压：范围内无低阶敌人"), true);
 			}
 		}
 
@@ -1932,7 +1925,7 @@ namespace godot {
 			current_health -= rebound;
 			SignalBus *bus = SignalBus::get_singleton();
 			if (bus) {
-				bus->emit_signal("interaction_prompt", TXT("对方有高人坐镇，灵压反噬！"), true);
+				bus->emit_signal("interaction_prompt", LOC("对方有高人坐镇，灵压反噬！"), true);
 				bus->emit_signal("player_health_changed", current_health, max_health);
 			}
 			if (current_health <= 0.0f) {
@@ -1945,16 +1938,16 @@ namespace godot {
 			if (bus) {
 				if (zhen_sha > 0) {
 					bus->emit_signal("interaction_prompt",
-						vformat(TXT("灵压：%d 伤 · %d 镇杀"), hit - zhen_sha, zhen_sha), true);
+						vformat(LOC("灵压：%d 伤 · %d 镇杀"), hit - zhen_sha, zhen_sha), true);
 				} else {
 					bus->emit_signal("interaction_prompt",
-						vformat(TXT("灵压：%d 名敌人受创"), hit), true);
+						vformat(LOC("灵压：%d 名敌人受创"), hit), true);
 				}
 			}
 		} else {
 			SignalBus *bus = SignalBus::get_singleton();
 			if (bus) {
-				bus->emit_signal("interaction_prompt", TXT("灵压：无有效目标（境界差≥2 方可生效）"), true);
+				bus->emit_signal("interaction_prompt", LOC("灵压：无有效目标（境界差≥2 方可生效）"), true);
 			}
 		}
 

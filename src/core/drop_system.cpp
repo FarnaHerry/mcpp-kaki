@@ -1,9 +1,10 @@
 #include "drop_system.h"
-#include "data_loader.h"
-
 #include "../nodes/enemy.h"
 #include "../nodes/item_pickup.h"
-#include "../utils/signal_bus.h"
+#include <godot_cpp/classes/node2d.hpp>
+import mcpp_kaki.core;
+
+import mcpp_kaki.utils;
 
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>

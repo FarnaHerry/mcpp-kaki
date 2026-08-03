@@ -1,12 +1,13 @@
-#include "save_system.h"
+module;
 
-#include "../utils/signal_bus.h"
 
 #include <godot_cpp/classes/config_file.hpp>
 #include <godot_cpp/classes/dir_access.hpp>
 #include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/core/class_db.hpp>
 
+module mcpp_kaki.core;
+import mcpp_kaki.utils;
 namespace godot {
 
 SaveSystem::SaveSystem() {

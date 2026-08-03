@@ -1,11 +1,22 @@
-#include "inventory_panel.h"
-
-#include "../cultivation/cultivation_system.h"
-#include "../inventory/item.h"
-#include "../inventory/item_database.h"
-#include "../inventory/inventory.h"
+module;
 #include "../nodes/player.h"
-#include "../utils/signal_bus.h"
+#include <godot_cpp/classes/collision_shape2d.hpp>
+#include <godot_cpp/classes/color_rect.hpp>
+#include <godot_cpp/classes/input_event.hpp>
+#include <godot_cpp/classes/label.hpp>
+#include <godot_cpp/classes/canvas_layer.hpp>
+#include <godot_cpp/classes/polygon2d.hpp>
+#include <godot_cpp/classes/node2d.hpp>
+#include <godot_cpp/classes/area2d.hpp>
+#include <godot_cpp/classes/canvas_item.hpp>
+#include <godot_cpp/classes/rectangle_shape2d.hpp>
+#include <godot_cpp/classes/circle_shape2d.hpp>
+#include <godot_cpp/classes/capsule_shape2d.hpp>
+#include <godot_cpp/classes/collision_shape2d.hpp>
+#include <godot_cpp/variant/array.hpp>
+#include <godot_cpp/variant/color.hpp>
+#include <godot_cpp/variant/rect2.hpp>
+
 #include "../utils/text.h"
 
 #include <godot_cpp/classes/engine.hpp>
@@ -13,6 +24,10 @@
 #include <godot_cpp/classes/input_event_key.hpp>
 #include <godot_cpp/core/class_db.hpp>
 
+module mcpp_kaki.nodes;
+import mcpp_kaki.cultivation;
+import mcpp_kaki.inventory;
+import mcpp_kaki.utils;
 namespace godot {
 
 static const char *EQUIP_SLOT_NAMES[] = { "武器", "护甲", "饰品" };
@@ -48,6 +63,7 @@ void InventoryPanel::_ready() {
 	if (_signal_bus) {
 		_signal_bus->connect("item_picked_up", Callable(this, "refresh"));
 		_signal_bus->connect("item_used", Callable(this, "refresh"));
+		_signal_bus->connect("language_changed", Callable(this, "_on_language_changed"));
 	}
 
 	// Enable input processing
@@ -78,13 +94,13 @@ void InventoryPanel::refresh(const String &p_item_id, int p_qty) {
 	for (int i = 0; i < 3; i++) {
 		StringName equipped = _player->get_equipment_in_slot(i);
 		if (equipped.is_empty()) {
-			_equip_names[i]->set_text(TXT("空"));
+			_equip_names[i]->set_text(LOC("空"));
 			_equip_names[i]->add_theme_color_override("font_color",
 				Color(0.4f, 0.4f, 0.4f, 1));
 		} else {
 			const Item *def = ItemDatabase::get_singleton()->get_item(equipped);
 			if (def) {
-				String txt = def->name;
+				String txt = LOC(def->name);
 				if (def->attack_bonus > 0) txt += " +" + String::num(int(def->attack_bonus)) + " ATK";
 				if (def->defense_bonus > 0) txt += " +" + String::num(int(def->defense_bonus)) + " DEF";
 				if (def->speed_bonus > 0) txt += " +" + String::num(int(def->speed_bonus * 100)) + "% SPD";
@@ -114,7 +130,7 @@ void InventoryPanel::refresh(const String &p_item_id, int p_qty) {
 
 			String txt = String::num_int64(slot_idx) + ": ";
 			if (def) {
-				txt += def->name;
+				txt += LOC(def->name);
 			} else {
 				txt += String(item_id);
 			}
@@ -126,9 +142,9 @@ void InventoryPanel::refresh(const String &p_item_id, int p_qty) {
 			if (slot_idx == _selected_index) {
 				txt = "> " + txt;
 				if (def && def->type == Item::CONSUMABLE) {
-					txt += TXT("  [X]使用");
+					txt += LOC("  [X]使用");
 				} else if (def && def->type == Item::EQUIPMENT) {
-					txt += TXT("  [X]装备");
+					txt += LOC("  [X]装备");
 				}
 				_item_labels[i]->add_theme_color_override("font_color",
 					Color(1.0f, 1.0f, 0.3f, 1));
@@ -148,7 +164,7 @@ void InventoryPanel::refresh(const String &p_item_id, int p_qty) {
 	// Scroll hint
 	int total_items = inv->get_capacity() - inv->get_free_slot_count();
 	if (total_items > visible_slots) {
-		_scroll_hint->set_text(TXT("↑↓ 滚动  (") +
+		_scroll_hint->set_text(LOC("↑↓ 滚动  (") +
 			String::num_int64(_scroll_offset + 1) + "-" +
 			String::num_int64(Math::min(_scroll_offset + visible_slots, total_items)) +
 			"/" + String::num_int64(total_items) + ")");
@@ -173,7 +189,7 @@ void InventoryPanel::refresh(const String &p_item_id, int p_qty) {
 	if (_player->get_cultivation()) {
 		stats_txt += "\n";
 		stats_txt += _player->get_cultivation()->get_full_title();
-		stats_txt += TXT("  修为: ") +
+		stats_txt += LOC("  修为: ") +
 			String::num_int64(int64_t(_player->get_cultivation()->get_realm_progress() * 100.0f)) + "%";
 		stats_txt += "  " + _player->get_cultivation()->get_mana_name() + ": " +
 			String::num_int64(int64_t(_player->get_cultivation()->get_mana()));
@@ -287,7 +303,7 @@ void InventoryPanel::_build_equipment_section() {
 	_equip_header->set_position(Vector2(16, START_Y));
 	_equip_header->add_theme_font_size_override("font_size", FONT_SZ_TITLE);
 	_equip_header->add_theme_color_override("font_color", Color(1.0f, 0.85f, 0.3f, 1));
-	_equip_header->set_text(TXT("⚔ 装备"));
+	_equip_header->set_text(LOC("⚔ 装备"));
 	add_child(_equip_header);
 
 	for (int i = 0; i < 3; i++) {
@@ -296,7 +312,7 @@ void InventoryPanel::_build_equipment_section() {
 		_equip_labels[i]->set_position(Vector2(16.0f + i * 150.0f, EQUIP_Y));
 		_equip_labels[i]->add_theme_font_size_override("font_size", FONT_SZ);
 		_equip_labels[i]->add_theme_color_override("font_color", Color(0.6f, 0.6f, 0.6f, 1));
-		_equip_labels[i]->set_text(TXT(EQUIP_SLOT_NAMES[i]) + ":");
+		_equip_labels[i]->set_text(LOC(EQUIP_SLOT_NAMES[i]) + ":");
 		add_child(_equip_labels[i]);
 
 		// Equipped item name
@@ -304,7 +320,7 @@ void InventoryPanel::_build_equipment_section() {
 		_equip_names[i]->set_position(Vector2(56.0f + i * 150.0f, EQUIP_Y));
 		_equip_names[i]->add_theme_font_size_override("font_size", FONT_SZ);
 		_equip_names[i]->add_theme_color_override("font_color", Color(1.0f, 0.95f, 0.5f, 1));
-		_equip_names[i]->set_text(TXT("空"));
+		_equip_names[i]->set_text(LOC("空"));
 		add_child(_equip_names[i]);
 	}
 }
@@ -316,7 +332,7 @@ void InventoryPanel::_build_item_list() {
 	_inv_header->set_position(Vector2(16, ITEM_LIST_Y - 16));
 	_inv_header->add_theme_font_size_override("font_size", FONT_SZ_TITLE);
 	_inv_header->add_theme_color_override("font_color", Color(1.0f, 0.85f, 0.3f, 1));
-	_inv_header->set_text(TXT("物品"));
+	_inv_header->set_text(LOC("物品"));
 	add_child(_inv_header);
 
 	// Item labels
@@ -350,8 +366,20 @@ void InventoryPanel::_build_close_hint() {
 	_close_hint->set_position(Vector2(350, START_Y));
 	_close_hint->add_theme_font_size_override("font_size", FONT_SZ);
 	_close_hint->add_theme_color_override("font_color", Color(0.5f, 0.5f, 0.5f, 1));
-	_close_hint->set_text("[I/ESC] 关闭");
+	_close_hint->set_text(LOC("[I/ESC] 关闭"));
 	add_child(_close_hint);
+}
+
+void InventoryPanel::_on_language_changed(const String &p_locale) {
+	// Update static section headers
+	if (_equip_header) _equip_header->set_text(LOC("⚔ 装备"));
+	for (int i = 0; i < 3; i++) {
+		if (_equip_labels[i]) _equip_labels[i]->set_text(LOC(EQUIP_SLOT_NAMES[i]) + ":");
+	}
+	if (_inv_header) _inv_header->set_text(LOC("物品"));
+	if (_close_hint) _close_hint->set_text(LOC("[I/ESC] 关闭"));
+	// Refresh dynamic content (item names, stats, etc.)
+	refresh();
 }
 
 } // namespace godot

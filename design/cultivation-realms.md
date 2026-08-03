@@ -447,15 +447,15 @@
 
 ```cpp
 enum Realm {            // 修为纵向
-    MORTAL=0,           // 凡人
-    QI_REFINING, FOUNDATION, GOLDEN_CORE, NASCENT_SOUL, SPIRIT_SEVERING,
-    LIAN_XU,            // 炼虚（新增）
-    HE_TI,              // 合体（新增）
-    DA_CHENG,           // 大乘（新增）
-    DU_JIE,             // 渡劫（新增，三灾Boss战）
-    TRUE_IMMORTAL,      // 真仙
-    GOLDEN_IMMORTAL,    // 金仙（境内 GoldenState 普通/圆满/混元）
-    TIAN_ZUN            // 天尊（NPC专属，玩家不可达）
+	MORTAL=0,           // 凡人
+	QI_REFINING, FOUNDATION, GOLDEN_CORE, NASCENT_SOUL, SPIRIT_SEVERING,
+	LIAN_XU,            // 炼虚（新增）
+	HE_TI,              // 合体（新增）
+	DA_CHENG,           // 大乘（新增）
+	DU_JIE,             // 渡劫（新增，三灾Boss战）
+	TRUE_IMMORTAL,      // 真仙
+	GOLDEN_IMMORTAL,    // 金仙（境内 GoldenState 普通/圆满/混元）
+	TIAN_ZUN            // 天尊（NPC专属，玩家不可达）
 };
 
 enum RealmStage  { STAGE_EARLY, STAGE_MID, STAGE_LATE, STAGE_DA_YUANMAN }; // 前/中/后/大圆满（全境界通用，按经验区间平分）
@@ -474,9 +474,9 @@ enum CultivationFocus { FOCUS_NONE, FOCUS_BODY, FOCUS_SPIRIT };
 
 // 三灾——渡劫劫难专用独立枚举，不与伤害类型/元素系统混淆（用户明确要求）
 enum Tribulation {
-    TRIBULATION_LIGHTNING,  // 雷灾（天雷）
-    TRIBULATION_YIN_FIRE,   // 阴火（自涌泉穴烧起，非凡火）
-    TRIBULATION_BI_WIND     // 赑风（自囟门吹入，非常风）
+	TRIBULATION_LIGHTNING,  // 雷灾（天雷）
+	TRIBULATION_YIN_FIRE,   // 阴火（自涌泉穴烧起，非凡火）
+	TRIBULATION_BI_WIND     // 赑风（自囟门吹入，非常风）
 };
 // 渡劫成功后获得凡间基础雷/火/风免疫（区域门控用，与 Tribulation 枚举分开表达）
 

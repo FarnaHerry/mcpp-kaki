@@ -1,10 +1,9 @@
-#include "artifact_system.h"
-
+module;
 #include "../nodes/player.h"
-#include "cultivation_system.h"
-#include "gongfa_system.h"
+
 #include "../utils/text.h"
 
+module mcpp_kaki.cultivation;
 namespace godot {
 
 // 法宝定义表（v1 静态表；示例 攻击×2 + 辅助×1）
@@ -45,7 +44,7 @@ const ArtifactSystem::Def *ArtifactSystem::find_def(const StringName &p_id) {
 }
 
 String ArtifactSystem::kind_name(Kind p_k) {
-	return p_k == KIND_ATTACK ? TXT("攻击") : TXT("辅助");
+	return p_k == KIND_ATTACK ? LOC("攻击") : LOC("辅助");
 }
 
 double ArtifactSystem::_now() const {
@@ -193,7 +192,7 @@ Dictionary ArtifactSystem::get_slot_info(int p_slot) const {
 	const Def *def = find_def(id);
 	if (!def) return d;
 	d["id"] = String(id);
-	d["name"] = TXT(def->name);
+	d["name"] = LOC(def->name);
 	d["kind"] = int(def->kind);
 	d["kind_name"] = kind_name(def->kind);
 	d["coeff"] = get_slot_coeff(p_slot);
@@ -217,7 +216,7 @@ Array ArtifactSystem::get_owned_list() const {
 		if (_owned.has(StringName(def.id))) {
 			Dictionary d;
 			d["id"] = String(def.id);
-			d["name"] = TXT(def.name);
+			d["name"] = LOC(def.name);
 			d["kind"] = int(def.kind);
 			d["kind_name"] = kind_name(def.kind);
 			out.append(d);

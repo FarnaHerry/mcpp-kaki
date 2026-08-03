@@ -1,6 +1,8 @@
-#include "combo_chain.h"
+module;
 
 #include <godot_cpp/core/math.hpp>
+
+module mcpp_kaki.combat;
 
 namespace godot {
 

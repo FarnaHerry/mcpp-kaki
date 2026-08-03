@@ -1,13 +1,14 @@
-#include "buff_system.h"
+module;
 
-#include "../utils/signal_bus.h"
 #include "../utils/text.h"
-#include "../core/data_loader.h"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <string>
 
+module mcpp_kaki.cultivation;
+import mcpp_kaki.utils;
+import mcpp_kaki.core;
 namespace godot {
 
 	// 静态 buff 定义表（design/alchemy.md：buff 时长 300s，同名刷新不叠加）
@@ -113,7 +114,7 @@ namespace godot {
 			const Def *def = find_def(a.id);
 			Dictionary d;
 			d["id"] = a.id;
-			d["name"] = def ? TXT(def->name) : String(a.id);
+			d["name"] = def ? LOC(def->name) : String(a.id);
 			d["remaining"] = a.remaining;
 			out.push_back(d);
 		}

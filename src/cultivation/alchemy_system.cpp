@@ -1,23 +1,19 @@
-#include "alchemy_system.h"
-
-#include "cultivation_system.h"
-#include "gongfa_system.h"
-#include "../inventory/inventory.h"
-#include "../inventory/item.h"
-#include "../inventory/item_database.h"
+module;
 #include "../nodes/player.h"
+
 #include "../utils/text.h"
-#include "../core/data_loader.h"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <string>
-#include "../core/data_loader.h"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <string>
 
 #include <godot_cpp/variant/utility_functions.hpp>
 
+module mcpp_kaki.cultivation;
+import mcpp_kaki.inventory;
+import mcpp_kaki.core;
 namespace godot {
 
 	// 固定配方表（design/alchemy.md 第三节，7 配方；成功率 v1 全 100%）
@@ -186,16 +182,16 @@ void AlchemySystem::ensure_loaded() {
 	bool AlchemySystem::craft(const StringName &p_id) {
 		const Recipe *r = find_recipe(p_id);
 		if (!r || !_player || !_player->get_inventory()) {
-			_last_message = TXT("无法炼制");
+			_last_message = LOC("无法炼制");
 			return false;
 		}
 		if (is_realm_locked(r)) {
-			_last_message = TXT("境界不足，丹方难解（金丹起）");
+			_last_message = LOC("境界不足，丹方难解（金丹起）");
 			return false;
 		}
 		Inventory *inv = _player->get_inventory();
 		if (!can_craft(p_id)) {
-			_last_message = TXT("材料不足");
+			_last_message = LOC("材料不足");
 			return false;
 		}
 
@@ -211,12 +207,12 @@ void AlchemySystem::ensure_loaded() {
 
 		// 成功率 roll（v1 全 100%，失败机制预留：失败则材料损毁无产出）
 		if (UtilityFunctions::randf() > r->success_rate) {
-			_last_message = String(TXT("炼制失败，药材尽毁……"));
+			_last_message = String(LOC("炼制失败，药材尽毁……"));
 			return false;
 		}
 
 		inv->add_item(StringName(r->id), 1);
-		_last_message = String(TXT("炼成 「")) + TXT(r->name) + TXT("」");
+		_last_message = String(LOC("炼成 「")) + LOC(r->name) + LOC("」");
 		return true;
 	}
 
@@ -228,9 +224,9 @@ void AlchemySystem::ensure_loaded() {
 			const Recipe &r = RECIPES[ri];
 			Dictionary d;
 			d["id"] = StringName(r.id);
-			d["name"] = TXT(r.name);
+			d["name"] = LOC(r.name);
 			d["grade"] = r.grade;
-			d["effect"] = TXT(r.effect_desc);
+			d["effect"] = LOC(r.effect_desc);
 			d["realm_locked"] = is_realm_locked(&r);
 			d["min_realm"] = r.min_realm;
 			Array mats;

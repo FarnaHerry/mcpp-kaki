@@ -1,13 +1,10 @@
-#include "breakthrough_manager.h"
+module;
+#include "../nodes/player.h"
+#include "../nodes/enemy.h"
+#include "../nodes/camera_room_2d.h"
 
 #include "../core/game_manager.h"
-#include "../nodes/camera_room_2d.h"
-#include "../nodes/enemy.h"
-#include "../nodes/player.h"
-#include "../utils/signal_bus.h"
 #include "../utils/text.h"
-#include "cultivation_system.h"
-#include "tribulation_controller.h"
 
 #include <godot_cpp/classes/canvas_layer.hpp>
 #include <godot_cpp/classes/capsule_shape2d.hpp>
@@ -23,6 +20,9 @@
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
+module mcpp_kaki.cultivation;
+import mcpp_kaki.core;
+import mcpp_kaki.utils;
 namespace godot {
 
 	// 秘境场景与边界
@@ -75,11 +75,11 @@ namespace godot {
 
 		int realm = cs->get_realm_index();
 		if (realm == CultivationSystem::DU_JIE) {
-			_show_hint(TXT("已在渡劫之中，唯有向前"));
+			_show_hint(LOC("已在渡劫之中，唯有向前"));
 			return;
 		}
 		if (cs->is_max_realm()) {
-			_show_hint(TXT("已至绝巅，进无可进"));
+			_show_hint(LOC("已至绝巅，进无可进"));
 			return;
 		}
 
@@ -90,7 +90,7 @@ namespace godot {
 		// 经验门槛（F5 调试开关只免门槛，机缘事件始终触发）
 		int64_t cap = CultivationSystem::get_realm_cap((CultivationSystem::Realm)realm);
 		if (!cs->is_free_breakthrough() && cs->get_current_energy() < cap) {
-			_show_hint(TXT("修为未圆满，机缘未至"));
+			_show_hint(LOC("修为未圆满，机缘未至"));
 			return;
 		}
 
@@ -103,65 +103,65 @@ namespace godot {
 		switch (p_realm) {
 			case CS::MORTAL:
 				def.kind = EventKind::NARRATIVE;
-				def.name = TXT("引气入体");
-				def.intro_lines = { TXT("凡人九载，感应天地。"), TXT("一缕灵气入体，灵根显现。") };
-				def.outro_lines = { TXT("突破成功——炼气期！自此踏上修仙之路。") };
+				def.name = LOC("引气入体");
+				def.intro_lines = { LOC("凡人九载，感应天地。"), LOC("一缕灵气入体，灵根显现。") };
+				def.outro_lines = { LOC("突破成功——炼气期！自此踏上修仙之路。") };
 				break;
 			case CS::QI_REFINING:
 				def.kind = EventKind::NARRATIVE;
-				def.name = TXT("百日闭关");
-				def.intro_lines = { TXT("修为已至炼气圆满。"), TXT("闭关于密室，百日不出。") };
-				def.outro_lines = { TXT("百日之期已满，道基铸就——筑基期！") };
+				def.name = LOC("百日闭关");
+				def.intro_lines = { LOC("修为已至炼气圆满。"), LOC("闭关于密室，百日不出。") };
+				def.outro_lines = { LOC("百日之期已满，道基铸就——筑基期！") };
 				break;
 			case CS::FOUNDATION:
 				def.kind = EventKind::NARRATIVE;
-				def.name = TXT("三花聚顶");
-				def.intro_lines = { TXT("精气神三元归一。"), TXT("三花聚顶，五气朝元。") };
-				def.outro_lines = { TXT("我命由我不由天——金丹期！") };
+				def.name = LOC("三花聚顶");
+				def.intro_lines = { LOC("精气神三元归一。"), LOC("三花聚顶，五气朝元。") };
+				def.outro_lines = { LOC("我命由我不由天——金丹期！") };
 				break;
 			case CS::GOLDEN_CORE:
 				def.kind = EventKind::COMBAT;
-				def.name = TXT("心魔劫");
+				def.name = LOC("心魔劫");
 				def.waves = 1;
-				def.intro_lines = { TXT("金丹圆满，心魔劫至。"), TXT("丹破婴生，先入心魔幻境。"), TXT("斩却心魔，神魂不灭。") };
-				def.outro_lines = { TXT("心魔已斩，丹破婴生。"), TXT("突破成功——元婴期！肉身可毁，神魂不灭。") };
+				def.intro_lines = { LOC("金丹圆满，心魔劫至。"), LOC("丹破婴生，先入心魔幻境。"), LOC("斩却心魔，神魂不灭。") };
+				def.outro_lines = { LOC("心魔已斩，丹破婴生。"), LOC("突破成功——元婴期！肉身可毁，神魂不灭。") };
 				break;
 			case CS::NASCENT_SOUL:
 				def.kind = EventKind::NARRATIVE;
-				def.name = TXT("出窍游历");
-				def.intro_lines = { TXT("元婴出窍，神游天地。"), TXT("初触法则，见天地之大。") };
-				def.outro_lines = { TXT("神归躯壳——化神期！") };
+				def.name = LOC("出窍游历");
+				def.intro_lines = { LOC("元婴出窍，神游天地。"), LOC("初触法则，见天地之大。") };
+				def.outro_lines = { LOC("神归躯壳——化神期！") };
 				break;
 			case CS::SPIRIT_SEVERING:
 				def.kind = EventKind::COMBAT;
-				def.name = TXT("三尸劫");
+				def.name = LOC("三尸劫");
 				def.waves = 3;
-				def.intro_lines = { TXT("化神圆满，三尸劫至。"), TXT("恶念、执念、贪欲，皆为己身。"), TXT("斩却三尸，方得炼虚。") };
-				def.outro_lines = { TXT("三尸已斩，破执明心。"), TXT("突破成功——炼虚期！") };
+				def.intro_lines = { LOC("化神圆满，三尸劫至。"), LOC("恶念、执念、贪欲，皆为己身。"), LOC("斩却三尸，方得炼虚。") };
+				def.outro_lines = { LOC("三尸已斩，破执明心。"), LOC("突破成功——炼虚期！") };
 				break;
 			case CS::LIAN_XU:
 				def.kind = EventKind::NARRATIVE;
-				def.name = TXT("形神合一");
-				def.intro_lines = { TXT("神与形合，再无破绽。") };
-				def.outro_lines = { TXT("形神合一——合体期！") };
+				def.name = LOC("形神合一");
+				def.intro_lines = { LOC("神与形合，再无破绽。") };
+				def.outro_lines = { LOC("形神合一——合体期！") };
 				break;
 			case CS::HE_TI:
 				def.kind = EventKind::NARRATIVE;
-				def.name = TXT("了断尘缘");
-				def.intro_lines = { TXT("修为已满，尘缘未了。"), TXT("了断因果，积累功德。（详载于后续机缘）") };
-				def.outro_lines = { TXT("心无挂碍——大乘期！") };
+				def.name = LOC("了断尘缘");
+				def.intro_lines = { LOC("修为已满，尘缘未了。"), LOC("了断因果，积累功德。（详载于后续机缘）") };
+				def.outro_lines = { LOC("心无挂碍——大乘期！") };
 				break;
 			case CS::DA_CHENG:
 				def.kind = EventKind::TRIBULATION;
-				def.name = TXT("三灾利害");
-				def.intro_lines = { TXT("大乘圆满，天道感应。"), TXT("渡劫之地——不在三界内，不在五行中。"), TXT("雷、火、风三灾连考，过则成仙，死则身殒。") };
-				def.outro_lines = { TXT("三灾尽过，天地认可。"), TXT("飞升成功——真仙！自此免疫凡间雷火风。") };
+				def.name = LOC("三灾利害");
+				def.intro_lines = { LOC("大乘圆满，天道感应。"), LOC("渡劫之地——不在三界内，不在五行中。"), LOC("雷、火、风三灾连考，过则成仙，死则身殒。") };
+				def.outro_lines = { LOC("三灾尽过，天地认可。"), LOC("飞升成功——真仙！自此免疫凡间雷火风。") };
 				break;
 			case CS::TRUE_IMMORTAL:
 				def.kind = EventKind::NARRATIVE;
-				def.name = TXT("仙元圆满");
-				def.intro_lines = { TXT("仙元充盈，水到渠成。") };
-				def.outro_lines = { TXT("突破成功——金仙！") };
+				def.name = LOC("仙元圆满");
+				def.intro_lines = { LOC("仙元充盈，水到渠成。") };
+				def.outro_lines = { LOC("突破成功——金仙！") };
 				break;
 			default:
 				break;
@@ -228,8 +228,8 @@ namespace godot {
 		_line_idx = 0;
 		_hint_mode = false;
 		_title_label->set_text(p_title);
-		_body_label->set_text(_lines.empty() ? TXT("") : _lines[0]);
-		_hint_label->set_text(TXT("[X] 继续"));
+		_body_label->set_text(_lines.empty() ? LOC("") : _lines[0]);
+		_hint_label->set_text(LOC("[X] 继续"));
 		_overlay->set_visible(true);
 		if (p_pause)
 			get_tree()->set_pause(true);
@@ -239,9 +239,9 @@ namespace godot {
 		_lines.clear();
 		_hint_mode = true;
 		_hint_timer = 2.5;
-		_title_label->set_text(TXT(""));
+		_title_label->set_text(LOC(""));
 		_body_label->set_text(p_text);
-		_hint_label->set_text(TXT("[X] 关闭"));
+		_hint_label->set_text(LOC("[X] 关闭"));
 		_overlay->set_visible(true);
 	}
 
@@ -467,13 +467,13 @@ namespace godot {
 			Color(0.50f, 0.40f, 0.10f), // 贪欲
 		};
 		bool sanshi = (_event_id == CultivationSystem::SPIRIT_SEVERING);
-		String ename = TXT("心魔");
+		String ename = LOC("心魔");
 		Color tint(0.20f, 0.12f, 0.28f); // 心魔：近黑剪影
 		Color glow(0.75f, 0.35f, 0.90f, 0.45f);
 		if (sanshi) {
 			const char *names[3] = { "恶念", "执念", "贪欲" };
 			int idx = p_wave_idx % 3;
-			ename = TXT(names[idx]);
+			ename = LOC(names[idx]);
 			tint = WAVE_COLORS[idx];
 			glow = Color(tint.r * 1.8f, tint.g * 1.8f, tint.b * 1.8f, 0.45f);
 		}

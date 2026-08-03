@@ -1,0 +1,37 @@
+[package]
+name        = "mcpp-kaki"
+version     = "1.0.0"
+description = "A xianxia Metroidvania action game (Godot GDExtension)"
+license     = "MIT"
+repo        = "https://github.com/farna/mcpp-kaki"
+
+[language]
+standard   = "c++23"
+modules    = true
+import_std = false
+
+[build]
+cflags = [
+    "-DLINUX_ENABLED",
+    "-DUNIX_ENABLED",
+    "-DDEBUG_ENABLED",
+]
+
+include_dirs = [
+    "src",
+    "godot-cpp/include",
+    "mcpp-gen/gen/include",
+]
+
+[modules]
+sources = [
+    "src/**/*.cppm",
+    "src/**/*.cpp",
+    "godot-cpp/src/**/*.cpp",
+    "mcpp-gen/gen/src/**/*.cpp",
+]
+exports = ["mcpp_kaki.utils", "mcpp_kaki.combat", "mcpp_kaki.inventory", "mcpp_kaki.cultivation", "mcpp_kaki.nodes", "mcpp_kaki.core"]
+
+[targets.mcpp-kaki]
+kind   = "shared"
+soname = "libmcpp-kaki.linux.template_debug.x86_64.so"

@@ -1,4 +1,4 @@
-#include "data_loader.h"
+module;
 
 #include "../utils/text.h"
 
@@ -8,6 +8,7 @@
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
+module mcpp_kaki.core;
 namespace godot {
 
 void DataLoader::_bind_methods() {

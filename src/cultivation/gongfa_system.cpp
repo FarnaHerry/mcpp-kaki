@@ -1,7 +1,6 @@
-#include "gongfa_system.h"
+module;
 
 #include "../utils/text.h"
-#include "../core/data_loader.h"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
@@ -9,6 +8,8 @@
 
 #include <godot_cpp/core/class_db.hpp>
 
+module mcpp_kaki.cultivation;
+import mcpp_kaki.core;
 namespace godot {
 
 // 功法定义表（v1 静态表；.tres 数据驱动迁移候选，见 roadmap OOP 抽取）
@@ -87,12 +88,12 @@ const GongfaSystem::Def *GongfaSystem::find_def(const StringName &p_id) {
 
 String GongfaSystem::grade_name(Grade p_g) {
 	switch (p_g) {
-		case GRADE_HUANG: return TXT("黄品");
-		case GRADE_XUAN:  return TXT("玄品");
-		case GRADE_DI:    return TXT("地品");
-		case GRADE_TIAN:  return TXT("天品");
+		case GRADE_HUANG: return LOC("黄品");
+		case GRADE_XUAN:  return LOC("玄品");
+		case GRADE_DI:    return LOC("地品");
+		case GRADE_TIAN:  return LOC("天品");
 	}
-	return TXT("?");
+	return LOC("?");
 }
 
 bool GongfaSystem::equip_gongfa(const StringName &p_id) {
@@ -173,7 +174,7 @@ Dictionary GongfaSystem::get_slot_info(int p_school) const {
 	const Def *def = find_def(slot.id);
 	if (!def) return d;
 	d["id"] = String(slot.id);
-	d["name"] = TXT(def->name);
+	d["name"] = LOC(def->name);
 	d["grade_name"] = grade_name(def->grade);
 	d["layer"] = slot.layer;
 	d["max_layer"] = def->max_layer;

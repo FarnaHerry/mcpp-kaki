@@ -1,6 +1,10 @@
-#include "title_composer.h"
-#include "cultivation_system.h"
+module;
 
+#include <godot_cpp/variant/string.hpp>
+
+#include "../utils/text.h"
+
+module mcpp_kaki.cultivation;
 namespace godot {
 
 	String TitleComposer::compose(const CultivationSystem &p_c) {
@@ -17,9 +21,9 @@ namespace godot {
 		if (p_c.is_hunyuan() && p_c.get_current_realm() == CultivationSystem::GOLDEN_IMMORTAL) {
 			String sect = p_c.get_sect_name();
 			if (p_c.get_sect() == CultivationSystem::SECT_SANXIAN) {
-				return TXT("混元一气散仙");
+				return LOC("混元一气散仙");
 			}
-			return TXT("混元一气上方") + sect + TXT("金仙");
+			return LOC("混元一气上方") + sect + LOC("金仙");
 		}
 
 		// 期数后缀：凡人/渡劫/天尊不加
@@ -27,13 +31,13 @@ namespace godot {
 		if (realm != CultivationSystem::MORTAL &&
 		    realm != CultivationSystem::DU_JIE &&
 		    realm != CultivationSystem::TIAN_ZUN) {
-			title += TXT("·") + p_c.get_stage_name();
+			title += LOC("·") + p_c.get_stage_name();
 		}
 
 		// 五仙身份（真仙后选择）
 		String type = p_c.get_immortal_type_name();
 		if (!type.is_empty()) {
-			title += TXT("·") + type;
+			title += LOC("·") + type;
 		}
 
 		return title;

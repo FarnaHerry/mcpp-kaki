@@ -1,13 +1,14 @@
-#include "item_database.h"
+module;
 
-#include "../core/data_loader.h"
 #include "../utils/text.h"
-
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/core/class_db.hpp>
+
+module mcpp_kaki.inventory;
 #include <godot_cpp/variant/utility_functions.hpp>
 
+import mcpp_kaki.core;
 namespace godot {
 
 ItemDatabase *ItemDatabase::_singleton = nullptr;
@@ -96,8 +97,8 @@ void ItemDatabase::_register_items() {
 	{
 		Item pill;
 		pill.id = "healing_pill";
-		pill.name = TXT("回春丹");
-		pill.description = TXT("恢复 30 点生命值。基础疗伤丹药。");
+		pill.name = LOC("回春丹");
+		pill.description = LOC("恢复 30 点生命值。基础疗伤丹药。");
 		pill.type = Item::CONSUMABLE;
 		pill.max_stack = 20;
 		pill.heal_amount = 30.0f;
@@ -108,8 +109,8 @@ void ItemDatabase::_register_items() {
 	{
 		Item pill;
 		pill.id = "qi_pill";
-		pill.name = TXT("聚气丹");
-		pill.description = TXT("吸收后恢复 50 点灵力。修炼者日常必备。");
+		pill.name = LOC("聚气丹");
+		pill.description = LOC("吸收后恢复 50 点灵力。修炼者日常必备。");
 		pill.type = Item::CONSUMABLE;
 		pill.max_stack = 30;
 		pill.mana_amount = 50.0f;
@@ -120,8 +121,8 @@ void ItemDatabase::_register_items() {
 	{
 		Item pill;
 		pill.id = "foundation_pill";
-		pill.name = TXT("筑基丹");
-		pill.description = TXT("突破时提升 20% 成功率。筑基期以下有效。");
+		pill.name = LOC("筑基丹");
+		pill.description = LOC("突破时提升 20% 成功率。筑基期以下有效。");
 		pill.type = Item::CONSUMABLE;
 		pill.max_stack = 5;
 		pill.breakthrough_bonus = 0.2f;
@@ -134,8 +135,8 @@ void ItemDatabase::_register_items() {
 	{
 		Item stone;
 		stone.id = "spirit_stone";
-		stone.name = TXT("灵石");
-		stone.description = TXT("蕴含灵气的晶石，修炼界的通用货币。");
+		stone.name = LOC("灵石");
+		stone.description = LOC("蕴含灵气的晶石，修炼界的通用货币。");
 		stone.type = Item::MATERIAL;
 		stone.max_stack = 999;
 		_items[stone.id] = stone;
@@ -145,8 +146,8 @@ void ItemDatabase::_register_items() {
 	{
 		Item sword;
 		sword.id = "flying_sword";
-		sword.name = TXT("飞剑");
-		sword.description = TXT("低阶飞行法器。筑基期御之可短暂凌空飞行，持续消耗灵力；金丹之后肉身自飞，此物仅作代步。");
+		sword.name = LOC("飞剑");
+		sword.description = LOC("低阶飞行法器。筑基期御之可短暂凌空飞行，持续消耗灵力；金丹之后肉身自飞，此物仅作代步。");
 		sword.type = Item::KEY_ITEM;
 		sword.max_stack = 1;
 		_items[sword.id] = sword;
@@ -156,8 +157,8 @@ void ItemDatabase::_register_items() {
 	{
 		Item sword;
 		sword.id = "iron_sword";
-		sword.name = TXT("铁剑");
-		sword.description = TXT("普通的铁制长剑。可在锻造铺升级。");
+		sword.name = LOC("铁剑");
+		sword.description = LOC("普通的铁制长剑。可在锻造铺升级。");
 		sword.type = Item::EQUIPMENT;
 		sword.equip_slot = Item::SLOT_WEAPON;
 		sword.max_stack = 1;
@@ -169,8 +170,8 @@ void ItemDatabase::_register_items() {
 	{
 		Item robe;
 		robe.id = "protect_robe";
-		robe.name = TXT("护体法衣");
-		robe.description = TXT("附有简单防护法阵的衣袍。");
+		robe.name = LOC("护体法衣");
+		robe.description = LOC("附有简单防护法阵的衣袍。");
 		robe.type = Item::EQUIPMENT;
 		robe.equip_slot = Item::SLOT_ARMOR;
 		robe.max_stack = 1;
@@ -184,8 +185,8 @@ void ItemDatabase::_register_items() {
 	{
 		Item peach;
 		peach.id = "xian_tao";
-		peach.name = TXT("仙桃");
-		peach.description = TXT("花果山桃林所结灵果，三千年一熟。食之气血充盈，修为精进。");
+		peach.name = LOC("仙桃");
+		peach.description = LOC("花果山桃林所结灵果，三千年一熟。食之气血充盈，修为精进。");
 		peach.type = Item::CONSUMABLE;
 		peach.max_stack = 10;
 		peach.grade = 1;
@@ -198,8 +199,8 @@ void ItemDatabase::_register_items() {
 	{
 		Item scroll;
 		scroll.id = "shen_wai_can_juan";
-		scroll.name = TXT("身外化身残卷");
-		scroll.description = TXT("水帘洞石壁暗格所藏残卷，记载齐天大圣成名神通。参悟可习得「身外化身」。");
+		scroll.name = LOC("身外化身残卷");
+		scroll.description = LOC("水帘洞石壁暗格所藏残卷，记载齐天大圣成名神通。参悟可习得「身外化身」。");
 		scroll.type = Item::CONSUMABLE;
 		scroll.max_stack = 1;
 		scroll.grade = 2;
@@ -211,8 +212,8 @@ void ItemDatabase::_register_items() {
 	{
 		Item rod;
 		rod.id = "ding_hai_shen_zhen";
-		rod.name = TXT("定海神针铁");
-		rod.description = TXT("大禹治水时测定江海深浅的神铁，重一万三千五百斤。大圣归去后沉寂东海之滨，静待有缘。");
+		rod.name = LOC("定海神针铁");
+		rod.description = LOC("大禹治水时测定江海深浅的神铁，重一万三千五百斤。大圣归去后沉寂东海之滨，静待有缘。");
 		rod.type = Item::EQUIPMENT;
 		rod.equip_slot = Item::SLOT_WEAPON;
 		rod.max_stack = 1;
@@ -226,8 +227,8 @@ void ItemDatabase::_register_items() {
 	auto herb = [&](const char *id, const char *name, const char *desc, int grade) {
 		Item h;
 		h.id = id;
-		h.name = TXT(name);
-		h.description = TXT(desc);
+		h.name = LOC(name);
+		h.description = LOC(desc);
 		h.type = Item::MATERIAL;
 		h.max_stack = 99;
 		h.grade = grade;
@@ -247,8 +248,8 @@ void ItemDatabase::_register_items() {
 	{
 		Item pill;
 		pill.id = "bing_xin_dan";
-		pill.name = TXT("冰心丹");
-		pill.description = TXT("服之百脉清凉，水寒不侵。水抗+15%，持续 300 息。");
+		pill.name = LOC("冰心丹");
+		pill.description = LOC("服之百脉清凉，水寒不侵。水抗+15%，持续 300 息。");
 		pill.type = Item::CONSUMABLE;
 		pill.max_stack = 10;
 		pill.grade = 1;
@@ -260,8 +261,8 @@ void ItemDatabase::_register_items() {
 	{
 		Item pill;
 		pill.id = "chi_yan_dan";
-		pill.name = TXT("赤焰丹");
-		pill.description = TXT("地火炼就，服之气血沸腾。攻击+15%，持续 300 息。");
+		pill.name = LOC("赤焰丹");
+		pill.description = LOC("地火炼就，服之气血沸腾。攻击+15%，持续 300 息。");
 		pill.type = Item::CONSUMABLE;
 		pill.max_stack = 10;
 		pill.grade = 1;
@@ -273,8 +274,8 @@ void ItemDatabase::_register_items() {
 	{
 		Item pill;
 		pill.id = "jin_gang_dan";
-		pill.name = TXT("金刚丹");
-		pill.description = TXT("金铁之气淬体，刀枪难伤。防御+20%，持续 300 息。");
+		pill.name = LOC("金刚丹");
+		pill.description = LOC("金铁之气淬体，刀枪难伤。防御+20%，持续 300 息。");
 		pill.type = Item::CONSUMABLE;
 		pill.max_stack = 10;
 		pill.grade = 1;
@@ -286,8 +287,8 @@ void ItemDatabase::_register_items() {
 	{
 		Item pill;
 		pill.id = "wu_dao_dan";
-		pill.name = TXT("悟道丹");
-		pill.description = TXT("一叶一悟，豁然开朗。修为+200。");
+		pill.name = LOC("悟道丹");
+		pill.description = LOC("一叶一悟，豁然开朗。修为+200。");
 		pill.type = Item::CONSUMABLE;
 		pill.max_stack = 5;
 		pill.grade = 2;
@@ -299,8 +300,8 @@ void ItemDatabase::_register_items() {
 	{
 		Item pill;
 		pill.id = "da_huan_dan";
-		pill.name = TXT("大还丹");
-		pill.description = TXT("生死人肉白骨。恢复 50% 生命，修为+100。");
+		pill.name = LOC("大还丹");
+		pill.description = LOC("生死人肉白骨。恢复 50% 生命，修为+100。");
 		pill.type = Item::CONSUMABLE;
 		pill.max_stack = 5;
 		pill.grade = 2;

@@ -1,9 +1,6 @@
 #include "item_pickup.h"
+#include "../nodes/player.h"
 
-#include "../cultivation/ability_manager.h"
-#include "../inventory/item.h"
-#include "../inventory/item_database.h"
-#include "../utils/signal_bus.h"
 
 #include <godot_cpp/classes/collision_shape2d.hpp>
 #include <godot_cpp/classes/engine.hpp>
@@ -13,6 +10,9 @@
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/core/class_db.hpp>
 
+import mcpp_kaki.cultivation;
+import mcpp_kaki.inventory;
+import mcpp_kaki.utils;
 namespace godot {
 
 // 纳戒磁吸基础参数（随境界缩放：base × (1 + realm × 0.3)）

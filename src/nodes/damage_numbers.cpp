@@ -1,6 +1,5 @@
-#include "damage_numbers.h"
+module;
 
-#include "../utils/signal_bus.h"
 #include "../utils/text.h"
 
 #include <godot_cpp/classes/engine.hpp>
@@ -10,6 +9,8 @@
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/core/math.hpp>
 
+module mcpp_kaki.nodes;
+import mcpp_kaki.utils;
 namespace godot {
 
 void DamageNumbers::_bind_methods() {

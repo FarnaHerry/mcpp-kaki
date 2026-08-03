@@ -19,29 +19,50 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Renderer**: gl_compatibility (2D)
 - **Display**: 480×270 → 1920×1080, canvas_items stretch
 - **Texture filter**: Nearest (pixel art)
-- **Project name**: `cpp-kaki`
+- **Project name**: `mcpp-kaki`
 
 ## Build / Development
+
+This project uses **mcpp** as its build system. CMake is no longer required.
 
 ```bash
 # First time setup
 git submodule update --init --recursive
-cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
-# Build
-cmake --build build -j $(nproc)
+# Build (generates godot-cpp bindings + compiles everything + copies .so files to bin/)
+./scripts/build_mcpp.sh
 
-# Output: bin/libcpp-kaki.linux.template_debug.x86_64.so
+# Output: bin/libmcpp-kaki.linux.editor.x86_64.so
+#         bin/libmcpp-kaki.linux.template_debug.x86_64.so
 
 # Run game (requires display — headless mode does NOT load GDExtensions)
 godot
 ```
 
-CMake variables set before `add_subdirectory(godot-cpp)`:
-- `GODOTCPP_TARGET`: `template_debug` (dev) / `template_release` (ship) / `editor`
-- `GODOTCPP_API_VERSION`: `"4.6"` — must match the installed Godot version
+### Manual build steps
 
-GDExtension is registered via `cpp_kaki.gdextension` at project root (entry symbol: `cpp_kaki_library_init`) and explicitly referenced in `project.godot` via `[native_extensions] paths=["res://cpp_kaki.gdextension"]`.
+If you prefer to run the steps separately:
+
+```bash
+# 1. Generate godot-cpp C++ bindings for Godot 4.6
+python3 scripts/generate_godot_bindings.py
+
+# 2. Build the GDExtension shared library with mcpp
+mcpp build
+
+# 3. Copy the resulting library to bin/ where Godot expects it
+cp target/x86_64-linux-gnu/*/bin/libmcpp-kaki.so \
+   bin/libmcpp-kaki.linux.template_debug.x86_64.so
+```
+
+### Build requirements
+
+- **mcpp** must be installed and have a toolchain available (e.g. `mcpp toolchain install llvm`).
+- The default target is `template_debug` for development, matching Godot 4.6.
+- Generated binding files are written to `mcpp-gen/` and ignored by git.
+- mcpp build artifacts live in `target/` and are also ignored.
+
+GDExtension is registered via `mcpp_kaki.gdextension` at project root (entry symbol: `mcpp_kaki_library_init`) and explicitly referenced in `project.godot` via `[native_extensions] paths=["res://mcpp_kaki.gdextension"]`.
 
 **Important**: C++ classes cannot be placed directly in `.tscn` files due to GDExtension registration timing. Use `scripts/bootstrap.gd` (`call_deferred` + `ClassDB.instantiate`) to create C++ nodes at runtime. All game logic remains in C++ — the bootstrap only handles node creation.
 

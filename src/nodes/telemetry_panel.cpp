@@ -1,12 +1,17 @@
 #include "telemetry_panel.h"
 
 #include "../utils/text.h"
+#include <godot_cpp/classes/label.hpp>
+#include <godot_cpp/classes/canvas_layer.hpp>
+#include <godot_cpp/classes/input_event.hpp>
 
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/input_event_key.hpp>
 #include <godot_cpp/core/class_db.hpp>
+#include <godot_cpp/core/type_info.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
+using godot::make_property_info;
 namespace godot {
 
 static constexpr float VIEWPORT_W = 480.0f;
@@ -64,15 +69,15 @@ void TelemetryPanel::_update() {
 
         Object *cult = _player->call("get_cultivation");
         if (cult) {
-            txt += TXT("\n") + String(cult->call("get_full_title"));
+            txt += LOC("\n") + String(cult->call("get_full_title"));
             float progress = cult->call("get_realm_progress");
-            txt += TXT("\n修为: ") + String::num_int64(int64_t(progress * 100.0f)) + "%";
-            txt += TXT("\n") + String(cult->call("get_mana_name")) + ": " +
+            txt += LOC("\n修为: ") + String::num_int64(int64_t(progress * 100.0f)) + "%";
+            txt += LOC("\n") + String(cult->call("get_mana_name")) + ": " +
                    String::num_int64(int64_t(double(cult->call("get_mana")))) + "/" +
                    String::num_int64(int64_t(double(cult->call("get_max_mana"))));
             String focus = cult->call("get_focus_name");
             if (!focus.is_empty()) {
-                txt += TXT("\n功法: ") + focus;
+                txt += LOC("\n功法: ") + focus;
             }
         }
 
@@ -133,7 +138,7 @@ void TelemetryPanel::_unhandled_input(const Ref<InputEvent> &p_event) {
                     bool cur = cult->call("is_free_breakthrough");
                     cult->call("set_free_breakthrough", !cur);
                     UtilityFunctions::print(String("[DEBUG] free_breakthrough = ") +
-                        (!cur ? TXT("ON (突破无经验门槛)") : TXT("OFF (需要经验圆满)")));
+                        (!cur ? LOC("ON (突破无经验门槛)") : LOC("OFF (需要经验圆满)")));
                 }
             }
             break;

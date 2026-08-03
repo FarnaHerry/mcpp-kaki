@@ -1,14 +1,13 @@
 #include "game_manager.h"
-#include "save_system.h"
-
-#include "../combat/skill_system.h"
-#include "../cultivation/artifact_system.h"
-
-#include "../cultivation/ability_manager.h"
-#include "../cultivation/cultivation_system.h"
-#include "../nodes/camera_room_2d.h"
+import mcpp_kaki.core;
 #include "../nodes/player.h"
-#include "../utils/signal_bus.h"
+#include "../nodes/camera_room_2d.h"
+
+import mcpp_kaki.combat;
+import mcpp_kaki.cultivation;
+
+import mcpp_kaki.cultivation;
+import mcpp_kaki.utils;
 
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>

@@ -1,10 +1,12 @@
-#include "projectile.h"
+module;
 
 #include <godot_cpp/classes/collision_shape2d.hpp>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/polygon2d.hpp>
 #include <godot_cpp/classes/rectangle_shape2d.hpp>
 #include <godot_cpp/core/class_db.hpp>
+
+module mcpp_kaki.combat;
 
 namespace godot {
 

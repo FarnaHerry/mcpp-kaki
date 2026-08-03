@@ -1,12 +1,6 @@
 #include "herb_node.h"
+#include "../nodes/player.h"
 
-#include "player.h"
-#include "../cultivation/ability_manager.h"
-#include "../cultivation/cultivation_system.h"
-#include "../cultivation/gongfa_system.h"
-#include "../inventory/item.h"
-#include "../inventory/item_database.h"
-#include "../utils/signal_bus.h"
 #include "../utils/text.h"
 
 #include <godot_cpp/classes/collision_shape2d.hpp>
@@ -16,6 +10,9 @@
 #include <godot_cpp/classes/rectangle_shape2d.hpp>
 #include <godot_cpp/core/class_db.hpp>
 
+import mcpp_kaki.cultivation;
+import mcpp_kaki.inventory;
+import mcpp_kaki.utils;
 namespace godot {
 
 // 纳戒磁吸基础参数（随境界缩放：base × (1 + realm × 0.3)）
@@ -98,10 +95,10 @@ void HerbNode::_on_body_entered(Node2D *p_body) {
 	_player = Object::cast_to<Player>(p_body);
 
 	const Item *def = ItemDatabase::get_singleton()->get_item(_herb_id);
-	String name = def ? def->name : String(_herb_id);
+	String name = def ? LOC(def->name) : String(_herb_id);
 	SignalBus *bus = SignalBus::get_singleton();
 	if (bus) {
-		bus->emit_signal("interaction_prompt", String(TXT("[X] 采集 ·")) + name, true);
+		bus->emit_signal("interaction_prompt", String(LOC("[X] 采集 ·")) + name, true);
 	}
 }
 

@@ -1,17 +1,19 @@
-#include "skill_system.h"
-
-#include "../cultivation/cultivation_system.h"
-#include "../cultivation/gongfa_system.h"
+module;
 #include "../nodes/player.h"
+
 #include "../utils/text.h"
 
-#include "../core/data_loader.h"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
 #include <string>
 
+module mcpp_kaki.combat;
+
+
+import mcpp_kaki.core;
+import mcpp_kaki.cultivation;
 namespace godot {
 
 // 技能定义表（v1 静态表；示例 武技×2 + 法术×2）
@@ -172,13 +174,13 @@ const SkillSystem::Def *SkillSystem::find_def(const StringName &p_id) {
 
 String SkillSystem::type_name(SkillType p_t) {
 	switch (p_t) {
-		case TYPE_MARTIAL: return TXT("武技");
-		case TYPE_SPELL: return TXT("法术");
-		case TYPE_SHENTONG: return TXT("神通");
-		case TYPE_XIANFA: return TXT("仙法");
-		case TYPE_PASSIVE: return TXT("被动");
+		case TYPE_MARTIAL: return LOC("武技");
+		case TYPE_SPELL: return LOC("法术");
+		case TYPE_SHENTONG: return LOC("神通");
+		case TYPE_XIANFA: return LOC("仙法");
+		case TYPE_PASSIVE: return LOC("被动");
 	}
-	return TXT("?");
+	return LOC("?");
 }
 
 double SkillSystem::_now() const {
@@ -303,7 +305,7 @@ Dictionary SkillSystem::get_slot_info(int p_slot) const {
 	const Def *def = find_def(id);
 	if (!def) return d;
 	d["id"] = String(id);
-	d["name"] = TXT(def->name);
+	d["name"] = LOC(def->name);
 	d["type"] = int(def->type);
 	d["type_name"] = type_name(def->type);
 	d["cooldown"] = def->cooldown;
@@ -320,7 +322,7 @@ Array SkillSystem::get_known_list() const {
 		if (_known.has(StringName(def.id))) {
 			Dictionary d;
 			d["id"] = String(def.id);
-			d["name"] = TXT(def.name);
+			d["name"] = LOC(def.name);
 			d["type"] = int(def.type);
 			d["type_name"] = type_name(def.type);
 			d["cooldown"] = def.cooldown;
