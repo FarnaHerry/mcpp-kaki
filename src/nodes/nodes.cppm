@@ -175,6 +175,8 @@ private:
 	void _refresh_realm_label();
 	void _apply_hud_visibility();
 };
+export class GridList; // 前置声明：InventoryPanel/StoragePanel 引用
+
 export class InventoryPanel : public CanvasLayer {
 	GDCLASS(InventoryPanel, CanvasLayer);
 
@@ -191,7 +193,7 @@ public:
 	void set_external_drive(bool p_on) { _external_drive = p_on; }
 	void ext_navigate(int p_dir);
 	void ext_use();
-	void set_selected_index(int p_idx) { _selected_index = p_idx; }
+	void set_selected_index(int p_idx); // 紧凑格子索引（GridList 选中）
 
 	void refresh(const String &p_item_id = String(), int p_qty = 0);
 
@@ -211,10 +213,9 @@ private:
 	Label *_equip_names[3];
 
 	Label *_inv_header = nullptr;
-	Label *_item_labels[8];
-	int _scroll_offset = 0;
-	int _selected_index = 0;
-	Label *_scroll_hint = nullptr;
+	GridList *_grid = nullptr;       // 物品格子列表（统一 GridList 组件）
+	std::vector<int> _slot_map;      // 紧凑格子索引 → 背包真实槽位
+	Label *_action_hint = nullptr;   // 选中项操作提示（[X]使用/装备）
 
 	Label *_stats_label = nullptr;
 
@@ -223,7 +224,6 @@ private:
 	static constexpr int START_Y = 20;
 	static constexpr int EQUIP_Y = 32;
 	static constexpr int ITEM_LIST_Y = 70;
-	static constexpr int ITEM_ROW_H = 16;
 	static constexpr int STATS_Y = 240;
 	static constexpr int FONT_SZ = 12;
 	static constexpr int FONT_SZ_TITLE = 14;
@@ -236,6 +236,53 @@ private:
 	void _handle_input_action(const String &p_action);
 	void _on_language_changed(const String &p_locale);
 };
+// 统一格子列表：物品/技能/法宝/功法等一切列表条目的通用格子渲染。
+// 数据 = Array of {text, color?, dim?}；无图标时代一律名字格子。
+// 交互由宿主面板驱动（move_selection/get_selected），本组件只管渲染+网格导航+滚动。
+export class GridList : public Control {
+	GDCLASS(GridList, Control);
+
+public:
+	void _ready() override;
+
+	void set_items(const Array &p_items); // Array of Dictionary {text, color?, dim?}
+	int get_item_count() const { return int(_items.size()); }
+
+	void set_columns(int p_cols);
+	void set_cell_size(const Vector2 &p_size);
+	void set_active(bool p_active); // 非激活栏（如仓库双栏的另一栏）暗化
+
+	void set_selected(int p_idx);
+	int get_selected() const { return _selected; }
+	void move_selection(int p_dx, int p_dy); // 网格导航，自动滚动
+
+	void refresh(); // 重建可见格子
+
+protected:
+	static void _bind_methods();
+
+private:
+	struct Cell {
+		ColorRect *frame = nullptr; // 外框（选中=金）
+		ColorRect *bg = nullptr;
+		Label *label = nullptr;
+	};
+
+	Array _items;
+	int _columns = 5;
+	Vector2 _cell_size = Vector2(76, 22);
+	int _selected = 0;
+	int _scroll_row = 0;
+	bool _active = true;
+	bool _built = false;
+
+	std::vector<Cell> _cells; // 可见窗口对象池
+	int _pool_rows = 0;
+
+	void _build_pool();
+	void _ensure_visible();
+};
+
 // 洞天仓库面板（双栏：背包|仓库，X 移送整堆）——数据在 DongtianManager。
 export class StoragePanel : public CanvasLayer {
 	GDCLASS(StoragePanel, CanvasLayer);
@@ -259,19 +306,15 @@ private:
 	bool _restore_pause = false;
 
 	int _pane = 0; // 0=背包 1=仓库
-	int _sel[2] = { 0, 0 };
-	int _scroll[2] = { 0, 0 };
-	std::vector<int> _slots[2]; // 紧凑非空列表 → 真实槽位索引
+	GridList *_grids[2] = {};       // 双栏格子列表（统一 GridList 组件）
+	std::vector<int> _slots[2];     // 紧凑非空列表 → 真实槽位索引
 
 	ColorRect *_background = nullptr;
 	Label *_title = nullptr;
 	Label *_headers[2] = {};
-	Label *_rows[2][8] = {};
 	Label *_hint = nullptr;
 	Label *_msg = nullptr;
 	float _msg_t = 0.0f;
-
-	static constexpr int ROWS = 8;
 
 	DongtianManager *_find_manager();
 	void _rebuild_lists();

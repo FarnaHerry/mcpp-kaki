@@ -64,14 +64,14 @@ func _process(delta) -> bool:
 			_check(_has_label("—— 技能 ——"), "技能页打开")
 			_check(_has_label("已学主动:"), "主动分区存在")
 			_check(_has_label("已悟被动:"), "被动分区存在")
-			_check(_has_label("▶ 破空斩"), "光标初始在首个主动技")
+			_check(_has_label("破空斩 ·武技"), "光标初始在首个主动技（详情行）")
 			_check(_has_label("（尚未悟得被动）"), "凡人期无被动")
 			_step = 5
 		5:
-			_press("down") # 光标下移
+			_press("down") # 光标下移（2 项时 → 第 2 项）
 			_step = 6
 		6:
-			_check(_has_label("▶ 突进斩"), "↓ 光标移到突进斩")
+			_check(_has_label("突进斩 ·武技"), "↓ 光标移到突进斩（详情行）")
 			_press("skill_a") # 装 A 槽（武技 ✓）
 			_step = 7
 		7:
@@ -93,18 +93,18 @@ func _process(delta) -> bool:
 			_press("left") # 回技能页（强制重建）
 			_step = 11
 		11:
-			_check(_has_label("神行百变  移速+12%"), "被动行：神行百变 移速+12%")
-			_check(_has_label("剑心通明  攻击+10%"), "被动行：剑心通明 攻击+10%")
-			_check(_has_label("铁布衫  防御+15%"), "被动行：铁布衫 防御+15%")
-			_check(_has_label("灵台清明  回灵+25%"), "被动行：灵台清明 回灵+25%")
+			_check(_has_label("神行百变 移速+12%"), "被动格：神行百变 移速+12%")
+			_check(_has_label("剑心通明 攻击+10%"), "被动格：剑心通明 攻击+10%")
+			_check(_has_label("铁布衫 防御+15%"), "被动格：铁布衫 防御+15%")
+			_check(_has_label("灵台清明 回灵+25%"), "被动格：灵台清明 回灵+25%")
 			_check(not _has_label("（尚未悟得被动）"), "被动占位消失")
-			_press("up") # 当前 sel=1 → 0
+			_press("up") # 当前 sel=1 → 0（网格行移到顶）
 			_step = 12
 		12:
-			_press("up") # 0 → 回卷到最后主动（御剑术）
+			_press("up") # 0 → 已到顶，停在破空斩（网格导航不回卷）
 			_step = 13
 		13:
-			_check(_has_label("▶ 御剑术"), "↑ 回卷到最后主动技（被动不参与选择）")
+			_check(_has_label("破空斩 ·武技"), "↑ 到顶停在首个主动技（详情行）")
 			_check(not _has_label("▶ 神行百变"), "被动不可被选中")
 			_press("menu") # 关菜单
 			_step = 14

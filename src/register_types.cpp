@@ -57,6 +57,7 @@ void initialize_mcpp_kaki_module(ModuleInitializationLevel p_level) {
 	GDREGISTER_CLASS(TelemetryPanel);
 	GDREGISTER_CLASS(InventoryPanel);
 	GDREGISTER_CLASS(StoragePanel);
+	GDREGISTER_CLASS(GridList);
 	GDREGISTER_CLASS(ItemDatabase);
 	GDREGISTER_CLASS(ItemPickup);
 	GDREGISTER_CLASS(HerbNode);

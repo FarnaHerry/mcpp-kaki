@@ -108,6 +108,7 @@ bin/              # 编译产物 (.so)，gitignored
 - **`DropSystem`** (`src/core/drop_system.h/cpp`) — 所有掉落物的唯一入口（掉落表+生成）
 - **`SaveSystem` / `GameManager`** (`src/core/`) — ConfigFile 存档、检查点、重生、击杀统计
 - **`GameHUD` / `TelemetryPanel` / `InventoryPanel`** (`src/nodes/`) — UI 三类分立：游戏 HUD（生命/灵力/修为%条，F4）/ 遥测（F3/F5）/ 背包（I）
+- **`GridList`** (`src/nodes/grid_list.*`, nodes.cppm 导出 + GDREGISTER) — 统一格子列表组件：数据 = `Array of Dictionary {text, color?, dim?}`，host 驱动交互（`move_selection/get_selected`），cell 池（frame+bg+Label 11px），行数按 size.y 推导尺寸变化自动重建；`set_active(false)`=只读无选中高亮（被动/锁定项灰显）。已接入背包物品、仓库双栏、技能页主动/被动、能力页、法宝页——物品/技能/法宝统一格子呈现（暂无图标用名字）
 - **DamageNumbers** (`src/nodes/`) — 伤害数字唯一入口：SignalBus `damage_dealt(pos,amount,is_player_victim)` → 世界坐标上浮淡出（敌=金/玩家=红）
 - **DamageCalculator** (`src/combat/damage_calculator.h`, header-only) — 伤害统一结算：物理(防御减免,min1)/法术(抗性比例,cap0.9)/元素(五行抗性,克制×1.25只增伤)；`DamageInfo`+`DefenseProfile`；HitBox/Projectile 携带 `damage_category`+`element`，投射物经 `take_damage_typed` 入口
 - **GongfaSystem** (`src/cultivation/gongfa_system.*`) — 功法：炼体/练气双槽(1+1)，黄/玄/地品(3/5/7层)，行为喂养主系100%/副系20%(受击/近战击杀养炼体，耗灵养练气)，层数乘区(1+每层×层数)，切换保留熟练(_known)，存档 pd["gongfa"]

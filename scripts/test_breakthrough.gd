@@ -5,6 +5,8 @@ var _t := 0.0
 var _next_action := 2.0
 var _step := 0
 var _attack_toggle := false
+var _crowd_ticks := 0
+var _fail := 0
 
 func _initialize():
 	var scene = load("res://scenes/main.tscn").instantiate()
@@ -57,14 +59,22 @@ func _process(delta) -> bool:
 		_dump_tree(root)
 
 	if enemy != null:
-		# 挤压场景：把心魔压在玩家身上，连按跳跃，验证能否起跳
+		# 挤压场景：把心魔压在玩家身上，跳跃+攻击连按——攻击给击杀路径，验证战斗可否终结
 		var p = _get_player()
 		if p != null:
 			enemy.position = p.position
+			_press("attack")
 			if _attack_toggle:
 				_press("jump")
 			_attack_toggle = not _attack_toggle
 			print("[TEST] crowd: floor=", p.is_on_floor(), " vel=", p.velocity)
+		_crowd_ticks += 1
+		if _crowd_ticks > 120:
+			# 硬上限：战斗若无法自然终结（心魔死或玩家死），判失败收束，杜绝 suite 悬挂
+			_fail += 1
+			print("[TEST] crowd FAIL: enemy survived ", _crowd_ticks, " ticks")
+			print("[TEST] ", _fail, " FAILURES")
+			return true
 		return false
 
 	# 无战斗：F 推进 overlay（若有），然后按 Q 请求下一个机缘
@@ -76,6 +86,9 @@ func _process(delta) -> bool:
 		if bus != null:
 			bus.emit_signal("breakthrough_requested")
 	if realm >= 7:
-		print("[TEST] reached realm 7, done")
+		if _fail == 0:
+			print("[TEST] reached realm 7, done — ALL PASS")
+		else:
+			print("[TEST] ", _fail, " FAILURES")
 		return true
 	return false

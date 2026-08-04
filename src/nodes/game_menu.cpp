@@ -292,7 +292,7 @@ void GameMenu::_build_ability_page() {
 
 	AbilityManager *am = _player ? _player->get_ability_manager() : nullptr;
 
-	auto build_column = [&](const AbilityRow *rows, int count, const String &header, float x) {
+	auto build_column = [&](const AbilityRow *rows, int count, const String &header, float x, int cols, float w) {
 		Label *h = memnew(Label);
 		h->set_text(header);
 		h->add_theme_font_size_override("font_size", 11);
@@ -301,25 +301,32 @@ void GameMenu::_build_ability_page() {
 		add_child(h);
 		_page_nodes.push_back(h);
 
+		Array items;
 		for (int i = 0; i < count; i++) {
 			bool unlocked = rows[i].innate || (am && am->has_ability(StringName(rows[i].id)));
-			Label *l = memnew(Label);
+			Dictionary cell;
 			if (unlocked) {
-				l->set_text(LOC("✓ ") + LOC(rows[i].name));
-				l->add_theme_color_override("font_color", Color(0.55f, 0.95f, 0.55f));
+				cell["text"] = LOC("✓") + LOC(rows[i].name);
+				cell["color"] = Color(0.55f, 0.95f, 0.55f, 1.0f);
 			} else {
-				l->set_text(LOC("✗ ") + LOC(rows[i].name) + LOC(" (") + LOC(rows[i].cond) + LOC(")"));
-				l->add_theme_color_override("font_color", Color(0.45f, 0.45f, 0.45f));
+				cell["text"] = LOC("✗") + LOC(rows[i].name) + LOC("·") + LOC(rows[i].cond);
+				cell["dim"] = true;
 			}
-			l->add_theme_font_size_override("font_size", 9);
-			l->set_position(Vector2(x, 54 + i * 13));
-			add_child(l);
-			_page_nodes.push_back(l);
+			items.push_back(cell);
 		}
+		GridList *grid = memnew(GridList);
+		grid->set_position(Vector2(x, 54));
+		grid->set_size(Vector2(w, 168));
+		add_child(grid);
+		grid->set_columns(cols);
+		grid->set_cell_size(Vector2(w / float(cols), 21));
+		grid->set_items(items);
+		grid->set_active(false); // 只读总览：无选中高亮
+		_page_nodes.push_back(grid);
 	};
 
-	build_column(ACTIVE_ROWS, 15, LOC("— 主动 —"), 60.0f);
-	build_column(PASSIVE_ROWS, 7, LOC("— 被动 —"), 280.0f);
+	build_column(ACTIVE_ROWS, 15, LOC("— 主动 —"), 60.0f, 2, 200.0f);
+	build_column(PASSIVE_ROWS, 7, LOC("— 被动 —"), 280.0f, 1, 170.0f);
 
 	// 威压/灵压（先天战技，不占 AbilityManager 槽；凡人期即可施放，仅灵力门控）
 	{
@@ -494,54 +501,83 @@ void GameMenu::_build_skill_page() {
 		}
 	}
 
-	// 主动技能列表（↑/↓ 选择，A/S/D/F/T/Y 装配到对应槽）
-	add_line(LOC("已学主动:"), 40.0f, 102.0f, 9, head_c);
+	// 主动技能格子列表（↑/↓ 行移，A/S/D/F/T/Y 装配到对应槽）
+	add_line(LOC("已学主动:"), 40.0f, 100.0f, 9, head_c);
 	Array actives = _skill_active_knowns();
-	const int VISIBLE = 9;
+	static const int GRID_COLS = 3;
 	if (actives.is_empty()) {
-		add_line(LOC("（尚未习得任何技能）"), 40.0f, 118.0f, 9, dim_c);
+		add_line(LOC("（尚未习得任何技能）"), 40.0f, 116.0f, 9, dim_c);
 	} else {
 		_skill_sel = CLAMP(_skill_sel, 0, (int)actives.size() - 1);
-		int scroll = actives.size() > VISIBLE ? CLAMP(_skill_sel - VISIBLE / 2, 0, (int)actives.size() - VISIBLE) : 0;
-		for (int row = 0; row < VISIBLE && scroll + row < actives.size(); row++) {
-			int i = scroll + row;
+
+		// 选中项详情并入标题行右侧
+		Dictionary selk = actives[_skill_sel];
+		String detail = LOC(String(selk.get("name", ""))) + LOC(" ·") + String(selk.get("type_name", "")) +
+			LOC(" ×") + String::num(float(selk.get("power", 1.0f)), 1) +
+			LOC(" 冷却") + String::num(float(selk.get("cooldown", 0.0f)), 1) + LOC("s");
+		float mana = float(selk.get("mana_cost", 0.0f));
+		if (mana > 0.0f) detail += LOC(" 灵") + String::num_int64(int64_t(mana));
+		float law = float(selk.get("law_cost", 0.0f));
+		if (law > 0.0f) detail += LOC(" 法则") + String::num_int64(int64_t(law));
+		add_line(detail, 110.0f, 100.0f, 9, sel_c);
+
+		// 类型色：武技白/法术蓝/神通紫/仙法金
+		auto type_color = [](int t) {
+			switch (t) {
+				case SkillSystem::TYPE_SPELL:    return Color(0.55f, 0.75f, 1.0f, 1.0f);
+				case SkillSystem::TYPE_SHENTONG: return Color(0.85f, 0.6f, 1.0f, 1.0f);
+				case SkillSystem::TYPE_XIANFA:   return Color(1.0f, 0.85f, 0.4f, 1.0f);
+				default:                         return Color(0.9f, 0.9f, 0.9f, 1.0f);
+			}
+		};
+		Array items;
+		for (int i = 0; i < actives.size(); i++) {
 			Dictionary k = actives[i];
-			String line = (i == _skill_sel ? LOC("▶ ") : LOC("  ")) + LOC(String(k.get("name", ""))) +
-				LOC(" · ") + String(k.get("type_name", "")) +
-				LOC(" ×") + String::num(float(k.get("power", 1.0f)), 1) +
-				LOC(" 冷却") + String::num(float(k.get("cooldown", 0.0f)), 1) + LOC("s");
-			float mana = float(k.get("mana_cost", 0.0f));
-			if (mana > 0.0f) {
-				line += LOC(" 灵") + String::num_int64(int64_t(mana));
-			}
-			float law = float(k.get("law_cost", 0.0f));
-			if (law > 0.0f) {
-				line += LOC(" 法则") + String::num_int64(int64_t(law));
-			}
-			add_line(line, 40.0f, 118.0f + row * 13, 9, i == _skill_sel ? sel_c : body_c);
+			Dictionary cell;
+			cell["text"] = LOC(String(k.get("name", "")));
+			cell["color"] = type_color(int(k.get("type", 0)));
+			items.push_back(cell);
 		}
+		GridList *grid = memnew(GridList);
+		grid->set_position(Vector2(40, 114));
+		grid->set_size(Vector2(400, 52)); // 2 行窗口，选中驱动滚动
+		add_child(grid);
+		grid->set_columns(GRID_COLS);
+		grid->set_cell_size(Vector2(133, 26));
+		grid->set_items(items);
+		grid->set_selected(_skill_sel);
+		_page_nodes.push_back(grid);
 	}
 
-	// 被动分区（学会即常驻，不占槽；数值走乘区）
-	add_line(LOC("已悟被动:"), 285.0f, 102.0f, 9, head_c);
+	// 被动格子列表（学会即常驻，不占槽；数值走乘区）
+	add_line(LOC("已悟被动:"), 40.0f, 172.0f, 9, head_c);
 	static const char *PAS_NAMES[7] = { "", "攻击", "移速", "防御", "回灵", "飞速", "法则回复" };
 	if (skills) {
 		Array known = skills->get_known_list();
-		float y = 118.0f;
-		int shown = 0;
+		Array pas_items;
 		for (int i = 0; i < known.size(); i++) {
 			Dictionary k = known[i];
 			if (int(k.get("type", -1)) != SkillSystem::TYPE_PASSIVE) continue;
 			int ps = CLAMP(int(k.get("passive_stat", 0)), 0, 6);
 			int pct = int(Math::round(float(k.get("passive_value", 0.0f)) * 100.0f));
-			String line = LOC(String(k.get("name", ""))) + LOC("  ") + LOC(PAS_NAMES[ps]) +
+			Dictionary cell;
+			cell["text"] = LOC(String(k.get("name", ""))) + LOC(" ") + LOC(PAS_NAMES[ps]) +
 				LOC("+") + String::num_int64(pct) + LOC("%");
-			add_line(line, 285.0f, y, 9, body_c);
-			y += 13.0f;
-			shown++;
+			cell["color"] = Color(0.7f, 0.9f, 0.7f, 1.0f);
+			pas_items.push_back(cell);
 		}
-		if (shown == 0) {
-			add_line(LOC("（尚未悟得被动）"), 285.0f, 118.0f, 9, dim_c);
+		if (pas_items.is_empty()) {
+			add_line(LOC("（尚未悟得被动）"), 40.0f, 188.0f, 9, dim_c);
+		} else {
+			GridList *pas_grid = memnew(GridList);
+			pas_grid->set_position(Vector2(40, 186));
+			pas_grid->set_size(Vector2(400, 52)); // 2 行 × 3 列
+			add_child(pas_grid);
+			pas_grid->set_columns(3);
+			pas_grid->set_cell_size(Vector2(133, 26));
+			pas_grid->set_items(pas_items);
+			pas_grid->set_active(false); // 只读：无选中高亮
+			_page_nodes.push_back(pas_grid);
 		}
 	}
 
@@ -562,12 +598,13 @@ void GameMenu::_handle_skill_input() {
 	int count = actives.size();
 	if (count == 0) return;
 	_skill_sel = CLAMP(_skill_sel, 0, count - 1);
+	static const int GRID_COLS = 3; // 与 _build_skill_page 一致
 	if (input->is_action_just_pressed(LOC("up"))) {
-		_skill_sel = (_skill_sel - 1 + count) % count;
+		_skill_sel = Math::max(0, _skill_sel - GRID_COLS);
 		_rebuild_page();
 	}
 	if (input->is_action_just_pressed(LOC("down"))) {
-		_skill_sel = (_skill_sel + 1) % count;
+		_skill_sel = Math::min(count - 1, _skill_sel + GRID_COLS);
 		_rebuild_page();
 	}
 	// 按槽键装配当前选中技能（G/H 槽留给法宝页，不参与装配）
@@ -622,6 +659,7 @@ void GameMenu::_build_artifact_page() {
 	int limit = arts ? arts->get_slot_limit() : 3;
 	static const char *KEYS[ArtifactSystem::MAX_SLOTS] = { "A", "S", "D", "F", "G", "H" };
 
+	// 槽位格子列表（本命/次要分区头 + 每槽一格）
 	float y = 60.0f;
 	for (int i = 0; i < ArtifactSystem::MAX_SLOTS; i++) {
 		if (i >= limit) {
@@ -633,37 +671,41 @@ void GameMenu::_build_artifact_page() {
 			add_line(head, 70.0f, y, 10, head_c);
 			y += 15.0f;
 		}
+
 		Dictionary info = arts ? arts->get_slot_info(i) : Dictionary();
-		String line = String("[") + KEYS[i] + "] ";
+		Array items;
+		Dictionary cell;
 		if (info.is_empty()) {
-			line += LOC("（空）");
-			add_line(line, 70.0f, y, 9, body_c);
-			y += 14.0f;
-			continue;
-		}
-		line += LOC(String(info.get("name", ""))) + LOC("  ") + String(info.get("kind_name", "")) +
-			LOC("  系数×") + String::num(float(info.get("coeff", 1.0f)), 2);
-		add_line(line, 70.0f, y, 9, body_c);
-		y += 14.0f;
-		String sub;
-		if (int(info.get("kind", 0)) == int(ArtifactSystem::KIND_ATTACK)) {
-			sub = LOC("    祭出: 倍率×") + String::num(float(info.get("power", 1.0f)), 1) +
-				LOC("  灵力") + String::num_int64(int64_t(float(info.get("mana_cost", 0.0f)))) +
-				LOC("  冷却") + String::num(float(info.get("cooldown", 0.0f)), 1) + LOC("s");
+			cell["text"] = String("[") + KEYS[i] + LOC("] （空）");
+			cell["dim"] = true;
 		} else {
-			sub = LOC("    常驻: 防御+") + String::num(float(info.get("passive_def", 0.0f)) * 100.0f, 0) +
-				LOC("%×系数");
-		}
-		if (i == 0) {
-			sub += LOC("  温养") + String::num_int64(int64_t(float(info.get("nurture", 0.0f)))) + LOC("/1000");
-			if (_player && _player->is_benming_awakened()) {
-				sub += LOC(" 已觉醒");
+			String txt = String("[") + KEYS[i] + "] " + LOC(String(info.get("name", ""))) +
+				LOC(" ·") + String(info.get("kind_name", "")) +
+				LOC(" ×") + String::num(float(info.get("coeff", 1.0f)), 2);
+			if (int(info.get("kind", 0)) == int(ArtifactSystem::KIND_ATTACK)) {
+				txt += LOC(" 祭出×") + String::num(float(info.get("power", 1.0f)), 1) +
+					LOC(" 灵") + String::num_int64(int64_t(float(info.get("mana_cost", 0.0f))));
+			} else {
+				txt += LOC(" 防+") + String::num(float(info.get("passive_def", 0.0f)) * 100.0f, 0) + LOC("%");
 			}
-		} else {
-			sub += LOC("  温养") + String::num_int64(int64_t(float(info.get("nurture", 0.0f)))) + LOC("/600");
+			txt += LOC(" 温养") + String::num_int64(int64_t(float(info.get("nurture", 0.0f))));
+			if (i == 0 && _player && _player->is_benming_awakened())
+				txt += LOC("·觉醒");
+			cell["text"] = txt;
+			cell["color"] = i == 0 ? Color(1.0f, 0.85f, 0.45f, 1.0f) : Color(0.85f, 0.85f, 0.85f, 1.0f);
 		}
-		add_line(sub, 70.0f, y, 8, dim_c);
-		y += 13.0f;
+		items.push_back(cell);
+
+		GridList *grid = memnew(GridList);
+		grid->set_position(Vector2(70, y));
+		grid->set_size(Vector2(350, 22));
+		add_child(grid);
+		grid->set_columns(1);
+		grid->set_cell_size(Vector2(350, 22));
+		grid->set_items(items);
+		grid->set_active(false); // 只读
+		_page_nodes.push_back(grid);
+		y += 24.0f;
 	}
 
 	add_line(LOC("战斗中按 B 整页切换法宝页，A~H 即法宝快捷键；祭出复用技能管线，耗灵力。"), 70.0f, 232.0f, 8, dim_c);

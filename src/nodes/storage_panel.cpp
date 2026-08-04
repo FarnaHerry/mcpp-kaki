@@ -46,33 +46,35 @@ void StoragePanel::_ready() {
 	_title->set_text(LOC("—— 洞天仓库 ——"));
 	add_child(_title);
 
-	static const int PANE_X[2] = { 70, 260 };
+	static const int PANE_X[2] = { 62, 252 };
 	static const char *PANE_NAMES[2] = { "背包", "仓库" };
 	for (int p = 0; p < 2; p++) {
 		_headers[p] = memnew(Label);
-		_headers[p]->set_position(Vector2(PANE_X[p], 56));
+		_headers[p]->set_position(Vector2(PANE_X[p], 52));
 		_headers[p]->add_theme_font_size_override("font_size", 12);
 		_headers[p]->set_text(LOC(PANE_NAMES[p]));
 		add_child(_headers[p]);
-		for (int r = 0; r < ROWS; r++) {
-			_rows[p][r] = memnew(Label);
-			_rows[p][r]->set_position(Vector2(PANE_X[p], 76 + r * 16));
-			_rows[p][r]->add_theme_font_size_override("font_size", 12);
-			add_child(_rows[p][r]);
-		}
+
+		// 统一格子列表：2 列 × 5 行窗口
+		_grids[p] = memnew(GridList);
+		_grids[p]->set_position(Vector2(PANE_X[p], 70));
+		_grids[p]->set_size(Vector2(176, 128));
+		add_child(_grids[p]);
+		_grids[p]->set_columns(2);
+		_grids[p]->set_cell_size(Vector2(88, 24));
 	}
 
 	_msg = memnew(Label);
-	_msg->set_position(Vector2(70, 208));
+	_msg->set_position(Vector2(62, 204));
 	_msg->add_theme_font_size_override("font_size", 12);
 	_msg->add_theme_color_override("font_color", Color(0.9f, 0.8f, 0.4f, 1.0f));
 	add_child(_msg);
 
 	_hint = memnew(Label);
-	_hint->set_position(Vector2(70, 226));
+	_hint->set_position(Vector2(62, 226));
 	_hint->add_theme_font_size_override("font_size", 10);
 	_hint->add_theme_color_override("font_color", Color(0.6f, 0.6f, 0.6f, 1.0f));
-	_hint->set_text(LOC("↑/↓ 选择  ←/→ 切换  X 移送  ESC/O 关闭"));
+	_hint->set_text(LOC("↑/↓ 选择  ←/→ 切栏  X 移送  ESC/O 关闭"));
 	add_child(_hint);
 
 	set_visible(false);
@@ -95,8 +97,8 @@ void StoragePanel::open() {
 	_restore_pause = get_tree()->is_paused();
 	get_tree()->set_pause(true);
 	_pane = 0;
-	_sel[0] = _sel[1] = 0;
-	_scroll[0] = _scroll[1] = 0;
+	for (int p = 0; p < 2; p++)
+		if (_grids[p]) _grids[p]->set_selected(0);
 	_msg_t = 0.0f;
 	if (_msg) _msg->set_text(String());
 	set_visible(true);
@@ -145,38 +147,34 @@ void StoragePanel::_refresh() {
 	DongtianManager *mgr = _find_manager();
 
 	for (int p = 0; p < 2; p++) {
-		int count = int(_slots[p].size());
-		// 选择/滚动钳制
-		if (_sel[p] >= count) _sel[p] = count > 0 ? count - 1 : 0;
-		if (_scroll[p] > _sel[p]) _scroll[p] = _sel[p];
-		if (_scroll[p] + ROWS <= _sel[p]) _scroll[p] = _sel[p] - ROWS + 1;
-
 		// 激活页签高亮
 		_headers[p]->add_theme_color_override("font_color",
 				_pane == p ? Color(1.0f, 0.9f, 0.4f, 1.0f) : Color(0.6f, 0.6f, 0.6f, 1.0f));
+		_grids[p]->set_active(_pane == p);
 
-		for (int r = 0; r < ROWS; r++) {
-			int li = _scroll[p] + r; // 紧凑列表索引
-			Label *row = _rows[p][r];
-			if (li >= count) {
-				row->set_text(r == 0 && count == 0 ? LOC("（空）") : String());
-				row->add_theme_color_override("font_color", Color(0.35f, 0.35f, 0.35f, 1.0f));
-				continue;
-			}
-			String text;
+		Array items;
+		for (int li = 0; li < int(_slots[p].size()); li++) {
+			Dictionary cell;
 			if (p == 0) {
 				Dictionary s = inv->get_slot(_slots[0][li]);
-				const Item *def = db ? db->get_item(s.get("id", StringName())) : nullptr;
-				text = (def ? LOC(def->name) : String(s.get("id", StringName()))) + " ×" + String::num_int64(int(s.get("quantity", 0)));
+				StringName id = s.get("id", StringName());
+				const Item *def = db ? db->get_item(id) : nullptr;
+				String txt = (def ? LOC(def->name) : String(id));
+				int qty = int(s.get("quantity", 0));
+				if (qty > 1)
+					txt += " ×" + String::num_int64(qty);
+				cell["text"] = txt;
 			} else {
 				Dictionary s = mgr->get_storage_slot(_slots[1][li]);
-				text = LOC(String(s.get("name", ""))) + " ×" + String::num_int64(int(s.get("quantity", 0)));
+				String txt = LOC(String(s.get("name", "")));
+				int qty = int(s.get("quantity", 0));
+				if (qty > 1)
+					txt += " ×" + String::num_int64(qty);
+				cell["text"] = txt;
 			}
-			bool selected = (_pane == p && li == _sel[p]);
-			row->set_text((selected ? String("▶ ") : String("  ")) + text);
-			row->add_theme_color_override("font_color",
-					selected ? Color(1.0f, 0.95f, 0.6f, 1.0f) : Color(0.85f, 0.85f, 0.85f, 1.0f));
+			items.push_back(cell);
 		}
+		_grids[p]->set_items(items);
 	}
 }
 
@@ -184,7 +182,10 @@ void StoragePanel::_transfer() {
 	DongtianManager *mgr = _find_manager();
 	if (!mgr || _slots[_pane].empty())
 		return;
-	int real_slot = _slots[_pane][_sel[_pane]];
+	int sel = _grids[_pane]->get_selected();
+	if (sel < 0 || sel >= int(_slots[_pane].size()))
+		return;
+	int real_slot = _slots[_pane][sel];
 
 	if (_pane == 0) {
 		// 背包 → 仓库
@@ -232,10 +233,10 @@ void StoragePanel::_process(double p_delta) {
 		_pane = 1;
 		_refresh();
 	} else if (input->is_action_just_pressed(LOC("up"))) {
-		if (_sel[_pane] > 0) _sel[_pane]--;
+		_grids[_pane]->move_selection(0, -1);
 		_refresh();
 	} else if (input->is_action_just_pressed(LOC("down"))) {
-		if (_sel[_pane] + 1 < int(_slots[_pane].size())) _sel[_pane]++;
+		_grids[_pane]->move_selection(0, +1);
 		_refresh();
 	} else if (input->is_action_just_pressed(LOC("interact"))) {
 		_transfer();

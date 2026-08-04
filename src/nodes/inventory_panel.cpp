@@ -77,9 +77,8 @@ void InventoryPanel::_ready() {
 void InventoryPanel::toggle() {
 	_visible = !_visible;
 	set_visible(_visible);
-	if (_visible) {
-		_scroll_offset = 0;
-		_selected_index = 0;
+	if (_visible && _grid) {
+		_grid->set_selected(0);
 		refresh();
 	}
 }
@@ -111,67 +110,60 @@ void InventoryPanel::refresh(const String &p_item_id, int p_qty) {
 		}
 	}
 
-	// ---- Item list ----
+	// ---- Item grid（统一 GridList；紧凑非空槽）----
+	_slot_map.clear();
+	Array items;
 	int visible_slots = 8;
 	int displayed = 0;
 
-	for (int i = 0; i < visible_slots; i++) {
-		int slot_idx = _scroll_offset + i;
+	int cap = inv->get_capacity();
+	for (int slot_idx = 0; slot_idx < cap; slot_idx++) {
 		Dictionary slot_data = inv->get_slot(slot_idx);
+		if (slot_data.is_empty())
+			continue;
 
-		if (slot_data.is_empty()) {
-			_item_labels[i]->set_text("");
-			_item_labels[i]->add_theme_color_override("font_color",
-				Color(0.3f, 0.3f, 0.3f, 1));
-		} else {
-			StringName item_id = slot_data["id"];
-			int qty = slot_data["quantity"];
-			const Item *def = ItemDatabase::get_singleton()->get_item(item_id);
+		StringName item_id = slot_data["id"];
+		int qty = slot_data["quantity"];
+		const Item *def = ItemDatabase::get_singleton()->get_item(item_id);
 
-			String txt = String::num_int64(slot_idx) + ": ";
-			if (def) {
-				txt += LOC(def->name);
-			} else {
-				txt += String(item_id);
+		Dictionary cell;
+		String txt = def ? LOC(def->name) : String(item_id);
+		if (qty > 1)
+			txt += " ×" + String::num_int64(qty);
+		cell["text"] = txt;
+
+		// 类型色（与 ItemPickup 视觉同口径）：消耗品红/材料蓝/装备青/关键物品金
+		Color c = Color(0.85f, 0.85f, 0.85f, 1.0f);
+		if (def) {
+			switch (def->type) {
+				case Item::CONSUMABLE: c = Color(1.0f, 0.55f, 0.5f, 1.0f); break;
+				case Item::MATERIAL:   c = Color(0.5f, 0.75f, 1.0f, 1.0f); break;
+				case Item::EQUIPMENT:  c = Color(0.55f, 0.95f, 0.85f, 1.0f); break;
+				case Item::KEY_ITEM:   c = Color(1.0f, 0.85f, 0.4f, 1.0f); break;
 			}
-			if (qty > 1) {
-				txt += " x" + String::num_int64(qty);
-			}
-
-			// Show action hint for selected item
-			if (slot_idx == _selected_index) {
-				txt = "> " + txt;
-				if (def && def->type == Item::CONSUMABLE) {
-					txt += LOC("  [X]使用");
-				} else if (def && def->type == Item::EQUIPMENT) {
-					txt += LOC("  [X]装备");
-				}
-				_item_labels[i]->add_theme_color_override("font_color",
-					Color(1.0f, 1.0f, 0.3f, 1));
-			} else {
-				_item_labels[i]->add_theme_color_override("font_color",
-					Color(0.8f, 0.8f, 0.8f, 1));
-			}
-
-			_item_labels[i]->set_text(txt);
 		}
+		cell["color"] = c;
+		items.push_back(cell);
+		_slot_map.push_back(slot_idx);
+		displayed++;
+	}
+	_grid->set_items(items);
 
-		if (!slot_data.is_empty()) {
-			displayed++;
+	// 选中项操作提示
+	String hint;
+	if (!_slot_map.empty()) {
+		int sel = _grid->get_selected();
+		Dictionary slot_data = inv->get_slot(_slot_map[sel]);
+		const Item *def = ItemDatabase::get_singleton()->get_item(slot_data.get("id", StringName()));
+		if (def && def->type == Item::CONSUMABLE)
+			hint = LOC("[X] 使用");
+		else if (def && def->type == Item::EQUIPMENT)
+			hint = LOC("[X] 装备");
+		if (def) {
+			hint = (def ? LOC(def->name) : String()) + "  " + hint;
 		}
 	}
-
-	// Scroll hint
-	int total_items = inv->get_capacity() - inv->get_free_slot_count();
-	if (total_items > visible_slots) {
-		_scroll_hint->set_text(LOC("↑↓ 滚动  (") +
-			String::num_int64(_scroll_offset + 1) + "-" +
-			String::num_int64(Math::min(_scroll_offset + visible_slots, total_items)) +
-			"/" + String::num_int64(total_items) + ")");
-		_scroll_hint->set_visible(true);
-	} else {
-		_scroll_hint->set_visible(false);
-	}
+	_action_hint->set_text(hint);
 
 	// ---- Stats ----
 	String stats_txt;
@@ -203,36 +195,28 @@ void InventoryPanel::refresh(const String &p_item_id, int p_qty) {
 // Input handling
 // ============================================================
 
-void InventoryPanel::ext_navigate(int p_dir) {
-	if (!_player) return;
-	Inventory *inv = _player->get_inventory();
-	if (!inv) return;
+void InventoryPanel::set_selected_index(int p_idx) {
+	if (_grid)
+		_grid->set_selected(p_idx);
+}
 
-	if (p_dir < 0) {
-		if (_selected_index > 0) {
-			_selected_index--;
-			if (_selected_index < _scroll_offset) {
-				_scroll_offset = _selected_index;
-			}
-			refresh();
-		}
-	} else {
-		if (_selected_index < inv->get_capacity() - 1) {
-			_selected_index++;
-			if (_selected_index >= _scroll_offset + 8) {
-				_scroll_offset = _selected_index - 7;
-			}
-			refresh();
-		}
-	}
+void InventoryPanel::ext_navigate(int p_dir) {
+	if (!_player || !_grid) return;
+	// 上下 = 网格行移动（±列数由 GridList 处理）
+	_grid->move_selection(0, p_dir < 0 ? -1 : +1);
+	refresh();
 }
 
 void InventoryPanel::ext_use() {
-	if (!_player) return;
+	if (!_player || !_grid) return;
 	Inventory *inv = _player->get_inventory();
-	if (!inv) return;
+	if (!inv || _slot_map.empty()) return;
 
-	Dictionary slot_data = inv->get_slot(_selected_index);
+	int sel = _grid->get_selected();
+	if (sel < 0 || sel >= int(_slot_map.size())) return;
+	int slot_idx = _slot_map[sel];
+
+	Dictionary slot_data = inv->get_slot(slot_idx);
 	if (slot_data.is_empty()) return;
 
 	StringName item_id = slot_data["id"];
@@ -243,7 +227,7 @@ void InventoryPanel::ext_use() {
 		// 消耗品效果统一走 Player::use_consumable（自动用/快捷栏同口径）
 		_player->use_consumable(item_id);
 	} else if (def->type == Item::EQUIPMENT) {
-		_player->equip_item(_selected_index);
+		_player->equip_item(slot_idx);
 		if (_signal_bus) {
 			_signal_bus->emit_signal("player_health_changed",
 				_player->current_health, _player->max_health);
@@ -275,6 +259,14 @@ void InventoryPanel::_input(const Ref<InputEvent> &p_event) {
 		case KEY_DOWN:
 		case KEY_S:
 			ext_navigate(+1);
+			return;
+
+		case KEY_LEFT:
+			if (_grid) { _grid->move_selection(-1, 0); refresh(); }
+			return;
+
+		case KEY_RIGHT:
+			if (_grid) { _grid->move_selection(+1, 0); refresh(); }
 			return;
 
 		case KEY_E:
@@ -335,21 +327,21 @@ void InventoryPanel::_build_item_list() {
 	_inv_header->set_text(LOC("物品"));
 	add_child(_inv_header);
 
-	// Item labels
-	for (int i = 0; i < 8; i++) {
-		_item_labels[i] = memnew(Label);
-		_item_labels[i]->set_position(Vector2(20, ITEM_LIST_Y + i * ITEM_ROW_H));
-		_item_labels[i]->add_theme_font_size_override("font_size", FONT_SZ);
-		add_child(_item_labels[i]);
-	}
+	// 统一格子列表：6 列 × 7 行窗口（480×270 内 74×22 格）
+	_grid = memnew(GridList);
+	_grid->set_name("ItemGrid");
+	_grid->set_position(Vector2(16, ITEM_LIST_Y));
+	_grid->set_size(Vector2(452, 154));
+	add_child(_grid);
+	_grid->set_columns(6);
+	_grid->set_cell_size(Vector2(75, 22));
 
-	// Scroll hint
-	_scroll_hint = memnew(Label);
-	_scroll_hint->set_position(Vector2(320, ITEM_LIST_Y + 8 * ITEM_ROW_H));
-	_scroll_hint->add_theme_font_size_override("font_size", FONT_SZ);
-	_scroll_hint->add_theme_color_override("font_color", Color(0.5f, 0.5f, 0.5f, 1));
-	_scroll_hint->set_visible(false);
-	add_child(_scroll_hint);
+	// 选中项操作提示
+	_action_hint = memnew(Label);
+	_action_hint->set_position(Vector2(16, 228));
+	_action_hint->add_theme_font_size_override("font_size", FONT_SZ);
+	_action_hint->add_theme_color_override("font_color", Color(1.0f, 0.9f, 0.4f, 1));
+	add_child(_action_hint);
 }
 
 void InventoryPanel::_build_stats() {
