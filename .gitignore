@@ -7,10 +7,6 @@ build/
 target/
 compile_commands.json
 
-# Generated
-extension_api.json
-mcpp-gen/
-
 # Compiled GDExtension binaries
 bin/*.so
 bin/*.dll

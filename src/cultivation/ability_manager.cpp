@@ -1,6 +1,7 @@
 module;
 
 #include <godot_cpp/core/class_db.hpp>
+#include <godot_cpp/templates/hash_set.hpp>
 
 module mcpp_kaki.cultivation;
 namespace godot {

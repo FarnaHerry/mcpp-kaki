@@ -7,19 +7,14 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 # ----------------------------------------------------------------------
-# 1. Generate godot-cpp bindings for the project Godot version.
-# ----------------------------------------------------------------------
-echo "[mcpp-build] Generating godot-cpp bindings..."
-python3 scripts/generate_godot_bindings.py
-
-# ----------------------------------------------------------------------
-# 2. Build with mcpp.
+# 1. Build with mcpp (godot-cpp comes from the compat:godot-cpp package,
+#    which ships pre-generated bindings — no Python/SCons step needed).
 # ----------------------------------------------------------------------
 echo "[mcpp-build] Building with mcpp..."
 mcpp build "$@"
 
 # ----------------------------------------------------------------------
-# 3. Copy the resulting shared library to bin/ where Godot expects it.
+# 2. Copy the resulting shared library to bin/ where Godot expects it.
 # ----------------------------------------------------------------------
 mkdir -p bin
 

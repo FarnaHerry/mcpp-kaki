@@ -19,19 +19,18 @@ cflags = [
 
 include_dirs = [
     "src",
-    "godot-cpp/include",
-    "mcpp-gen/gen/include",
 ]
 
 [modules]
 sources = [
     "src/**/*.cppm",
     "src/**/*.cpp",
-    "godot-cpp/src/**/*.cpp",
-    "mcpp-gen/gen/src/**/*.cpp",
 ]
 exports = ["mcpp_kaki.utils", "mcpp_kaki.combat", "mcpp_kaki.inventory", "mcpp_kaki.cultivation", "mcpp_kaki.nodes", "mcpp_kaki.core"]
 
 [targets.mcpp-kaki]
 kind   = "shared"
 soname = "libmcpp-kaki.linux.template_debug.x86_64.so"
+
+[dependencies.compat]
+godot-cpp = "10.0.0-rc1"

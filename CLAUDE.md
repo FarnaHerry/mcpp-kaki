@@ -26,10 +26,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This project uses **mcpp** as its build system. CMake is no longer required.
 
 ```bash
-# First time setup
-git submodule update --init --recursive
-
-# Build (generates godot-cpp bindings + compiles everything + copies .so files to bin/)
+# Build (mcpp fetches the godot-cpp dependency on first run + copies .so files to bin/)
 ./scripts/build_mcpp.sh
 
 # Output: bin/libmcpp-kaki.linux.editor.x86_64.so
@@ -44,13 +41,10 @@ godot
 If you prefer to run the steps separately:
 
 ```bash
-# 1. Generate godot-cpp C++ bindings for Godot 4.6
-python3 scripts/generate_godot_bindings.py
-
-# 2. Build the GDExtension shared library with mcpp
+# 1. Build the GDExtension shared library with mcpp
 mcpp build
 
-# 3. Copy the resulting library to bin/ where Godot expects it
+# 2. Copy the resulting library to bin/ where Godot expects it
 cp target/x86_64-linux-gnu/*/bin/libmcpp-kaki.so \
    bin/libmcpp-kaki.linux.template_debug.x86_64.so
 ```
@@ -58,9 +52,9 @@ cp target/x86_64-linux-gnu/*/bin/libmcpp-kaki.so \
 ### Build requirements
 
 - **mcpp** must be installed and have a toolchain available (e.g. `mcpp toolchain install llvm`).
+- godot-cpp comes from the mcpp package **`compat:godot-cpp@10.0.0-rc1`** (Godot 4.6 bindings, pre-generated — no Python/SCons/submodule). It builds once into mcpp's global cache; clean rebuilds reuse it.
 - The default target is `template_debug` for development, matching Godot 4.6.
-- Generated binding files are written to `mcpp-gen/` and ignored by git.
-- mcpp build artifacts live in `target/` and are also ignored.
+- mcpp build artifacts live in `target/` and are ignored by git.
 
 GDExtension is registered via `mcpp_kaki.gdextension` at project root (entry symbol: `mcpp_kaki_library_init`) and explicitly referenced in `project.godot` via `[native_extensions] paths=["res://mcpp_kaki.gdextension"]`.
 
@@ -89,7 +83,6 @@ src/              # C++ 源码 (GDExtension)
 scenes/           # Godot .tscn 场景文件
 resources/        # .tres 数据定义 (items, enemies, abilities)
 assets/           # 美术/音频/字体
-godot-cpp/        # Git submodule — Godot C++ bindings
 bin/              # 编译产物 (.so)，gitignored
 ```
 

@@ -26,7 +26,7 @@ A xianxia (cultivation fantasy) 2D action game in the Metroidvania style, built 
 | 分辨率 | 480×270 内部 → 1920×1080 canvas_items stretch, Nearest pixel art |
 | 语言 | C++23（全项目统一，含 godot-cpp 官方绑定）；少量 GDScript 仅做场景装配 |
 | 构建 | **mcpp** (C++23 模块化构建工具) |
-| 绑定 | godot-cpp 官方子模块 |
+| 绑定 | godot-cpp —— mcpp 官方包 `compat:godot-cpp`（预生成绑定，随 `mcpp build` 自动拉取） |
 
 ## 📁 目录结构 / Structure
 
@@ -42,7 +42,6 @@ src/               # C++ 源码（模块化）
 scenes/            # .tscn 场景
 data/              # 外置游戏数据（JSON）
 scripts/           # GDScript 装配 + 构建脚本
-godot-cpp/         # Git 子模块（官方绑定，勿改）
 bin/               # 编译产物（gitignored）
 ```
 
@@ -52,18 +51,15 @@ bin/               # 编译产物（gitignored）
 
 - **Godot 4.6**（`godot` 在 PATH 中）
 - **mcpp** 构建工具（`mcpp --version`），含 LLVM 工具链（`mcpp toolchain install llvm`）
-- **Python 3**（用于生成 godot-cpp 绑定）
-- **git**（拉取 godot-cpp 子模块）
+
+> godot-cpp 绑定由 mcpp 包 `compat:godot-cpp@10.0.0-rc1`（Godot 4.6）提供，首次 `mcpp build` 自动下载并编译，无需 Python / SCons / git 子模块。
 
 ## 🔨 编译 / Build
 
 ### 方式一：脚本（推荐）
 
 ```bash
-# 1. 初始化子模块（首次）
-git submodule update --init --recursive
-
-# 2. 一键构建：生成绑定 → mcpp 编译 → 复制 .so 到 bin/
+# 一键构建：mcpp 编译（自动拉取 godot-cpp 依赖）→ 复制 .so 到 bin/
 ./scripts/build_mcpp.sh
 
 # 产物：
@@ -74,13 +70,10 @@ git submodule update --init --recursive
 ### 方式二：手动分步
 
 ```bash
-# 1. 生成 godot-cpp C++ 绑定（Godot 4.6 API）
-python3 scripts/generate_godot_bindings.py
-
-# 2. 用 mcpp 编译 GDExtension
+# 1. 用 mcpp 编译 GDExtension（godot-cpp 依赖首次自动下载，之后走全局缓存）
 mcpp build
 
-# 3. 复制产物到 bin/（Godot 从这里加载）
+# 2. 复制产物到 bin/（Godot 从这里加载）
 cp target/x86_64-linux-gnu/*/bin/libmcpp-kaki.so \
    bin/libmcpp-kaki.linux.template_debug.x86_64.so
 cp target/x86_64-linux-gnu/*/bin/libmcpp-kaki.so \
