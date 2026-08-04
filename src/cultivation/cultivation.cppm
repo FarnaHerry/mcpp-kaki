@@ -5,21 +5,9 @@ module;
 
 #include <vector>
 
-#include <godot_cpp/classes/canvas_layer.hpp>
-#include <godot_cpp/classes/label.hpp>
-#include <godot_cpp/classes/node.hpp>
-#include <godot_cpp/classes/object.hpp>
-#include <godot_cpp/classes/polygon2d.hpp>
-#include <godot_cpp/core/class_db.hpp>
-#include <godot_cpp/templates/hash_map.hpp>
+#include <godot-cpp-m/macros.h>
+#include <godot_cpp/templates/hash_map.hpp> // HashMap/HashSet 不被模块重导出，保持文本包含
 #include <godot_cpp/templates/hash_set.hpp>
-#include <godot_cpp/variant/array.hpp>
-#include <godot_cpp/variant/color.hpp>
-#include <godot_cpp/variant/dictionary.hpp>
-#include <godot_cpp/variant/rect2.hpp>
-#include <godot_cpp/variant/string.hpp>
-#include <godot_cpp/variant/string_name.hpp>
-#include <godot_cpp/variant/vector2.hpp>
 
 
 #include "../utils/text.h"          // LOC() / TXT()
@@ -30,6 +18,8 @@ class Player; // external (nodes header) — global fragment, no module linkage
 }
 
 export module mcpp_kaki.cultivation;
+
+import godot_cpp;
 
 namespace godot {
 

@@ -6,22 +6,7 @@ module;
 
 #include <vector>
 
-#include <godot_cpp/classes/canvas_item.hpp>
-#include <godot_cpp/classes/canvas_layer.hpp>
-#include <godot_cpp/classes/color_rect.hpp>
-#include <godot_cpp/classes/input_event.hpp>
-#include <godot_cpp/classes/label.hpp>
-#include <godot_cpp/classes/node.hpp>
-#include <godot_cpp/classes/node2d.hpp>
-#include <godot_cpp/classes/object.hpp>
-#include <godot_cpp/core/class_db.hpp>
-#include <godot_cpp/variant/array.hpp>
-#include <godot_cpp/variant/color.hpp>
-#include <godot_cpp/variant/dictionary.hpp>
-#include <godot_cpp/variant/rect2.hpp>
-#include <godot_cpp/variant/string.hpp>
-#include <godot_cpp/variant/string_name.hpp>
-#include <godot_cpp/variant/vector2.hpp>
+#include <godot-cpp-m/macros.h>
 
 #include "../utils/text.h"
 
@@ -30,6 +15,8 @@ class Player; // external (nodes header) — global fragment, no module linkage
 }
 
 export module mcpp_kaki.nodes;
+
+import godot_cpp;
 
 import mcpp_kaki.utils;
 import mcpp_kaki.inventory;

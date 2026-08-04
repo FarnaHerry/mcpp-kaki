@@ -5,23 +5,17 @@ module;
 
 #include <vector>
 
-#include <godot_cpp/classes/area2d.hpp>
-#include <godot_cpp/classes/object.hpp>
-#include <godot_cpp/core/class_db.hpp>
-#include <godot_cpp/core/math.hpp>
-#include <godot_cpp/templates/hash_map.hpp>
+#include <godot-cpp-m/macros.h>
+#include <godot_cpp/templates/hash_map.hpp> // HashMap/HashSet 不被模块重导出，保持文本包含
 #include <godot_cpp/templates/hash_set.hpp>
-#include <godot_cpp/variant/color.hpp>
-#include <godot_cpp/variant/dictionary.hpp>
-#include <godot_cpp/variant/string.hpp>
-#include <godot_cpp/variant/string_name.hpp>
-#include <godot_cpp/variant/vector2.hpp>
 
 namespace godot {
 class Player; // external (nodes header) — global fragment, no module linkage
 }
 
 export module mcpp_kaki.combat;
+
+import godot_cpp;
 
 namespace godot {
 

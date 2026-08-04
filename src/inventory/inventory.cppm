@@ -1,15 +1,13 @@
 // mcpp-kaki inventory module — Item / Inventory / ItemDatabase.
 module;
 
-#include <godot_cpp/classes/node.hpp>
-#include <godot_cpp/classes/object.hpp>
-#include <godot_cpp/templates/hash_map.hpp>
+#include <godot-cpp-m/macros.h>
+#include <godot_cpp/templates/hash_map.hpp> // HashMap 不被模块重导出，保持文本包含
 #include <godot_cpp/templates/vector.hpp>
-#include <godot_cpp/variant/dictionary.hpp>
-#include <godot_cpp/variant/string.hpp>
-#include <godot_cpp/variant/string_name.hpp>
 
 export module mcpp_kaki.inventory;
+
+import godot_cpp;
 
 namespace godot {
 

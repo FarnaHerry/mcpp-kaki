@@ -5,14 +5,8 @@ module;
 
 #include <vector>
 
-#include <godot_cpp/classes/node.hpp>
-#include <godot_cpp/classes/object.hpp>
-#include <godot_cpp/templates/hash_map.hpp>
-#include <godot_cpp/variant/array.hpp>
-#include <godot_cpp/variant/dictionary.hpp>
-#include <godot_cpp/variant/string.hpp>
-#include <godot_cpp/variant/string_name.hpp>
-#include <godot_cpp/variant/vector2.hpp>
+#include <godot-cpp-m/macros.h>
+#include <godot_cpp/templates/hash_map.hpp> // HashMap 不被模块重导出，保持文本包含
 
 #include "../utils/text.h"
 import mcpp_kaki.utils;
@@ -22,6 +16,8 @@ class Player; // external (nodes header) — global fragment, no module linkage
 }
 
 export module mcpp_kaki.core;
+
+import godot_cpp;
 
 namespace godot {
 

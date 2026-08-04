@@ -16,7 +16,7 @@ A xianxia (cultivation fantasy) 2D action game in the Metroidvania style, built 
 - **能力门控探索**：炼气纳戒、筑基御剑飞行、化神缩地成寸等境界解锁
 - **四大部洲世界**：东胜神洲（花果山/水帘洞/东海之滨）、云海强渡旅行、五区地图（竹台跳跃/墙跳/飞行沟壑）
 - **数据驱动**：物品/技能/功法/宗门/掉落/配方/洲全部外置为 `data/*.json`
-- **模块化 C++**：自己的代码用 C++ 模块（`import`）组织，godot-cpp 官方绑定保持头文件，全项目统一 C++23
+- **模块化 C++**：自己的代码用 C++ 模块（`import`）组织，godot-cpp 绑定在模块接口中以 `import godot_cpp;` 接入（普通 .cpp 仍走头文件），全项目统一 C++23
 
 ## 🛠 技术栈 / Tech Stack
 
@@ -45,7 +45,7 @@ scripts/           # GDScript 装配 + 构建脚本
 bin/               # 编译产物（gitignored）
 ```
 
-> **模块化说明**：约 70% 的类已用 C++ 模块（`import mcpp_kaki.*`）组织，godot-cpp 官方绑定同样以 C++23 编译。绑定 godot 内置类指针（`Node*`/`Node2D*`/`Object*`）的节点类（Player/Enemy 等）保持头文件——这是 C++ 模块与 godot-cpp 绑定模板的已知限制。
+> **模块化说明**：约 70% 的类已用 C++ 模块（`import mcpp_kaki.*`）组织，6 个模块接口（.cppm）经 mcpp 模块包 `godotengine:godot-cpp-m` 以 `import godot_cpp;` 接入引擎绑定（宏走 `<godot-cpp-m/macros.h>`，HashMap/HashSet 保持文本包含）。绑定 godot 内置类指针（`Node*`/`Node2D*`/`Object*`）的节点类（Player/Enemy 等）保持头文件——这是 C++ 模块与 godot-cpp 绑定模板的已知限制。
 
 ## 📦 环境要求 / Requirements
 

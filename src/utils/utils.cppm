@@ -1,12 +1,13 @@
 // mcpp-kaki utils module — SignalBus / Localization / globals.
-// godot-cpp stays header-based (official, untouched); our own classes are modular.
+// godot-cpp 经模块导入（import godot_cpp）；宏（GDCLASS 等）走 godot-cpp-m/macros.h。
 module;
 
-#include <godot_cpp/classes/node.hpp>
-#include <godot_cpp/templates/hash_map.hpp>
-#include <godot_cpp/variant/string.hpp>
+#include <godot-cpp-m/macros.h>
+#include <godot_cpp/templates/hash_map.hpp> // HashMap 不被模块重导出，保持文本包含
 
 export module mcpp_kaki.utils;
+
+import godot_cpp;
 
 namespace godot {
 
