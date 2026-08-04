@@ -1224,6 +1224,16 @@ void GameMenu::_process(double p_delta) {
 		return;
 	}
 	bool lr_for_settings = (_page == PAGE_SETTINGS && (_settings_sel == 0 || _settings_sel == 1));
+	if (!lr_for_settings) {
+		if (input->is_action_just_pressed(LOC("left"))) {
+			_switch_page(_page - 1);
+			return;
+		}
+		if (input->is_action_just_pressed(LOC("right"))) {
+			_switch_page(_page + 1);
+			return;
+		}
+	}
 
 	switch (_page) {
 		case PAGE_INVENTORY:
