@@ -40,3 +40,9 @@
 - **StoragePanel**：切栏从 ←/→ action 改为 `_input` 原始 KEY_Q/KEY_E（与 GameMenu 翻页一致），提示行改「Q/E 切栏」；←/→ 留给页内横向导航
 - 注意：`cultivate`（Q）已绑定修炼突破——**不能**新增 `q` action（双触发），故切栏/翻页走 `_input` 原始键码；菜单/仓库打开时暂停世界，Player(PAUSABLE) 冻结，Q 不会误触发突破
 - 测试：菜单翻页驱动改为合成 `InputEventKey`（`parse_input_event`）——**同帧 press+release 会吞掉 `_input` 派发，只发按下事件**
+
+## 追加2：门口交互改 ↑ + 设置页 Q/E 翻页修复（2026-08-05 补）
+
+- **门口（Portal）**：进门/出门交互从 X（`interact`）改为 **↑（`up`）**，提示改 `[↑] 进入/离开`；Portal `_process` 只轮询 `up`，X 完全不再进门。`up` 在飞行时兼作垂直控制（`get_fly_input`），门口只取按下沿、仅在 Area 重叠时触发，不冲突。bootstrap 传送门提示同步改 ↑；test_huaguoshan 进/出洞改按 ↑
+- **设置页 Q/E 翻页修复**：GameMenu `_input` 残留的 `lr_for_settings` 早退（设置页行 0/1 选中时拦截 Q/E）删除——←/→ 翻页已移除，该守卫过时，导致音量/语言行选中时 Q/E 无法翻大标签。现 Q/E 任何行都生效
+- **提示行同步**：GameMenu 各页 hint「←/→ 切换页」改「Q/E 切换页」；test_menu 重写为真正到设置页（8 次 E）+ 选中行 Q/E 翻页回归断言

@@ -98,7 +98,7 @@ bin/              # 编译产物 (.so)，gitignored
   - 本命法宝：温养 120%→150% → 渡劫觉醒 200%，飞升后锁定
 - **`Enemy`** (`src/nodes/enemy.h/cpp`) — 6 states: Idle, Patrol, Chase, Attack, Hurt, Death
   - 种类标志：近战/远程（Projectile）/飞行/Boss（多阶段）
-- **`Portal`** (`src/nodes/portal.h/cpp`) — Self-contained room transition (composition over inheritance)
+- **`Portal`** (`src/nodes/portal.h/cpp`) — Self-contained room transition (composition over inheritance)；门口交互用 **↑（上键）**进入/离开房间，提示 `[↑] 进入/离开`，X 已从门口交互移除（Portal `_process` 只轮询 `up`）
 - **`CameraRoom2D`** (`src/nodes/camera_room_2d.h/cpp`) — 跟随增益随距离缩放（高速飞行不落后）+ room lock
 - **`CultivationSystem`** (`src/cultivation/`) — 13 境界、int64 累计修为经验（9系门槛，**到顶封顶卡境界**）、期数、四轴（门派/五仙/出身/果位）、混元一气、TitleComposer 称号、灵力法力池（与修为分离，自动回复）、生命/攻防速随境界、突破调试开关
 - **`AbilityManager`** (`src/cultivation/`) — 境界门控能力（纳戒/飞行/云游等）
@@ -146,7 +146,7 @@ bin/              # 编译产物 (.so)，gitignored
 
 ### Input Map
 
-方向键移动（WASD 已腾出给技能槽，DNF 式），X 普攻+交互+菜单确认合一（交互优先；采集/传送门/背包使用装备/炼丹/设置确认都用 X，菜单内暂停不冲突），C 跳跃（空中再按=飞行），Z 冲刺，V 威压，R 灵压，O 进出洞天（炼虚解锁），Space 确认副键，I 背包，Q 修炼突破，ESC 多页菜单（菜单内 **Q/E 翻页**——翻页严格只用 Q/E，设置页音量/语言行 ←/→ 为调节，←/→ 不被顶部翻页拦截）；技能槽：A/S 武技、D/F 法术、T 神通、Y 仙法（预留），B 切法宝页（A~H=法宝槽）；数字键 1~6 消耗品快捷栏
+方向键移动（WASD 已腾出给技能槽，DNF 式），X 普攻+交互+菜单确认合一（交互优先；采集/储物箱/背包使用装备/炼丹/设置确认都用 X，菜单内暂停不冲突；**门口传送门交互已改用 ↑**，X 不进门），C 跳跃（空中再按=飞行），Z 冲刺，V 威压，R 灵压，O 进出洞天（炼虚解锁），Space 确认副键，I 背包，Q 修炼突破，ESC 多页菜单（菜单内 **Q/E 翻页**——翻页严格只用 Q/E 任何行都生效，设置页音量/语言行 ←/→ 为调节，←/→ 不被顶部翻页拦截）；技能槽：A/S 武技、D/F 法术、T 神通、Y 仙法（预留），B 切法宝页（A~H=法宝槽）；数字键 1~6 消耗品快捷栏
 
 ### Collision Layers
 

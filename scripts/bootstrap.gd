@@ -17,8 +17,8 @@ func _setup_game():
 	var hint = ctx.hint
 
 	# ---- Portals (composition: each portal owns its scene lifecycle) ----
-	WC.create_portal(self, 600, "res://scenes/rooms/town.tscn", "[X] Enter Town", player, camera, hint)
-	WC.create_portal(self, 1000, "res://scenes/rooms/cave.tscn", "[X] Enter Cave", player, camera, hint)
+	WC.create_portal(self, 600, "res://scenes/rooms/town.tscn", "[↑] Enter Town", player, camera, hint)
+	WC.create_portal(self, 1000, "res://scenes/rooms/cave.tscn", "[↑] Enter Cave", player, camera, hint)
 
 	# ---- Enemies (variety: melee, archer, flyer, boss) ----
 	WC.spawn_enemy(self, Vector2(350, 200), Color(0.9, 0.2, 0.2, 1), 60.0, 200.0).set("realm", 0)
@@ -186,7 +186,7 @@ func _setup_game():
 		yuan.set("max_health", 5.0); yuan.set("current_health", 5.0)
 		yuan.set("attack_damage", 12.0); yuan.set("realm", 1)
 	# 水帘洞秘境入口（复用 Portal 房间模式；洞内另有乾坤）
-	WC.create_portal(self, 7000, "res://scenes/rooms/shuilian_dong.tscn", "[X] 入水帘洞", player, camera, hint)
+	WC.create_portal(self, 7000, "res://scenes/rooms/shuilian_dong.tscn", "[↑] 入水帘洞", player, camera, hint)
 
 	# ===== 东海之滨 (8000~9000)：巡海夜叉 + 定海神针铁 =====
 	WC.make_landmark(self, 8050, 120, "东海之滨", Color(0.4, 0.7, 1.0, 1))

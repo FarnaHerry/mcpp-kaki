@@ -55,7 +55,7 @@ protected:
 private:
 	String _target_scene;
 	String _spawn_marker = "SpawnEntrance";
-	String _prompt_text = "[X] Enter";
+	String _prompt_text = "[↑] Enter";
 	Rect2 _room_bounds = Rect2(0, 0, 400, 270);
 
 	Node2D *_player = nullptr;

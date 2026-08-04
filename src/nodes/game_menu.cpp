@@ -143,11 +143,7 @@ void GameMenu::_input(const Ref<InputEvent> &p_event) {
 	Ref<InputEventKey> k = p_event;
 	if (k.is_null() || !k->is_pressed() || k->is_echo()) return;
 
-	// Settings page: left/right adjust volume (row 0) or language (row 1)
-	bool lr_for_settings = (_page == PAGE_SETTINGS && (_settings_sel == 0 || _settings_sel == 1));
-	if (lr_for_settings) return;
-
-	// Q = prev tab, E = next tab
+	// Q/E 翻页任何行都生效（设置页 ←/→ 音量/语言调节走 _process，互不干扰）
 	if (k->get_keycode() == KEY_Q) {
 		_switch_page(_page - 1);
 		return;
@@ -186,47 +182,47 @@ void GameMenu::_rebuild_page() {
 	switch (_page) {
 		case PAGE_INVENTORY:
 			if (_inv_panel) _inv_panel->open();
-			_set_hint(LOC("←/→ 切换页  ↑/↓ 选择  X 使用/装备  ESC 关闭"));
+			_set_hint(LOC("Q/E 切换页  ↑/↓ 选择  X 使用/装备  ESC 关闭"));
 			break;
 		case PAGE_ABILITY:
 			if (_inv_panel) _inv_panel->close();
 			_build_ability_page();
-			_set_hint(LOC("←/→ 切换页  ESC 关闭"));
+			_set_hint(LOC("Q/E 切换页  ESC 关闭"));
 			break;
 		case PAGE_GONGFA:
 			if (_inv_panel) _inv_panel->close();
 			_build_gongfa_page();
-			_set_hint(LOC("←/→ 切换页  ESC 关闭"));
+			_set_hint(LOC("Q/E 切换页  ESC 关闭"));
 			break;
 		case PAGE_SKILL:
 			if (_inv_panel) _inv_panel->close();
 			_build_skill_page();
-			_set_hint(LOC("←/→ 切换页  ESC 关闭"));
+			_set_hint(LOC("Q/E 切换页  ESC 关闭"));
 			break;
 		case PAGE_ARTIFACT:
 			if (_inv_panel) _inv_panel->close();
 			_build_artifact_page();
-			_set_hint(LOC("←/→ 切换页  ESC 关闭"));
+			_set_hint(LOC("Q/E 切换页  ESC 关闭"));
 			break;
 		case PAGE_SECT:
 			if (_inv_panel) _inv_panel->close();
 			_build_sect_page();
-			_set_hint(LOC("←/→ 切换页  ↑/↓ 选宗  X 拜入/叛门  ESC 关闭"));
+			_set_hint(LOC("Q/E 切换页  ↑/↓ 选宗  X 拜入/叛门  ESC 关闭"));
 			break;
 		case PAGE_TRAVEL:
 			if (_inv_panel) _inv_panel->close();
 			_build_travel_page();
-			_set_hint(LOC("←/→ 切换页  ↑/↓ 选洲  X 前往  ESC 关闭"));
+			_set_hint(LOC("Q/E 切换页  ↑/↓ 选洲  X 前往  ESC 关闭"));
 			break;
 		case PAGE_ALCHEMY:
 			if (_inv_panel) _inv_panel->close();
 			_build_alchemy_page();
-			_set_hint(LOC("←/→ 切换页  ↑/↓ 选方  X 炼制  ESC 关闭"));
+			_set_hint(LOC("Q/E 切换页  ↑/↓ 选方  X 炼制  ESC 关闭"));
 			break;
 		case PAGE_SETTINGS:
 			if (_inv_panel) _inv_panel->close();
 			_build_settings_page();
-			_set_hint(LOC("←/→ 切换页  ↑/↓ 选择  ←/→ 调节  X 确认  ESC 关闭"));
+			_set_hint(LOC("Q/E 切换页  ↑/↓ 选择  ←/→ 调节  X 确认  ESC 关闭"));
 			break;
 	}
 }

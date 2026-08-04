@@ -63,7 +63,8 @@ namespace godot {
     void Portal::_process(double p_delta) {
         if (!_player_inside || !_player)
             return;
-        if (Input::get_singleton()->is_action_just_pressed("interact")) {
+        // 进门/出门用 ↑（上键）；X 已从门口交互移除
+        if (Input::get_singleton()->is_action_just_pressed("up")) {
             trigger();
         }
     }
@@ -138,7 +139,7 @@ namespace godot {
         // Create exit portal inside the room
         _create_exit_portal();
 
-        _prompt_text = LOC("[X] 离开");
+        _prompt_text = LOC("[↑] 离开");
     }
 
     void Portal::_exit() {
@@ -160,13 +161,13 @@ namespace godot {
         // Unlock camera
         if (_camera) _camera->exit_room();
 
-        _prompt_text = LOC("[X] 进入");
+        _prompt_text = LOC("[↑] 进入");
     }
 
     void Portal::_create_exit_portal() {
         Portal *ep = memnew(Portal);
         ep->set_name("ExitPortal");
-        ep->_prompt_text = LOC("[X] 离开");
+        ep->_prompt_text = LOC("[↑] 离开");
         ep->_entrance_portal = this; // delegate back
         ep->_player = _player;
         ep->_camera = _camera;

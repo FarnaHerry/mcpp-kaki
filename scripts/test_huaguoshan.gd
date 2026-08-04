@@ -82,7 +82,7 @@ func _process(delta) -> bool:
 			_next = _t + 0.6 # 等 Area 重叠注册
 			_step = 3
 		3:
-			_press("interact")
+			_press("up") # 门口交互改 ↑（X 已移除）
 			_next = _t + 0.8
 			_step = 4
 		4:
@@ -113,7 +113,7 @@ func _process(delta) -> bool:
 			_next = _t + 0.6
 			_step = 6
 		6:
-			_press("interact")
+			_press("up") # 出洞：ExitPortal 按 ↑
 			_next = _t + 0.8
 			_step = 7
 		7:
