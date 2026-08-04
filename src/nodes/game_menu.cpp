@@ -182,7 +182,7 @@ void GameMenu::_rebuild_page() {
 	switch (_page) {
 		case PAGE_INVENTORY:
 			if (_inv_panel) _inv_panel->open();
-			_set_hint(LOC("Q/E 切换页  ↑/↓ 选择  X 使用/装备  ESC 关闭"));
+			_set_hint(LOC("Q/E 切换页  ↑/↓ 选择  ←/→ 列移  ↑筛选  X 使用/装备  ESC 关闭"));
 			break;
 		case PAGE_ABILITY:
 			if (_inv_panel) _inv_panel->close();
@@ -603,6 +603,18 @@ void GameMenu::_handle_skill_input() {
 		_skill_sel = Math::min(count - 1, _skill_sel + GRID_COLS);
 		_rebuild_page();
 	}
+	if (input->is_action_just_pressed(LOC("left"))) {
+		int row = _skill_sel / GRID_COLS;
+		int col = Math::max(0, _skill_sel % GRID_COLS - 1);
+		_skill_sel = Math::min(count - 1, row * GRID_COLS + col);
+		_rebuild_page();
+	}
+	if (input->is_action_just_pressed(LOC("right"))) {
+		int row = _skill_sel / GRID_COLS;
+		int col = Math::min(GRID_COLS - 1, _skill_sel % GRID_COLS + 1);
+		_skill_sel = Math::min(count - 1, row * GRID_COLS + col);
+		_rebuild_page();
+	}
 	// 按槽键装配当前选中技能（G/H 槽留给法宝页，不参与装配）
 	static const char *SLOT_ACTIONS[6] = { "skill_a", "skill_s", "skill_d", "skill_f", "skill_t", "skill_y" };
 	static const int SLOT_IDX[6] = { 0, 1, 2, 3, 6, 7 };
@@ -997,41 +1009,58 @@ void GameMenu::_build_alchemy_page() {
 	}
 	add_line(herb_line, 40.0f, 58.0f, 8, head_c);
 
-	// 配方行
+	// 丹方卡片（GridList，3 列；←/→ 列移 ↑/↓ 行移）
 	Array recipes = al->get_recipe_list();
-	int sel = CLAMP(_alchemy_sel, 0, (int)recipes.size() - 1);
+	static const int GRID_COLS = 3;
+	_alchemy_sel = CLAMP(_alchemy_sel, 0, (int)recipes.size() - 1);
+	Array items;
 	for (int i = 0; i < recipes.size(); i++) {
 		Dictionary r = recipes[i];
-		float y = 80.0f + i * 24;
-		bool locked = r["realm_locked"];
-		bool can = r["can_craft"];
-		bool is_sel = (i == sel);
-
-		// 主行：选中标记 + 丹名 + 效果 + 门控标注
-		String main_line = (is_sel ? LOC("> ") : LOC("  ")) + String(r["name"]) +
-			LOC("  ") + String(r["effect"]);
-		if (locked) main_line += LOC("  （金丹起）");
-		Color mc = is_sel ? sel_c : (can ? body_c : dim_c);
-		add_line(main_line, 60.0f, y, 9, mc);
-
-		// 材料行：够=亮 / 不够=红
-		String mat_line = LOC("    ");
-		Array mats = r["mats"];
-		for (int j = 0; j < mats.size(); j++) {
-			Dictionary m = mats[j];
-			if (j > 0) mat_line += " + ";
-			mat_line += String(m["name"]) + "×" + String::num_int64((int)m["need"]) +
-				"(" + String::num_int64((int)m["have"]) + ")";
+		Dictionary cell;
+		cell["text"] = String(r["name"]);
+		bool locked = bool(r["realm_locked"]);
+		bool can = bool(r["can_craft"]);
+		if (locked) {
+			cell["dim"] = true; // 境界未达：灰显
+			cell["color"] = Color(0.5f, 0.5f, 0.5f, 1.0f);
+		} else if (can) {
+			cell["color"] = ok_c; // 材料齐：绿
+		} else {
+			cell["color"] = bad_c; // 材料不足：红
 		}
-		add_line(mat_line, 60.0f, y + 11, 8, can ? dim_c : bad_c);
+		items.push_back(cell);
 	}
+	GridList *grid = memnew(GridList);
+	grid->set_position(Vector2(40, 78));
+	grid->set_size(Vector2(400, 84)); // 3 行窗口
+	add_child(grid);
+	grid->set_columns(GRID_COLS);
+	grid->set_cell_size(Vector2(133, 28));
+	grid->set_items(items);
+	grid->set_selected(_alchemy_sel);
+	_page_nodes.push_back(grid);
+
+	// 选中丹方详情：效果 + 材料（够=灰 / 不够=红）
+	Dictionary selr = recipes[_alchemy_sel];
+	String detail = LOC(String(selr["name"])) + LOC("  ") + LOC(String(selr["effect"]));
+	if (bool(selr["realm_locked"])) detail += LOC("  （金丹起）");
+	add_line(detail, 40.0f, 170.0f, 9, sel_c);
+	String mat_line = LOC("材料 ");
+	Array mats = selr["mats"];
+	for (int j = 0; j < mats.size(); j++) {
+		Dictionary m = mats[j];
+		if (j > 0) mat_line += LOC(" + ");
+		mat_line += String(m["name"]) + LOC("×") + String::num_int64((int)m["need"]) +
+			LOC("(") + String::num_int64((int)m["have"]) + LOC(")");
+	}
+	add_line(mat_line, 40.0f, 184.0f, 8, bool(selr["can_craft"]) ? dim_c : bad_c);
 
 	// 炼制结果提示
 	if (!_alchemy_msg.is_empty()) {
 		bool ok = _alchemy_msg.contains(LOC("炼成"));
 		add_line(_alchemy_msg, 60.0f, 250.0f, 10, ok ? ok_c : bad_c);
 	} else {
-		add_line(LOC("丹炉随身，随时随地可炼。炼制亦修行：每炉喂练气 +5。"), 60.0f, 250.0f, 8, dim_c);
+		add_line(LOC("↑/↓←/→ 选丹方  X 炼制。炼制亦修行：每炉喂练气 +5。"), 60.0f, 250.0f, 8, dim_c);
 	}
 }
 
@@ -1039,13 +1068,29 @@ void GameMenu::_handle_alchemy_input() {
 	AlchemySystem *al = _player ? _player->get_alchemy() : nullptr;
 	if (!al) return;
 	Input *input = Input::get_singleton();
-	int count = al->get_recipe_list().size();
+	Array recipes = al->get_recipe_list();
+	int count = recipes.size();
+	if (count == 0) return;
+	_alchemy_sel = CLAMP(_alchemy_sel, 0, count - 1);
+	static const int GRID_COLS = 3; // 与 _build_alchemy_page 一致
 	if (input->is_action_just_pressed(LOC("up"))) {
-		_alchemy_sel = (_alchemy_sel - 1 + count) % count;
+		_alchemy_sel = Math::max(0, _alchemy_sel - GRID_COLS);
 		_rebuild_page();
 	}
 	if (input->is_action_just_pressed(LOC("down"))) {
-		_alchemy_sel = (_alchemy_sel + 1) % count;
+		_alchemy_sel = Math::min(count - 1, _alchemy_sel + GRID_COLS);
+		_rebuild_page();
+	}
+	if (input->is_action_just_pressed(LOC("left"))) {
+		int row = _alchemy_sel / GRID_COLS;
+		int col = Math::max(0, _alchemy_sel % GRID_COLS - 1);
+		_alchemy_sel = Math::min(count - 1, row * GRID_COLS + col);
+		_rebuild_page();
+	}
+	if (input->is_action_just_pressed(LOC("right"))) {
+		int row = _alchemy_sel / GRID_COLS;
+		int col = Math::min(GRID_COLS - 1, _alchemy_sel % GRID_COLS + 1);
+		_alchemy_sel = Math::min(count - 1, row * GRID_COLS + col);
 		_rebuild_page();
 	}
 	if (input->is_action_just_pressed(LOC("interact"))) {
@@ -1272,8 +1317,10 @@ void GameMenu::_process(double p_delta) {
 
 	switch (_page) {
 		case PAGE_INVENTORY:
-			if (input->is_action_just_pressed(LOC("up")))   _inv_panel->ext_navigate(-1);
-			if (input->is_action_just_pressed(LOC("down"))) _inv_panel->ext_navigate(+1);
+			if (input->is_action_just_pressed(LOC("up")))    _inv_panel->ext_navigate(-1);
+			if (input->is_action_just_pressed(LOC("down")))  _inv_panel->ext_navigate(+1);
+			if (input->is_action_just_pressed(LOC("left")))  _inv_panel->ext_navigate_h(-1);
+			if (input->is_action_just_pressed(LOC("right"))) _inv_panel->ext_navigate_h(+1);
 			if (input->is_action_just_pressed(LOC("interact"))) _inv_panel->ext_use();
 			break;
 		case PAGE_ALCHEMY:

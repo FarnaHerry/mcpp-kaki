@@ -20,6 +20,7 @@ void GridList::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_items", "items"), &GridList::set_items);
 	ClassDB::bind_method(D_METHOD("get_item_count"), &GridList::get_item_count);
 	ClassDB::bind_method(D_METHOD("set_columns", "cols"), &GridList::set_columns);
+	ClassDB::bind_method(D_METHOD("get_columns"), &GridList::get_columns);
 	ClassDB::bind_method(D_METHOD("set_cell_size", "size"), &GridList::set_cell_size);
 	ClassDB::bind_method(D_METHOD("set_active", "active"), &GridList::set_active);
 	ClassDB::bind_method(D_METHOD("set_selected", "idx"), &GridList::set_selected);
@@ -74,8 +75,17 @@ void GridList::move_selection(int p_dx, int p_dy) {
 	int count = int(_items.size());
 	if (count == 0)
 		return;
-	int next = _selected + p_dx + p_dy * _columns;
-	_selected = CLAMP(next, 0, count - 1);
+	if (p_dx != 0) {
+		// 水平：钳到行内（不跨行回卷）；最后一行不满时退到行末
+		int row = _selected / _columns;
+		int col = CLAMP(_selected % _columns + p_dx, 0, _columns - 1);
+		int idx = row * _columns + col;
+		_selected = idx < count ? idx : count - 1;
+	}
+	if (p_dy != 0) {
+		int next = _selected + p_dy * _columns;
+		_selected = CLAMP(next, 0, count - 1);
+	}
 	_ensure_visible();
 	refresh();
 }

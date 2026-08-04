@@ -107,8 +107,8 @@ bin/              # 编译产物 (.so)，gitignored
 - **`Inventory` / `ItemDatabase` / `ItemPickup`** (`src/inventory/`, `src/nodes/`) — 24→999 纳戒扩容、装备三槽、掉落拾取
 - **`DropSystem`** (`src/core/drop_system.h/cpp`) — 所有掉落物的唯一入口（掉落表+生成）
 - **`SaveSystem` / `GameManager`** (`src/core/`) — ConfigFile 存档、检查点、重生、击杀统计
-- **`GameHUD` / `TelemetryPanel` / `InventoryPanel`** (`src/nodes/`) — UI 三类分立：游戏 HUD（生命/灵力/修为%条，F4）/ 遥测（F3/F5）/ 背包（I）
-- **`GridList`** (`src/nodes/grid_list.*`, nodes.cppm 导出 + GDREGISTER) — 统一格子列表组件：数据 = `Array of Dictionary {text, color?, dim?}`，host 驱动交互（`move_selection/get_selected`），cell 池（frame+bg+Label 11px），行数按 size.y 推导尺寸变化自动重建；`set_active(false)`=只读无选中高亮（被动/锁定项灰显）。已接入背包物品、仓库双栏、技能页主动/被动、能力页、法宝页——物品/技能/法宝统一格子呈现（暂无图标用名字）
+- **`GameHUD` / `TelemetryPanel` / `InventoryPanel`** (`src/nodes/`) — UI 三类分立：游戏 HUD（生命/灵力/修为%条，F4）/ 遥测（F3/F5）/ 背包（I）。**背包类型筛选**：物品标题行右侧筛选行（[全部] 消耗品 材料 装备 关键物品，[活动项] 括起），网格顶行再按 ↑ 进筛选行，←/→ 循环切类型（网格按类型过滤，`_filter_matches`），↓/X 返回网格筛选保持；重开背包回「全部」；独立打开（I）与 GameMenu 背包页共用 `ext_navigate/ext_navigate_h/ext_use`
+- **`GridList`** (`src/nodes/grid_list.*`, nodes.cppm 导出 + GDREGISTER) — 统一格子列表组件：数据 = `Array of Dictionary {text, color?, dim?}`，host 驱动交互（`move_selection/get_selected`），cell 池（frame+bg+Label 11px），行数按 size.y 推导尺寸变化自动重建；`set_active(false)`=只读无选中高亮（被动/锁定项灰显）。**2D 网格导航** `move_selection(dx,dy)`：横向（dx）行内钳制不跨行回卷、末行不满退行末；纵向（dy）±列数。已接入背包物品、仓库双栏、技能页主动/被动、能力页、法宝页、炼丹页——物品/技能/法宝/丹方统一格子呈现（暂无图标用名字）
 - **DamageNumbers** (`src/nodes/`) — 伤害数字唯一入口：SignalBus `damage_dealt(pos,amount,is_player_victim)` → 世界坐标上浮淡出（敌=金/玩家=红）
 - **DamageCalculator** (`src/combat/damage_calculator.h`, header-only) — 伤害统一结算：物理(防御减免,min1)/法术(抗性比例,cap0.9)/元素(五行抗性,克制×1.25只增伤)；`DamageInfo`+`DefenseProfile`；HitBox/Projectile 携带 `damage_category`+`element`，投射物经 `take_damage_typed` 入口
 - **GongfaSystem** (`src/cultivation/gongfa_system.*`) — 功法：炼体/练气双槽(1+1)，黄/玄/地品(3/5/7层)，行为喂养主系100%/副系20%(受击/近战击杀养炼体，耗灵养练气)，层数乘区(1+每层×层数)，切换保留熟练(_known)，存档 pd["gongfa"]
@@ -128,10 +128,10 @@ bin/              # 编译产物 (.so)，gitignored
 - **法则之力** (CultivationSystem) — 化神解锁独立能量条(max100,回复3/s+击杀+10)，神通唯一消耗源；HUD右上角紫条；存档 cd["law_power"]
 - **SectSystem** (`src/cultivation/sect_system.*`) — 宗门：四宗一散（蜀山攻/昆仑灵力回灵/蓬莱生命防御/魔罗击杀修为+攻），职位 外门(0)/内门(100)/真传(300) 加成随档升；贡献=击杀+1/Boss+10；炼气门槛拜师、叛门贡献清零、已学专属技保留；乘区全走既有组合点（攻/生命/灵力上限+回灵/防御/击杀修为）；专属技×4（万剑归宗金系剑扇/太清神光水系法术/玄龟护体自buff防25%/血影斩突进）；存档 pd["sect"]
 - **威压/灵压** (`src/nodes/player.*` + `enemy.*`) — 威压 V：耗灵30/cd8s/r240px，realm<玩家→慑服(suppress:定身+灰显 2+0.5×gap s cap5)；灵压 R：耗灵60/cd15s/r200px，realm≤玩家-2→法伤 atk×(2+0.5×gap)，gap≥4→镇杀99999；护佑：敌方高阶(realm≥玩家)在场→300px低阶全免+反弹5%(V)/8%(R)生命；Enemy新增 realm 字段+suppress(t)+enemies group；bootstrap 全敌 realm 标注（0小怪→4螭龙→8北俱）
-- **GameMenu** (`src/nodes/game_menu.*`) — ESC 多页管理菜单（背包/能力/功法/技能/法宝/宗门/云游/炼丹/设置 共9页），托管 InventoryPanel（外部驱动 ext_navigate/ext_use）；能力页=主动/被动分区技能树总览（只读 v1）；技能页=主动装配（↑/↓选已学主动，A/S/D/F/T/Y 装入对应槽，类型不符拒装提示）+被动分区（名+效果%）；宗门页=未入门四宗列表选宗拜入/已入门职位贡献加成总览+叛门；设置页含音量(持久化 user://settings.cfg)/保存/退出；嵌套暂停安全（还原原暂停状态）；页签条独立 CanvasLayer 130；**翻页严格只用 Q/E**（`_input` 原始键码，←/→ 不被顶部翻页拦截，留给页内横向导航）
+- **GameMenu** (`src/nodes/game_menu.*`) — ESC 多页管理菜单（背包/能力/功法/技能/法宝/宗门/云游/炼丹/设置 共9页），托管 InventoryPanel（外部驱动 ext_navigate/ext_navigate_h/ext_use）；背包页=GridList 2D 导航（↑/↓ 行移 ←/→ 列移，顶行↑进类型筛选行）+ 筛选；能力页=主动/被动分区技能树总览（只读 v1）；技能页=主动装配（↑/↓←/→ 选已学主动，A/S/D/F/T/Y 装入对应槽，类型不符拒装提示）+被动分区（名+效果%）；宗门页=未入门四宗列表选宗拜入/已入门职位贡献加成总览+叛门；设置页含音量(持久化 user://settings.cfg)/保存/退出；嵌套暂停安全（还原原暂停状态）；页签条独立 CanvasLayer 130；**翻页严格只用 Q/E**（`_input` 原始键码，←/→ 不被顶部翻页拦截，留给页内横向导航/筛选）
 - **HUD 底部技能栏**: 武技[A/S] 法术[D/F] 法宝[G/H]（技能系统已填充：显示装配技能名+冷却）
 - **BuffSystem** (`src/cultivation/buff_system.*`) — 丹药/食物/状态统一 Buff：def 表（冰心水抗15%/赤焰攻15%/金刚防20%, 300s）、同名刷新不叠加、到期自消、攻/防/元素抗性乘区钩子、HUD buff 行（名+秒）、存档 pd["buffs"]
-- **AlchemySystem** (`src/cultivation/alchemy_system.*`) — 炼丹：丹炉随身，7 固定配方，成功率字段 v1=100%（失败机制预留），地品金丹门控，每炉喂练气+5；GameMenu 第8页「炼丹」（↑/↓选方 X炼制，材料够=亮/不够=灰）
+- **AlchemySystem** (`src/cultivation/alchemy_system.*`) — 炼丹：丹炉随身，7 固定配方，成功率字段 v1=100%（失败机制预留），地品金丹门控，每炉喂练气+5；GameMenu 第8页「炼丹」**卡片化**（3 列 GridList：锁定=灰、材料够=绿、不够=红），**2D 导航** ↑/↓ 行移 ←/→ 列移（行内钳制不跨行回卷），X 炼制；详情行（y=170）显示 丹方名+效果（锁定附「（金丹起）」）+材料行（y=184）
 - **草药** — Item grade 字段（0凡/1灵/2地）；7 草药（MATERIAL）；**HerbNode** (`src/nodes/`) 采集点（[X] 采集入包+喂练气+2，枯萎，房间重进刷新）；小怪掉止血草/聚灵草，Boss 千年灵芝保底
 - **use_consumable 统一入口** — Player::use_consumable(item_id)：扣数量+回血/比例回血/回灵(mana_amount)/修为(energy_amount)/buff；拾取自动用、背包面板、数字键栏全部走这里；聚气丹已迁移为回灵50
 - **数字键消耗品栏** — 1~6 快捷栏（consume_1..6），拾取消耗品自动入栏（首个空位/耗尽槽），HUD 技能栏上方一行（名首字+数量），存档 pd["consumable_bar"]
@@ -146,7 +146,7 @@ bin/              # 编译产物 (.so)，gitignored
 
 ### Input Map
 
-方向键移动（WASD 已腾出给技能槽，DNF 式），X 普攻+交互+菜单确认合一（交互优先；采集/储物箱/背包使用装备/炼丹/设置确认都用 X，菜单内暂停不冲突；**门口传送门交互已改用 ↑**，X 不进门），C 跳跃（空中再按=飞行），Z 冲刺，V 威压，R 灵压，O 进出洞天（炼虚解锁），Space 确认副键，I 背包，Q 修炼突破，ESC 多页菜单（菜单内 **Q/E 翻页**——翻页严格只用 Q/E 任何行都生效，设置页音量/语言行 ←/→ 为调节，←/→ 不被顶部翻页拦截）；技能槽：A/S 武技、D/F 法术、T 神通、Y 仙法（预留），B 切法宝页（A~H=法宝槽）；数字键 1~6 消耗品快捷栏
+方向键移动（WASD 已腾出给技能槽，DNF 式），X 普攻+交互+菜单确认合一（交互优先；采集/储物箱/背包使用装备/炼丹/设置确认都用 X，菜单内暂停不冲突；**门口传送门交互已改用 ↑**，X 不进门），C 跳跃（空中再按=飞行），Z 冲刺，V 威压，R 灵压，O 进出洞天（炼虚解锁），Space 确认副键，I 背包（背包页 ↑/↓ 行移 ←/→ 列移，网格顶行再按 ↑ 进类型筛选行、←/→ 循环切类型、↓/X 返回网格），Q 修炼突破，ESC 多页菜单（菜单内 **Q/E 翻页**——翻页严格只用 Q/E 任何行都生效，设置页音量/语言行 ←/→ 为调节，←/→ 不被顶部翻页拦截）；技能槽：A/S 武技、D/F 法术、T 神通、Y 仙法（预留），B 切法宝页（A~H=法宝槽）；数字键 1~6 消耗品快捷栏
 
 ### Collision Layers
 

@@ -192,6 +192,7 @@ public:
 
 	void set_external_drive(bool p_on) { _external_drive = p_on; }
 	void ext_navigate(int p_dir);
+	void ext_navigate_h(int p_dir);
 	void ext_use();
 	void set_selected_index(int p_idx); // 紧凑格子索引（GridList 选中）
 
@@ -217,6 +218,12 @@ private:
 	std::vector<int> _slot_map;      // 紧凑格子索引 → 背包真实槽位
 	Label *_action_hint = nullptr;   // 选中项操作提示（[X]使用/装备）
 
+	// ---- 类型筛选（全部/消耗品/材料/装备/关键物品）----
+	static constexpr int FILTER_COUNT = 5;
+	Label *_filter_label = nullptr;  // 筛选行（物品标题行右侧，[活动项] 括起）
+	int _filter = 0;                 // 0=全部 1..4=Item::Type
+	bool _filtering = false;         // 选中在筛选行（↑ 进入 / ↓或X 返回）
+
 	Label *_stats_label = nullptr;
 
 	Label *_close_hint = nullptr;
@@ -235,6 +242,8 @@ private:
 	void _build_close_hint();
 	void _handle_input_action(const String &p_action);
 	void _on_language_changed(const String &p_locale);
+	void _update_filter_label();
+	bool _filter_matches(const Item *p_def) const;
 };
 // 统一格子列表：物品/技能/法宝/功法等一切列表条目的通用格子渲染。
 // 数据 = Array of {text, color?, dim?}；无图标时代一律名字格子。
@@ -249,6 +258,7 @@ public:
 	int get_item_count() const { return int(_items.size()); }
 
 	void set_columns(int p_cols);
+	int get_columns() const { return _columns; }
 	void set_cell_size(const Vector2 &p_size);
 	void set_active(bool p_active); // 非激活栏（如仓库双栏的另一栏）暗化
 

@@ -46,3 +46,14 @@
 - **门口（Portal）**：进门/出门交互从 X（`interact`）改为 **↑（`up`）**，提示改 `[↑] 进入/离开`；Portal `_process` 只轮询 `up`，X 完全不再进门。`up` 在飞行时兼作垂直控制（`get_fly_input`），门口只取按下沿、仅在 Area 重叠时触发，不冲突。bootstrap 传送门提示同步改 ↑；test_huaguoshan 进/出洞改按 ↑
 - **设置页 Q/E 翻页修复**：GameMenu `_input` 残留的 `lr_for_settings` 早退（设置页行 0/1 选中时拦截 Q/E）删除——←/→ 翻页已移除，该守卫过时，导致音量/语言行选中时 Q/E 无法翻大标签。现 Q/E 任何行都生效
 - **提示行同步**：GameMenu 各页 hint「←/→ 切换页」改「Q/E 切换页」；test_menu 重写为真正到设置页（8 次 E）+ 选中行 Q/E 翻页回归断言
+
+## 追加3：炼丹页卡片化 + 2D 网格导航 + 背包类型筛选（2026-08-05 补）
+
+- **炼丹页卡片化**（`GameMenu._build_alchemy_page`）：7 配方改为 3 列 GridList 卡片（cell 133×28，(40,78) 400×84），卡片按显示逻辑配色：锁定=灰+dim、材料够=绿(ok_c)、不够=红(bad_c)；详情行 y=170（丹方名+效果，锁定附「（金丹起）」）+材料行 y=184
+- **2D 网格导航**：所有卡片页统一 `move_selection(dx,dy)` 语义——**横向（dx）行内钳制不跨行回卷、末行不满退行末；纵向（dy）±列数**。接入点：`GridList::move_selection`（组件级）、GameMenu 炼丹页/技能页 `_handle_*_input`、InventoryPanel `ext_navigate_h`（左右列移）、StoragePanel 左右列移；背包/仓库/炼丹/技能页 ←/→ 全部按列走，不再只是上下
+- **GridList** 新增 `get_columns()`（绑定）；`set_items` 时选中自动钳制
+- **背包类型筛选**（`InventoryPanel`）：物品标题行右侧筛选行 `[全部] 消耗品 材料 装备 关键物品`（[活动项] 括起），映射 `FILTER_TYPE={CONSUMABLE,MATERIAL,EQUIPMENT,KEY_ITEM}`；网格顶行再按 ↑ 进筛选行（`_filtering`），←/→ 循环切类型（`_filter_matches` 过滤 + `refresh()` 重建网格），↓/X 返回网格筛选保持；重开背包回「全部」；筛选行操作提示 `←/→ 筛选类型 ↑/↓ 返回`；GameMenu 背包页 hint 加 `↑筛选`；独立打开（I）与嵌入式共用 ext_* 三方法
+- **测试**：
+  - `test_alchemy.gd` 网格导航断言改用**按住一帧再释放**模式（同帧 press+release 对 `is_action_just_pressed` 轮询不可靠——本次实测同帧有时漏触发）——行首左移钳制/右列移/下行/左列移/上列移
+  - 新增 `test_inventory_filter.gd`：①默认全部 ②↑进筛选行 ③→消耗品/→材料 网格按类型过滤（只扫**可见** Label——GridList 过滤后隐藏格仍带旧文本）④↓返回网格筛选保持
+- **回归**：全量测试通过（test_double_jump 1 失败为预存问题，stash 基线同样失败，与本次改动无关；test_projectile 正常完成不打印 ALL PASS）

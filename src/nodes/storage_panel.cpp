@@ -245,12 +245,18 @@ void StoragePanel::_process(double p_delta) {
 		close();
 		return;
 	}
-	// 切栏走 _input 的 Q/E（←/→ 留给页内横向导航）
+	// 切栏走 _input 的 Q/E；←/→ 留给页内横向导航（2D 卡片列移）
 	if (input->is_action_just_pressed(LOC("up"))) {
 		_grids[_pane]->move_selection(0, -1);
 		_refresh();
 	} else if (input->is_action_just_pressed(LOC("down"))) {
 		_grids[_pane]->move_selection(0, +1);
+		_refresh();
+	} else if (input->is_action_just_pressed(LOC("left"))) {
+		_grids[_pane]->move_selection(-1, 0);
+		_refresh();
+	} else if (input->is_action_just_pressed(LOC("right"))) {
+		_grids[_pane]->move_selection(+1, 0);
 		_refresh();
 	} else if (input->is_action_just_pressed(LOC("interact"))) {
 		_transfer();

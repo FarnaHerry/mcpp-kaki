@@ -32,9 +32,14 @@ namespace godot {
 
 static const char *EQUIP_SLOT_NAMES[] = { "武器", "护甲", "饰品" };
 
+// 类型筛选选项：0=全部（显示所有），1..4 映射到 Item::Type
+static const char *FILTER_NAMES[] = { "全部", "消耗品", "材料", "装备", "关键物品" };
+static const int FILTER_TYPE[] = { Item::CONSUMABLE, Item::MATERIAL, Item::EQUIPMENT, Item::KEY_ITEM };
+
 void InventoryPanel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_player", "player"), &InventoryPanel::set_player);
 	ClassDB::bind_method(D_METHOD("ext_navigate", "dir"), &InventoryPanel::ext_navigate);
+	ClassDB::bind_method(D_METHOD("ext_navigate_h", "dir"), &InventoryPanel::ext_navigate_h);
 	ClassDB::bind_method(D_METHOD("ext_use"), &InventoryPanel::ext_use);
 	ClassDB::bind_method(D_METHOD("set_selected_index", "idx"), &InventoryPanel::set_selected_index);
 	ClassDB::bind_method(D_METHOD("toggle"), &InventoryPanel::toggle);
@@ -79,6 +84,9 @@ void InventoryPanel::toggle() {
 	set_visible(_visible);
 	if (_visible && _grid) {
 		_grid->set_selected(0);
+		_filter = 0; // 重开背包回到「全部」
+		_filtering = false;
+		_update_filter_label();
 		refresh();
 	}
 }
@@ -125,6 +133,8 @@ void InventoryPanel::refresh(const String &p_item_id, int p_qty) {
 		StringName item_id = slot_data["id"];
 		int qty = slot_data["quantity"];
 		const Item *def = ItemDatabase::get_singleton()->get_item(item_id);
+		if (!_filter_matches(def))
+			continue; // 类型筛选：非当前类型跳过
 
 		Dictionary cell;
 		String txt = def ? LOC(def->name) : String(item_id);
@@ -149,9 +159,11 @@ void InventoryPanel::refresh(const String &p_item_id, int p_qty) {
 	}
 	_grid->set_items(items);
 
-	// 选中项操作提示
+	// 选中项操作提示（筛选行时显示筛选说明）
 	String hint;
-	if (!_slot_map.empty()) {
+	if (_filtering) {
+		hint = LOC("←/→ 筛选类型  ↑/↓ 返回");
+	} else if (!_slot_map.empty()) {
 		int sel = _grid->get_selected();
 		Dictionary slot_data = inv->get_slot(_slot_map[sel]);
 		const Item *def = ItemDatabase::get_singleton()->get_item(slot_data.get("id", StringName()));
@@ -189,6 +201,7 @@ void InventoryPanel::refresh(const String &p_item_id, int p_qty) {
 	}
 
 	_stats_label->set_text(stats_txt);
+	_update_filter_label();
 }
 
 // ============================================================
@@ -202,13 +215,50 @@ void InventoryPanel::set_selected_index(int p_idx) {
 
 void InventoryPanel::ext_navigate(int p_dir) {
 	if (!_player || !_grid) return;
+	if (_filtering) {
+		// 筛选行 ↑/↓ 均返回网格
+		_filtering = false;
+		_grid->set_selected(0);
+		_update_filter_label();
+		refresh();
+		return;
+	}
+	// 顶行再按上 → 进入筛选行
+	if (p_dir < 0 && _grid->get_selected() / _grid->get_columns() == 0) {
+		_filtering = true;
+		_update_filter_label();
+		refresh();
+		return;
+	}
 	// 上下 = 网格行移动（±列数由 GridList 处理）
 	_grid->move_selection(0, p_dir < 0 ? -1 : +1);
 	refresh();
 }
 
+void InventoryPanel::ext_navigate_h(int p_dir) {
+	if (!_player || !_grid) return;
+	if (_filtering) {
+		// 筛选行：←/→ 循环切换类型
+		_filter = CLAMP(_filter + (p_dir < 0 ? -1 : +1), 0, FILTER_COUNT - 1);
+		_update_filter_label();
+		refresh();
+		return;
+	}
+	// 左右 = 网格列移动（行内钳制，不跨行回卷）
+	_grid->move_selection(p_dir < 0 ? -1 : +1, 0);
+	refresh();
+}
+
 void InventoryPanel::ext_use() {
 	if (!_player || !_grid) return;
+	if (_filtering) {
+		// X 确认筛选 → 返回网格
+		_filtering = false;
+		_grid->set_selected(0);
+		_update_filter_label();
+		refresh();
+		return;
+	}
 	Inventory *inv = _player->get_inventory();
 	if (!inv || _slot_map.empty()) return;
 
@@ -262,11 +312,11 @@ void InventoryPanel::_input(const Ref<InputEvent> &p_event) {
 			return;
 
 		case KEY_LEFT:
-			if (_grid) { _grid->move_selection(-1, 0); refresh(); }
+			ext_navigate_h(-1);
 			return;
 
 		case KEY_RIGHT:
-			if (_grid) { _grid->move_selection(+1, 0); refresh(); }
+			ext_navigate_h(+1);
 			return;
 
 		case KEY_E:
@@ -336,6 +386,13 @@ void InventoryPanel::_build_item_list() {
 	_grid->set_columns(6);
 	_grid->set_cell_size(Vector2(75, 22));
 
+	// 类型筛选行（物品标题右侧）：[全部] 消耗品 材料 装备 关键物品，[活动项] 括起
+	_filter_label = memnew(Label);
+	_filter_label->set_position(Vector2(50, 56));
+	_filter_label->add_theme_font_size_override("font_size", 11);
+	add_child(_filter_label);
+	_update_filter_label();
+
 	// 选中项操作提示
 	_action_hint = memnew(Label);
 	_action_hint->set_position(Vector2(16, 228));
@@ -370,8 +427,31 @@ void InventoryPanel::_on_language_changed(const String &p_locale) {
 	}
 	if (_inv_header) _inv_header->set_text(LOC("物品"));
 	if (_close_hint) _close_hint->set_text(LOC("[I/ESC] 关闭"));
-	// Refresh dynamic content (item names, stats, etc.)
+	// Refresh dynamic content (item names, stats, filter, etc.)
 	refresh();
+}
+
+void InventoryPanel::_update_filter_label() {
+	if (!_filter_label)
+		return;
+	String txt;
+	for (int i = 0; i < FILTER_COUNT; i++) {
+		if (i > 0)
+			txt += " ";
+		String name = LOC(FILTER_NAMES[i]);
+		txt += (i == _filter) ? "[" + name + "]" : name;
+	}
+	_filter_label->set_text(txt);
+	_filter_label->add_theme_color_override("font_color",
+			_filtering ? Color(1.0f, 0.85f, 0.35f, 1.0f) : Color(0.72f, 0.72f, 0.72f, 1.0f));
+}
+
+bool InventoryPanel::_filter_matches(const Item *p_def) const {
+	if (_filter == 0)
+		return true; // 全部
+	if (!p_def)
+		return false;
+	return (int)p_def->type == FILTER_TYPE[_filter - 1];
 }
 
 } // namespace godot

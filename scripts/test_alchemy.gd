@@ -20,6 +20,18 @@ func _check(cond: bool, msg: String):
 		_fail += 1
 		print("[FAIL] ", msg)
 
+func _scan(n: Node, s: String) -> bool:
+	if n is Label and String(n.text).contains(s):
+		return true
+	for c in n.get_children():
+		if _scan(c, s):
+			return true
+	return false
+
+func _has_label(s: String) -> bool:
+	var menu = root.find_child("GameMenu", true, false)
+	return menu != null and _scan(menu, s)
+
 func _count_item(inv, id) -> int:
 	for i in range(inv.call("get_capacity")):
 		var sd = inv.call("get_slot", i)
@@ -108,8 +120,34 @@ func _process(delta) -> bool:
 				if c is Label and "炼丹" in c.text:
 					found = true
 			_check(found, "alchemy page title exists in GameMenu")
-			Input.action_press("menu")
+			_check(_has_label("回春丹"), "丹方卡片：回春丹（首卡）")
+			_check(_has_label("回血 30"), "初始选中回春丹（详情行效果）")
+			Input.action_press("left") # 行首左移钳制（按住一帧；同帧释放会被 just_pressed 轮询错过）
 		19:
+			_check(_has_label("回血 30"), "行首左移钳制（仍回春丹）")
+			Input.action_release("left")
+			Input.action_press("right") # → 聚气丹
+		20:
+			_check(_has_label("回灵 50"), "右移到聚气丹（列移）")
+			Input.action_release("right")
+			Input.action_press("right") # → 冰心丹
+		21:
+			_check(_has_label("水抗+15% 300s"), "右移到冰心丹")
+			Input.action_release("right")
+			Input.action_press("down") # → 悟道丹（下行同列）
+		22:
+			_check(_has_label("修为+200"), "下移到悟道丹（行移）")
+			Input.action_release("down")
+			Input.action_press("left") # → 金刚丹
+		23:
+			_check(_has_label("防御+20% 300s"), "左移到金刚丹")
+			Input.action_release("left")
+			Input.action_press("up") # → 聚气丹（上行同列）
+		24:
+			_check(_has_label("回灵 50"), "上移到聚气丹")
+			Input.action_release("up")
+			Input.action_press("menu")
+		25:
 			_next = _t + 0.2
 			Input.action_release("menu")
 			if _fail == 0:
