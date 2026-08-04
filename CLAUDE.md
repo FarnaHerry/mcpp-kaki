@@ -121,7 +121,7 @@ bin/              # 编译产物 (.so)，gitignored
 - **东胜神洲补完** — 花果山(6000~8000：桃林粉台+猿怪+仙桃)+水帘洞秘境(scenes/rooms/shuilian_dong.tscn + scripts/rooms/，Portal 房间模式，白猿老祖精英，秘藏**身外化身残卷**)+东海之滨(8000~9000：巡海夜叉精英远程+**定海神针铁**武器攻+25 地品)；世界尽头墙移至 9000；检查点 6200/8200
 - **秘籍物品管线** — Item 新字段 `learn_skill`：use_consumable 统一入口习得技能（数据驱动，残卷/秘籍通用）；新物品：仙桃(50%回血+300修为)/身外化身残卷(地品)/定海神针铁
 - **身外化身神通（占位）** — TYPE_SHENTONG，FX_SELF_BUFF→`buff_shen_wai`(30s 攻+35%)，化神可施(法则50/冷却60s)，**非境界授予**，水帘洞残卷习得；分身实体协同作战后做
-- **GameMenu 云游页** — 第6页「云游」（背包/能力/功法/技能/法宝/**云游**/炼丹/设置）：四洲列表（名/描述/【当前】/未解锁+条件话术），↑/↓选洲 X前往（先关菜单还原暂停再 travel_to）；ContinentManager 在 _open_menu 惰性查找（WorldCommon 创建顺序在 GameMenu 之后）
+- **GameMenu 云游页** — 第7页「云游」（背包/能力/功法/技能/法宝/宗门/**云游**/炼丹/设置）：四洲列表（名/描述/【当前】/未解锁+条件话术），↑/↓选洲 X前往（先关菜单还原暂停再 travel_to）；ContinentManager 在 _open_menu 惰性查找（WorldCommon 创建顺序在 GameMenu 之后）
 - **ArtifactSystem** (`src/cultivation/artifact_system.*`) — 法宝：槽0=本命(镜像Player本命,飞升后锁定)+次要×2(飞升后+3)，威力系数本命1.2~2.0/次要1.0→1.2→1.5(两段温养)，攻击型祭出复用Skill效果管线(耗灵+冷却)，辅助型常驻被动入防御乘区；示例：飞剑(筑基)/照妖葫(金丹)/玄铁塔(元婴)；存档 pd["artifacts"]
 - **B键切页**: `Player._skill_page` + `skill_page_changed` 信号；法宝页 A~H=法宝槽0..5(T/Y两页通用)；页机制通用可扩技能多页
 - **法则之力** (CultivationSystem) — 化神解锁独立能量条(max100,回复3/s+击杀+10)，神通唯一消耗源；HUD右上角紫条；存档 cd["law_power"]
@@ -130,7 +130,7 @@ bin/              # 编译产物 (.so)，gitignored
 - **GameMenu** (`src/nodes/game_menu.*`) — ESC 多页管理菜单（背包/能力/功法/技能/法宝/宗门/云游/炼丹/设置 共9页），托管 InventoryPanel（外部驱动 ext_navigate/ext_use）；能力页=主动/被动分区技能树总览（只读 v1）；技能页=主动装配（↑/↓选已学主动，A/S/D/F/T/Y 装入对应槽，类型不符拒装提示）+被动分区（名+效果%）；宗门页=未入门四宗列表选宗拜入/已入门职位贡献加成总览+叛门；设置页含音量(持久化 user://settings.cfg)/保存/退出；嵌套暂停安全（还原原暂停状态）；页签条独立 CanvasLayer 130
 - **HUD 底部技能栏**: 武技[A/S] 法术[D/F] 法宝[G/H]（技能系统已填充：显示装配技能名+冷却）
 - **BuffSystem** (`src/cultivation/buff_system.*`) — 丹药/食物/状态统一 Buff：def 表（冰心水抗15%/赤焰攻15%/金刚防20%, 300s）、同名刷新不叠加、到期自消、攻/防/元素抗性乘区钩子、HUD buff 行（名+秒）、存档 pd["buffs"]
-- **AlchemySystem** (`src/cultivation/alchemy_system.*`) — 炼丹：丹炉随身，7 固定配方，成功率字段 v1=100%（失败机制预留），地品金丹门控，每炉喂练气+5；GameMenu 第6页「炼丹」（↑/↓选方 X炼制，材料够=亮/不够=灰）
+- **AlchemySystem** (`src/cultivation/alchemy_system.*`) — 炼丹：丹炉随身，7 固定配方，成功率字段 v1=100%（失败机制预留），地品金丹门控，每炉喂练气+5；GameMenu 第8页「炼丹」（↑/↓选方 X炼制，材料够=亮/不够=灰）
 - **草药** — Item grade 字段（0凡/1灵/2地）；7 草药（MATERIAL）；**HerbNode** (`src/nodes/`) 采集点（[X] 采集入包+喂练气+2，枯萎，房间重进刷新）；小怪掉止血草/聚灵草，Boss 千年灵芝保底
 - **use_consumable 统一入口** — Player::use_consumable(item_id)：扣数量+回血/比例回血/回灵(mana_amount)/修为(energy_amount)/buff；拾取自动用、背包面板、数字键栏全部走这里；聚气丹已迁移为回灵50
 - **数字键消耗品栏** — 1~6 快捷栏（consume_1..6），拾取消耗品自动入栏（首个空位/耗尽槽），HUD 技能栏上方一行（名首字+数量），存档 pd["consumable_bar"]
@@ -145,7 +145,7 @@ bin/              # 编译产物 (.so)，gitignored
 
 ### Input Map
 
-方向键移动（WASD 已腾出给技能槽，DNF 式），X 普攻+交互+菜单确认合一（交互优先；采集/传送门/背包使用装备/炼丹/设置确认都用 X，菜单内暂停不冲突），C 跳跃（空中再按=飞行），Z 冲刺，V 威压，R 灵压，Space 确认副键，I 背包，Q 修炼突破，ESC 多页菜单；技能槽：A/S 武技、D/F 法术、T 神通、Y 仙法（预留），B 切法宝页（A~H=法宝槽）；数字键 1~6 消耗品快捷栏
+方向键移动（WASD 已腾出给技能槽，DNF 式），X 普攻+交互+菜单确认合一（交互优先；采集/传送门/背包使用装备/炼丹/设置确认都用 X，菜单内暂停不冲突），C 跳跃（空中再按=飞行），Z 冲刺，V 威压，R 灵压，Space 确认副键，I 背包，Q 修炼突破，ESC 多页菜单（菜单内 ←/→ 或 Q/E 翻页，设置页音量/语言行 ←/→ 为调节）；技能槽：A/S 武技、D/F 法术、T 神通、Y 仙法（预留），B 切法宝页（A~H=法宝槽）；数字键 1~6 消耗品快捷栏
 
 ### Collision Layers
 
