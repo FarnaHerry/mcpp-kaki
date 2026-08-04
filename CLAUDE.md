@@ -137,7 +137,7 @@ bin/              # 编译产物 (.so)，gitignored
 - **调试键**: F3 遥测 / F4 HUD / F5 突破无经验门槛开关 / F6 读档 / Q 突破
 - **潜伏 bug 教训**: `Player::_on_enemy_killed` 通过 `connect("enemy_killed", Callable(this, "_on_enemy_killed"))` 连接，但从未 `ClassDB::bind_method` → Callable 解析失败静默无效 → 击杀喂功法/法宝温养/法则击杀回复全部静默失效（自实现以来一直无效，2026-07-25 修复）
 - **DataLoader** (`src/core/data_loader.*`) — 启动时加载 `data/*.json`（9 表）到 HashMap 缓存，各系统 `ensure_loaded()` 惰性初始化，优先 JSON 不可用时退回硬编码。已接入：items(22)/skills(24)/buffs(6)/gongfas(6)/sects(4)/drops/recipes(7)/continents(4)；events(10) 就绪待 BreakthroughManager 侧接入
-- **数据外抽** (`design/data-externalization.md`) — 全系统摸底 16 系统/170+ 条，P0-P2 已全部 JSON 化（8 系统完全 JSON 驱动）
+- **DongtianManager** (`src/nodes/dongtian_manager.*`) — 洞天 v1（design/dongtian.md）：炼虚解锁 `dongtian` 能力，安全状态按 **O** 进出随身小世界（scenes/rooms/dongtian.tscn，480×270 浮空灵地）；进出复用 Portal 模式（挂子场景+玩家重挂载+相机锁定），退出回到进入时位置；互斥检查：机缘事件（BreakthroughManager `is_active()`）/云海/Portal 房间（玩家父节点非主场景根）/战斗（enemies 组 chase/attack/boss_special），拒入经 interaction_prompt 给原因（2.5s 自消隐）；存档记返回点（洞天内坐标对外界无意义），读档 `force_exit_for_load()`；HUD 横幅复用洲名机制（SignalBus `dongtian_entered/exited`，退出时重播洲名）- **数据外抽** (`design/data-externalization.md`) — 全系统摸底 16 系统/170+ 条，P0-P2 已全部 JSON 化（8 系统完全 JSON 驱动）
 - **纳戒磁吸** (`src/nodes/item_pickup.*` + `herb_node.*`) — 炼气解锁后 150px 内掉落物/草药自动飞向玩家，渐加速，接触即拾取（草药跳过 X 交互）；速度随境界缩放 `1 + realm × 0.3`（炼气 1.3x → 天尊 4.6x）；未解锁时零开销
 - **HUD 消耗品栏** 移至屏幕左下角（x=8, y=246），右端(x=138)对接技能栏左端
 - **HUD V/R 冷却指示器** 位于法则条下方（右上角），就绪亮色/冷却灰+秒数
@@ -145,7 +145,7 @@ bin/              # 编译产物 (.so)，gitignored
 
 ### Input Map
 
-方向键移动（WASD 已腾出给技能槽，DNF 式），X 普攻+交互+菜单确认合一（交互优先；采集/传送门/背包使用装备/炼丹/设置确认都用 X，菜单内暂停不冲突），C 跳跃（空中再按=飞行），Z 冲刺，V 威压，R 灵压，Space 确认副键，I 背包，Q 修炼突破，ESC 多页菜单（菜单内 ←/→ 或 Q/E 翻页，设置页音量/语言行 ←/→ 为调节）；技能槽：A/S 武技、D/F 法术、T 神通、Y 仙法（预留），B 切法宝页（A~H=法宝槽）；数字键 1~6 消耗品快捷栏
+方向键移动（WASD 已腾出给技能槽，DNF 式），X 普攻+交互+菜单确认合一（交互优先；采集/传送门/背包使用装备/炼丹/设置确认都用 X，菜单内暂停不冲突），C 跳跃（空中再按=飞行），Z 冲刺，V 威压，R 灵压，O 进出洞天（炼虚解锁），Space 确认副键，I 背包，Q 修炼突破，ESC 多页菜单（菜单内 ←/→ 或 Q/E 翻页，设置页音量/语言行 ←/→ 为调节）；技能槽：A/S 武技、D/F 法术、T 神通、Y 仙法（预留），B 切法宝页（A~H=法宝槽）；数字键 1~6 消耗品快捷栏
 
 ### Collision Layers
 

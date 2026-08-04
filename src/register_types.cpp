@@ -11,6 +11,7 @@ import mcpp_kaki.core;
 #include "core/drop_system.h"
 import mcpp_kaki.core;
 #include "nodes/camera_room_2d.h"
+#include "nodes/dongtian_manager.h"
 #include "nodes/item_pickup.h"
 #include "nodes/herb_node.h"
 #include "nodes/portal.h"
@@ -31,6 +32,7 @@ void initialize_mcpp_kaki_module(ModuleInitializationLevel p_level) {
 	GDREGISTER_CLASS(Enemy);
 	GDREGISTER_CLASS(CameraRoom2D);
 	GDREGISTER_CLASS(Portal);
+	GDREGISTER_CLASS(DongtianManager);
 	GDREGISTER_CLASS(HitBox);
 	GDREGISTER_CLASS(HurtBox);
 	GDREGISTER_CLASS(Projectile);

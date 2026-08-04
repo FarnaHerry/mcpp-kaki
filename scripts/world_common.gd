@@ -48,6 +48,10 @@ static func setup(root: Node) -> Dictionary:
 	breakthrough_mgr.name = "BreakthroughManager"
 	root.add_child(breakthrough_mgr)
 
+	var dongtian_mgr = ClassDB.instantiate("DongtianManager")
+	dongtian_mgr.name = "DongtianManager"
+	root.add_child(dongtian_mgr)
+
 	var dmg_numbers = ClassDB.instantiate("DamageNumbers")
 	dmg_numbers.name = "DamageNumbers"
 	root.add_child(dmg_numbers)
@@ -90,6 +94,8 @@ static func setup(root: Node) -> Dictionary:
 	root.add_child(player)
 	camera.call("set_follow_target", player)
 	game_mgr.call("set_player", player)
+	dongtian_mgr.call("set_player", player)
+	dongtian_mgr.call("set_camera", camera)
 	inv_panel.call("set_player", player)
 	telemetry.call("set_player", player)
 

@@ -2,6 +2,7 @@
 import mcpp_kaki.core;
 #include "../nodes/player.h"
 #include "../nodes/camera_room_2d.h"
+#include "../nodes/dongtian_manager.h"
 
 import mcpp_kaki.combat;
 import mcpp_kaki.cultivation;
@@ -277,8 +278,17 @@ Dictionary GameManager::collect_save_data() const {
 		Dictionary pd;
 		pd["health"] = _player->current_health;
 		pd["max_health"] = _player->max_health;
-		pd["position_x"] = _player->get_global_position().x;
-		pd["position_y"] = _player->get_global_position().y;
+		// 洞天内存档：位置记返回点（洞天内坐标对外界无意义），读档落在进入处
+		Vector2 save_pos = _player->get_global_position();
+		if (Node *cur = get_tree()->get_current_scene()) {
+			if (DongtianManager *dt = Object::cast_to<DongtianManager>(cur->find_child("DongtianManager", false, false))) {
+				if (dt->is_inside()) {
+					save_pos = dt->get_return_position();
+				}
+			}
+		}
+		pd["position_x"] = save_pos.x;
+		pd["position_y"] = save_pos.y;
 		if (_player->get_gongfa()) {
 			pd["gongfa"] = _player->get_gongfa()->save_to_dict();
 		}
@@ -383,6 +393,13 @@ void GameManager::load_game(const String &p_slot_name) {
 	Dictionary data = _save_system->load_game(p_slot_name);
 	if (data.is_empty()) {
 		return;
+	}
+
+	// 洞天内读档：先强制退出洞天（位置由读档回填，不做返回点恢复）
+	if (Node *cur = get_tree()->get_current_scene()) {
+		if (DongtianManager *dt = Object::cast_to<DongtianManager>(cur->find_child("DongtianManager", false, false))) {
+			dt->force_exit_for_load();
+		}
 	}
 
 	// 跨洲读档：检查点在别的洲 → 走旅行桥切场景（新场景 _process 应用同一份数据）

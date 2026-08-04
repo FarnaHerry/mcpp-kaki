@@ -1,0 +1,110 @@
+[gd_scene load_steps=3 format=3]
+
+[sub_resource type="RectangleShape2D" id="ground_shape"]
+size = Vector2(400, 24)
+
+[sub_resource type="RectangleShape2D" id="wall_shape"]
+size = Vector2(16, 270)
+
+[node name="Dongtian" type="Node2D"]
+
+; 天空 —— 洞天自成一隅，云海之上
+[node name="Sky" type="Polygon2D" parent="."]
+color = Color(0.62, 0.78, 0.9, 1)
+polygon = PackedVector2Array(0, 0, 480, 0, 480, 270, 0, 270)
+
+; 远云
+[node name="CloudFar1" type="Polygon2D" parent="."]
+color = Color(0.85, 0.9, 0.96, 1)
+polygon = PackedVector2Array(30, 60, 110, 52, 150, 62, 110, 72, 50, 72)
+
+[node name="CloudFar2" type="Polygon2D" parent="."]
+color = Color(0.85, 0.9, 0.96, 1)
+polygon = PackedVector2Array(330, 40, 420, 32, 460, 44, 415, 54, 345, 52)
+
+; 灵地（浮岛土地）
+[node name="Ground" type="StaticBody2D" parent="."]
+position = Vector2(240, 238)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
+shape = SubResource("ground_shape")
+
+[node name="EarthVisual" type="Polygon2D" parent="Ground"]
+color = Color(0.45, 0.34, 0.22, 1)
+polygon = PackedVector2Array(-200, -12, 200, -12, 170, 32, -170, 32)
+
+[node name="GrassVisual" type="Polygon2D" parent="Ground"]
+color = Color(0.35, 0.62, 0.32, 1)
+polygon = PackedVector2Array(-200, -14, 200, -14, 200, -6, -200, -6)
+
+; 灵田（待 v2 种植）
+[node name="SpiritField" type="Polygon2D" parent="."]
+color = Color(0.38, 0.27, 0.16, 1)
+polygon = PackedVector2Array(60, 224, 150, 224, 150, 232, 60, 232)
+
+[node name="SpiritFieldRow" type="Polygon2D" parent="."]
+color = Color(0.5, 0.72, 0.4, 1)
+polygon = PackedVector2Array(66, 222, 72, 222, 72, 226, 66, 226)
+
+[node name="SpiritFieldRow2" type="Polygon2D" parent="."]
+color = Color(0.5, 0.72, 0.4, 1)
+polygon = PackedVector2Array(84, 222, 90, 222, 90, 226, 84, 226)
+
+[node name="SpiritFieldRow3" type="Polygon2D" parent="."]
+color = Color(0.5, 0.72, 0.4, 1)
+polygon = PackedVector2Array(102, 222, 108, 222, 108, 226, 102, 226)
+
+[node name="SpiritFieldRow4" type="Polygon2D" parent="."]
+color = Color(0.5, 0.72, 0.4, 1)
+polygon = PackedVector2Array(120, 222, 126, 222, 126, 226, 120, 226)
+
+[node name="SpiritFieldRow5" type="Polygon2D" parent="."]
+color = Color(0.5, 0.72, 0.4, 1)
+polygon = PackedVector2Array(138, 222, 144, 222, 144, 226, 138, 226)
+
+; 灵泉小池
+[node name="Pond" type="Polygon2D" parent="."]
+color = Color(0.4, 0.68, 0.82, 1)
+polygon = PackedVector2Array(330, 226, 400, 226, 392, 232, 338, 232)
+
+; 竹（两丛）
+[node name="BambooTrunk1" type="Polygon2D" parent="."]
+color = Color(0.42, 0.58, 0.3, 1)
+polygon = PackedVector2Array(196, 180, 201, 180, 201, 226, 196, 226)
+
+[node name="BambooLeaf1" type="Polygon2D" parent="."]
+color = Color(0.35, 0.55, 0.28, 1)
+polygon = PackedVector2Array(186, 172, 212, 168, 208, 182, 190, 184)
+
+[node name="BambooTrunk2" type="Polygon2D" parent="."]
+color = Color(0.42, 0.58, 0.3, 1)
+polygon = PackedVector2Array(214, 190, 218, 190, 218, 226, 214, 226)
+
+[node name="BambooLeaf2" type="Polygon2D" parent="."]
+color = Color(0.35, 0.55, 0.28, 1)
+polygon = PackedVector2Array(206, 182, 228, 180, 224, 192, 210, 194)
+
+; 边缘云墙（防止坠出，洞天无边）
+[node name="WallL" type="StaticBody2D" parent="."]
+position = Vector2(8, 135)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallL"]
+shape = SubResource("wall_shape")
+
+[node name="WallVisualL" type="Polygon2D" parent="WallL"]
+color = Color(0.85, 0.9, 0.96, 1)
+polygon = PackedVector2Array(-8, -135, 8, -135, 8, 135, -8, 135)
+
+[node name="WallR" type="StaticBody2D" parent="."]
+position = Vector2(472, 135)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallR"]
+shape = SubResource("wall_shape")
+
+[node name="WallVisualR" type="Polygon2D" parent="WallR"]
+color = Color(0.85, 0.9, 0.96, 1)
+polygon = PackedVector2Array(-8, -135, 8, -135, 8, 135, -8, 135)
+
+; 落点
+[node name="SpawnEntrance" type="Marker2D" parent="."]
+position = Vector2(240, 200)

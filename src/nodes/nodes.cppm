@@ -68,6 +68,8 @@ public:
 	void on_boss_fight_ended();
 	void on_buffs_changed(const Array &p_active);
 	void on_continent_changed(const String &p_id, const String &p_name);
+	void on_dongtian_entered();
+	void on_dongtian_exited();
 	void _on_language_changed(const String &p_locale);
 	bool is_boss_bar_visible() const { return _boss_bg && _boss_bg->is_visible(); }
 	String get_boss_bar_name() const { return _boss_name ? _boss_name->get_text() : String(); }

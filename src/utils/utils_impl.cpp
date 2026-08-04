@@ -93,6 +93,8 @@ void SignalBus::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("continent_changed",
 	                      PropertyInfo(Variant::STRING, "continent_id"),
 	                      PropertyInfo(Variant::STRING, "continent_name")));
+	ADD_SIGNAL(MethodInfo("dongtian_entered"));
+	ADD_SIGNAL(MethodInfo("dongtian_exited"));
 
 	// ---- Interaction signals ----
 	ADD_SIGNAL(MethodInfo("interaction_prompt",

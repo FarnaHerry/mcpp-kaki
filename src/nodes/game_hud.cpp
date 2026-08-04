@@ -28,6 +28,7 @@ module;
 
 module mcpp_kaki.nodes;
 import mcpp_kaki.combat;
+import mcpp_kaki.core;
 import mcpp_kaki.cultivation;
 import mcpp_kaki.inventory;
 import mcpp_kaki.utils;
@@ -50,6 +51,8 @@ void GameHUD::_bind_methods() {
                          &GameHUD::on_player_health_changed);
     ClassDB::bind_method(D_METHOD("on_buffs_changed", "active"), &GameHUD::on_buffs_changed);
     ClassDB::bind_method(D_METHOD("on_continent_changed", "id", "name"), &GameHUD::on_continent_changed);
+    ClassDB::bind_method(D_METHOD("on_dongtian_entered"), &GameHUD::on_dongtian_entered);
+    ClassDB::bind_method(D_METHOD("on_dongtian_exited"), &GameHUD::on_dongtian_exited);
     ClassDB::bind_method(D_METHOD("on_spiritual_energy_changed", "current", "max", "progress"),
                          &GameHUD::on_spiritual_energy_changed);
     ClassDB::bind_method(D_METHOD("on_mana_changed", "current", "max"),
@@ -132,6 +135,8 @@ void GameHUD::_ready() {
         bus->connect("player_respawned", Callable(this, "on_player_respawned"));
         bus->connect("buffs_changed", Callable(this, "on_buffs_changed"));
         bus->connect("continent_changed", Callable(this, "on_continent_changed"));
+        bus->connect("dongtian_entered", Callable(this, "on_dongtian_entered"));
+        bus->connect("dongtian_exited", Callable(this, "on_dongtian_exited"));
 	        bus->connect("language_changed", Callable(this, "_on_language_changed"));
     }
 }
@@ -388,6 +393,26 @@ void GameHUD::on_continent_changed(const String &p_id, const String &p_name) {
     _continent_label->add_theme_color_override("font_color", c);
     _continent_label->set_visible(true);
     _continent_banner_t = 2.8f;
+}
+
+void GameHUD::on_dongtian_entered() {
+    if (!_continent_label) return;
+    _continent_label->set_text(LOC("—— 洞天 · 灵地一隅 ——"));
+    Color c = _continent_label->get_theme_color("font_color");
+    c.a = 1.0f;
+    _continent_label->add_theme_color_override("font_color", c);
+    _continent_label->set_visible(true);
+    _continent_banner_t = 2.8f;
+}
+
+void GameHUD::on_dongtian_exited() {
+    // 回到外界：重播当前洲横幅（惰性查找，同 GameMenu 的 ContinentManager 模式）
+    Node *root = get_tree()->get_current_scene();
+    ContinentManager *cm = root ? Object::cast_to<ContinentManager>(
+            root->find_child("ContinentManager", false, false)) : nullptr;
+    if (cm && !cm->get_current_id().is_empty()) {
+        on_continent_changed(cm->get_current_id(), cm->get_current_name());
+    }
 }
 
 void GameHUD::_on_language_changed(const String &p_locale) {

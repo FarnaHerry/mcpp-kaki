@@ -20,6 +20,7 @@ namespace godot {
     const char *AbilityManager::ABILITY_SPIRIT_TRAVEL = "spirit_travel";
     const char *AbilityManager::ABILITY_SPIRIT_SENSE = "spirit_sense";
     const char *AbilityManager::ABILITY_VOID_SHIFT = "void_shift";
+    const char *AbilityManager::ABILITY_DONGTIAN = "dongtian";
     const char *AbilityManager::ABILITY_UNITY_FORM = "unity_form";
     const char *AbilityManager::ABILITY_MERIT_HALO = "merit_halo";
     const char *AbilityManager::ABILITY_CLOUD_FLIGHT = "cloud_flight";
@@ -93,9 +94,10 @@ namespace godot {
             unlock_ability(ABILITY_SPIRIT_SENSE);
         }
 
-        // 炼虚 (6): 虚实转换
+        // 炼虚 (6): 虚实转换、开辟洞天
         if (realm >= CultivationSystem::LIAN_XU) {
             unlock_ability(ABILITY_VOID_SHIFT);
+            unlock_ability(ABILITY_DONGTIAN);
         }
 
         // 合体 (7): 形神合一

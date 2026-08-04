@@ -53,6 +53,7 @@ public:
 	static const char *ABILITY_SPIRIT_TRAVEL;
 	static const char *ABILITY_SPIRIT_SENSE;
 	static const char *ABILITY_VOID_SHIFT;
+	static const char *ABILITY_DONGTIAN;
 	static const char *ABILITY_UNITY_FORM;
 	static const char *ABILITY_MERIT_HALO;
 	static const char *ABILITY_CLOUD_FLIGHT;
@@ -497,6 +498,9 @@ public:
 
 	void _ready() override;
 	void _process(double p_delta) override;
+
+	// 机缘事件/秘境进行中（洞天等系统据此互斥）
+	bool is_active() const { return _active; }
 
 protected:
 	static void _bind_methods();
