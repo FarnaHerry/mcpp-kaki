@@ -8,9 +8,12 @@
 #include <godot_cpp/classes/packed_scene.hpp>
 #include <godot_cpp/classes/resource_loader.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
+#include <godot_cpp/classes/time.hpp>
 #include <godot_cpp/core/class_db.hpp>
+#include <godot_cpp/variant/array.hpp>
 
-import mcpp_kaki.cultivation; // BreakthroughManager / AbilityManager
+import mcpp_kaki.cultivation; // BreakthroughManager / AbilityManager / GongfaSystem
+import mcpp_kaki.inventory;   // ItemDatabase / Inventory
 import mcpp_kaki.utils;       // SignalBus
 
 namespace godot {
@@ -21,6 +24,13 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("is_inside"), &DongtianManager::is_inside);
         ClassDB::bind_method(D_METHOD("get_return_position"), &DongtianManager::get_return_position);
         ClassDB::bind_method(D_METHOD("force_exit_for_load"), &DongtianManager::force_exit_for_load);
+        ClassDB::bind_method(D_METHOD("get_plot", "index"), &DongtianManager::get_plot);
+        ClassDB::bind_method(D_METHOD("get_first_plantable"), &DongtianManager::get_first_plantable);
+        ClassDB::bind_method(D_METHOD("plant", "index"), &DongtianManager::plant);
+        ClassDB::bind_method(D_METHOD("harvest", "index"), &DongtianManager::harvest);
+        ClassDB::bind_method(D_METHOD("debug_age_plot", "index", "seconds"), &DongtianManager::debug_age_plot);
+        ClassDB::bind_method(D_METHOD("save_to_dict"), &DongtianManager::save_to_dict);
+        ClassDB::bind_method(D_METHOD("load_from_dict", "data"), &DongtianManager::load_from_dict);
     }
 
     void DongtianManager::_process(double p_delta) {
@@ -171,6 +181,107 @@ namespace godot {
             return;
         bus->emit_signal("interaction_prompt", p_text, true);
         _hint_t = 2.5f;
+    }
+
+    // ============================================================
+    // 灵田（现实时间生长；状态自持，场景卸载不丢）
+    // ============================================================
+
+    int64_t DongtianManager::_now() {
+        return int64_t(Time::get_singleton()->get_unix_time_from_system());
+    }
+
+    Dictionary DongtianManager::get_plot(int p_index) const {
+        Dictionary d;
+        ERR_FAIL_INDEX_V(p_index, PLOT_COUNT, d);
+        const Plot &p = _plots[p_index];
+        d["empty"] = p.herb.is_empty();
+        if (p.herb.is_empty())
+            return d;
+        const Item *def = ItemDatabase::get_singleton()->get_item(p.herb);
+        int grow = def ? def->grow_seconds : 60;
+        int64_t elapsed = _now() - p.planted_at;
+        d["herb"] = p.herb;
+        d["herb_name"] = def ? def->name : String(p.herb);
+        d["mature"] = elapsed >= grow;
+        d["remaining"] = int64_t(grow) - elapsed > 0 ? int(grow - elapsed) : 0;
+        return d;
+    }
+
+    StringName DongtianManager::get_first_plantable() const {
+        if (!_player || !_player->get_inventory())
+            return StringName();
+        ItemDatabase *db = ItemDatabase::get_singleton();
+        if (!db)
+            return StringName();
+        // 品级低者优先（凡→灵→地）
+        for (const StringName &id : db->get_plantable_ids()) {
+            if (_player->get_inventory()->get_item_count(id) > 0)
+                return id;
+        }
+        return StringName();
+    }
+
+    bool DongtianManager::plant(int p_index) {
+        ERR_FAIL_INDEX_V(p_index, PLOT_COUNT, false);
+        if (!_plots[p_index].herb.is_empty() || !_player || !_player->get_inventory())
+            return false;
+        StringName herb = get_first_plantable();
+        if (herb.is_empty())
+            return false;
+        if (!_player->get_inventory()->remove_item(herb, 1))
+            return false;
+        _plots[p_index].herb = herb;
+        _plots[p_index].planted_at = _now();
+        return true;
+    }
+
+    int DongtianManager::harvest(int p_index) {
+        ERR_FAIL_INDEX_V(p_index, PLOT_COUNT, 0);
+        Plot &p = _plots[p_index];
+        if (p.herb.is_empty() || !_player)
+            return 0;
+        const Item *def = ItemDatabase::get_singleton()->get_item(p.herb);
+        int grow = def ? def->grow_seconds : 60;
+        if (_now() - p.planted_at < grow)
+            return 0; // 未成熟
+        StringName herb = p.herb;
+        p.herb = StringName();
+        p.planted_at = 0;
+        int yield = 2; // 种一收二
+        _player->pickup_item(herb, yield);
+        // 收获 = 练气行为（同采集）
+        if (_player->get_gongfa()) {
+            _player->get_gongfa()->feed(GongfaSystem::SCHOOL_QI, 2.0f);
+        }
+        return yield;
+    }
+
+    void DongtianManager::debug_age_plot(int p_index, double p_seconds) {
+        ERR_FAIL_INDEX(p_index, PLOT_COUNT);
+        _plots[p_index].planted_at -= int64_t(p_seconds);
+    }
+
+    Dictionary DongtianManager::save_to_dict() const {
+        Dictionary d;
+        Array plots;
+        for (int i = 0; i < PLOT_COUNT; i++) {
+            Dictionary p;
+            p["herb"] = _plots[i].herb;
+            p["planted_at"] = _plots[i].planted_at;
+            plots.push_back(p);
+        }
+        d["plots"] = plots;
+        return d;
+    }
+
+    void DongtianManager::load_from_dict(const Dictionary &p_data) {
+        Array plots = p_data.get("plots", Array());
+        for (int i = 0; i < PLOT_COUNT && i < plots.size(); i++) {
+            Dictionary p = plots[i];
+            _plots[i].herb = StringName(p.get("herb", StringName()));
+            _plots[i].planted_at = int64_t(p.get("planted_at", int64_t(0)));
+        }
     }
 
 } // namespace godot

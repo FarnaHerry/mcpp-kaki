@@ -51,6 +51,8 @@ void ItemDatabase::_ready() {
 				if (d.has("buff_id")) { StringName b = d["buff_id"]; if (!b.is_empty()) it.buff_id = b; }
 				if (d.has("learn_skill")) { StringName ls = d["learn_skill"]; if (!ls.is_empty()) it.learn_skill = ls; }
 				if (d.has("breakthrough_bonus")) it.breakthrough_bonus = float(d["breakthrough_bonus"]);
+				if (d.has("plantable")) it.plantable = bool(d["plantable"]);
+				if (d.has("grow_seconds")) it.grow_seconds = int(d["grow_seconds"]);
 				if (d.has("equip_slot")) it.equip_slot = Item::EquipSlot(int(d["equip_slot"]));
 				if (d.has("attack_bonus")) it.attack_bonus = float(d["attack_bonus"]);
 				if (d.has("defense_bonus")) it.defense_bonus = float(d["defense_bonus"]);
@@ -87,7 +89,21 @@ Dictionary ItemDatabase::get_item_info(const StringName &p_id) const {
 	d["energy_amount"] = it->energy_amount;
 	d["buff_id"] = it->buff_id;
 	d["learn_skill"] = it->learn_skill;
+	d["plantable"] = it->plantable;
+	d["grow_seconds"] = it->grow_seconds;
 	return d;
+}
+
+std::vector<StringName> ItemDatabase::get_plantable_ids() const {
+	std::vector<StringName> out;
+	for (int grade = 0; grade <= 3; grade++) {
+		for (const KeyValue<StringName, Item> &kv : _items) {
+			if (kv.value.plantable && kv.value.grade == grade) {
+				out.push_back(kv.key);
+			}
+		}
+	}
+	return out;
 }
 
 void ItemDatabase::_register_items() {
@@ -232,6 +248,9 @@ void ItemDatabase::_register_items() {
 		h.type = Item::MATERIAL;
 		h.max_stack = 99;
 		h.grade = grade;
+		// 全部可种植；成熟时间按品级：凡 60s / 灵 180s / 地 600s
+		h.plantable = true;
+		h.grow_seconds = grade >= 2 ? 600 : (grade == 1 ? 180 : 60);
 		_items[h.id] = h;
 	};
 	herb("zhi_xue_cao", "止血草", "最常见的药草，捣汁可止血生肌。回春丹主材。", 0);

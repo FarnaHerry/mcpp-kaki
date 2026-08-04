@@ -2,8 +2,10 @@
 #define CPP_KAKI_DONGTIAN_MANAGER_H
 
 #include <godot_cpp/classes/node.hpp>
+#include <godot_cpp/variant/dictionary.hpp>
 #include <godot_cpp/variant/rect2.hpp>
 #include <godot_cpp/variant/string.hpp>
+#include <godot_cpp/variant/string_name.hpp>
 #include <godot_cpp/variant/vector2.hpp>
 
 #include "../utils/text.h"
@@ -27,6 +29,23 @@ public:
 	bool is_inside() const { return _inside; }
 	Vector2 get_return_position() const { return _saved_world_pos; }
 
+	// ---- 灵田（v2 种植，design/dongtian.md）----
+	// 状态自持于 Manager（洞天场景卸载后生长不丢），现实时间生长。
+	static constexpr int PLOT_COUNT = 6;
+
+	// 地块状态：{empty, herb, herb_name, mature, remaining}（empty=true 时其余无意义）
+	Dictionary get_plot(int p_index) const;
+	// 背包里第一种可播种草药（空 = 无可播种）
+	StringName get_first_plantable() const;
+	// 播种/收获（收获返回数量，未成熟/空地返回 0）
+	bool plant(int p_index);
+	int harvest(int p_index);
+	// 测试用：拨快生长（planted_at 回拨 seconds 秒）
+	void debug_age_plot(int p_index, double p_seconds);
+
+	Dictionary save_to_dict() const;
+	void load_from_dict(const Dictionary &p_data);
+
 	// 读档专用：只把玩家挪回主场景根并卸载洞天，不恢复位置（由读档回填）
 	void force_exit_for_load();
 
@@ -49,6 +68,14 @@ private:
 	Vector2 _saved_world_pos;
 
 	float _hint_t = 0.0f; // 原因提示自动消隐计时
+
+	// 灵田地块：herb 为空 = 空地；planted_at = Unix 时间戳（现实时间生长）
+	struct Plot {
+		StringName herb;
+		int64_t planted_at = 0;
+	};
+	Plot _plots[PLOT_COUNT];
+	static int64_t _now();
 
 	void _try_enter();
 	void _enter();

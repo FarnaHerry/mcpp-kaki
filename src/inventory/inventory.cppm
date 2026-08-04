@@ -1,6 +1,8 @@
 // mcpp-kaki inventory module — Item / Inventory / ItemDatabase.
 module;
 
+#include <vector>
+
 #include <godot-cpp-m/macros.h>
 #include <godot_cpp/templates/hash_map.hpp> // HashMap 不被模块重导出，保持文本包含
 #include <godot_cpp/templates/vector.hpp>
@@ -44,6 +46,8 @@ export struct Item {
 	StringName learn_skill;     // 使用后习得技能（SkillSystem def id，秘籍/残卷类）
 	int grade = 0;              // 品级：0凡 1灵 2地 3天
 	float breakthrough_bonus = 0.0f; // 机缘突破事件的加成（事件系统实现后生效）
+	bool plantable = false;     // 可种植（草药类，洞天内灵田播种）
+	int grow_seconds = 0;       // 成熟所需现实秒数（plantable 时有效）
 
 	// ---- Equipment bonuses (only relevant for EQUIPMENT type) ----
 	float attack_bonus = 0.0f;   // flat damage added
@@ -115,6 +119,9 @@ public:
 	int get_item_count() const { return _items.size(); }
 	bool has_item(const StringName &p_id) const { return _items.has(p_id); }
 	Dictionary get_item_info(const StringName &p_id) const;
+
+	// 所有可播种草药 id（品级升序：凡→灵→地）——洞天灵田播种选种用
+	std::vector<StringName> get_plantable_ids() const;
 
 	void _ready() override;
 

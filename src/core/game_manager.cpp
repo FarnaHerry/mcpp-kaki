@@ -373,6 +373,13 @@ Dictionary GameManager::collect_save_data() const {
 		data["progress"] = pg;
 	}
 
+	// ---- 洞天（灵田种植状态）----
+	if (Node *cur = get_tree()->get_current_scene()) {
+		if (DongtianManager *dt = Object::cast_to<DongtianManager>(cur->find_child("DongtianManager", false, false))) {
+			data["dongtian"] = dt->save_to_dict();
+		}
+	}
+
 	return data;
 }
 
@@ -535,6 +542,16 @@ void GameManager::_apply_save_dict(const Dictionary &data) {
 	Dictionary pg = data.get("progress", Dictionary());
 	if (!pg.is_empty()) {
 		_kill_count = int(pg.get("kill_count", 0));
+	}
+
+	// ---- Restore 洞天（灵田）----
+	Dictionary dt_data = data.get("dongtian", Dictionary());
+	if (!dt_data.is_empty()) {
+		if (Node *cur = get_tree()->get_current_scene()) {
+			if (DongtianManager *dt = Object::cast_to<DongtianManager>(cur->find_child("DongtianManager", false, false))) {
+				dt->load_from_dict(dt_data);
+			}
+		}
 	}
 }
 

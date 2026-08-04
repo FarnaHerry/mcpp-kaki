@@ -1,4 +1,6 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/rooms/dongtian.gd" id="1"]
 
 [sub_resource type="RectangleShape2D" id="ground_shape"]
 size = Vector2(400, 24)
@@ -7,6 +9,7 @@ size = Vector2(400, 24)
 size = Vector2(16, 270)
 
 [node name="Dongtian" type="Node2D"]
+script = ExtResource("1")
 
 ; 天空 —— 洞天自成一隅，云海之上
 [node name="Sky" type="Polygon2D" parent="."]
@@ -37,30 +40,10 @@ polygon = PackedVector2Array(-200, -12, 200, -12, 170, 32, -170, 32)
 color = Color(0.35, 0.62, 0.32, 1)
 polygon = PackedVector2Array(-200, -14, 200, -14, 200, -6, -200, -6)
 
-; 灵田（待 v2 种植）
+; 灵田（FarmPlot 由脚本运行时创建：66 + i*24, y=220）
 [node name="SpiritField" type="Polygon2D" parent="."]
 color = Color(0.38, 0.27, 0.16, 1)
-polygon = PackedVector2Array(60, 224, 150, 224, 150, 232, 60, 232)
-
-[node name="SpiritFieldRow" type="Polygon2D" parent="."]
-color = Color(0.5, 0.72, 0.4, 1)
-polygon = PackedVector2Array(66, 222, 72, 222, 72, 226, 66, 226)
-
-[node name="SpiritFieldRow2" type="Polygon2D" parent="."]
-color = Color(0.5, 0.72, 0.4, 1)
-polygon = PackedVector2Array(84, 222, 90, 222, 90, 226, 84, 226)
-
-[node name="SpiritFieldRow3" type="Polygon2D" parent="."]
-color = Color(0.5, 0.72, 0.4, 1)
-polygon = PackedVector2Array(102, 222, 108, 222, 108, 226, 102, 226)
-
-[node name="SpiritFieldRow4" type="Polygon2D" parent="."]
-color = Color(0.5, 0.72, 0.4, 1)
-polygon = PackedVector2Array(120, 222, 126, 222, 126, 226, 120, 226)
-
-[node name="SpiritFieldRow5" type="Polygon2D" parent="."]
-color = Color(0.5, 0.72, 0.4, 1)
-polygon = PackedVector2Array(138, 222, 144, 222, 144, 226, 138, 226)
+polygon = PackedVector2Array(56, 218, 200, 218, 200, 232, 56, 232)
 
 ; 灵泉小池
 [node name="Pond" type="Polygon2D" parent="."]
