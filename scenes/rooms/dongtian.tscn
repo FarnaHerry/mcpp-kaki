@@ -50,6 +50,19 @@ polygon = PackedVector2Array(56, 218, 200, 218, 200, 232, 56, 232)
 color = Color(0.4, 0.68, 0.82, 1)
 polygon = PackedVector2Array(330, 226, 400, 226, 392, 232, 338, 232)
 
+; 聚灵阵（v3：洞天内打坐修为倍率，随境界增强）—— 灵泉旁青色阵纹
+[node name="JuLingZhenOuter" type="Polygon2D" parent="."]
+color = Color(0.45, 0.85, 0.9, 0.25)
+polygon = PackedVector2Array(339, 220, 351, 209, 379, 209, 391, 220, 379, 227, 351, 227)
+
+[node name="JuLingZhenInner" type="Polygon2D" parent="."]
+color = Color(0.55, 0.92, 0.95, 0.55)
+polygon = PackedVector2Array(351, 219, 357, 213, 373, 213, 379, 219, 373, 223, 357, 223)
+
+[node name="JuLingZhenCore" type="Polygon2D" parent="."]
+color = Color(0.75, 0.98, 1, 0.85)
+polygon = PackedVector2Array(361, 218, 365, 215, 369, 218, 365, 221)
+
 ; 竹（两丛）
 [node name="BambooTrunk1" type="Polygon2D" parent="."]
 color = Color(0.42, 0.58, 0.3, 1)

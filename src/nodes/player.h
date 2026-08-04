@@ -122,6 +122,8 @@ class Player : public CharacterBody2D {
 		// 打坐（Q）：平常修炼 + 突破入口。修为速率 max(5, 当前境界封顶×0.2%)/s
 		bool is_meditating() const;
 		double get_meditate_rate() const;
+		// 聚灵阵（洞天 v3）：洞天内打坐修为倍率，随境界增强（炼虚 ×2.0，每境 +0.25）
+		double get_dongtian_meditate_mult() const;
 		String get_state_name() const; // FSM 当前态名（harness 用）
 
 		// 法宝系统（本命法宝：120%→150%温养 → 渡劫觉醒200%）

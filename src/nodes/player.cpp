@@ -1,5 +1,6 @@
 #include "player.h"
 #include "enemy.h"
+#include "dongtian_manager.h"
 
 
 #include "../utils/text.h"
@@ -356,9 +357,12 @@ namespace godot {
 			p->set_velocity(vel);
 			SignalBus *bus = SignalBus::get_singleton();
 			if (bus) {
+				double jlz = p->get_dongtian_meditate_mult();
+				String jlz_text = jlz > 1.0 ?
+					LOC(" · 聚灵阵×") + String::num(jlz, 2) : String();
 				bus->emit_signal("interaction_prompt",
 					LOC("打坐中 · 修为+") + String::num(p->get_meditate_rate(), 1) +
-					LOC("/s · 灵力回复×3（移动/受击收功）"), true);
+					LOC("/s") + jlz_text + LOC(" · 灵力回复×3（移动/受击收功）"), true);
 			}
 		}
 		void exit(Player *p) override {
@@ -653,6 +657,7 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("is_invulnerable"), &Player::is_invulnerable);
 		ClassDB::bind_method(D_METHOD("is_meditating"), &Player::is_meditating);
 		ClassDB::bind_method(D_METHOD("get_meditate_rate"), &Player::get_meditate_rate);
+		ClassDB::bind_method(D_METHOD("get_dongtian_meditate_mult"), &Player::get_dongtian_meditate_mult);
 		ClassDB::bind_method(D_METHOD("get_state_name"), &Player::get_state_name);
 		ClassDB::bind_method(D_METHOD("get_time"), &Player::get_time);
 		ClassDB::bind_method(D_METHOD("_on_gongfa_changed"), &Player::_on_gongfa_changed);
@@ -1734,7 +1739,20 @@ namespace godot {
 	double Player::get_meditate_rate() const {
 		if (!_cultivation) return 0.0;
 		// max(5, 当前境界封顶×0.2%)每秒 —— 纯打坐约 8 分钟满一境
-		return Math::max(5.0, double(_cultivation->get_max_energy()) * 0.002);
+		double rate = Math::max(5.0, double(_cultivation->get_max_energy()) * 0.002);
+		return rate * get_dongtian_meditate_mult();
+	}
+
+	double Player::get_dongtian_meditate_mult() const {
+		// 聚灵阵：仅在洞天内生效，倍率随境界增强
+		SceneTree *tree = get_tree();
+		if (!tree) return 1.0;
+		Node *root = tree->get_current_scene();
+		if (!root) return 1.0;
+		DongtianManager *dt = Object::cast_to<DongtianManager>(root->find_child("DongtianManager", false, false));
+		if (!dt || !dt->is_inside()) return 1.0;
+		int realm = _cultivation ? _cultivation->get_realm_index() : 0;
+		return 2.0 + 0.25 * Math::max(0, realm - CultivationSystem::LIAN_XU);
 	}
 
 	String Player::get_state_name() const {

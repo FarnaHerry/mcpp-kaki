@@ -18,7 +18,7 @@ mcpp build "$@"
 # ----------------------------------------------------------------------
 mkdir -p bin
 
-SO_PATH=$(find target -name 'libmcpp-kaki.so' -type f | head -n1)
+SO_PATH=$(find target -name 'libmcpp-kaki.so' -type f -printf '%T@ %p\n' | sort -rn | head -n1 | cut -d' ' -f2-)
 if [ -z "$SO_PATH" ]; then
     echo "[mcpp-build] ERROR: libmcpp-kaki.so not found under target/" >&2
     exit 1
