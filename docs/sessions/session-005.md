@@ -33,3 +33,10 @@
 - `test_skill_page.gd` 更新为新语义（detail 行 "破空斩 ·武技"、被动单空格、↑ 顶不回卷）
 - `test_breakthrough.gd` 修复悬挂：crowd 阶段原来只连按跳跃、永无击杀路径，心魔/三尸不死就无限循环 → 加 `_press("attack")` 给真实击杀路径 + 120 tick 硬上限（战斗无法自然终结则判 FAIL 收束）。**验证非格子回归**：stash 掉格子改动后基线同样悬挂，属测试自身缺陷
 - 全量回归 **32/32 通过**（并行跑时 test_continents 因共享 `user://` 存档互相踩踏误报，串行单独跑 ALL PASS；`ObjectDB leaked at exit` 为 SceneTree 退出时的无害告警）
+
+## 追加：翻页/切栏严格 Q/E（2026-08-05 补）
+
+- **GameMenu**：删除 `_process` 里的 ←/→ 翻页，翻页严格只用 `_input` 原始 KEY_Q/KEY_E（设置页音量/语言行 ←/→ 保持页内调节，不再被顶部翻页拦截）
+- **StoragePanel**：切栏从 ←/→ action 改为 `_input` 原始 KEY_Q/KEY_E（与 GameMenu 翻页一致），提示行改「Q/E 切栏」；←/→ 留给页内横向导航
+- 注意：`cultivate`（Q）已绑定修炼突破——**不能**新增 `q` action（双触发），故切栏/翻页走 `_input` 原始键码；菜单/仓库打开时暂停世界，Player(PAUSABLE) 冻结，Q 不会误触发突破
+- 测试：菜单翻页驱动改为合成 `InputEventKey`（`parse_input_event`）——**同帧 press+release 会吞掉 `_input` 派发，只发按下事件**

@@ -15,6 +15,14 @@ func _press(action: String):
 	Input.action_press(action)
 	Input.action_release(action)
 
+func _press_key(code: int):
+	# 翻页走 _input 原始键码（Q/E），不用 action；仅按下（同帧释放会吞掉 _input 派发）
+	var ev := InputEventKey.new()
+	ev.keycode = code
+	ev.physical_keycode = code
+	ev.pressed = true
+	Input.parse_input_event(ev)
+
 func _process(delta) -> bool:
 	_t += delta
 	if _t < _next:
@@ -26,9 +34,9 @@ func _process(delta) -> bool:
 			_press("menu")
 			print("[TEST] ESC open: paused=", paused, " (expect true)")
 			_step = 1
-		1, 2, 3, 4, 5: # 向右切 5 页: 背包→能力→功法→技能→法宝→设置
-			_press("right")
-			print("[TEST] page right ", _step)
+		1, 2, 3, 4, 5: # E 切 5 页: 背包→能力→功法→技能→法宝→设置
+			_press_key(KEY_E)
+			print("[TEST] page E ", _step)
 			_step += 1
 		6:
 			_press("interact") # 设置页 F = 音量+

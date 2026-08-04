@@ -25,6 +25,14 @@ func _press(action: String):
 	Input.action_press(action)
 	Input.action_release(action)
 
+func _press_key(code: int):
+	# 翻页走 _input 原始键码（Q/E），不用 action；仅按下（同帧释放会吞掉 _input 派发）
+	var ev := InputEventKey.new()
+	ev.keycode = code
+	ev.physical_keycode = code
+	ev.pressed = true
+	Input.parse_input_event(ev)
+
 func _player():
 	return root.find_child("Player", true, false)
 
@@ -116,19 +124,19 @@ func _process(delta) -> bool:
 			_press("menu")
 			_step = 4
 		4:
-			_press("right") # → 能力
+			_press_key(KEY_E) # → 能力
 			_step = 5
 		5:
-			_press("right") # → 功法
+			_press_key(KEY_E) # → 功法
 			_step = 6
 		6:
-			_press("right") # → 技能
+			_press_key(KEY_E) # → 技能
 			_step = 7
 		7:
-			_press("right") # → 法宝
+			_press_key(KEY_E) # → 法宝
 			_step = 8
 		8:
-			_press("right") # → 宗门
+			_press_key(KEY_E) # → 宗门
 			_step = 9
 		9:
 			_check(_has_menu_label("—— 宗门 ——"), "宗门页标题")

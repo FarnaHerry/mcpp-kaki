@@ -24,6 +24,14 @@ func _press(action: String):
 	Input.action_press(action)
 	Input.action_release(action)
 
+func _press_key(code: int):
+	# 翻页走 _input 原始键码（Q/E），不用 action；仅按下（同帧释放会吞掉 _input 派发）
+	var ev := InputEventKey.new()
+	ev.keycode = code
+	ev.physical_keycode = code
+	ev.pressed = true
+	Input.parse_input_event(ev)
+
 func _scan(n: Node, s: String) -> bool:
 	if n is Label and String(n.text).contains(s):
 		return true
@@ -57,8 +65,8 @@ func _process(delta) -> bool:
 		0:
 			_press("menu")
 			_step = 1
-		1, 2, 3: # 背包→能力→功法→技能
-			_press("right")
+		1, 2, 3: # 背包→能力→功法→技能（Q/E 翻页）
+			_press_key(KEY_E)
 			_step += 1
 		4:
 			_check(_has_label("—— 技能 ——"), "技能页打开")
@@ -87,10 +95,10 @@ func _process(delta) -> bool:
 			_step = 9
 		9:
 			_breakthrough_to(3) # 金丹：被动×4 + 主动至 9 个
-			_press("right") # 技能→法宝
+			_press_key(KEY_E) # 技能→法宝
 			_step = 10
 		10:
-			_press("left") # 回技能页（强制重建）
+			_press_key(KEY_Q) # 回技能页（强制重建）
 			_step = 11
 		11:
 			_check(_has_label("神行百变 移速+12%"), "被动格：神行百变 移速+12%")

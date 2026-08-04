@@ -290,6 +290,7 @@ export class StoragePanel : public CanvasLayer {
 public:
 	void _ready() override;
 	void _process(double p_delta) override;
+	void _input(const Ref<InputEvent> &p_event) override;
 
 	void set_player(Player *p) { _player = p; }
 	void open();

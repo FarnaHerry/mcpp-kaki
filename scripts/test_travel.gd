@@ -25,6 +25,14 @@ func _press(action: String):
 	Input.action_press(action)
 	Input.action_release(action)
 
+func _press_key(code: int):
+	# 翻页走 _input 原始键码（Q/E），不用 action；仅按下（同帧释放会吞掉 _input 派发）
+	var ev := InputEventKey.new()
+	ev.keycode = code
+	ev.physical_keycode = code
+	ev.pressed = true
+	Input.parse_input_event(ev)
+
 func _player():
 	return root.find_child("Player", true, false)
 
@@ -92,22 +100,22 @@ func _process(delta) -> bool:
 			_step = 1
 		1:
 			_check(_count_menu_label("切换页") > 0, "菜单已打开（提示行）")
-			_press("right") # → 能力
+			_press_key(KEY_E) # → 能力
 			_step = 2
 		2:
-			_press("right") # → 功法
+			_press_key(KEY_E) # → 功法
 			_step = 3
 		3:
-			_press("right") # → 技能
+			_press_key(KEY_E) # → 技能
 			_step = 4
 		4:
-			_press("right") # → 法宝
+			_press_key(KEY_E) # → 法宝
 			_step = 5
 		5:
-			_press("right") # → 宗门
+			_press_key(KEY_E) # → 宗门
 			_step = 55
 		55:
-			_press("right") # → 云游
+			_press_key(KEY_E) # → 云游
 			_step = 6
 		6:
 			_check(_has_menu_label("—— 云游图 ——"), "云游页标题")
@@ -160,22 +168,22 @@ func _process(delta) -> bool:
 			_press("menu")
 			_step = 15
 		15:
-			_press("right") # 新场景菜单回到第0页 → 能力
+			_press_key(KEY_E) # 新场景菜单回到第0页 → 能力
 			_step = 16
 		16:
-			_press("right")
+			_press_key(KEY_E)
 			_step = 17
 		17:
-			_press("right")
+			_press_key(KEY_E)
 			_step = 18
 		18:
-			_press("right")
+			_press_key(KEY_E)
 			_step = 19
 		19:
-			_press("right") # → 宗门
+			_press_key(KEY_E) # → 宗门
 			_step = 56
 		56:
-			_press("right") # → 云游
+			_press_key(KEY_E) # → 云游
 			_step = 20
 		20:
 			_check(_has_menu_label("—— 云游图 ——"), "西牛贺洲云游页")

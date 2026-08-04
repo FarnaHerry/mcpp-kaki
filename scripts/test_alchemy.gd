@@ -27,6 +27,14 @@ func _count_item(inv, id) -> int:
 			return int(sd["quantity"])
 	return 0
 
+func _press_key(code: int):
+	# 翻页走 _input 原始键码（Q/E），不用 action；仅按下（同帧释放会吞掉 _input 派发）
+	var ev := InputEventKey.new()
+	ev.keycode = code
+	ev.physical_keycode = code
+	ev.pressed = true
+	Input.parse_input_event(ev)
+
 func _process(delta) -> bool:
 	_t += delta
 	if _t < _next:
@@ -86,16 +94,14 @@ func _process(delta) -> bool:
 		6:
 			_next = _t + 0.2
 			Input.action_release("menu")
-			Input.action_press("right")
+			_press_key(KEY_E)
 		7, 9, 11, 13, 15, 17:
 			_next = _t + 0.2
-			Input.action_release("right")
-			Input.action_press("right")
+			_press_key(KEY_E)
 		8, 10, 12, 14, 16:
-			_next = _t + 0.2 # 间隔帧：释放后不立刻再按，保证 just_pressed 语义
+			_next = _t + 0.2 # 间隔帧：独立按下事件
 		18:
 			_next = _t + 0.3
-			Input.action_release("right")
 			var menu = root.find_child("GameMenu", true, false)
 			var found = false
 			for c in menu.get_children():

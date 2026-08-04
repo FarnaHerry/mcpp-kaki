@@ -6,6 +6,8 @@ module;
 #include <godot_cpp/classes/color_rect.hpp>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/input.hpp>
+#include <godot_cpp/classes/input_event.hpp>
+#include <godot_cpp/classes/input_event_key.hpp>
 #include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/core/class_db.hpp>
@@ -32,6 +34,7 @@ void StoragePanel::_ready() {
 
 	set_layer(115); // GameHUD(100) / InventoryPanel(110) 之上
 	set_process_mode(Node::PROCESS_MODE_ALWAYS); // 打开时暂停世界，面板照常轮询
+	set_process_input(true);
 
 	// 背景：中央面板
 	_background = memnew(ColorRect);
@@ -74,7 +77,7 @@ void StoragePanel::_ready() {
 	_hint->set_position(Vector2(62, 226));
 	_hint->add_theme_font_size_override("font_size", 10);
 	_hint->add_theme_color_override("font_color", Color(0.6f, 0.6f, 0.6f, 1.0f));
-	_hint->set_text(LOC("↑/↓ 选择  ←/→ 切栏  X 移送  ESC/O 关闭"));
+	_hint->set_text(LOC("↑/↓ 选择  Q/E 切栏  X 移送  ESC/O 关闭"));
 	add_child(_hint);
 
 	set_visible(false);
@@ -210,6 +213,22 @@ void StoragePanel::_transfer() {
 	_refresh();
 }
 
+void StoragePanel::_input(const Ref<InputEvent> &p_event) {
+	if (!_visible)
+		return;
+	Ref<InputEventKey> k = p_event;
+	if (k.is_null() || !k->is_pressed() || k->is_echo())
+		return;
+	// 切栏 Q/E（与 GameMenu 翻页一致；←/→ 留给页内横向导航）
+	if (k->get_keycode() == KEY_Q) {
+		_pane = 0;
+		_refresh();
+	} else if (k->get_keycode() == KEY_E) {
+		_pane = 1;
+		_refresh();
+	}
+}
+
 void StoragePanel::_process(double p_delta) {
 	if (!_visible)
 		return;
@@ -226,13 +245,8 @@ void StoragePanel::_process(double p_delta) {
 		close();
 		return;
 	}
-	if (input->is_action_just_pressed(LOC("left"))) {
-		_pane = 0;
-		_refresh();
-	} else if (input->is_action_just_pressed(LOC("right"))) {
-		_pane = 1;
-		_refresh();
-	} else if (input->is_action_just_pressed(LOC("up"))) {
+	// 切栏走 _input 的 Q/E（←/→ 留给页内横向导航）
+	if (input->is_action_just_pressed(LOC("up"))) {
 		_grids[_pane]->move_selection(0, -1);
 		_refresh();
 	} else if (input->is_action_just_pressed(LOC("down"))) {

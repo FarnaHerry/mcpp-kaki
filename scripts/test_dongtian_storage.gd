@@ -1,6 +1,6 @@
 # 洞天仓库（v2 储物箱）harness:
 # ①炼虚入洞天 ②贴近储物箱 X 打开双栏面板（暂停）③背包→仓库整堆存入
-# ④←/→ 切到仓库栏 X 取出 ⑤存入后存档/读档持久化 ⑥ESC 关闭面板恢复
+# ④Q/E 切到仓库栏 X 取出 ⑤存入后存档/读档持久化 ⑥ESC 关闭面板恢复
 extends SceneTree
 
 var _t := 0.0
@@ -24,6 +24,14 @@ func _check(cond: bool, msg: String):
 func _press(action: String):
 	Input.action_press(action)
 	Input.action_release(action)
+
+func _press_key(code: int):
+	# 切栏/翻页走 _input 原始键码（Q/E），不用 action；仅按下（同帧释放会吞掉 _input 派发）
+	var ev := InputEventKey.new()
+	ev.keycode = code
+	ev.physical_keycode = code
+	ev.pressed = true
+	Input.parse_input_event(ev)
 
 func _player():
 	return root.find_child("Player", true, false)
@@ -113,7 +121,7 @@ func _process(delta) -> bool:
 			_check(String(s.get("id", "")) == "zhi_xue_cao", "仓库槽 0 = 止血草")
 			_check(int(s.get("quantity", 0)) == 3, "仓库槽 0 数量 3")
 			_check(_slot_text().find("止血草") >= 0, "仓库栏可见止血草")
-			_press("right") # 切到仓库栏
+			_press_key(KEY_E) # 切到仓库栏
 			_step = 5
 		5:
 			_press("interact") # 取出
@@ -121,7 +129,7 @@ func _process(delta) -> bool:
 		6:
 			_check(_inv_count("zhi_xue_cao") == 3, "取出后背包恢复 ×3")
 			_check(_storage_slot(0).is_empty(), "取出后仓库槽 0 清空")
-			_press("left") # 切回背包栏
+			_press_key(KEY_Q) # 切回背包栏
 			_step = 7
 		7:
 			_press("interact") # 再存入，供持久化测试
