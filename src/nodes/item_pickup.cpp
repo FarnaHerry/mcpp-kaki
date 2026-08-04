@@ -71,6 +71,10 @@ void ItemPickup::_physics_process(double p_delta) {
 	if (!_player_cache)
 		return;
 
+	// 跨场景不磁吸：玩家重挂载进洞天/Portal 房间后父节点与本节点不同
+	if (_player_cache->get_parent() != get_parent())
+		return;
+
 	// Check 纳戒 unlocked
 	Object *am = _player_cache->call("get_ability_manager");
 	if (!am)
@@ -136,6 +140,10 @@ void ItemPickup::_create_visual() {
 
 void ItemPickup::_on_body_entered(Node2D *p_body) {
 	if (!p_body || p_body->get_name() != StringName("Player"))
+		return;
+
+	// 跨场景不拾取（共享物理空间下，洞天/房间内的玩家不应捡到主场景掉落物）
+	if (p_body->get_parent() != get_parent())
 		return;
 
 	// Check that the item exists

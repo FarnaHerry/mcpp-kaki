@@ -9,6 +9,7 @@
 #include <godot_cpp/classes/polygon2d.hpp>
 #include <godot_cpp/classes/rectangle_shape2d.hpp>
 #include <godot_cpp/core/class_db.hpp>
+#include <godot_cpp/variant/utility_functions.hpp>
 
 import mcpp_kaki.cultivation;
 import mcpp_kaki.inventory;
@@ -89,31 +90,54 @@ void HerbNode::_create_visual() {
 	add_child(_visual);
 }
 
-void HerbNode::_on_body_entered(Node2D *p_body) {
-	if (_harvested) return;
-	if (p_body->get_name() != StringName("Player")) return;
-	_player = Object::cast_to<Player>(p_body);
-
+void HerbNode::_send_prompt() {
 	const Item *def = ItemDatabase::get_singleton()->get_item(_herb_id);
 	String name = def ? LOC(def->name) : String(_herb_id);
 	SignalBus *bus = SignalBus::get_singleton();
 	if (bus) {
 		bus->emit_signal("interaction_prompt", String(LOC("[X] 采集 ·")) + name, true);
 	}
+	_prompt_sent = true;
+}
+
+void HerbNode::_on_body_entered(Node2D *p_body) {
+	if (_harvested) return;
+	if (p_body->get_name() != StringName("Player")) return;
+	_player = Object::cast_to<Player>(p_body);
+	// 跨场景（共享物理空间下 enter 仍会触发）：同空间才发提示
+	if (p_body->get_parent() == get_parent())
+		_send_prompt();
 }
 
 void HerbNode::_on_body_exited(Node2D *p_body) {
 	if (p_body->get_name() != StringName("Player")) return;
+	bool prompt_was_sent = _prompt_sent;
 	_player = nullptr;
-	if (_harvested) return;
-	SignalBus *bus = SignalBus::get_singleton();
-	if (bus) {
-		bus->emit_signal("interaction_prompt", "", false);
+	_prompt_sent = false;
+	// 只在"发过提示且同空间离开"时清——跨空间 exit 时序不定，可能晚于
+	// 目标空间新节点的 enter 而误清其提示；跨空间收提示由 _process 边沿负责
+	if (prompt_was_sent && p_body->get_parent() == get_parent()) {
+		SignalBus *bus = SignalBus::get_singleton();
+		if (bus) bus->emit_signal("interaction_prompt", "", false);
 	}
 }
 
 void HerbNode::_process(double p_delta) {
 	if (_harvested || !_player) return;
+
+	// 空间归属切换（进出洞天/Portal 房间会改玩家父节点）：
+	// 跨空间 → 收起提示、不响应交互/磁吸；回到同空间 → 补发提示
+	bool same_space = _player->get_parent() == get_parent();
+	if (!same_space) {
+		if (_prompt_sent) {
+			SignalBus *bus = SignalBus::get_singleton();
+			if (bus) bus->emit_signal("interaction_prompt", "", false);
+			_prompt_sent = false;
+		}
+		return;
+	}
+	if (!_prompt_sent)
+		_send_prompt();
 
 	// 纳戒已解锁 → 自动吸附采集（不走 X 交互）
 	if (_has_ring) {
@@ -142,8 +166,9 @@ void HerbNode::_physics_process(double p_delta) {
 		_has_ring = am && am->has_ability(StringName(AbilityManager::ABILITY_STORAGE_RING));
 	}
 
-	// 纳戒磁吸（速度随境界缩放）
+	// 纳戒磁吸（速度随境界缩放）；跨场景（洞天/房间）不吸
 	if (!_has_ring || !_player) return;
+	if (_player->get_parent() != get_parent()) return;
 
 	Vector2 to_player = _player->get_global_position() - get_global_position();
 	float dist = to_player.length();

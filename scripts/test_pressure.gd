@@ -7,6 +7,7 @@ var _next := 1.0
 var _step := 0
 var _fail := 0
 var _hp_ref := 0.0 # cross-step hp reference
+var _deadline := 0.0
 
 func _initialize():
 	var scene = load("res://scenes/main.tscn").instantiate()
@@ -40,6 +41,15 @@ func _enemies_alive() -> Array:
 		if not e.is_queued_for_deletion() and float(e.get("current_health")) > 0.0:
 			arr.append(e)
 	return arr
+
+# 轮询等灵压冷却结束（timeout 秒内 cd_left<=0 返回 true）
+func _wait_lin_cd(timeout: float) -> bool:
+	if _player().call("get_lin_cooldown_left") <= 0.0:
+		return true
+	if _t > _deadline:
+		_check(false, "灵压冷却超时")
+		return true
+	return false
 
 func _count_suppressed() -> int:
 	var n = 0
@@ -91,9 +101,8 @@ func _process(delta) -> bool:
 			_breakthrough_to(2)
 			_step = 6
 		6:
-			if _player().call("get_lin_cooldown_left") > 0.0:
-				_next = _t + 15.5
-			else:
+			_deadline = _t + 16.0
+			if _wait_lin_cd(16.0):
 				_step = 7
 		7:
 			_check(int(_cult().call("get_realm_index")) == 2, "达到筑基")
@@ -109,9 +118,8 @@ func _process(delta) -> bool:
 			_step = 9
 		9:
 			# 等灵压冷却
-			if _player().call("get_lin_cooldown_left") > 0.0:
-				_next = _t + 15.5
-			else:
+			_deadline = _t + 16.0
+			if _wait_lin_cd(16.0):
 				_step = 10
 		10:
 			var WC = load("res://scripts/world_common.gd")
@@ -137,9 +145,8 @@ func _process(delta) -> bool:
 			_breakthrough_to(4)
 			_step = 13
 		13:
-			if _player().call("get_lin_cooldown_left") > 0.0:
-				_next = _t + 15.5
-			else:
+			_deadline = _t + 16.0
+			if _wait_lin_cd(16.0):
 				_step = 14
 		14:
 			_check(int(_cult().call("get_realm_index")) == 4, "达到元婴")
@@ -156,16 +163,19 @@ func _process(delta) -> bool:
 			_next = _t + 0.5
 			_step = 16
 		16:
-			_cult().call("restore_mana", 999.0)
-			_player().call("cast_lin_pressure")
-			_next = _t + 0.5
-			_step = 17
+			_deadline = _t + 16.0
+			if _wait_lin_cd(16.0):
+				_cult().call("restore_mana", 999.0)
+				_player().call("cast_lin_pressure")
+				_deadline = _t + 2.0
+				_step = 17
 		17:
 			var tgt = root.find_child("ZhenShaTarget", true, false)
-			_check(tgt == null or float(tgt.get("current_health")) <= 0.0, "gap≥4 镇杀")
-			if _fail == 0:
-				print("[TEST] ALL PASS")
-			else:
-				print("[TEST] ", _fail, " FAILURES")
-			return true
+			if tgt == null or float(tgt.get("current_health")) <= 0.0 or _t > _deadline:
+				_check(tgt == null or float(tgt.get("current_health")) <= 0.0, "gap≥4 镇杀")
+				if _fail == 0:
+					print("[TEST] ALL PASS")
+				else:
+					print("[TEST] ", _fail, " FAILURES")
+				return true
 	return false

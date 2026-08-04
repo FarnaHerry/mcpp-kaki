@@ -54,9 +54,11 @@ private:
 	float _magnet_speed = 0.0f;
 	bool _ring_checked = false;
 	bool _has_ring = false;
+	bool _prompt_sent = false; // 采集提示已发出（跨空间切换时收/补发）
 
 	void _create_visual();
 	void _harvest();
+	void _send_prompt();
 };
 
 } // namespace godot

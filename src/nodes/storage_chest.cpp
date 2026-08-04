@@ -75,6 +75,9 @@ void StorageChest::_ready() {
 void StorageChest::_on_body_entered(Node2D *p_body) {
 	if (p_body->get_name() != StringName("Player"))
 		return;
+	// 幽灵 enter 守卫（同 FarmPlot）：reparent 帧物理误报远处重叠
+	if (p_body->get_global_position().distance_to(get_global_position()) > 48.0f)
+		return;
 	_player = Object::cast_to<Player>(p_body);
 	_update_prompt();
 }
@@ -82,7 +85,12 @@ void StorageChest::_on_body_entered(Node2D *p_body) {
 void StorageChest::_on_body_exited(Node2D *p_body) {
 	if (p_body->get_name() != StringName("Player"))
 		return;
+	if (!_player)
+		return; // 幽灵 exit
 	_player = nullptr;
+	// 同空间离开才清提示（跨空间 exit 时序不定，可能误清目标空间的新提示）
+	if (p_body->get_parent() != get_parent())
+		return;
 	SignalBus *bus = SignalBus::get_singleton();
 	if (bus)
 		bus->emit_signal("interaction_prompt", "", false);

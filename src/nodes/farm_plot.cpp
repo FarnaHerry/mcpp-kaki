@@ -8,6 +8,7 @@
 #include <godot_cpp/classes/rectangle_shape2d.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/core/class_db.hpp>
+#include <godot_cpp/variant/utility_functions.hpp>
 
 import mcpp_kaki.inventory; // ItemDatabase
 import mcpp_kaki.utils;     // SignalBus
@@ -123,6 +124,10 @@ namespace godot {
     void FarmPlot::_on_body_entered(Node2D *p_body) {
         if (p_body->get_name() != StringName("Player"))
             return;
+        // 幽灵 enter 守卫：场景 reparent/创建帧物理会误报远处重叠（实测 57px 外也触发），
+        // 真重叠必在 48px 内（盒 22×20 + 胶囊 r8/h18）
+        if (p_body->get_global_position().distance_to(get_global_position()) > 48.0f)
+            return;
         _player = Object::cast_to<Player>(p_body);
         _update_prompt();
     }
@@ -130,7 +135,12 @@ namespace godot {
     void FarmPlot::_on_body_exited(Node2D *p_body) {
         if (p_body->get_name() != StringName("Player"))
             return;
+        if (!_player)
+            return; // 幽灵 exit（对应 enter 被距离守卫挡掉）：不清提示
         _player = nullptr;
+        // 同空间离开才清提示（跨空间 exit 时序不定，可能误清目标空间的新提示）
+        if (p_body->get_parent() != get_parent())
+            return;
         SignalBus *bus = SignalBus::get_singleton();
         if (bus)
             bus->emit_signal("interaction_prompt", "", false);
