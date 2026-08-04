@@ -72,6 +72,10 @@ static func setup(root: Node) -> Dictionary:
 	game_menu.name = "GameMenu"
 	root.add_child(game_menu)
 
+	var storage_panel = ClassDB.instantiate("StoragePanel")
+	storage_panel.name = "StoragePanel"
+	root.add_child(storage_panel)
+
 	# 洲框架（云游图/旅行）
 	var continents = ClassDB.instantiate("ContinentManager")
 	continents.name = "ContinentManager"
@@ -98,6 +102,7 @@ static func setup(root: Node) -> Dictionary:
 	dongtian_mgr.call("set_camera", camera)
 	inv_panel.call("set_player", player)
 	telemetry.call("set_player", player)
+	storage_panel.call("set_player", player)
 
 	# 旅行到岸：桥未应用前不碰初始检查点（否则用新档白板覆盖自动存档）
 	if not game_mgr.call("has_pending_bridge"):

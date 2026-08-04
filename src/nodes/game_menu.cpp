@@ -1164,10 +1164,17 @@ void GameMenu::_process(double p_delta) {
 	Input *input = Input::get_singleton();
 
 	if (!_open) {
-		if (input->is_action_just_pressed(LOC("menu"))) {
-			_open_menu(_page); // 记住上次页
-		} else if (input->is_action_just_pressed(LOC("inventory"))) {
-			_open_menu(PAGE_INVENTORY);
+		if (input->is_action_just_pressed(LOC("menu")) || input->is_action_just_pressed(LOC("inventory"))) {
+			// 储物面板打开时 ESC/I 归它处理（关面板），菜单不抢
+			Node *scene = get_tree()->get_current_scene();
+			StoragePanel *sp = scene ? Object::cast_to<StoragePanel>(scene->find_child("StoragePanel", true, false)) : nullptr;
+			if (sp && sp->is_open())
+				return;
+			if (input->is_action_just_pressed(LOC("menu"))) {
+				_open_menu(_page); // 记住上次页
+			} else {
+				_open_menu(PAGE_INVENTORY);
+			}
 		}
 		return;
 	}

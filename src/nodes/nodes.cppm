@@ -12,6 +12,7 @@ module;
 
 namespace godot {
 class Player; // external (nodes header) — global fragment, no module linkage
+class DongtianManager; // external (nodes header)
 }
 
 export module mcpp_kaki.nodes;
@@ -234,6 +235,49 @@ private:
 	void _build_close_hint();
 	void _handle_input_action(const String &p_action);
 	void _on_language_changed(const String &p_locale);
+};
+// 洞天仓库面板（双栏：背包|仓库，X 移送整堆）——数据在 DongtianManager。
+export class StoragePanel : public CanvasLayer {
+	GDCLASS(StoragePanel, CanvasLayer);
+
+public:
+	void _ready() override;
+	void _process(double p_delta) override;
+
+	void set_player(Player *p) { _player = p; }
+	void open();
+	void close();
+	bool is_open() const { return _visible; }
+
+protected:
+	static void _bind_methods();
+
+private:
+	Player *_player = nullptr;
+	DongtianManager *_manager = nullptr;
+	bool _visible = false;
+	bool _restore_pause = false;
+
+	int _pane = 0; // 0=背包 1=仓库
+	int _sel[2] = { 0, 0 };
+	int _scroll[2] = { 0, 0 };
+	std::vector<int> _slots[2]; // 紧凑非空列表 → 真实槽位索引
+
+	ColorRect *_background = nullptr;
+	Label *_title = nullptr;
+	Label *_headers[2] = {};
+	Label *_rows[2][8] = {};
+	Label *_hint = nullptr;
+	Label *_msg = nullptr;
+	float _msg_t = 0.0f;
+
+	static constexpr int ROWS = 8;
+
+	DongtianManager *_find_manager();
+	void _rebuild_lists();
+	void _refresh();
+	void _transfer();
+	void _set_msg(const String &p_text);
 };
 export class GameMenu : public CanvasLayer {
 	GDCLASS(GameMenu, CanvasLayer)

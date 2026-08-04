@@ -31,6 +31,9 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("debug_age_plot", "index", "seconds"), &DongtianManager::debug_age_plot);
         ClassDB::bind_method(D_METHOD("save_to_dict"), &DongtianManager::save_to_dict);
         ClassDB::bind_method(D_METHOD("load_from_dict", "data"), &DongtianManager::load_from_dict);
+        ClassDB::bind_method(D_METHOD("get_storage_slot", "index"), &DongtianManager::get_storage_slot);
+        ClassDB::bind_method(D_METHOD("deposit_from_player", "inv_slot"), &DongtianManager::deposit_from_player);
+        ClassDB::bind_method(D_METHOD("withdraw_to_player", "storage_slot"), &DongtianManager::withdraw_to_player);
     }
 
     void DongtianManager::_process(double p_delta) {
@@ -44,6 +47,11 @@ namespace godot {
         }
 
         if (!Input::get_singleton()->is_action_just_pressed("dongtian"))
+            return;
+        // 储物面板打开（暂停中）时 O 归面板（关闭用），不响应退出洞天
+        Node *root = get_tree()->get_current_scene();
+        Node *panel = root ? root->find_child("StoragePanel", true, false) : nullptr;
+        if (panel && bool(panel->call("is_open")))
             return;
         if (_inside) {
             _exit(true);
@@ -262,6 +270,75 @@ namespace godot {
         _plots[p_index].planted_at -= int64_t(p_seconds);
     }
 
+    // ============================================================
+    // 仓库（储物槽自持于 Manager，随档持久化）
+    // ============================================================
+
+    Dictionary DongtianManager::get_storage_slot(int p_index) const {
+        Dictionary d;
+        ERR_FAIL_INDEX_V(p_index, STORAGE_SLOTS, d);
+        const StorageSlot &s = _storage[p_index];
+        if (s.item.is_empty() || s.qty <= 0)
+            return d;
+        d["id"] = s.item;
+        d["quantity"] = s.qty;
+        const Item *def = ItemDatabase::get_singleton()->get_item(s.item);
+        d["name"] = def ? def->name : String(s.item);
+        return d;
+    }
+
+    int DongtianManager::deposit_from_player(int p_inv_slot) {
+        if (!_player || !_player->get_inventory())
+            return 0;
+        Inventory *inv = _player->get_inventory();
+        Dictionary slot = inv->get_slot(p_inv_slot);
+        StringName id = slot.get("id", StringName());
+        int qty = int(slot.get("quantity", 0));
+        if (id.is_empty() || qty <= 0)
+            return 0;
+        const Item *def = ItemDatabase::get_singleton()->get_item(id);
+        int max_stack = def ? def->max_stack : 99;
+
+        int remaining = qty;
+        // 先叠放进同类槽
+        for (int i = 0; i < STORAGE_SLOTS && remaining > 0; i++) {
+            if (_storage[i].item != id)
+                continue;
+            int space = max_stack - _storage[i].qty;
+            int moved = remaining < space ? remaining : space;
+            _storage[i].qty += moved;
+            remaining -= moved;
+        }
+        // 余下进空格
+        for (int i = 0; i < STORAGE_SLOTS && remaining > 0; i++) {
+            if (!_storage[i].item.is_empty())
+                continue;
+            int moved = remaining < max_stack ? remaining : max_stack;
+            _storage[i].item = id;
+            _storage[i].qty = moved;
+            remaining -= moved;
+        }
+
+        int stored = qty - remaining;
+        if (stored > 0)
+            inv->remove_item(id, stored);
+        return stored;
+    }
+
+    int DongtianManager::withdraw_to_player(int p_storage_slot) {
+        ERR_FAIL_INDEX_V(p_storage_slot, STORAGE_SLOTS, 0);
+        StorageSlot &s = _storage[p_storage_slot];
+        if (s.item.is_empty() || s.qty <= 0 || !_player)
+            return 0;
+        StringName id = s.item;
+        int qty = s.qty;
+        if (!_player->get_inventory() || !_player->get_inventory()->add_item(id, qty))
+            return 0; // 背包满，原样保留
+        s.item = StringName();
+        s.qty = 0;
+        return qty;
+    }
+
     Dictionary DongtianManager::save_to_dict() const {
         Dictionary d;
         Array plots;
@@ -272,6 +349,14 @@ namespace godot {
             plots.push_back(p);
         }
         d["plots"] = plots;
+        Array storage;
+        for (int i = 0; i < STORAGE_SLOTS; i++) {
+            Dictionary s;
+            s["id"] = _storage[i].item;
+            s["qty"] = _storage[i].qty;
+            storage.push_back(s);
+        }
+        d["storage"] = storage;
         return d;
     }
 
@@ -281,6 +366,12 @@ namespace godot {
             Dictionary p = plots[i];
             _plots[i].herb = StringName(p.get("herb", StringName()));
             _plots[i].planted_at = int64_t(p.get("planted_at", int64_t(0)));
+        }
+        Array storage = p_data.get("storage", Array());
+        for (int i = 0; i < STORAGE_SLOTS && i < storage.size(); i++) {
+            Dictionary s = storage[i];
+            _storage[i].item = StringName(s.get("id", StringName()));
+            _storage[i].qty = int(s.get("qty", 0));
         }
     }
 

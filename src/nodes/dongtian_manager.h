@@ -46,6 +46,17 @@ public:
 	Dictionary save_to_dict() const;
 	void load_from_dict(const Dictionary &p_data);
 
+	// ---- 仓库（v2 储物箱，与纳戒互补）----
+	// 槽位同样自持于 Manager 并随档持久化。
+	static constexpr int STORAGE_SLOTS = 48;
+
+	// 储物槽状态：{} = 空格，否则 {id, quantity, name}
+	Dictionary get_storage_slot(int p_index) const;
+	// 背包整堆存入（叠放同类或首空格；放不下的部分留在背包）。返回实际存入数量
+	int deposit_from_player(int p_inv_slot);
+	// 储物槽整堆取出给玩家。返回实际取出数量
+	int withdraw_to_player(int p_storage_slot);
+
 	// 读档专用：只把玩家挪回主场景根并卸载洞天，不恢复位置（由读档回填）
 	void force_exit_for_load();
 
@@ -76,6 +87,13 @@ private:
 	};
 	Plot _plots[PLOT_COUNT];
 	static int64_t _now();
+
+	// 仓库槽位：item 空 = 空格
+	struct StorageSlot {
+		StringName item;
+		int qty = 0;
+	};
+	StorageSlot _storage[STORAGE_SLOTS];
 
 	void _try_enter();
 	void _enter();
