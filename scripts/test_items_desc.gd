@@ -74,6 +74,10 @@ func _process(delta) -> bool:
 			if desc_label:
 				var txt = String(desc_label.text)
 				_check(txt.length() >= 4, "选中项显示说明: " + txt)
+			var cur_label = panel.find_child("CurrencyLabel", true, false)
+			_check(cur_label != null, "背包右下角灵石余额标签")
+			if cur_label:
+				_check("灵石" in String(cur_label.text), "灵石余额显示: " + String(cur_label.text))
 			if _fail == 0:
 				print("[TEST] ALL PASS")
 			else:

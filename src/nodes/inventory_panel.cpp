@@ -1,5 +1,6 @@
 module;
 #include "../nodes/player.h"
+#include "../core/currency_system.h"
 #include <godot_cpp/classes/collision_shape2d.hpp>
 #include <godot_cpp/classes/color_rect.hpp>
 #include <godot_cpp/classes/input_event.hpp>
@@ -68,6 +69,7 @@ void InventoryPanel::_ready() {
 	if (_signal_bus) {
 		_signal_bus->connect("item_picked_up", Callable(this, "refresh"));
 		_signal_bus->connect("item_used", Callable(this, "refresh"));
+		_signal_bus->connect("currency_changed", Callable(this, "refresh"));
 		_signal_bus->connect("language_changed", Callable(this, "_on_language_changed"));
 	}
 
@@ -190,6 +192,16 @@ void InventoryPanel::refresh(const String &p_item_id, int p_qty) {
 				desc = LOC(def->description);
 		}
 		_desc_label->set_text(desc);
+	}
+
+	// 灵石余额（四阶，右下角）
+	if (_currency_label) {
+		CurrencySystem *cs = CurrencySystem::get_singleton();
+		String ctxt = LOC("灵石 下") + String::num_int64(cs ? cs->get_amount(CurrencySystem::TIER_LOW) : 0);
+		ctxt += LOC(" 中") + String::num_int64(cs ? cs->get_amount(CurrencySystem::TIER_MID) : 0);
+		ctxt += LOC(" 上") + String::num_int64(cs ? cs->get_amount(CurrencySystem::TIER_HIGH) : 0);
+		ctxt += LOC(" 极") + String::num_int64(cs ? cs->get_amount(CurrencySystem::TIER_PEAK) : 0);
+		_currency_label->set_text(ctxt);
 	}
 
 	// ---- Stats ----
@@ -424,6 +436,15 @@ void InventoryPanel::_build_item_list() {
 	_desc_label->add_theme_color_override("font_color", Color(0.75f, 0.8f, 0.88f, 1));
 	_desc_label->set_clip_text(true);
 	add_child(_desc_label);
+
+	// 灵石余额（四阶通用货币，背包右下角，session 012）
+	_currency_label = memnew(Label);
+	_currency_label->set_name("CurrencyLabel");
+	_currency_label->set_position(Vector2(300, 206));
+	_currency_label->add_theme_font_size_override("font_size", 10);
+	_currency_label->add_theme_color_override("font_color", Color(0.6f, 0.85f, 1.0f, 1.0f));
+	_currency_label->set_text(LOC("灵石 0"));
+	add_child(_currency_label);
 }
 
 void InventoryPanel::_build_stats() {

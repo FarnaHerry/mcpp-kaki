@@ -38,6 +38,11 @@ func _has_label(s: String) -> bool:
 	var panel = root.find_child("InventoryPanel", true, false)
 	return panel != null and _scan(panel, s)
 
+func _grid_has(s: String) -> bool:
+	# 物品格内查找（灵石余额标签在面板右下角、不属于格子，需单独扫 ItemGrid）
+	var grid = root.find_child("ItemGrid", true, false)
+	return grid != null and _scan(grid, s)
+
 func _grid_count() -> int:
 	var grid = root.find_child("ItemGrid", true, false)
 	if grid == null:
@@ -63,8 +68,8 @@ func _process(delta) -> bool:
 			Input.action_release("menu")
 			_check(_has_label("[全部]"), "初始筛选=全部")
 			_check(_grid_count() >= 4, "全部：4 槽不同类物品全可见")
-			_check(_has_label("回春丹"), "全部：回春丹可见")
-			_check(_has_label("灵石"), "全部：灵石可见")
+			_check(_grid_has("回春丹"), "全部：回春丹可见")
+			_check(_grid_has("灵石"), "全部：灵石可见")
 			Input.action_press("up") # 顶行↑ 进筛选行
 		3:
 			Input.action_release("up")
@@ -73,15 +78,15 @@ func _process(delta) -> bool:
 		4:
 			Input.action_release("right")
 			_check(_has_label("[消耗品]"), "筛选=消耗品")
-			_check(_has_label("回春丹"), "消耗品：回春丹可见")
-			_check(not _has_label("灵石"), "消耗品：灵石被过滤")
+			_check(_grid_has("回春丹"), "消耗品：回春丹可见")
+			_check(not _grid_has("灵石"), "消耗品：灵石被过滤")
 			Input.action_press("right") # → 材料
 		5:
 			Input.action_release("right")
 			_check(_has_label("[材料]"), "筛选=材料")
-			_check(_has_label("灵石"), "材料：灵石可见")
-			_check(not _has_label("回春丹"), "材料：回春丹被过滤")
-			_check(not _has_label("铁剑"), "材料：铁剑（装备）被过滤")
+			_check(_grid_has("灵石"), "材料：灵石可见")
+			_check(not _grid_has("回春丹"), "材料：回春丹被过滤")
+			_check(not _grid_has("铁剑"), "材料：铁剑（装备）被过滤")
 			Input.action_press("down") # 返回网格
 		6:
 			Input.action_release("down")

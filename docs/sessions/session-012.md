@@ -26,6 +26,7 @@
 ### 商店
 - ShopSystem buy/sell 改走钱包（卖回下品）
 - ShopPanel 顶部**四阶余额**显示 + **第三栏「兑换」**（Q/E 三栏循环，6 条保值兑换 X 全额）
+- **背包右下角**：InventoryPanel 网格下方右侧加 CurrencyLabel 四阶余额（`currency_changed` 实时刷新，用户要求"灵石数量背包右下角显示"）
 
 ### 存档
 - `data["currency"]`；**老档迁移**：inventory 里的 spirit_stone 自动移入钱包下品
