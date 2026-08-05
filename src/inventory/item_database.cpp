@@ -54,6 +54,7 @@ void ItemDatabase::_ready() {
 				if (d.has("buff_id")) { StringName b = d["buff_id"]; if (!b.is_empty()) it.buff_id = b; }
 				if (d.has("learn_skill")) { StringName ls = d["learn_skill"]; if (!ls.is_empty()) it.learn_skill = ls; }
 				if (d.has("learn_artifact")) { StringName la = d["learn_artifact"]; if (!la.is_empty()) it.learn_artifact = la; }
+				if (d.has("currency_tier")) it.currency_tier = int(d["currency_tier"]);
 				if (d.has("breakthrough_bonus")) it.breakthrough_bonus = float(d["breakthrough_bonus"]);
 				if (d.has("plantable")) it.plantable = bool(d["plantable"]);
 				if (d.has("grow_seconds")) it.grow_seconds = int(d["grow_seconds"]);
@@ -155,14 +156,45 @@ void ItemDatabase::_register_items() {
 
 	// ---- Materials ----
 
-	// 灵石 — Spirit Stone (currency)
+	// 灵石 — 四阶通用货币（下品/中品/上品/极品；拾取直入钱包不进背包）
 	{
 		Item stone;
 		stone.id = "spirit_stone";
-		stone.name = LOC("灵石");
-		stone.description = LOC("蕴含灵气的晶石，修炼界的通用货币。");
+		stone.name = LOC("下品灵石");
+		stone.description = LOC("蕴含灵气的晶石，修炼界的通用货币（下品）。");
 		stone.type = Item::MATERIAL;
 		stone.max_stack = 999;
+		stone.currency_tier = 0;
+		_items[stone.id] = stone;
+	}
+	{
+		Item stone;
+		stone.id = "spirit_stone_mid";
+		stone.name = LOC("中品灵石");
+		stone.description = LOC("灵韵更纯的灵石，1 中品 = 10 下品。");
+		stone.type = Item::MATERIAL;
+		stone.max_stack = 999;
+		stone.currency_tier = 1;
+		_items[stone.id] = stone;
+	}
+	{
+		Item stone;
+		stone.id = "spirit_stone_high";
+		stone.name = LOC("上品灵石");
+		stone.description = LOC("高阶修士流通的灵石，1 上品 = 10 中品。");
+		stone.type = Item::MATERIAL;
+		stone.max_stack = 999;
+		stone.currency_tier = 2;
+		_items[stone.id] = stone;
+	}
+	{
+		Item stone;
+		stone.id = "spirit_stone_peak";
+		stone.name = LOC("极品灵石");
+		stone.description = LOC("万中无一的灵石，1 极品 = 10 上品。");
+		stone.type = Item::MATERIAL;
+		stone.max_stack = 999;
+		stone.currency_tier = 3;
 		_items[stone.id] = stone;
 	}
 

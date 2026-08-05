@@ -34,11 +34,45 @@
   },
   {
     "id": "spirit_stone",
-    "name": "灵石",
-    "desc": "蕴含灵气的晶石，修炼界的通用货币，坊市买卖皆用此物。",
+    "name": "下品灵石",
+    "desc": "蕴含灵气的晶石，修炼界的通用货币（下品）。1 中品 = 10 下品。",
     "type": 1,
     "max_stack": 999,
     "grade": 0,
+    "buy_price": 0,
+    "sell_price": 0,
+    "currency_tier": 0
+  },
+  {
+    "id": "spirit_stone_mid",
+    "name": "中品灵石",
+    "desc": "灵韵更纯的灵石。1 中品 = 10 下品，1 上品 = 10 中品。",
+    "type": 1,
+    "max_stack": 999,
+    "grade": 0,
+    "currency_tier": 1,
+    "buy_price": 0,
+    "sell_price": 0
+  },
+  {
+    "id": "spirit_stone_high",
+    "name": "上品灵石",
+    "desc": "高阶修士流通的灵石。1 上品 = 10 中品，1 极品 = 10 上品。",
+    "type": 1,
+    "max_stack": 999,
+    "grade": 0,
+    "currency_tier": 2,
+    "buy_price": 0,
+    "sell_price": 0
+  },
+  {
+    "id": "spirit_stone_peak",
+    "name": "极品灵石",
+    "desc": "万中无一的灵石，多存于仙家洞府。1 极品 = 10 上品。",
+    "type": 1,
+    "max_stack": 999,
+    "grade": 0,
+    "currency_tier": 3,
     "buy_price": 0,
     "sell_price": 0
   },

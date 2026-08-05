@@ -122,6 +122,10 @@ void SignalBus::_bind_methods() {
 	                      PropertyInfo(Variant::DICTIONARY, "data"),
 	                      PropertyInfo(Variant::BOOL, "show")));
 
+	// ---- 灵石货币（四阶钱包）----
+	ADD_SIGNAL(MethodInfo("currency_changed",
+	                      PropertyInfo(Variant::INT, "total_base")));
+
 	// ---- Save / Load signals ----
 	ADD_SIGNAL(MethodInfo("game_saved",
 	                      PropertyInfo(Variant::STRING, "slot_name")));

@@ -16,7 +16,7 @@ func _ready():
 	ling.set("max_health", 420.0); ling.set("current_health", 420.0); ling.set("realm", 9)
 	ling.set("attack_damage", 75.0)
 
-	# 秘藏（冰台）：龙骨×2 + 玄冰参×2 + 灵石
+	# 秘藏（冰台）：龙骨×2 + 玄冰参×2 + 上品灵石
 	WC.spawn_item_pickup(self, Vector2(200, 182), "long_gu", 2)
 	WC.spawn_item_pickup(self, Vector2(180, 232), "xuan_bing_shen", 2)
-	WC.spawn_item_pickup(self, Vector2(220, 232), "spirit_stone", 30)
+	WC.spawn_item_pickup(self, Vector2(220, 232), "spirit_stone_high", 1)

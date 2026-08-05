@@ -1,6 +1,13 @@
-# 开发路线图（截至 session 011）
+# 开发路线图（截至 session 012）
 
 ## 一、最近修改总结
+
+### Session 012（本次）：灵石四阶通用货币（独立钱包 + 兑换）
+- **CurrencySystem**（`src/core/currency_system.*`）：下品/中品/上品/极品 四档，每档 ×10 价值，
+  独立钱包不占背包；spend 自动破零找零、exchange 保值兑换；存档 + 老档迁移
+- **拾取路由**：Item 加 `currency_tier`；灵石拾取直入钱包；SignalBus `currency_changed`
+- **商店**：ShopSystem 走钱包；ShopPanel 四阶余额 + 第三栏「兑换」（Q/E 三栏循环，6 条保值兑换 X 全额）
+- **投放**：boss 掉中品、三星洞中品、玄冰窟上品、玄冥上品×3、南天门极品
 
 ### Session 011（本次）：数值平衡（4 agent 并行分析 + 主 agent 统筹）
 - **流程**：4 只读分析 agent 并行（成长曲线/敌人Boss/技能法宝/经济掉落）→ 主 agent 交叉核对定值

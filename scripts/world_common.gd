@@ -81,6 +81,11 @@ static func setup(root: Node) -> Dictionary:
 	storage_panel.name = "StoragePanel"
 	root.add_child(storage_panel)
 
+	# 灵石货币（四阶钱包，独立不占背包）
+	var currency = ClassDB.instantiate("CurrencySystem")
+	currency.name = "CurrencySystem"
+	root.add_child(currency)
+
 	# 商店（长安坊市灵石买卖）
 	var shop_system = ClassDB.instantiate("ShopSystem")
 	shop_system.name = "ShopSystem"

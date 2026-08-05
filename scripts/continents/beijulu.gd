@@ -125,9 +125,10 @@ func _setup():
 	ju.set("attack_cooldown", 1.0)
 	ju.get_node("Polygon2D").scale = Vector2(2.2, 2.2)
 	ju.connect("boss_died", Callable(WC, "on_boss_died"))
-	# 遗骸（Boss 掉落 龙骨——玄龙丹主材，仅此一处 + 玄冰窟秘藏）+ 渡劫终战奖励 玄龙丹
+	# 遗骸（Boss 掉落 龙骨——玄龙丹主材，仅此一处 + 玄冰窟秘藏）+ 渡劫终战奖励 玄龙丹 + 上品灵石
 	WC.spawn_item_pickup(self, Vector2(2950, 228), "long_gu", 1)
 	WC.spawn_item_pickup(self, Vector2(2970, 232), "xuan_long_dan", 1)
+	WC.spawn_item_pickup(self, Vector2(2930, 232), "spirit_stone_high", 3)
 	# 闪避平台
 	WC.make_platform(self, 2800, 150, 80)
 	WC.make_platform(self, 3050, 140, 90)
@@ -145,6 +146,8 @@ func _setup():
 	tianbing.set("max_health", 380.0); tianbing.set("current_health", 380.0); tianbing.set("realm", 9)
 	tianbing.set("attack_damage", 80.0)
 	WC.spawn_herb(self, Vector2(3500, 230), "xuan_bing_shen", 1)
+	# 南天门：极品灵石（仙家洞府之遗）
+	WC.spawn_item_pickup(self, Vector2(3650, 228), "spirit_stone_peak", 1)
 	WC.create_checkpoint(self, 3450)
 
 	print("北俱芦洲 · 极北冰原/玄冰高原/上古荒原")

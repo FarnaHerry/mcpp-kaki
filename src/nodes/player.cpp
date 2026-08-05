@@ -3,6 +3,7 @@
 #include "dongtian_manager.h"
 
 
+#include "../core/currency_system.h"
 #include "../utils/text.h"
 
 #include <godot_cpp/classes/collision_shape2d.hpp>
@@ -1695,6 +1696,15 @@ namespace godot {
 
 		const Item *def = ItemDatabase::get_singleton()->get_item(p_item_id);
 		if (!def) return;
+
+		// 灵石货币：独立钱包，不进背包（session 012 四阶通用货币）
+		if (def->currency_tier >= 0) {
+			CurrencySystem *cs = CurrencySystem::get_singleton();
+			if (cs) cs->add(def->currency_tier, p_qty);
+			SignalBus *bus = SignalBus::get_singleton();
+			if (bus) bus->emit_signal("currency_changed", cs ? cs->get_total() : 0);
+			return;
+		}
 
 		// Try to add to inventory
 		bool added = _inventory->add_item(p_item_id, p_qty);

@@ -1,6 +1,7 @@
 #include "game_manager.h"
 import mcpp_kaki.core;
 #include "soul_ledger_system.h"
+#include "currency_system.h"
 #include "../nodes/player.h"
 #include "../nodes/camera_room_2d.h"
 #include "../nodes/dongtian_manager.h"
@@ -486,6 +487,11 @@ Dictionary GameManager::collect_save_data() const {
 		data["soul_ledger"] = _soul_ledger->save_to_dict();
 	}
 
+	// ---- 灵石货币（四阶钱包）----
+	if (CurrencySystem::get_singleton()) {
+		data["currency"] = CurrencySystem::get_singleton()->save_to_dict();
+	}
+
 	return data;
 }
 
@@ -640,6 +646,22 @@ void GameManager::_apply_save_dict(const Dictionary &data) {
 				StringName item_id = slot_data.get("id", StringName());
 				int qty = int(slot_data.get("quantity", 0));
 				_player->get_inventory()->set_slot(slot_idx, item_id, qty);
+			}
+		}
+	}
+
+	// ---- Restore 灵石货币（四阶钱包）+ 老档迁移（旧 inventory 的 spirit_stone → 钱包下品）----
+	CurrencySystem *cs = CurrencySystem::get_singleton();
+	if (cs) {
+		Dictionary cur = data.get("currency", Dictionary());
+		cs->load_from_dict(cur);
+		// 迁移：旧档把灵石存在背包里 → 移入钱包并清背包
+		Inventory *inv_cur = _player->get_inventory();
+		if (inv_cur) {
+			int legacy = inv_cur->get_item_count(StringName("spirit_stone"));
+			if (legacy > 0) {
+				cs->add(CurrencySystem::TIER_LOW, legacy);
+				inv_cur->remove_item(StringName("spirit_stone"), legacy);
 			}
 		}
 	}

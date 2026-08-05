@@ -1,6 +1,7 @@
 module;
 #include "../nodes/player.h"
 #include "../core/shop_system.h"
+#include "../core/currency_system.h"
 
 #include <godot_cpp/classes/canvas_layer.hpp>
 #include <godot_cpp/classes/color_rect.hpp>
@@ -43,21 +44,22 @@ void ShopPanel::_ready() {
 	add_child(_background);
 
 	_title = memnew(Label);
-	_title->set_position(Vector2(200, 32));
+	_title->set_position(Vector2(200, 26));
 	_title->add_theme_font_size_override("font_size", 14);
 	_title->set_text(LOC("—— 长安坊市 ——"));
 	add_child(_title);
 
+	// 灵石余额（四阶通用货币，session 012）
 	_balance = memnew(Label);
-	_balance->set_position(Vector2(330, 34));
-	_balance->add_theme_font_size_override("font_size", 11);
+	_balance->set_position(Vector2(60, 39));
+	_balance->add_theme_font_size_override("font_size", 10);
 	_balance->add_theme_color_override("font_color", Color(0.6f, 0.85f, 1.0f, 1.0f));
 	_balance->set_text(LOC("灵石 0"));
 	add_child(_balance);
 
-	static const int PANE_X[2] = { 62, 252 };
-	static const char *PANE_NAMES[2] = { "货架", "背包" };
-	for (int p = 0; p < 2; p++) {
+	static const int PANE_X[3] = { 62, 252, 62 };
+	static const char *PANE_NAMES[3] = { "货架", "背包", "兑换" };
+	for (int p = 0; p < 3; p++) {
 		_headers[p] = memnew(Label);
 		_headers[p]->set_position(Vector2(PANE_X[p], 52));
 		_headers[p]->add_theme_font_size_override("font_size", 12);
@@ -82,7 +84,7 @@ void ShopPanel::_ready() {
 	_hint->set_position(Vector2(62, 226));
 	_hint->add_theme_font_size_override("font_size", 10);
 	_hint->add_theme_color_override("font_color", Color(0.6f, 0.6f, 0.6f, 1.0f));
-	_hint->set_text(LOC("↑/↓ 选择  Q/E 切栏  X 购买/卖出  ESC 关闭"));
+	_hint->set_text(LOC("↑/↓ 选择  Q/E 切栏  X 购买/卖出/兑换  ESC 关闭"));
 	add_child(_hint);
 
 	set_visible(false);
@@ -134,9 +136,14 @@ void ShopPanel::_refresh() {
 	ShopSystem *shop = _find_shop();
 	ItemDatabase *db = ItemDatabase::get_singleton();
 
-	// 灵石余额
+	// 灵石余额（四阶：下品/中品/上品/极品）
 	if (_balance) {
-		_balance->set_text(LOC("灵石 ") + String::num_int64(shop ? shop->get_spirit_stones(_player) : 0));
+		CurrencySystem *cs = CurrencySystem::get_singleton();
+		String txt = LOC("灵石 下") + String::num_int64(cs ? cs->get_amount(CurrencySystem::TIER_LOW) : 0);
+		txt += LOC(" 中") + String::num_int64(cs ? cs->get_amount(CurrencySystem::TIER_MID) : 0);
+		txt += LOC(" 上") + String::num_int64(cs ? cs->get_amount(CurrencySystem::TIER_HIGH) : 0);
+		txt += LOC(" 极") + String::num_int64(cs ? cs->get_amount(CurrencySystem::TIER_PEAK) : 0);
+		_balance->set_text(txt);
 	}
 
 	// 栏 0：商店货架
@@ -180,11 +187,41 @@ void ShopPanel::_refresh() {
 	}
 	_grids[1]->set_items(inv_items);
 
-	// 激活页签高亮
-	for (int p = 0; p < 2; p++) {
+	// 栏 2：灵石兑换（6 条保值兑换，X 全额）
+	Array ex_items;
+	CurrencySystem *cs = CurrencySystem::get_singleton();
+	if (cs) {
+		// {from, to}：0下 1中 2上 3极；RATIO=10
+		static const int EX[6][2] = {
+			{ CurrencySystem::TIER_LOW, CurrencySystem::TIER_MID },   // 10下→1中
+			{ CurrencySystem::TIER_MID, CurrencySystem::TIER_LOW },   // 1中→10下
+			{ CurrencySystem::TIER_MID, CurrencySystem::TIER_HIGH },  // 10中→1上
+			{ CurrencySystem::TIER_HIGH, CurrencySystem::TIER_MID },  // 1上→10中
+			{ CurrencySystem::TIER_HIGH, CurrencySystem::TIER_PEAK }, // 10上→1极
+			{ CurrencySystem::TIER_PEAK, CurrencySystem::TIER_HIGH }, // 1极→10上
+		};
+		for (int i = 0; i < 6; i++) {
+			int from = EX[i][0], to = EX[i][1];
+			bool combine = from < to; // 低→高 = 合成
+			int have = cs->get_amount(from);
+			int can = combine ? have / CurrencySystem::RATIO : have;
+			Dictionary cell;
+			cell["text"] = LOC("「") + CurrencySystem::tier_name(from) + LOC("→") + CurrencySystem::tier_name(to) +
+				LOC("」×") + String::num_int64(can);
+			cell["color"] = can > 0 ? Color(0.7f, 0.95f, 0.8f, 1.0f) : Color(0.45f, 0.45f, 0.5f, 1.0f);
+			ex_items.push_back(cell);
+		}
+	}
+	_grids[2]->set_items(ex_items);
+
+	// 激活页签高亮 + 显隐（兑换页独占左栏）
+	for (int p = 0; p < 3; p++) {
 		_headers[p]->add_theme_color_override("font_color",
 			_pane == p ? Color(1.0f, 0.9f, 0.4f, 1.0f) : Color(0.6f, 0.6f, 0.6f, 1.0f));
-		_grids[p]->set_active(_pane == p);
+		bool active = _pane == p;
+		bool visible = (p < 2) ? (_pane != 2) : (_pane == 2);
+		_grids[p]->set_active(active);
+		_grids[p]->set_visible(visible);
 	}
 }
 
@@ -192,6 +229,36 @@ void ShopPanel::_trade() {
 	ShopSystem *shop = _find_shop();
 	if (!shop || !_player)
 		return;
+	if (_pane == 2) {
+		// 灵石兑换：X 全额兑换选中行（保值，RATIO=10）
+		int sel = _grids[2]->get_selected();
+		if (sel < 0 || sel >= 6)
+			return;
+		static const int EX[6][2] = {
+			{ CurrencySystem::TIER_LOW, CurrencySystem::TIER_MID },
+			{ CurrencySystem::TIER_MID, CurrencySystem::TIER_LOW },
+			{ CurrencySystem::TIER_MID, CurrencySystem::TIER_HIGH },
+			{ CurrencySystem::TIER_HIGH, CurrencySystem::TIER_MID },
+			{ CurrencySystem::TIER_HIGH, CurrencySystem::TIER_PEAK },
+			{ CurrencySystem::TIER_PEAK, CurrencySystem::TIER_HIGH },
+		};
+		CurrencySystem *cs = CurrencySystem::get_singleton();
+		if (!cs)
+			return;
+		int from = EX[sel][0], to = EX[sel][1];
+		bool combine = from < to;
+		int have = cs->get_amount(from);
+		int qty = combine ? have / CurrencySystem::RATIO : have;
+		if (qty <= 0) {
+			_set_msg(LOC("灵石不足，无法兑换"));
+			return;
+		}
+		if (cs->exchange(from, qty, to)) {
+			_set_msg(LOC("兑换 ") + CurrencySystem::tier_name(from) + LOC(" → ") + CurrencySystem::tier_name(to));
+		}
+		_refresh();
+		return;
+	}
 	if (_pane == 0) {
 		// 买
 		int sel = _grids[0]->get_selected();
@@ -229,12 +296,12 @@ void ShopPanel::_input(const Ref<InputEvent> &p_event) {
 	Ref<InputEventKey> k = p_event;
 	if (k.is_null() || !k->is_pressed() || k->is_echo())
 		return;
-	// 切栏 Q/E（与 GameMenu 翻页一致）；←/→ 留给页内横向导航
+	// 切栏 Q/E（三栏循环：货架/背包/兑换；与 GameMenu 翻页一致）；←/→ 留给页内横向导航
 	if (k->get_keycode() == KEY_Q) {
-		_pane = 0;
+		_pane = (_pane + 2) % 3;
 		_refresh();
 	} else if (k->get_keycode() == KEY_E) {
-		_pane = 1;
+		_pane = (_pane + 1) % 3;
 		_refresh();
 	}
 }

@@ -110,12 +110,13 @@ std::vector<DropSystem::DropEntry> DropSystem::_roll_drops(
     if (table.empty()) {
         if (p_is_boss) {
             table.push_back({ "spirit_stone", 5, 10, 1.0f });
+            table.push_back({ "spirit_stone_mid", 1, 2, 0.8f }); // 中品灵石（session 012）
             table.push_back({ "healing_pill", 2, 3, 1.0f });
             table.push_back({ "foundation_pill", 1, 2, 0.8f });
             table.push_back({ "qi_pill", 1, 3, 0.6f });
             table.push_back({ "qian_nian_ling_zhi", 1, 1, 1.0f });
         } else {
-            table.push_back({ "spirit_stone", 1, 3, 0.6f });
+            table.push_back({ "spirit_stone", 2, 4, 0.6f });
             table.push_back({ "healing_pill", 1, 1, 0.25f });
             table.push_back({ "zhi_xue_cao", 1, 2, 0.15f });
             table.push_back({ "ju_ling_cao", 1, 2, 0.15f });

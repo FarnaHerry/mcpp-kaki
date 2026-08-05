@@ -12,6 +12,7 @@ import mcpp_kaki.core;
 import mcpp_kaki.core;
 #include "core/soul_ledger_system.h"
 #include "core/shop_system.h"
+#include "core/currency_system.h"
 #include "nodes/camera_room_2d.h"
 #include "nodes/dongtian_manager.h"
 #include "nodes/farm_plot.h"
@@ -58,6 +59,7 @@ void initialize_mcpp_kaki_module(ModuleInitializationLevel p_level) {
 	GDREGISTER_CLASS(SignalBus);
 	GDREGISTER_CLASS(GameManager);
 	GDREGISTER_CLASS(SoulLedgerSystem);
+	GDREGISTER_CLASS(CurrencySystem);
 	GDREGISTER_CLASS(ShopSystem);
 	GDREGISTER_CLASS(ContinentManager);
 	GDREGISTER_CLASS(DataLoader);

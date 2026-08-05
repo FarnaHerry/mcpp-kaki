@@ -32,6 +32,9 @@ func _stones():
 func _count(id: String) -> int:
 	return int(_player().call("get_inventory").call("get_item_count", id))
 
+func _currency():
+	return root.find_child("CurrencySystem", true, false)
+
 func _process(delta) -> bool:
 	_t += delta
 	if _t < _next:
@@ -50,8 +53,8 @@ func _process(delta) -> bool:
 			_next = _t + 0.3
 			_check(_shop() != null, "ShopSystem 存在")
 			_check(_stones() == 0, "初始灵石 0")
-			# 给灵石 + 商店货架
-			_player().call("get_inventory").call("add_item", "spirit_stone", 100)
+			# 给灵石（四阶钱包，session 012）+ 商店货架
+			_currency().call("add", 0, 100)
 			_check(_stones() == 100, "加灵石 100")
 			_check(_shop().call("get_stock").size() >= 5, "商店货架非空")
 			_check(_count("healing_pill") == 0, "初始无回春丹")

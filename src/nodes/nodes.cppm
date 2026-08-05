@@ -376,15 +376,15 @@ private:
 	bool _visible = false;
 	bool _restore_pause = false;
 
-	int _pane = 0; // 0=商店货架 1=玩家背包
-	GridList *_grids[2] = {};   // 双栏格子列表
+	int _pane = 0; // 0=商店货架 1=玩家背包 2=灵石兑换（Q/E 三栏循环）
+	GridList *_grids[3] = {};   // 货架|背包|兑换 三格
 	std::vector<int> _slots[1]; // 背包栏：紧凑非空→真实槽位（仅 pane1）
 	Array _stock;               // 商店货架（{id,name,price}）
 
 	ColorRect *_background = nullptr;
 	Label *_title = nullptr;
-	Label *_balance = nullptr; // 灵石余额
-	Label *_headers[2] = {};
+	Label *_balance = nullptr; // 灵石余额（四阶）
+	Label *_headers[3] = {};
 	Label *_hint = nullptr;
 	Label *_msg = nullptr;
 	float _msg_t = 0.0f;

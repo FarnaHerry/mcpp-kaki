@@ -14,7 +14,7 @@ func _ready():
 	var ling = WC.spawn_enemy(self, Vector2(260, 205), Color(0.85, 0.7, 0.3, 1), 90.0, 300.0, "JingYingShouDong")
 	ling.set("max_health", 45.0); ling.set("current_health", 45.0); ling.set("realm", 4)
 
-	# 秘藏（石台）：菩提心法残卷 + 千年灵芝 + 灵石
+	# 秘藏（石台）：菩提心法残卷 + 千年灵芝 + 中品灵石
 	WC.spawn_item_pickup(self, Vector2(200, 182), "pu_ti_xin_fa_juan", 1)
 	WC.spawn_item_pickup(self, Vector2(180, 232), "qian_nian_ling_zhi", 1)
-	WC.spawn_item_pickup(self, Vector2(220, 232), "spirit_stone", 30)
+	WC.spawn_item_pickup(self, Vector2(220, 232), "spirit_stone_mid", 5)

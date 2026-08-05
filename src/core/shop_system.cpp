@@ -1,5 +1,6 @@
 #include "shop_system.h"
 
+#include "currency_system.h"
 #include "../nodes/player.h"
 
 import mcpp_kaki.inventory; // Item / Inventory / ItemDatabase
@@ -40,13 +41,14 @@ bool ShopSystem::buy(Player *p, const StringName &p_item_id) {
 	if (!def || def->buy_price <= 0)
 		return false; // 商店不售此物
 	int price = def->buy_price;
-	if (inv->get_item_count(StringName("spirit_stone")) < price)
+	CurrencySystem *cs = CurrencySystem::get_singleton();
+	if (!cs || !cs->can_afford(price))
 		return false; // 灵石不足
-	if (!inv->remove_item(StringName("spirit_stone"), price))
+	if (!cs->spend(price))
 		return false;
 	if (!inv->add_item(p_item_id, 1)) {
 		// 背包满回滚
-		inv->add_item(StringName("spirit_stone"), price);
+		cs->add(CurrencySystem::TIER_LOW, price);
 		return false;
 	}
 	return true;
@@ -58,21 +60,22 @@ bool ShopSystem::sell(Player *p, const StringName &p_item_id) {
 	Inventory *inv = p->get_inventory();
 	if (!inv)
 		return false;
-	if (p_item_id == StringName("spirit_stone"))
-		return false; // 货币不可卖
 	const Item *def = ItemDatabase::get_singleton()->get_item(p_item_id);
 	if (!def || def->sell_price <= 0)
 		return false; // 商店不收此物
+	if (def->currency_tier >= 0)
+		return false; // 货币不进背包、不可卖
 	if (!inv->remove_item(p_item_id, 1))
 		return false;
-	inv->add_item(StringName("spirit_stone"), def->sell_price);
+	CurrencySystem *cs = CurrencySystem::get_singleton();
+	if (cs)
+		cs->add(CurrencySystem::TIER_LOW, def->sell_price);
 	return true;
 }
 
 int ShopSystem::get_spirit_stones(Player *p) const {
-	if (!p || !p->get_inventory())
-		return 0;
-	return p->get_inventory()->get_item_count(StringName("spirit_stone"));
+	CurrencySystem *cs = CurrencySystem::get_singleton();
+	return cs ? cs->get_total() : 0;
 }
 
 Array ShopSystem::get_stock() const {
