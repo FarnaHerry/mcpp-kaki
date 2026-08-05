@@ -74,6 +74,9 @@ static const SkillSystem::Def SKILL_DEFS[] = {
 	  0.0f, 0.0f, 0.0f, 0.0f, SkillSystem::FX_MELEE_SWING, 4, 0.0f, Color(), 0.0f, nullptr, SkillSystem::PAS_FLY_SPEED, 0.15f },
 	{ "dao_fa_zi_ran", "道法自然", SkillSystem::TYPE_PASSIVE, DMG_PHYSICAL, ELEM_NONE,
 	  0.0f, 0.0f, 0.0f, 0.0f, SkillSystem::FX_MELEE_SWING, 5, 0.0f, Color(), 0.0f, nullptr, SkillSystem::PAS_LAW_REGEN, 0.25f },
+	// 菩提心法：斜月三星洞·菩提道统秘藏（全元素抗性 +10%）
+	{ "pu_ti_xin_fa", "菩提心法", SkillSystem::TYPE_PASSIVE, DMG_PHYSICAL, ELEM_NONE,
+	  0.0f, 0.0f, 0.0f, 0.0f, SkillSystem::FX_MELEE_SWING, 3, 0.0f, Color(), 0.0f, nullptr, SkillSystem::PAS_ELEM_RESIST, 0.10f },
 };
 
 // Runtime definition cache (populated from SKILL_DEFS at first use)
@@ -148,6 +151,7 @@ void SkillSystem::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_passive_mana_regen_mult"), &SkillSystem::get_passive_mana_regen_mult);
 	ClassDB::bind_method(D_METHOD("get_passive_fly_mult"), &SkillSystem::get_passive_fly_mult);
 	ClassDB::bind_method(D_METHOD("get_passive_law_regen_mult"), &SkillSystem::get_passive_law_regen_mult);
+	ClassDB::bind_method(D_METHOD("get_passive_elem_resist"), &SkillSystem::get_passive_elem_resist);
 	ClassDB::bind_method(D_METHOD("save_to_dict"), &SkillSystem::save_to_dict);
 	ClassDB::bind_method(D_METHOD("load_from_dict", "data"), &SkillSystem::load_from_dict);
 

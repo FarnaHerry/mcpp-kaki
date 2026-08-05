@@ -302,5 +302,27 @@
     "buff_id": "buff_ren_shen_guo",
     "buy_price": 800,
     "sell_price": 400
+  },
+  {
+    "id": "ba_jiao_shan",
+    "name": "芭蕉扇",
+    "desc": "铁扇公主之物，一扇风起火灭。使用得法宝（风刃+灭火）。",
+    "type": 0,
+    "max_stack": 1,
+    "grade": 1,
+    "learn_artifact": "ba_jiao_shan",
+    "buy_price": 0,
+    "sell_price": 0
+  },
+  {
+    "id": "pu_ti_xin_fa_juan",
+    "name": "菩提心法残卷",
+    "desc": "三星洞菩提道统所传，参悟得被动「菩提心法」（全元素抗性+10%）。",
+    "type": 0,
+    "max_stack": 1,
+    "grade": 2,
+    "learn_skill": "pu_ti_xin_fa",
+    "buy_price": 0,
+    "sell_price": 0
   }
 ]

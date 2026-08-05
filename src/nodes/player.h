@@ -93,11 +93,14 @@ class Player : public CharacterBody2D {
 		// 饱食度（design/cultivation-realms.md 饮食：凡人需进食/炼气效果120%/筑基辟谷）
 		float _fullness = 100.0f;
 		float _max_fullness = 100.0f;
+		bool _flight_blocked = false; // 弱水区禁飞（NoFlyZone 置位）
 		float get_fullness() const { return _fullness; }
 		float get_max_fullness() const { return _max_fullness; }
 		void set_fullness(float v) { _fullness = Math::clamp(v, 0.0f, _max_fullness); }
 		bool is_bigu() const;          // 筑基辟谷：不需进食
 		float get_food_mult() const;   // 食物效果倍率（凡人1.0/炼气1.2）
+		bool is_flight_blocked() const { return _flight_blocked; } // 弱水区禁飞
+		void set_flight_blocked(bool v) { _flight_blocked = v; }
 
 		StateMachine<Player> *state_machine = nullptr;
 		InputBuffer jump_buffer;

@@ -307,6 +307,13 @@ namespace godot {
 				return;
 			}
 
+			// 弱水区禁飞：进入即坠（流沙河）
+			if (p->is_flight_blocked()) {
+				p->was_flying = false;
+				p->state_machine->transition_to(PlayerStates::Fall);
+				return;
+			}
+
 			// 再按跳跃退出飞行
 			if (p->jump_just_pressed()) {
 				p->was_flying = false;
@@ -697,7 +704,10 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("get_max_fullness"), &Player::get_max_fullness);
 		ClassDB::bind_method(D_METHOD("set_fullness", "v"), &Player::set_fullness);
 		ClassDB::bind_method(D_METHOD("is_bigu"), &Player::is_bigu);
+		ClassDB::bind_method(D_METHOD("can_fly"), &Player::can_fly);
 		ClassDB::bind_method(D_METHOD("get_food_mult"), &Player::get_food_mult);
+		ClassDB::bind_method(D_METHOD("set_flight_blocked", "v"), &Player::set_flight_blocked);
+		ClassDB::bind_method(D_METHOD("is_flight_blocked"), &Player::is_flight_blocked);
 		ClassDB::bind_method(D_METHOD("get_inventory"), &Player::get_inventory);
 		ClassDB::bind_method(D_METHOD("get_cultivation"), &Player::get_cultivation);
 	ClassDB::bind_method(D_METHOD("get_gongfa"), &Player::get_gongfa);
@@ -944,6 +954,8 @@ namespace godot {
 	}
 
 	bool Player::can_fly() const {
+		if (_flight_blocked)
+			return false; // 弱水区禁飞（流沙河）
 		if (!_abilities)
 			return false;
 		// 金丹以上：无条件飞行
@@ -1057,7 +1069,8 @@ namespace godot {
 		def.spell_resist = spell_resist;
 		def.self_element = self_element;
 		for (int i = 0; i < ELEM_CAPACITY; i++) {
-			def.elem_resist[i] = elem_resist[i] + (_buffs ? _buffs->get_elem_resist_bonus(i) : 0.0f);
+			def.elem_resist[i] = elem_resist[i] + (_buffs ? _buffs->get_elem_resist_bonus(i) : 0.0f)
+				+ (_skills ? _skills->get_passive_elem_resist() : 0.0f); // 被动（菩提心法）全元素抗性
 		}
 		float actual_damage = DamageCalculator::compute(info, def);
 
@@ -1786,6 +1799,9 @@ namespace godot {
 		}
 		if (def->learn_skill != StringName() && _skills) {
 			_skills->learn(def->learn_skill); // 秘籍/残卷：使用即悟（已会则 no-op）
+		}
+		if (def->learn_artifact != StringName() && _artifacts) {
+			_artifacts->acquire(def->learn_artifact); // 法宝残篇：使用获得法宝
 		}
 
 		SignalBus *bus = SignalBus::get_singleton();

@@ -53,6 +53,7 @@ void ItemDatabase::_ready() {
 				if (d.has("sell_price")) it.sell_price = int(d["sell_price"]);
 				if (d.has("buff_id")) { StringName b = d["buff_id"]; if (!b.is_empty()) it.buff_id = b; }
 				if (d.has("learn_skill")) { StringName ls = d["learn_skill"]; if (!ls.is_empty()) it.learn_skill = ls; }
+				if (d.has("learn_artifact")) { StringName la = d["learn_artifact"]; if (!la.is_empty()) it.learn_artifact = la; }
 				if (d.has("breakthrough_bonus")) it.breakthrough_bonus = float(d["breakthrough_bonus"]);
 				if (d.has("plantable")) it.plantable = bool(d["plantable"]);
 				if (d.has("grow_seconds")) it.grow_seconds = int(d["grow_seconds"]);
@@ -95,6 +96,7 @@ Dictionary ItemDatabase::get_item_info(const StringName &p_id) const {
 	d["sell_price"] = it->sell_price;
 	d["buff_id"] = it->buff_id;
 	d["learn_skill"] = it->learn_skill;
+	d["learn_artifact"] = it->learn_artifact;
 	d["plantable"] = it->plantable;
 	d["grow_seconds"] = it->grow_seconds;
 	return d;
@@ -389,6 +391,32 @@ void ItemDatabase::_register_items() {
 		fruit.fullness_amount = 100.0f;
 		fruit.buff_id = "buff_ren_shen_guo";
 		_items[fruit.id] = fruit;
+	}
+
+	// 芭蕉扇：铁扇公主之物（西牛贺洲火焰山，design/world-map.md「芭蕉扇开路」）
+	{
+		Item fan;
+		fan.id = "ba_jiao_shan";
+		fan.name = LOC("芭蕉扇");
+		fan.description = LOC("铁扇公主之物，一扇风起火灭。使用得法宝（风刃+扇灭环境火）。");
+		fan.type = Item::CONSUMABLE;
+		fan.max_stack = 1;
+		fan.grade = 1;
+		fan.learn_artifact = StringName("ba_jiao_shan");
+		_items[fan.id] = fan;
+	}
+
+	// 菩提心法残卷：斜月三星洞·菩提道统（使用习得被动「菩提心法」）
+	{
+		Item scroll;
+		scroll.id = "pu_ti_xin_fa_juan";
+		scroll.name = LOC("菩提心法残卷");
+		scroll.description = LOC("三星洞菩提道统所传，参悟得被动「菩提心法」（全元素抗性+10%）。");
+		scroll.type = Item::CONSUMABLE;
+		scroll.max_stack = 1;
+		scroll.grade = 2;
+		scroll.learn_skill = StringName("pu_ti_xin_fa");
+		_items[scroll.id] = scroll;
 	}
 }
 

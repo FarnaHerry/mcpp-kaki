@@ -45,6 +45,7 @@ export struct Item {
 	float fullness_amount = 0.0f; // 回饱食度（食物类，随境界倍率：凡人1.0/炼气1.2；辟谷后转纯 buff）
 	StringName buff_id;         // 增益 buff（BuffSystem def id）
 	StringName learn_skill;     // 使用后习得技能（SkillSystem def id，秘籍/残卷类）
+	StringName learn_artifact;  // 使用后获得法宝（ArtifactSystem id，法宝残篇类）
 	int grade = 0;              // 品级：0凡 1灵 2地 3天
 	int buy_price = 0;          // 商店买价（玩家付灵石；0=商店不售）
 	int sell_price = 0;         // 商店卖价（玩家得灵石；0=不可卖）

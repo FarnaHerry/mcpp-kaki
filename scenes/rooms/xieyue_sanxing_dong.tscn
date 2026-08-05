@@ -1,0 +1,52 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/rooms/xieyue_sanxing_dong.gd" id="1"]
+
+[sub_resource type="RectangleShape2D" id="ground_shape"]
+size = Vector2(400, 24)
+
+[sub_resource type="RectangleShape2D" id="wall_shape"]
+size = Vector2(16, 270)
+
+[node name="XieYueSanXingDong" type="Node2D"]
+script = ExtResource("1")
+
+; 背景（洞内昏暗）
+[node name="Background" type="Polygon2D" parent="."]
+color = Color(0.06, 0.05, 0.1, 1)
+polygon = PackedVector2Array(0, 0, 400, 0, 400, 270, 0, 270)
+
+; 三星洞标志（洞顶三星）
+[node name="Star1" type="Polygon2D" parent="."]
+color = Color(0.9, 0.85, 0.5, 1)
+polygon = PackedVector2Array(160, 50, 168, 34, 176, 50, 160, 50)
+
+[node name="Star2" type="Polygon2D" parent="."]
+color = Color(0.9, 0.85, 0.5, 1)
+polygon = PackedVector2Array(200, 46, 208, 30, 216, 46, 200, 46)
+
+[node name="Star3" type="Polygon2D" parent="."]
+color = Color(0.9, 0.85, 0.5, 1)
+polygon = PackedVector2Array(240, 50, 248, 34, 256, 50, 240, 50)
+
+[node name="Ground" type="StaticBody2D" parent="."]
+position = Vector2(200, 238)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
+shape = SubResource("ground_shape")
+
+[node name="GroundVisual" type="Polygon2D" parent="Ground"]
+color = Color(0.25, 0.2, 0.16, 1)
+polygon = PackedVector2Array(-200, -12, 200, -12, 170, 32, -170, 32)
+
+[node name="WallL" type="StaticBody2D" parent="."]
+position = Vector2(8, 135)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallL"]
+shape = SubResource("wall_shape")
+
+[node name="WallR" type="StaticBody2D" parent="."]
+position = Vector2(392, 135)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallR"]
+shape = SubResource("wall_shape")

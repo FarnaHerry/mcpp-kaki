@@ -201,6 +201,7 @@ public:
 		PAS_MANA_REGEN,
 		PAS_FLY_SPEED,
 		PAS_LAW_REGEN,
+		PAS_ELEM_RESIST, // 全元素抗性（菩提心法；加成比例，非乘区）
 	};
 
 	enum EffectKind {
@@ -241,6 +242,7 @@ public:
 	float get_passive_mana_regen_mult() const { return 1.0f + _passive_sum(PAS_MANA_REGEN); }
 	float get_passive_fly_mult() const { return 1.0f + _passive_sum(PAS_FLY_SPEED); }
 	float get_passive_law_regen_mult() const { return 1.0f + _passive_sum(PAS_LAW_REGEN); }
+	float get_passive_elem_resist() const { return _passive_sum(PAS_ELEM_RESIST); } // 全元素抗性加成（0.1 = +10%）
 
 	static const int SLOT_COUNT = 8;
 	static SkillType slot_type(int p_slot) {

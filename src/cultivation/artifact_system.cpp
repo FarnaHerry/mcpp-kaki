@@ -17,6 +17,9 @@ static const ArtifactSystem::Def ARTIFACT_DEFS[] = {
 	// 玄铁塔：辅助型，常驻防御 +10%×系数
 	{ "xuan_tie_ta", "玄铁塔", ArtifactSystem::KIND_SUPPORT, DMG_PHYSICAL, ELEM_NONE,
 	  0.0f, 0.0f, 0.0f, SkillSystem::FX_MELEE_SWING, 0.0f, Color(), 0.10f },
+	// 芭蕉扇：风刃扇形（火焰山，扇灭环境火开道）
+	{ "ba_jiao_shan", "芭蕉扇", ArtifactSystem::KIND_ATTACK, DMG_ELEMENTAL, ELEM_NONE,
+	  25.0f, 4.0f, 3.0f, SkillSystem::FX_PROJ_FAN, 300.0f, Color(0.6f, 0.9f, 0.6f), 0.0f },
 };
 
 void ArtifactSystem::_bind_methods() {
@@ -150,6 +153,20 @@ bool ArtifactSystem::activate_slot(int p_slot) {
 			_player->exec_skill_projectile(power, def->category, def->element,
 			                               def->proj_speed, def->proj_color);
 			break;
+		case SkillSystem::FX_PROJ_FAN:
+			_player->exec_skill_proj_fan(power, def->category, def->element,
+			                             def->proj_speed, def->proj_color);
+			break;
+	}
+
+	// 芭蕉扇：扇灭火焰山环境火（design/world-map.md 火焰山「芭蕉扇开路」）
+	if (id == StringName("ba_jiao_shan") && _player && _player->get_tree()) {
+		TypedArray<Node> zones = _player->get_tree()->get_nodes_in_group("fire_zones");
+		for (int i = 0; i < zones.size(); i++) {
+			Node *zone = Object::cast_to<Node>(zones[i]);
+			if (zone && zone->has_method("extinguish"))
+				zone->call("extinguish");
+		}
 	}
 
 	// 耗灵行为养练气 + 祭出推进温养
