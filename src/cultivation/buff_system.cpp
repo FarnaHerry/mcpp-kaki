@@ -20,6 +20,11 @@ namespace godot {
 		{ "buff_tu_dun",   "土盾",     12.0f,  0.0f,  0.30f, ELEM_NONE,  0.0f  }, // 土盾术：防御+30%（法术自buff）
 		{ "buff_shen_wai", "身外化身", 30.0f,  0.35f, 0.0f,  ELEM_NONE,  0.0f  }, // 身外化身：毫毛助威，攻击+35%（神通自buff）
 		{ "buff_xuan_gui", "玄龟护体", 30.0f,  0.0f,  0.25f, ELEM_NONE,  0.0f  }, // 玄龟护体：防御+25%（蓬莱法术自buff）
+		// ---- 食物（design/cultivation-realms.md 饮食）：筑基辟谷后食物转纯 buff ----
+		{ "buff_fullness_low",  "果腹", 600.0f,  0.0f,  0.05f, ELEM_NONE,  0.0f  }, // 糙米饭：防御+5%
+		{ "buff_fullness_mid",  "干粮", 600.0f,  0.05f, 0.0f,  ELEM_NONE,  0.0f  }, // 干粮：攻击+5%
+		{ "buff_fullness_high", "饱足", 900.0f,  0.08f, 0.08f, ELEM_NONE,  0.0f  }, // 灵米：攻击+8% 防御+8%
+		{ "buff_hunger",        "饥饿", 99999.0f, -0.2f, -0.2f, ELEM_NONE,  0.0f  }, // 饥饿：饱食度归零（force-managed，吃食物解除）
 	};
 
 	const BuffSystem::Def *BuffSystem::find_def(const StringName &p_id) {

@@ -60,6 +60,11 @@ void SignalBus::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("mana_changed",
 	                      PropertyInfo(Variant::FLOAT, "current"),
 	                      PropertyInfo(Variant::FLOAT, "max")));
+	ADD_SIGNAL(MethodInfo("fullness_changed",
+	                      PropertyInfo(Variant::FLOAT, "current"),
+	                      PropertyInfo(Variant::FLOAT, "max")));
+	ADD_SIGNAL(MethodInfo("bigu_changed",
+	                      PropertyInfo(Variant::BOOL, "bigu")));
 	ADD_SIGNAL(MethodInfo("realm_changed",
 	                      PropertyInfo(Variant::INT, "old_realm"),
 	                      PropertyInfo(Variant::INT, "new_realm"),

@@ -48,6 +48,7 @@ void ItemDatabase::_ready() {
 				if (d.has("heal_pct")) it.heal_pct = float(d["heal_pct"]);
 				if (d.has("mana_amount")) it.mana_amount = float(d["mana_amount"]);
 				if (d.has("energy_amount")) it.energy_amount = float(d["energy_amount"]);
+				if (d.has("fullness_amount")) it.fullness_amount = float(d["fullness_amount"]);
 				if (d.has("buff_id")) { StringName b = d["buff_id"]; if (!b.is_empty()) it.buff_id = b; }
 				if (d.has("learn_skill")) { StringName ls = d["learn_skill"]; if (!ls.is_empty()) it.learn_skill = ls; }
 				if (d.has("breakthrough_bonus")) it.breakthrough_bonus = float(d["breakthrough_bonus"]);
@@ -87,6 +88,7 @@ Dictionary ItemDatabase::get_item_info(const StringName &p_id) const {
 	d["heal_pct"] = it->heal_pct;
 	d["mana_amount"] = it->mana_amount;
 	d["energy_amount"] = it->energy_amount;
+	d["fullness_amount"] = it->fullness_amount;
 	d["buff_id"] = it->buff_id;
 	d["learn_skill"] = it->learn_skill;
 	d["plantable"] = it->plantable;
@@ -327,6 +329,46 @@ void ItemDatabase::_register_items() {
 		pill.heal_pct = 0.5f;
 		pill.energy_amount = 100.0f;
 		_items[pill.id] = pill;
+	}
+
+	// ---- 食物（design/cultivation-realms.md L166-179：凡人需进食/炼气效果120%/筑基辟谷转纯 buff）----
+	{
+		Item food;
+		food.id = "brown_rice";
+		food.name = LOC("糙米饭");
+		food.description = LOC("凡间粗粮，聊以果腹。饱食度+15。");
+		food.type = Item::CONSUMABLE;
+		food.max_stack = 99;
+		food.grade = 0;
+		food.fullness_amount = 15.0f;
+		food.buff_id = "buff_fullness_low";
+		_items[food.id] = food;
+	}
+	{
+		Item food;
+		food.id = "dry_ration";
+		food.name = LOC("干粮");
+		food.description = LOC("行军口粮，耐饥顶饱。饱食度+25。");
+		food.type = Item::CONSUMABLE;
+		food.max_stack = 50;
+		food.grade = 0;
+		food.fullness_amount = 25.0f;
+		food.buff_id = "buff_fullness_mid";
+		_items[food.id] = food;
+	}
+	{
+		Item food;
+		food.id = "spirit_rice";
+		food.name = LOC("灵米");
+		food.description = LOC("灵田所产，一粒抵三餐。饱食度+40；洞天可种（180s 成熟）。");
+		food.type = Item::CONSUMABLE;
+		food.max_stack = 30;
+		food.grade = 1;
+		food.fullness_amount = 40.0f;
+		food.buff_id = "buff_fullness_high";
+		food.plantable = true;
+		food.grow_seconds = 180;
+		_items[food.id] = food;
 	}
 }
 

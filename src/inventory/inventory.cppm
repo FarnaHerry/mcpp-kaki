@@ -42,6 +42,7 @@ export struct Item {
 	float heal_pct = 0.0f;      // 按比例回血（0.5 = 50%）
 	float mana_amount = 0.0f;   // 回灵力（法力池）
 	float energy_amount = 0.0f; // 修为经验（accumulate_energy，到顶卡境界）
+	float fullness_amount = 0.0f; // 回饱食度（食物类，随境界倍率：凡人1.0/炼气1.2；辟谷后转纯 buff）
 	StringName buff_id;         // 增益 buff（BuffSystem def id）
 	StringName learn_skill;     // 使用后习得技能（SkillSystem def id，秘籍/残卷类）
 	int grade = 0;              // 品级：0凡 1灵 2地 3天

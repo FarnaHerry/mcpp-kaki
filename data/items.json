@@ -1,24 +1,242 @@
 [
-  {"id":"healing_pill","name":"回春丹","desc":"恢复 30 点生命值。基础疗伤丹药。","type":0,"max_stack":20,"grade":0,"heal_amount":30.0},
-  {"id":"qi_pill","name":"聚气丹","desc":"吸收后恢复 50 点灵力。修炼者日常必备。","type":0,"max_stack":30,"grade":0,"mana_amount":50.0},
-  {"id":"foundation_pill","name":"筑基丹","desc":"突破时提升 20% 成功率。筑基期以下有效。","type":0,"max_stack":5,"grade":0,"breakthrough_bonus":0.2},
-  {"id":"spirit_stone","name":"灵石","desc":"蕴含灵气的晶石，修炼界的通用货币。","type":1,"max_stack":999,"grade":0},
-  {"id":"flying_sword","name":"飞剑","desc":"低阶飞行法器。筑基期御之可短暂凌空飞行，持续消耗灵力；金丹之后肉身自飞，此物仅作代步。","type":2,"max_stack":1,"grade":0},
-  {"id":"iron_sword","name":"铁剑","desc":"普通的铁制长剑。可在锻造铺升级。","type":3,"max_stack":1,"grade":0,"equip_slot":0,"attack_bonus":5.0},
-  {"id":"protect_robe","name":"护体法衣","desc":"附有简单防护法阵的衣袍。","type":3,"max_stack":1,"grade":0,"equip_slot":1,"defense_bonus":3.0},
-  {"id":"xian_tao","name":"仙桃","desc":"花果山桃林所结灵果，三千年一熟。食之气血充盈，修为精进。","type":0,"max_stack":10,"grade":1,"heal_pct":0.5,"energy_amount":300.0},
-  {"id":"shen_wai_can_juan","name":"身外化身残卷","desc":"水帘洞石壁暗格所藏残卷，记载齐天大圣成名神通。参悟可习得「身外化身」。","type":0,"max_stack":1,"grade":2,"learn_skill":"shen_wai_hua_shen"},
-  {"id":"ding_hai_shen_zhen","name":"定海神针铁","desc":"大禹治水时测定江海深浅的神铁，重一万三千五百斤。大圣归去后沉寂东海之滨，静待有缘。","type":3,"max_stack":1,"grade":2,"equip_slot":0,"attack_bonus":25.0},
-  {"id":"zhi_xue_cao","name":"止血草","desc":"最常见的药草，捣汁可止血生肌。回春丹主材。","type":1,"max_stack":99,"grade":0,"plantable":true,"grow_seconds":60},
-  {"id":"ju_ling_cao","name":"聚灵草","desc":"叶脉含灵气脉络，凝聚天地灵气。聚气丹主材。","type":1,"max_stack":99,"grade":0,"plantable":true,"grow_seconds":60},
-  {"id":"bing_xin_lian","name":"冰心莲","desc":"生于高寒之地的雪莲，触手生凉。冰心丹主材。","type":1,"max_stack":99,"grade":1,"plantable":true,"grow_seconds":180},
-  {"id":"chi_yan_hua","name":"赤焰花","desc":"洞穴深处吞吐地火的红花。赤焰丹主材。","type":1,"max_stack":99,"grade":1,"plantable":true,"grow_seconds":180},
-  {"id":"jin_gang_teng","name":"金刚藤","desc":"攀于绝壁的铁色藤蔓，坚逾精钢。金刚丹主材。","type":1,"max_stack":99,"grade":1,"plantable":true,"grow_seconds":180},
-  {"id":"wu_dao_cha","name":"悟道茶","desc":"传说古修坐化处生出的茶树，一叶一悟。悟道丹主材。","type":1,"max_stack":99,"grade":2,"plantable":true,"grow_seconds":600},
-  {"id":"qian_nian_ling_zhi","name":"千年灵芝","desc":"千年灵木根际所生紫芝，药力浑厚。大还丹主材。","type":1,"max_stack":99,"grade":2,"plantable":true,"grow_seconds":600},
-  {"id":"bing_xin_dan","name":"冰心丹","desc":"服之百脉清凉，水寒不侵。水抗+15%，持续 300 息。","type":0,"max_stack":10,"grade":1,"buff_id":"buff_bing_xin"},
-  {"id":"chi_yan_dan","name":"赤焰丹","desc":"地火炼就，服之气血沸腾。攻击+15%，持续 300 息。","type":0,"max_stack":10,"grade":1,"buff_id":"buff_chi_yan"},
-  {"id":"jin_gang_dan","name":"金刚丹","desc":"金铁之气淬体，刀枪难伤。防御+20%，持续 300 息。","type":0,"max_stack":10,"grade":1,"buff_id":"buff_jin_gang"},
-  {"id":"wu_dao_dan","name":"悟道丹","desc":"一叶一悟，豁然开朗。修为+200。","type":0,"max_stack":5,"grade":2,"energy_amount":200.0},
-  {"id":"da_huan_dan","name":"大还丹","desc":"生死人肉白骨。恢复 50% 生命，修为+100。","type":0,"max_stack":5,"grade":2,"heal_pct":0.5,"energy_amount":100.0}
+  {
+    "id": "healing_pill",
+    "name": "回春丹",
+    "desc": "恢复 30 点生命值。基础疗伤丹药。",
+    "type": 0,
+    "max_stack": 20,
+    "grade": 0,
+    "heal_amount": 30.0
+  },
+  {
+    "id": "qi_pill",
+    "name": "聚气丹",
+    "desc": "吸收后恢复 50 点灵力。修炼者日常必备。",
+    "type": 0,
+    "max_stack": 30,
+    "grade": 0,
+    "mana_amount": 50.0
+  },
+  {
+    "id": "foundation_pill",
+    "name": "筑基丹",
+    "desc": "突破时提升 20% 成功率。筑基期以下有效。",
+    "type": 0,
+    "max_stack": 5,
+    "grade": 0,
+    "breakthrough_bonus": 0.2
+  },
+  {
+    "id": "spirit_stone",
+    "name": "灵石",
+    "desc": "蕴含灵气的晶石，修炼界的通用货币。",
+    "type": 1,
+    "max_stack": 999,
+    "grade": 0
+  },
+  {
+    "id": "flying_sword",
+    "name": "飞剑",
+    "desc": "低阶飞行法器。筑基期御之可短暂凌空飞行，持续消耗灵力；金丹之后肉身自飞，此物仅作代步。",
+    "type": 2,
+    "max_stack": 1,
+    "grade": 0
+  },
+  {
+    "id": "iron_sword",
+    "name": "铁剑",
+    "desc": "普通的铁制长剑。可在锻造铺升级。",
+    "type": 3,
+    "max_stack": 1,
+    "grade": 0,
+    "equip_slot": 0,
+    "attack_bonus": 5.0
+  },
+  {
+    "id": "protect_robe",
+    "name": "护体法衣",
+    "desc": "附有简单防护法阵的衣袍。",
+    "type": 3,
+    "max_stack": 1,
+    "grade": 0,
+    "equip_slot": 1,
+    "defense_bonus": 3.0
+  },
+  {
+    "id": "xian_tao",
+    "name": "仙桃",
+    "desc": "花果山桃林所结灵果，三千年一熟。食之气血充盈，修为精进。",
+    "type": 0,
+    "max_stack": 10,
+    "grade": 1,
+    "heal_pct": 0.5,
+    "energy_amount": 300.0
+  },
+  {
+    "id": "shen_wai_can_juan",
+    "name": "身外化身残卷",
+    "desc": "水帘洞石壁暗格所藏残卷，记载齐天大圣成名神通。参悟可习得「身外化身」。",
+    "type": 0,
+    "max_stack": 1,
+    "grade": 2,
+    "learn_skill": "shen_wai_hua_shen"
+  },
+  {
+    "id": "ding_hai_shen_zhen",
+    "name": "定海神针铁",
+    "desc": "大禹治水时测定江海深浅的神铁，重一万三千五百斤。大圣归去后沉寂东海之滨，静待有缘。",
+    "type": 3,
+    "max_stack": 1,
+    "grade": 2,
+    "equip_slot": 0,
+    "attack_bonus": 25.0
+  },
+  {
+    "id": "zhi_xue_cao",
+    "name": "止血草",
+    "desc": "最常见的药草，捣汁可止血生肌。回春丹主材。",
+    "type": 1,
+    "max_stack": 99,
+    "grade": 0,
+    "plantable": true,
+    "grow_seconds": 60
+  },
+  {
+    "id": "ju_ling_cao",
+    "name": "聚灵草",
+    "desc": "叶脉含灵气脉络，凝聚天地灵气。聚气丹主材。",
+    "type": 1,
+    "max_stack": 99,
+    "grade": 0,
+    "plantable": true,
+    "grow_seconds": 60
+  },
+  {
+    "id": "bing_xin_lian",
+    "name": "冰心莲",
+    "desc": "生于高寒之地的雪莲，触手生凉。冰心丹主材。",
+    "type": 1,
+    "max_stack": 99,
+    "grade": 1,
+    "plantable": true,
+    "grow_seconds": 180
+  },
+  {
+    "id": "chi_yan_hua",
+    "name": "赤焰花",
+    "desc": "洞穴深处吞吐地火的红花。赤焰丹主材。",
+    "type": 1,
+    "max_stack": 99,
+    "grade": 1,
+    "plantable": true,
+    "grow_seconds": 180
+  },
+  {
+    "id": "jin_gang_teng",
+    "name": "金刚藤",
+    "desc": "攀于绝壁的铁色藤蔓，坚逾精钢。金刚丹主材。",
+    "type": 1,
+    "max_stack": 99,
+    "grade": 1,
+    "plantable": true,
+    "grow_seconds": 180
+  },
+  {
+    "id": "wu_dao_cha",
+    "name": "悟道茶",
+    "desc": "传说古修坐化处生出的茶树，一叶一悟。悟道丹主材。",
+    "type": 1,
+    "max_stack": 99,
+    "grade": 2,
+    "plantable": true,
+    "grow_seconds": 600
+  },
+  {
+    "id": "qian_nian_ling_zhi",
+    "name": "千年灵芝",
+    "desc": "千年灵木根际所生紫芝，药力浑厚。大还丹主材。",
+    "type": 1,
+    "max_stack": 99,
+    "grade": 2,
+    "plantable": true,
+    "grow_seconds": 600
+  },
+  {
+    "id": "bing_xin_dan",
+    "name": "冰心丹",
+    "desc": "服之百脉清凉，水寒不侵。水抗+15%，持续 300 息。",
+    "type": 0,
+    "max_stack": 10,
+    "grade": 1,
+    "buff_id": "buff_bing_xin"
+  },
+  {
+    "id": "chi_yan_dan",
+    "name": "赤焰丹",
+    "desc": "地火炼就，服之气血沸腾。攻击+15%，持续 300 息。",
+    "type": 0,
+    "max_stack": 10,
+    "grade": 1,
+    "buff_id": "buff_chi_yan"
+  },
+  {
+    "id": "jin_gang_dan",
+    "name": "金刚丹",
+    "desc": "金铁之气淬体，刀枪难伤。防御+20%，持续 300 息。",
+    "type": 0,
+    "max_stack": 10,
+    "grade": 1,
+    "buff_id": "buff_jin_gang"
+  },
+  {
+    "id": "wu_dao_dan",
+    "name": "悟道丹",
+    "desc": "一叶一悟，豁然开朗。修为+200。",
+    "type": 0,
+    "max_stack": 5,
+    "grade": 2,
+    "energy_amount": 200.0
+  },
+  {
+    "id": "da_huan_dan",
+    "name": "大还丹",
+    "desc": "生死人肉白骨。恢复 50% 生命，修为+100。",
+    "type": 0,
+    "max_stack": 5,
+    "grade": 2,
+    "heal_pct": 0.5,
+    "energy_amount": 100.0
+  },
+  {
+    "id": "brown_rice",
+    "name": "糙米饭",
+    "desc": "凡间粗粮，聊以果腹。饱食度+15。",
+    "type": 0,
+    "max_stack": 99,
+    "grade": 0,
+    "fullness_amount": 15.0,
+    "buff_id": "buff_fullness_low"
+  },
+  {
+    "id": "dry_ration",
+    "name": "干粮",
+    "desc": "行军口粮，耐饥顶饱。饱食度+25。",
+    "type": 0,
+    "max_stack": 50,
+    "grade": 0,
+    "fullness_amount": 25.0,
+    "buff_id": "buff_fullness_mid"
+  },
+  {
+    "id": "spirit_rice",
+    "name": "灵米",
+    "desc": "灵田所产，一粒抵三餐。饱食度+40；洞天可种（180s 成熟）。",
+    "type": 0,
+    "max_stack": 30,
+    "grade": 1,
+    "fullness_amount": 40.0,
+    "buff_id": "buff_fullness_high",
+    "plantable": true,
+    "grow_seconds": 180
+  }
 ]

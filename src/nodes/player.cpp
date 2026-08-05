@@ -693,6 +693,11 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("use_consumable", "item_id"), &Player::use_consumable);
 		ClassDB::bind_method(D_METHOD("get_consumable_bar_slot", "idx"), &Player::get_consumable_bar_slot);
 		ClassDB::bind_method(D_METHOD("use_consumable_bar_slot", "idx"), &Player::use_consumable_bar_slot);
+		ClassDB::bind_method(D_METHOD("get_fullness"), &Player::get_fullness);
+		ClassDB::bind_method(D_METHOD("get_max_fullness"), &Player::get_max_fullness);
+		ClassDB::bind_method(D_METHOD("set_fullness", "v"), &Player::set_fullness);
+		ClassDB::bind_method(D_METHOD("is_bigu"), &Player::is_bigu);
+		ClassDB::bind_method(D_METHOD("get_food_mult"), &Player::get_food_mult);
 		ClassDB::bind_method(D_METHOD("get_inventory"), &Player::get_inventory);
 		ClassDB::bind_method(D_METHOD("get_cultivation"), &Player::get_cultivation);
 	ClassDB::bind_method(D_METHOD("get_gongfa"), &Player::get_gongfa);
@@ -767,7 +772,52 @@ namespace godot {
 			_buffs->tick(p_delta); // buff 计时（到期自动消失）
 		}
 
+		_update_fullness(p_delta);
+
 		state_machine->physics_update(p_delta);
+	}
+
+	bool Player::is_bigu() const {
+		// 筑基辟谷：不再需要用食维生
+		return _cultivation && _cultivation->get_realm_index() >= CultivationSystem::FOUNDATION;
+	}
+
+	float Player::get_food_mult() const {
+		// 食物效果倍率：凡人 1.0 / 炼气起 1.2（design/cultivation-realms.md L167）
+		if (_cultivation && _cultivation->get_realm_index() >= CultivationSystem::QI_REFINING)
+			return 1.2f;
+		return 1.0f;
+	}
+
+	void Player::_update_fullness(double p_delta) {
+		float before = _fullness;
+		if (is_bigu()) {
+			// 辟谷：饱食度锁定满（条隐藏由 HUD 处理）
+			if (before != _max_fullness)
+				_fullness = _max_fullness;
+			return;
+		}
+		// 凡人/炼气：随时间衰减（满→空约 5.5 分钟）
+		if (_fullness > 0.0f) {
+			_fullness = Math::max(0.0f, _fullness - 0.3f * float(p_delta));
+		}
+		// 饥饿 debuff（force-managed）：归零 apply / 回正 remove
+		if (_buffs) {
+			bool hungry = _fullness <= 0.0f;
+			bool has_hunger = _buffs->has("buff_hunger");
+			if (hungry && !has_hunger)
+				_buffs->apply("buff_hunger");
+			else if (!hungry && has_hunger)
+				_buffs->remove("buff_hunger");
+		}
+		if (before != _fullness)
+			_emit_fullness();
+	}
+
+	void Player::_emit_fullness() {
+		SignalBus *bus = SignalBus::get_singleton();
+		if (bus)
+			bus->emit_signal("fullness_changed", _fullness, _max_fullness);
 	}
 
 	void Player::_process(double p_delta) {
@@ -1271,6 +1321,19 @@ namespace godot {
 			_artifacts->acquire(StringName("fei_jian"));
 			_artifacts->equip(1, StringName("fei_jian"));
 		}
+		// 筑基：辟谷（不再需进食，饱食度锁定满，食物转纯 buff）
+		if (p_old_realm < CultivationSystem::FOUNDATION &&
+		    p_new_realm >= CultivationSystem::FOUNDATION) {
+			if (_fullness != _max_fullness) {
+				_fullness = _max_fullness;
+				_emit_fullness();
+			}
+			if (_buffs && _buffs->has("buff_hunger"))
+				_buffs->remove("buff_hunger"); // 辟谷自动解除饥饿
+			SignalBus *bus = SignalBus::get_singleton();
+			if (bus)
+				bus->emit_signal("bigu_changed", true);
+		}
 		// 筑基：雷咒术/土盾术
 		if (_skills && p_old_realm < CultivationSystem::FOUNDATION &&
 		    p_new_realm >= CultivationSystem::FOUNDATION) {
@@ -1712,6 +1775,12 @@ namespace godot {
 		if (def->energy_amount > 0.0f && _cultivation) {
 			_cultivation->accumulate_energy(def->energy_amount);
 		}
+		// 食物：回饱食度（按境界倍率）；辟谷后不再回（食物转纯 buff）
+		if (def->fullness_amount > 0.0f && !is_bigu()) {
+			_fullness = Math::min(_fullness + def->fullness_amount * get_food_mult(), _max_fullness);
+			if (_buffs && _buffs->has("buff_hunger"))
+				_buffs->remove("buff_hunger"); // 进食解除饥饿
+		}
 		if (def->buff_id != StringName() && _buffs) {
 			_buffs->apply(def->buff_id); // 同名刷新不叠加
 		}
@@ -1723,6 +1792,9 @@ namespace godot {
 		if (bus) {
 			if (health_changed) {
 				bus->emit_signal("player_health_changed", current_health, max_health);
+			}
+			if (def->fullness_amount > 0.0f) {
+				bus->emit_signal("fullness_changed", _fullness, _max_fullness);
 			}
 			bus->emit_signal("item_used", String(p_item_id), 1);
 		}
@@ -1784,6 +1856,10 @@ namespace godot {
 		}
 		if (p_data.has("max_health")) {
 			max_health = float(p_data["max_health"]);
+		}
+		// 饱食度（辟谷从境界推导，读档时境界已恢复）
+		if (p_data.has("fullness")) {
+			set_fullness(float(p_data["fullness"]));
 		}
 
 		// 功法

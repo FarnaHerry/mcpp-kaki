@@ -16,8 +16,14 @@ func _setup_game():
 	var camera = ctx.camera
 	var hint = ctx.hint
 
+	# 起始干粮：凡人需进食维生（design/cultivation-realms.md 饮食），避免开局饿死
+	player.call("get_inventory").call("add_item", "dry_ration", 3)
+
 	# ---- Portals (composition: each portal owns its scene lifecycle) ----
 	WC.create_portal(self, 600, "res://scenes/rooms/town.tscn", "[↑] Enter Town", player, camera, hint)
+	# 落霞村外围：食物补给点（糙米饭/干粮）
+	WC.spawn_item_pickup(self, Vector2(310, 232), "brown_rice", 2)
+	WC.spawn_item_pickup(self, Vector2(470, 232), "dry_ration", 2)
 	WC.create_portal(self, 1000, "res://scenes/rooms/cave.tscn", "[↑] Enter Cave", player, camera, hint)
 
 	# ---- Enemies (variety: melee, archer, flyer, boss) ----

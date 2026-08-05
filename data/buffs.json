@@ -1,8 +1,92 @@
 [
-  {"id":"buff_bing_xin","name":"冰心","duration":300.0,"atk_mult":0.0,"def_mult":0.0,"elem":3,"elem_resist":0.15},
-  {"id":"buff_chi_yan","name":"赤焰","duration":300.0,"atk_mult":0.15,"def_mult":0.0,"elem":0,"elem_resist":0.0},
-  {"id":"buff_jin_gang","name":"金刚","duration":300.0,"atk_mult":0.0,"def_mult":0.20,"elem":0,"elem_resist":0.0},
-  {"id":"buff_tu_dun","name":"土盾","duration":12.0,"atk_mult":0.0,"def_mult":0.30,"elem":0,"elem_resist":0.0},
-  {"id":"buff_shen_wai","name":"身外化身","duration":30.0,"atk_mult":0.35,"def_mult":0.0,"elem":0,"elem_resist":0.0},
-  {"id":"buff_xuan_gui","name":"玄龟护体","duration":30.0,"atk_mult":0.0,"def_mult":0.25,"elem":0,"elem_resist":0.0}
+  {
+    "id": "buff_bing_xin",
+    "name": "冰心",
+    "duration": 300.0,
+    "atk_mult": 0.0,
+    "def_mult": 0.0,
+    "elem": 3,
+    "elem_resist": 0.15
+  },
+  {
+    "id": "buff_chi_yan",
+    "name": "赤焰",
+    "duration": 300.0,
+    "atk_mult": 0.15,
+    "def_mult": 0.0,
+    "elem": 0,
+    "elem_resist": 0.0
+  },
+  {
+    "id": "buff_jin_gang",
+    "name": "金刚",
+    "duration": 300.0,
+    "atk_mult": 0.0,
+    "def_mult": 0.2,
+    "elem": 0,
+    "elem_resist": 0.0
+  },
+  {
+    "id": "buff_tu_dun",
+    "name": "土盾",
+    "duration": 12.0,
+    "atk_mult": 0.0,
+    "def_mult": 0.3,
+    "elem": 0,
+    "elem_resist": 0.0
+  },
+  {
+    "id": "buff_shen_wai",
+    "name": "身外化身",
+    "duration": 30.0,
+    "atk_mult": 0.35,
+    "def_mult": 0.0,
+    "elem": 0,
+    "elem_resist": 0.0
+  },
+  {
+    "id": "buff_xuan_gui",
+    "name": "玄龟护体",
+    "duration": 30.0,
+    "atk_mult": 0.0,
+    "def_mult": 0.25,
+    "elem": 0,
+    "elem_resist": 0.0
+  },
+  {
+    "id": "buff_fullness_low",
+    "name": "果腹",
+    "duration": 600.0,
+    "atk_mult": 0.0,
+    "def_mult": 0.05,
+    "elem": 0,
+    "elem_resist": 0.0
+  },
+  {
+    "id": "buff_fullness_mid",
+    "name": "干粮",
+    "duration": 600.0,
+    "atk_mult": 0.05,
+    "def_mult": 0.0,
+    "elem": 0,
+    "elem_resist": 0.0
+  },
+  {
+    "id": "buff_fullness_high",
+    "name": "饱足",
+    "duration": 900.0,
+    "atk_mult": 0.08,
+    "def_mult": 0.08,
+    "elem": 0,
+    "elem_resist": 0.0
+  },
+  {
+    "id": "buff_hunger",
+    "name": "饥饿",
+    "duration": 99999.0,
+    "atk_mult": -0.2,
+    "def_mult": -0.2,
+    "elem": 0,
+    "elem_resist": 0.0
+  }
 ]

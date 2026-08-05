@@ -119,6 +119,8 @@ std::vector<DropSystem::DropEntry> DropSystem::_roll_drops(
             table.push_back({ "healing_pill", 1, 1, 0.25f });
             table.push_back({ "zhi_xue_cao", 1, 2, 0.15f });
             table.push_back({ "ju_ling_cao", 1, 2, 0.15f });
+            table.push_back({ "brown_rice", 1, 2, 0.25f }); // 食物：糙米饭
+            table.push_back({ "dry_ration", 1, 1, 0.15f }); // 食物：干粮
             if (p_is_ranged || p_is_flying) {
                 table.push_back({ "qi_pill", 1, 2, 0.2f });
             }

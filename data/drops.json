@@ -1,18 +1,80 @@
 {
   "boss": [
-    {"item":"spirit_stone","min":5,"max":10,"chance":1.0},
-    {"item":"healing_pill","min":2,"max":3,"chance":1.0},
-    {"item":"foundation_pill","min":1,"max":2,"chance":0.8},
-    {"item":"qi_pill","min":1,"max":3,"chance":0.6},
-    {"item":"qian_nian_ling_zhi","min":1,"max":1,"chance":1.0}
+    {
+      "item": "spirit_stone",
+      "min": 5,
+      "max": 10,
+      "chance": 1.0
+    },
+    {
+      "item": "healing_pill",
+      "min": 2,
+      "max": 3,
+      "chance": 1.0
+    },
+    {
+      "item": "foundation_pill",
+      "min": 1,
+      "max": 2,
+      "chance": 0.8
+    },
+    {
+      "item": "qi_pill",
+      "min": 1,
+      "max": 3,
+      "chance": 0.6
+    },
+    {
+      "item": "qian_nian_ling_zhi",
+      "min": 1,
+      "max": 1,
+      "chance": 1.0
+    }
   ],
   "normal": [
-    {"item":"spirit_stone","min":1,"max":3,"chance":0.6},
-    {"item":"healing_pill","min":1,"max":1,"chance":0.25},
-    {"item":"zhi_xue_cao","min":1,"max":2,"chance":0.15},
-    {"item":"ju_ling_cao","min":1,"max":2,"chance":0.15}
+    {
+      "item": "spirit_stone",
+      "min": 1,
+      "max": 3,
+      "chance": 0.6
+    },
+    {
+      "item": "healing_pill",
+      "min": 1,
+      "max": 1,
+      "chance": 0.25
+    },
+    {
+      "item": "zhi_xue_cao",
+      "min": 1,
+      "max": 2,
+      "chance": 0.15
+    },
+    {
+      "item": "ju_ling_cao",
+      "min": 1,
+      "max": 2,
+      "chance": 0.15
+    },
+    {
+      "item": "brown_rice",
+      "min": 1,
+      "max": 2,
+      "chance": 0.25
+    },
+    {
+      "item": "dry_ration",
+      "min": 1,
+      "max": 1,
+      "chance": 0.15
+    }
   ],
   "normal_ranged": [
-    {"item":"qi_pill","min":1,"max":2,"chance":0.2}
+    {
+      "item": "qi_pill",
+      "min": 1,
+      "max": 2,
+      "chance": 0.2
+    }
   ]
 }

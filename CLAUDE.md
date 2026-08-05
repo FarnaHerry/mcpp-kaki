@@ -135,6 +135,7 @@ bin/              # 编译产物 (.so)，gitignored
 - **AlchemySystem** (`src/cultivation/alchemy_system.*`) — 炼丹：丹炉随身，7 固定配方，成功率字段 v1=100%（失败机制预留），地品金丹门控，每炉喂练气+5；GameMenu 第8页「炼丹」**卡片化**（3 列 GridList：锁定=灰、材料够=绿、不够=红），**2D 导航** ↑/↓ 行移 ←/→ 列移（行内钳制不跨行回卷），X 炼制；详情行（y=170）显示 丹方名+效果（锁定附「（金丹起）」）+材料行（y=184）
 - **草药** — Item grade 字段（0凡/1灵/2地）；7 草药（MATERIAL）；**HerbNode** (`src/nodes/`) 采集点（[X] 采集入包+喂练气+2，枯萎，房间重进刷新）；小怪掉止血草/聚灵草，Boss 千年灵芝保底
 - **use_consumable 统一入口** — Player::use_consumable(item_id)：扣数量+回血/比例回血/回灵(mana_amount)/修为(energy_amount)/buff；拾取自动用、背包面板、数字键栏全部走这里；聚气丹已迁移为回灵50
+- **食物/辟谷** (`design/cultivation-realms.md` 饮食 L166-179) — **饱食度** `_fullness/_max_fullness`(Player)：凡人/炼气随时间衰减(0.3/s)，归零→`buff_hunger` 饥饿 debuff（攻防-20%，force-managed 吃食解除）；**食物倍率** 凡人1.0/炼气1.2；**筑基辟谷** `is_bigu()` 不再衰减+饱食度条隐藏+食物转纯 buff（不回饱食度）；HUD 饱食度条(y60，境界标签移至 y78/寿元 y96)；信号 `fullness_changed/bigu_changed`；存档 pd["fullness"]；食物物品 糙米饭(full15+果腹防5%)/干粮(full25+干粮攻5%)/灵米(full40+饱足攻防8% 900s，**洞天可种 180s**，联动灵田)；来源=起始干粮×3 + 地图拾取 + 小怪掉落(25%/15%)；test_food.gd
 - **数字键消耗品栏** — 1~6 快捷栏（consume_1..6），拾取消耗品自动入栏（首个空位/耗尽槽），HUD 技能栏上方一行（名首字+数量），存档 pd["consumable_bar"]
 - **调试键**: F3 遥测 / F4 HUD / F5 突破无经验门槛开关 / F6 读档 / Q 突破
 - **潜伏 bug 教训**: `Player::_on_enemy_killed` 通过 `connect("enemy_killed", Callable(this, "_on_enemy_killed"))` 连接，但从未 `ClassDB::bind_method` → Callable 解析失败静默无效 → 击杀喂功法/法宝温养/法则击杀回复全部静默失效（自实现以来一直无效，2026-07-25 修复）

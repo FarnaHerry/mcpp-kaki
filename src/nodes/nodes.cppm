@@ -73,6 +73,8 @@ public:
 	void on_dongtian_exited();
 	void on_lifespan_changed(int p_ledger, int p_actual);
 	void on_ledger_inspect(const Dictionary &p_data, bool p_show);
+	void on_fullness_changed(float p_current, float p_max);
+	void on_bigu_changed(bool p_bigu);
 	void _on_language_changed(const String &p_locale);
 	bool is_boss_bar_visible() const { return _boss_bg && _boss_bg->is_visible(); }
 	String get_boss_bar_name() const { return _boss_name ? _boss_name->get_text() : String(); }
@@ -110,6 +112,15 @@ private:
 	Label *_xp_label = nullptr;
 	float _xp_progress = 0.0f;
 	Color _xp_color = Color(0.9f, 0.75f, 0.2f, 1.0f);
+
+	// 饱食度条（食物/辟谷，design/cultivation-realms.md 饮食；辟谷后隐藏）
+	ColorRect *_fullness_bg = nullptr;
+	ColorRect *_fullness_fill = nullptr;
+	Label *_fullness_label = nullptr;
+	float _fullness_current = 100.0f;
+	float _fullness_max = 100.0f;
+	Color _fullness_color = Color(0.85f, 0.55f, 0.2f, 1.0f);
+	bool _bigu = false;
 
 	Label *_buff_label = nullptr;
 	Array _buffs;
@@ -163,6 +174,7 @@ private:
 	void _create_jiyuan_label();
 	void _create_lifespan_label();
 	void _create_ledger_overlay();
+	void _create_fullness_bar();
 	void _create_combo_label();
 	void _create_interact_prompt();
 	void _create_death_overlay();

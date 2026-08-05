@@ -41,8 +41,9 @@ static constexpr float BAR_X = 8.0f;
 static constexpr float HEALTH_BAR_Y = 6.0f;
 static constexpr float ENERGY_BAR_Y = 24.0f; // 灵力（法力）
 static constexpr float XP_BAR_Y = 42.0f;     // 修为经验（百分比）
-static constexpr float REALM_LABEL_Y = 62.0f;
-static constexpr float LIFESPAN_LABEL_Y = 80.0f; // 境界下方：寿元（簿上/实际）
+static constexpr float FULLNESS_BAR_Y = 60.0f;   // 饱食度条（修为条下方；辟谷后隐藏）
+static constexpr float REALM_LABEL_Y = 78.0f;
+static constexpr float LIFESPAN_LABEL_Y = 96.0f; // 境界下方：寿元（簿上/实际）
 static constexpr int FONT_SIZE_XS = 9;
 static constexpr int FONT_SIZE_MD = 14;
 static constexpr int FONT_SIZE_LG = 20;
@@ -56,6 +57,8 @@ void GameHUD::_bind_methods() {
     ClassDB::bind_method(D_METHOD("on_dongtian_exited"), &GameHUD::on_dongtian_exited);
     ClassDB::bind_method(D_METHOD("on_lifespan_changed", "ledger", "actual"), &GameHUD::on_lifespan_changed);
     ClassDB::bind_method(D_METHOD("on_ledger_inspect", "data", "show"), &GameHUD::on_ledger_inspect);
+    ClassDB::bind_method(D_METHOD("on_fullness_changed", "current", "max"), &GameHUD::on_fullness_changed);
+    ClassDB::bind_method(D_METHOD("on_bigu_changed", "bigu"), &GameHUD::on_bigu_changed);
     ClassDB::bind_method(D_METHOD("on_spiritual_energy_changed", "current", "max", "progress"),
                          &GameHUD::on_spiritual_energy_changed);
     ClassDB::bind_method(D_METHOD("on_mana_changed", "current", "max"),
@@ -98,6 +101,7 @@ void GameHUD::_ready() {
 	_create_pressure_indicators();
 	_create_lifespan_label();
 	_create_ledger_overlay();
+	_create_fullness_bar();
 
     // Buff 行（生命条下方小行）
     _buff_label = memnew(Label);
@@ -144,6 +148,8 @@ void GameHUD::_ready() {
         bus->connect("dongtian_exited", Callable(this, "on_dongtian_exited"));
         bus->connect("lifespan_changed", Callable(this, "on_lifespan_changed"));
         bus->connect("ledger_inspect_requested", Callable(this, "on_ledger_inspect"));
+        bus->connect("fullness_changed", Callable(this, "on_fullness_changed"));
+        bus->connect("bigu_changed", Callable(this, "on_bigu_changed"));
 	        bus->connect("language_changed", Callable(this, "_on_language_changed"));
     }
 }
@@ -207,6 +213,14 @@ void GameHUD::_create_xp_bar() {
     _xp_fill->set_name("XpFill");
     _xp_label->set_name("XpLabel");
     _xp_fill->set_size(Vector2(0, BAR_HEIGHT)); // starts empty
+}
+
+void GameHUD::_create_fullness_bar() {
+    _build_bar(this, FULLNESS_BAR_Y, _fullness_color,
+               _fullness_bg, _fullness_fill, _fullness_label, TXT("饱食 100/100"));
+    _fullness_bg->set_name("FullnessBg");
+    _fullness_fill->set_name("FullnessFill");
+    _fullness_label->set_name("FullnessLabel");
 }
 
 // ============================================================
@@ -831,6 +845,11 @@ void GameHUD::_apply_hud_visibility() {
     if (_realm_label)   _realm_label->set_visible(_hud_visible);
     if (_jiyuan_label)  _jiyuan_label->set_visible(_hud_visible && _xp_progress >= 1.0f);
     if (_lifespan_label) _lifespan_label->set_visible(_hud_visible);
+    // 饱食度条：辟谷后隐藏
+    bool show_fullness = _hud_visible && !_bigu;
+    if (_fullness_bg) _fullness_bg->set_visible(show_fullness);
+    if (_fullness_fill) _fullness_fill->set_visible(show_fullness);
+    if (_fullness_label) _fullness_label->set_visible(show_fullness);
     // Combo/prompt manage their own visibility; only show when HUD is on
     if (_combo_label)   _combo_label->set_visible(_hud_visible && _combo_count >= 3);
     if (_interact_label) _interact_label->set_visible(_hud_visible && _prompt_showing);
@@ -952,6 +971,29 @@ void GameHUD::on_lifespan_changed(int p_ledger, int p_actual) {
             : p_actual < p_ledger ? Color(1.0f, 0.5f, 0.5f, 1)
             : Color(0.7f, 0.85f, 0.9f, 1);
     _lifespan_label->add_theme_color_override("font_color", c);
+}
+
+void GameHUD::on_fullness_changed(float p_current, float p_max) {
+    _fullness_current = p_current;
+    _fullness_max = p_max;
+    _update_bar(_fullness_fill, p_current, p_max);
+    if (_fullness_label) {
+        // 归零（饥饿）：标红提示
+        _fullness_label->set_text(LOC("饱食 ") + String::num_int64(int64_t(p_current)) + "/" +
+                                  String::num_int64(int64_t(p_max)));
+        Color c = p_current <= 0.0f ? Color(1.0f, 0.35f, 0.35f, 1) : Color(1, 1, 1, 1);
+        _fullness_label->add_theme_color_override("font_color", c);
+        _fullness_fill->set_color(p_current <= 0.0f
+            ? Color(0.75f, 0.2f, 0.2f, 1.0f) : _fullness_color);
+    }
+}
+
+void GameHUD::on_bigu_changed(bool p_bigu) {
+    _bigu = p_bigu;
+    // 辟谷：不需要进食，隐藏饱食度条
+    if (_fullness_bg) _fullness_bg->set_visible(_hud_visible && !p_bigu);
+    if (_fullness_fill) _fullness_fill->set_visible(_hud_visible && !p_bigu);
+    if (_fullness_label) _fullness_label->set_visible(_hud_visible && !p_bigu);
 }
 
 void GameHUD::on_ledger_inspect(const Dictionary &p_data, bool p_show) {

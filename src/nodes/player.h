@@ -90,6 +90,15 @@ class Player : public CharacterBody2D {
 		Node *get_last_damage_source() const { return last_damage_source; }
 		void set_last_damage_source(Node *v) { last_damage_source = v; }
 
+		// 饱食度（design/cultivation-realms.md 饮食：凡人需进食/炼气效果120%/筑基辟谷）
+		float _fullness = 100.0f;
+		float _max_fullness = 100.0f;
+		float get_fullness() const { return _fullness; }
+		float get_max_fullness() const { return _max_fullness; }
+		void set_fullness(float v) { _fullness = Math::clamp(v, 0.0f, _max_fullness); }
+		bool is_bigu() const;          // 筑基辟谷：不需进食
+		float get_food_mult() const;   // 食物效果倍率（凡人1.0/炼气1.2）
+
 		StateMachine<Player> *state_machine = nullptr;
 		InputBuffer jump_buffer;
 		InputBuffer dash_buffer;
@@ -236,6 +245,8 @@ class Player : public CharacterBody2D {
 		void _update_buffers();
 		void _update_facing();
 		void _update_move_speed();
+		void _update_fullness(double p_delta);
+		void _emit_fullness();
 		void _create_hitboxes();
 		void _setup_collision();
 		void _create_cultivation();

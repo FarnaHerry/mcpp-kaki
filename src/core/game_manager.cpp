@@ -378,6 +378,7 @@ Dictionary GameManager::collect_save_data() const {
 		Dictionary pd;
 		pd["health"] = _player->current_health;
 		pd["max_health"] = _player->max_health;
+		pd["fullness"] = _player->get_fullness(); // 饱食度（辟谷从境界推导，不存 max）
 		// 洞天内存档：位置记返回点（洞天内坐标对外界无意义），读档落在进入处
 		Vector2 save_pos = _player->get_global_position();
 		if (Node *cur = get_tree()->get_current_scene()) {
