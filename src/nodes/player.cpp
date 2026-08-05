@@ -654,6 +654,8 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("get_current_health"), &Player::get_current_health);
 		ClassDB::bind_method(D_METHOD("get_max_health"), &Player::get_max_health);
 		ClassDB::bind_method(D_METHOD("set_current_health", "v"), &Player::set_current_health);
+		ClassDB::bind_method(D_METHOD("set_last_damage_source", "v"), &Player::set_last_damage_source);
+		ClassDB::bind_method(D_METHOD("get_last_damage_source"), &Player::get_last_damage_source);
 		ClassDB::bind_method(D_METHOD("is_invulnerable"), &Player::is_invulnerable);
 		ClassDB::bind_method(D_METHOD("is_meditating"), &Player::is_meditating);
 		ClassDB::bind_method(D_METHOD("get_meditate_rate"), &Player::get_meditate_rate);
@@ -962,6 +964,7 @@ namespace godot {
 
 	void Player::_take_damage_typed(float p_amount, DamageCategory p_cat, Element p_elem, Node *p_source) {
 		if (is_invulnerable()) return; // 金刚不坏：无敌窗口全免
+		last_damage_source = p_source; // 记录来源（勾魂死亡路由判定用）
 		// DamageCalculator 统一结算：defense 来自装备 × 境界系数
 		float defense = get_equip_bonus_defense();
 		if (_cultivation) {

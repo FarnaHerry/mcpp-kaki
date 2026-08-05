@@ -71,6 +71,8 @@ public:
 	void on_continent_changed(const String &p_id, const String &p_name);
 	void on_dongtian_entered();
 	void on_dongtian_exited();
+	void on_lifespan_changed(int p_ledger, int p_actual);
+	void on_ledger_inspect(const Dictionary &p_data, bool p_show);
 	void _on_language_changed(const String &p_locale);
 	bool is_boss_bar_visible() const { return _boss_bg && _boss_bg->is_visible(); }
 	String get_boss_bar_name() const { return _boss_name ? _boss_name->get_text() : String(); }
@@ -118,6 +120,9 @@ private:
 
 	Label *_realm_label = nullptr;
 	Label *_jiyuan_label = nullptr;
+	Label *_lifespan_label = nullptr;   // 寿元小标签（簿上/实际，信息差可视化）
+	ColorRect *_ledger_overlay = nullptr; // 查簿 overlay 底
+	std::vector<Label *> _ledger_lines;   // 查簿 overlay 5 行
 	String _realm_name = LOC("凡人");
 
 	Label *_combo_label = nullptr;
@@ -156,6 +161,8 @@ private:
 	void _create_xp_bar();
 	void _create_realm_label();
 	void _create_jiyuan_label();
+	void _create_lifespan_label();
+	void _create_ledger_overlay();
 	void _create_combo_label();
 	void _create_interact_prompt();
 	void _create_death_overlay();

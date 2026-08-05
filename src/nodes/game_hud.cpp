@@ -42,6 +42,7 @@ static constexpr float HEALTH_BAR_Y = 6.0f;
 static constexpr float ENERGY_BAR_Y = 24.0f; // 灵力（法力）
 static constexpr float XP_BAR_Y = 42.0f;     // 修为经验（百分比）
 static constexpr float REALM_LABEL_Y = 62.0f;
+static constexpr float LIFESPAN_LABEL_Y = 80.0f; // 境界下方：寿元（簿上/实际）
 static constexpr int FONT_SIZE_XS = 9;
 static constexpr int FONT_SIZE_MD = 14;
 static constexpr int FONT_SIZE_LG = 20;
@@ -53,6 +54,8 @@ void GameHUD::_bind_methods() {
     ClassDB::bind_method(D_METHOD("on_continent_changed", "id", "name"), &GameHUD::on_continent_changed);
     ClassDB::bind_method(D_METHOD("on_dongtian_entered"), &GameHUD::on_dongtian_entered);
     ClassDB::bind_method(D_METHOD("on_dongtian_exited"), &GameHUD::on_dongtian_exited);
+    ClassDB::bind_method(D_METHOD("on_lifespan_changed", "ledger", "actual"), &GameHUD::on_lifespan_changed);
+    ClassDB::bind_method(D_METHOD("on_ledger_inspect", "data", "show"), &GameHUD::on_ledger_inspect);
     ClassDB::bind_method(D_METHOD("on_spiritual_energy_changed", "current", "max", "progress"),
                          &GameHUD::on_spiritual_energy_changed);
     ClassDB::bind_method(D_METHOD("on_mana_changed", "current", "max"),
@@ -93,6 +96,8 @@ void GameHUD::_ready() {
     _create_consumable_bar();
     _create_law_bar();
 	_create_pressure_indicators();
+	_create_lifespan_label();
+	_create_ledger_overlay();
 
     // Buff 行（生命条下方小行）
     _buff_label = memnew(Label);
@@ -137,6 +142,8 @@ void GameHUD::_ready() {
         bus->connect("continent_changed", Callable(this, "on_continent_changed"));
         bus->connect("dongtian_entered", Callable(this, "on_dongtian_entered"));
         bus->connect("dongtian_exited", Callable(this, "on_dongtian_exited"));
+        bus->connect("lifespan_changed", Callable(this, "on_lifespan_changed"));
+        bus->connect("ledger_inspect_requested", Callable(this, "on_ledger_inspect"));
 	        bus->connect("language_changed", Callable(this, "_on_language_changed"));
     }
 }
@@ -227,6 +234,37 @@ void GameHUD::_create_jiyuan_label() {
     _jiyuan_label->set_text(LOC("机缘已至 [Q]"));
     _jiyuan_label->set_visible(false);
     add_child(_jiyuan_label);
+}
+
+void GameHUD::_create_lifespan_label() {
+    _lifespan_label = memnew(Label);
+    _lifespan_label->set_name("LifespanLabel");
+    _lifespan_label->set_position(Vector2(BAR_X, LIFESPAN_LABEL_Y));
+    _lifespan_label->add_theme_font_size_override("font_size", FONT_SIZE_XS);
+    _lifespan_label->add_theme_color_override("font_color", Color(0.7f, 0.85f, 0.9f, 1));
+    _lifespan_label->set_text(TXT("寿 100 / 100"));
+    add_child(_lifespan_label);
+}
+
+void GameHUD::_create_ledger_overlay() {
+    // 查生死簿 overlay（判官 X 触发）：半透明底 + 5 行
+    _ledger_overlay = memnew(ColorRect);
+    _ledger_overlay->set_name("LedgerOverlay");
+    _ledger_overlay->set_position(Vector2(120, 58));
+    _ledger_overlay->set_size(Vector2(240, 116));
+    _ledger_overlay->set_color(Color(0.05f, 0.05f, 0.12f, 0.92f));
+    _ledger_overlay->set_visible(false);
+    add_child(_ledger_overlay);
+
+    static const float LINE_Y[5] = { 10.0f, 26.0f, 42.0f, 58.0f, 74.0f };
+    for (int i = 0; i < 5; i++) {
+        Label *l = memnew(Label);
+        l->set_position(Vector2(8, LINE_Y[i]));
+        l->add_theme_font_size_override("font_size", FONT_SIZE_XS);
+        l->add_theme_color_override("font_color", Color(0.9f, 0.9f, 0.95f, 1));
+        _ledger_overlay->add_child(l);
+        _ledger_lines.push_back(l);
+    }
 }
 
 // ============================================================
@@ -792,6 +830,7 @@ void GameHUD::_apply_hud_visibility() {
     if (_xp_label)      _xp_label->set_visible(_hud_visible);
     if (_realm_label)   _realm_label->set_visible(_hud_visible);
     if (_jiyuan_label)  _jiyuan_label->set_visible(_hud_visible && _xp_progress >= 1.0f);
+    if (_lifespan_label) _lifespan_label->set_visible(_hud_visible);
     // Combo/prompt manage their own visibility; only show when HUD is on
     if (_combo_label)   _combo_label->set_visible(_hud_visible && _combo_count >= 3);
     if (_interact_label) _interact_label->set_visible(_hud_visible && _prompt_showing);
@@ -901,6 +940,42 @@ void GameHUD::on_realm_changed(int p_old_realm, int p_new_realm, const String &p
         _mana_prefix = new_prefix;
         _refresh_mana_label();
     }
+}
+
+void GameHUD::on_lifespan_changed(int p_ledger, int p_actual) {
+    if (!_lifespan_label)
+        return;
+    // 寿元信息差可视化：实际 > 簿上 = 超出簿上（绿），实际 < 簿上 = 红
+    String txt = TXT("寿 ") + String::num_int64(p_ledger) + TXT(" / ") + String::num_int64(p_actual);
+    _lifespan_label->set_text(txt);
+    Color c = p_actual > p_ledger ? Color(0.5f, 0.9f, 0.5f, 1)
+            : p_actual < p_ledger ? Color(1.0f, 0.5f, 0.5f, 1)
+            : Color(0.7f, 0.85f, 0.9f, 1);
+    _lifespan_label->add_theme_color_override("font_color", c);
+}
+
+void GameHUD::on_ledger_inspect(const Dictionary &p_data, bool p_show) {
+    if (!_ledger_overlay || _ledger_lines.size() < 5)
+        return;
+    _ledger_overlay->set_visible(p_show);
+    if (!p_show)
+        return;
+    String origin = p_data.get("origin", TXT("后天修炼"));
+    String body = p_data.get("original_body", TXT("凡人"));
+    int ledger_life = int(p_data.get("ledger_lifespan", 0));
+    int actual_life = int(p_data.get("actual_lifespan", 0));
+    bool protected_ = bool(p_data.get("soul_protection", false));
+    String realm = p_data.get("realm_name", String());
+
+    _ledger_lines[0]->set_text(LOC("—— 生死簿 · 崔判官 ——"));
+    _ledger_lines[1]->set_text(LOC("出身：") + origin + LOC("   原身：") + body);
+    _ledger_lines[2]->set_text(LOC("境界：") + realm);
+    _ledger_lines[3]->set_text(LOC("簿上寿元：") + String::num_int64(ledger_life) +
+                               LOC("    实际：") + String::num_int64(actual_life));
+    _ledger_lines[4]->set_text(protected_ ? LOC("名讳已划——免死一次！") : LOC("注：簿上阳寿已尽，勾魂将至"));
+    // 信息差着色：实际 > 簿上 绿
+    Color c = actual_life > ledger_life ? Color(0.5f, 0.9f, 0.5f, 1) : Color(1.0f, 0.5f, 0.5f, 1);
+    _ledger_lines[3]->add_theme_color_override("font_color", c);
 }
 
 void GameHUD::on_combo_changed(int p_count) {

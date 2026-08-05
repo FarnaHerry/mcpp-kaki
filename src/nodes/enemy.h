@@ -37,6 +37,7 @@ class Enemy : public CharacterBody2D {
 		bool is_boss = false;         // true = boss: more HP, phases, special attacks
 		bool no_drops = false;        // true = 死亡不掉落（心魔/三尸等幻境之敌）
 		bool show_hp_bar = false;     // true = Boss 血条上 HUD（秘境劫敌用；is_boss 同效）
+		bool is_soul_reaper = false;  // true = 勾魂使者（黑白无常）：死亡入地府/反杀奖励判定
 		String display_name;          // Boss 血条标题（空则回退节点名）
 		float preferred_distance = 0.0f; // ideal combat range (0 = melee)
 
@@ -96,6 +97,7 @@ class Enemy : public CharacterBody2D {
 		void set_is_boss(bool v) { is_boss = v; }
 		void set_no_drops(bool v) { no_drops = v; }
 		void set_show_hp_bar(bool v) { show_hp_bar = v; }
+		void set_is_soul_reaper(bool v) { is_soul_reaper = v; }
 		void set_display_name(const String &v) { display_name = v; }
 		String get_display_name() const { return display_name; }
 		void set_preferred_distance(float v) { preferred_distance = v; }
@@ -109,6 +111,7 @@ class Enemy : public CharacterBody2D {
 		bool get_is_boss() const { return is_boss; }
 		bool get_no_drops() const { return no_drops; }
 		bool get_show_hp_bar() const { return show_hp_bar; }
+		bool get_is_soul_reaper() const { return is_soul_reaper; }
 		float get_preferred_distance() const { return preferred_distance; }
 		// 威压/灵压
 		int get_realm() const { return realm; }

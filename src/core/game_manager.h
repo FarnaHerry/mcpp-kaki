@@ -13,6 +13,8 @@ namespace godot {
 
 class Player;
 class CameraRoom2D;
+class SoulLedgerSystem;
+class Timer;
 
 // Global game manager — autoload singleton.
 // Owns high-level game state: pause, death/respawn, checkpoints, scene flow, save/load.
@@ -68,6 +70,19 @@ public:
 
 	// ---- Death / game over ----
 	void on_player_died();
+	// 地府：全场景切换（黄泉路）。只走 change_scene_to_file + 旅行桥，
+	// 不用 request_scene_change（避免 _respawn_scene 被污染）。还阳回主场景检查点。
+	void enter_difu(bool p_full_health = false);
+	void huan_yang();
+
+	// ---- 生死簿（地府死亡路由用）----
+	void set_soul_ledger(SoulLedgerSystem *p_ledger);
+	SoulLedgerSystem *get_soul_ledger() const { return _soul_ledger; }
+
+	// 地府场景常量
+	static constexpr const char *DIFU_SCENE = "res://scenes/continents/difu.tscn";
+	static constexpr const char *MAIN_SCENE = "res://scenes/main.tscn";
+	static const Vector2 DIFU_SPAWN;
 
 	// ---- Scene transitions ----
 	void request_scene_change(const String &p_scene_path, const Vector2 &p_spawn_pos);
@@ -108,6 +123,7 @@ private:
 	CameraRoom2D *_camera = nullptr;
 	SignalBus *_signal_bus = nullptr;
 	SaveSystem *_save_system = nullptr;
+	SoulLedgerSystem *_soul_ledger = nullptr;
 
 	// Checkpoint
 	Vector2 _respawn_pos;
@@ -121,6 +137,9 @@ private:
 	bool _has_travel_target = false;
 
 	void _apply_save_dict(const Dictionary &p_data); // load_game / 旅行桥共用的恢复逻辑
+	Timer *_make_death_timer(const String &p_name); // 死亡延迟计时器（PROCESS_MODE_ALWAYS）
+	void _enter_difu_from_death(); // 死亡路由无参包装（进地府强制满血）
+	void _clear_prompt(); // 免死提示 2s 后清（callable_mp 直连，不需绑定）
 
 	// Config
 	float _respawn_delay = 1.5f;

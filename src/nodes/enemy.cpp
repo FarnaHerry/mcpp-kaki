@@ -395,6 +395,7 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("set_is_boss", "v"), &Enemy::set_is_boss);
 		ClassDB::bind_method(D_METHOD("set_no_drops", "v"), &Enemy::set_no_drops);
 		ClassDB::bind_method(D_METHOD("set_show_hp_bar", "v"), &Enemy::set_show_hp_bar);
+		ClassDB::bind_method(D_METHOD("set_is_soul_reaper", "v"), &Enemy::set_is_soul_reaper);
 		ClassDB::bind_method(D_METHOD("set_display_name", "v"), &Enemy::set_display_name);
 		ClassDB::bind_method(D_METHOD("get_display_name"), &Enemy::get_display_name);
 		ClassDB::bind_method(D_METHOD("set_preferred_distance", "v"), &Enemy::set_preferred_distance);
@@ -408,6 +409,7 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("get_is_boss"), &Enemy::get_is_boss);
 		ClassDB::bind_method(D_METHOD("get_no_drops"), &Enemy::get_no_drops);
 		ClassDB::bind_method(D_METHOD("get_show_hp_bar"), &Enemy::get_show_hp_bar);
+		ClassDB::bind_method(D_METHOD("get_is_soul_reaper"), &Enemy::get_is_soul_reaper);
 		ClassDB::bind_method(D_METHOD("get_preferred_distance"), &Enemy::get_preferred_distance);
 		ClassDB::bind_method(D_METHOD("set_realm", "v"), &Enemy::set_realm);
 		ClassDB::bind_method(D_METHOD("get_realm"), &Enemy::get_realm);
@@ -426,6 +428,7 @@ namespace godot {
 		ADD_PROPERTY(PropertyInfo(Variant::BOOL, "is_boss"), "set_is_boss", "get_is_boss");
 		ADD_PROPERTY(PropertyInfo(Variant::BOOL, "no_drops"), "set_no_drops", "get_no_drops");
 		ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_hp_bar"), "set_show_hp_bar", "get_show_hp_bar");
+		ADD_PROPERTY(PropertyInfo(Variant::BOOL, "is_soul_reaper"), "set_is_soul_reaper", "get_is_soul_reaper");
 		ADD_PROPERTY(PropertyInfo(Variant::STRING, "display_name"), "set_display_name", "get_display_name");
 		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "preferred_distance"), "set_preferred_distance", "get_preferred_distance");
 

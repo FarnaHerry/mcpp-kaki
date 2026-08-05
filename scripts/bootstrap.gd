@@ -206,6 +206,24 @@ func _setup_game():
 	WC.spawn_herb(self, Vector2(8550, 129), "bing_xin_lian", 1)
 	WC.spawn_item_pickup(self, Vector2(8650, 232), "spirit_stone", 10)
 
+	# ===== 地府入口（黄泉路）：花果山段，玩家已有一战之力 =====
+	WC.make_landmark(self, 6100, 120, "黄泉路入口（地府）", Color(0.6, 0.5, 0.9, 1))
+	var difu_gate = load("res://scripts/gates/scene_gate.gd").new()
+	difu_gate.name = "DifuGate"
+	difu_gate.position = Vector2(6250, 210)
+	difu_gate.set("gm_method", "enter_difu")
+	difu_gate.set("prompt", "[↑] 入黄泉路")
+	var gs = CollisionShape2D.new()
+	var gr = RectangleShape2D.new()
+	gr.size = Vector2(32, 80)
+	gs.shape = gr
+	difu_gate.add_child(gs)
+	var gate_vis = Polygon2D.new()
+	gate_vis.color = Color(0.55, 0.4, 0.8, 1)
+	gate_vis.polygon = PackedVector2Array([Vector2(-7, -18), Vector2(7, -18), Vector2(7, 18), Vector2(-7, 18)])
+	difu_gate.add_child(gate_vis)
+	add_child(difu_gate)
+
 	print("东胜神洲 · 落霞山地")
 	print("Open world ready. Walk to portal markers and press X.")
 	print("Pick up items by walking over diamond markers.")

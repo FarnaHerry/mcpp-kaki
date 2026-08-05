@@ -107,6 +107,16 @@ void SignalBus::_bind_methods() {
 	                      PropertyInfo(Variant::STRING, "item_id"),
 	                      PropertyInfo(Variant::INT, "quantity")));
 
+	// ---- 生死簿 / 地府 ----
+	ADD_SIGNAL(MethodInfo("lifespan_changed",
+	                      PropertyInfo(Variant::INT, "ledger_lifespan"),
+	                      PropertyInfo(Variant::INT, "actual_lifespan")));
+	ADD_SIGNAL(MethodInfo("soul_protection_changed",
+	                      PropertyInfo(Variant::BOOL, "protected")));
+	ADD_SIGNAL(MethodInfo("ledger_inspect_requested",
+	                      PropertyInfo(Variant::DICTIONARY, "data"),
+	                      PropertyInfo(Variant::BOOL, "show")));
+
 	// ---- Save / Load signals ----
 	ADD_SIGNAL(MethodInfo("game_saved",
 	                      PropertyInfo(Variant::STRING, "slot_name")));

@@ -83,6 +83,11 @@ class Player : public CharacterBody2D {
 		float get_max_health() const { return max_health; }
 		void set_current_health(float p_v) { current_health = p_v; }
 
+		// 最后造成伤害的来源（地府勾魂死亡路由判定用；respawn/读档后置 nullptr）
+		Node *last_damage_source = nullptr;
+		Node *get_last_damage_source() const { return last_damage_source; }
+		void set_last_damage_source(Node *v) { last_damage_source = v; }
+
 		StateMachine<Player> *state_machine = nullptr;
 		InputBuffer jump_buffer;
 		InputBuffer dash_buffer;

@@ -10,10 +10,12 @@ import mcpp_kaki.combat;
 import mcpp_kaki.core;
 #include "core/drop_system.h"
 import mcpp_kaki.core;
+#include "core/soul_ledger_system.h"
 #include "nodes/camera_room_2d.h"
 #include "nodes/dongtian_manager.h"
 #include "nodes/farm_plot.h"
 #include "nodes/storage_chest.h"
+#include "nodes/underworld_interact.h"
 #include "nodes/item_pickup.h"
 #include "nodes/herb_node.h"
 #include "nodes/portal.h"
@@ -37,6 +39,7 @@ void initialize_mcpp_kaki_module(ModuleInitializationLevel p_level) {
 	GDREGISTER_CLASS(DongtianManager);
 	GDREGISTER_CLASS(FarmPlot);
 	GDREGISTER_CLASS(StorageChest);
+	GDREGISTER_CLASS(UnderworldInteractNode);
 	GDREGISTER_CLASS(HitBox);
 	GDREGISTER_CLASS(HurtBox);
 	GDREGISTER_CLASS(Projectile);
@@ -51,6 +54,7 @@ void initialize_mcpp_kaki_module(ModuleInitializationLevel p_level) {
 	GDREGISTER_CLASS(Localization);
 	GDREGISTER_CLASS(SignalBus);
 	GDREGISTER_CLASS(GameManager);
+	GDREGISTER_CLASS(SoulLedgerSystem);
 	GDREGISTER_CLASS(ContinentManager);
 	GDREGISTER_CLASS(DataLoader);
 	GDREGISTER_CLASS(GameHUD);

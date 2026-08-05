@@ -40,6 +40,11 @@ static func setup(root: Node) -> Dictionary:
 	game_mgr.name = "GameManager"
 	root.add_child(game_mgr)
 
+	# 生死簿（地府/勾魂）：GameManager 之后挂，死亡路由要用
+	var soul_ledger = ClassDB.instantiate("SoulLedgerSystem")
+	soul_ledger.name = "SoulLedgerSystem"
+	root.add_child(soul_ledger)
+
 	var drop_system = ClassDB.instantiate("DropSystem")
 	drop_system.name = "DropSystem"
 	root.add_child(drop_system)
@@ -98,6 +103,8 @@ static func setup(root: Node) -> Dictionary:
 	root.add_child(player)
 	camera.call("set_follow_target", player)
 	game_mgr.call("set_player", player)
+	soul_ledger.call("set_player", player)
+	game_mgr.call("set_soul_ledger", soul_ledger)
 	dongtian_mgr.call("set_player", player)
 	dongtian_mgr.call("set_camera", camera)
 	inv_panel.call("set_player", player)

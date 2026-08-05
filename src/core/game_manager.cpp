@@ -1,5 +1,6 @@
 #include "game_manager.h"
 import mcpp_kaki.core;
+#include "soul_ledger_system.h"
 #include "../nodes/player.h"
 #include "../nodes/camera_room_2d.h"
 #include "../nodes/dongtian_manager.h"
@@ -20,6 +21,7 @@ namespace godot {
 GameManager *GameManager::_singleton = nullptr;
 Vector2 GameManager::_s_travel_spawn;
 bool GameManager::_s_has_travel_spawn = false;
+const Vector2 GameManager::DIFU_SPAWN = Vector2(240, 200);
 
 Dictionary &GameManager::_bridge_storage() {
 	static Dictionary bridge;
@@ -95,6 +97,11 @@ void GameManager::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_travel_dest", "id"), &GameManager::set_travel_dest);
 	ClassDB::bind_method(D_METHOD("trigger_respawn"), &GameManager::trigger_respawn);
 	ClassDB::bind_method(D_METHOD("on_player_died"), &GameManager::on_player_died);
+	ClassDB::bind_method(D_METHOD("_enter_difu_from_death"), &GameManager::_enter_difu_from_death);
+	ClassDB::bind_method(D_METHOD("set_soul_ledger", "ledger"), &GameManager::set_soul_ledger);
+	ClassDB::bind_method(D_METHOD("get_soul_ledger"), &GameManager::get_soul_ledger);
+	ClassDB::bind_method(D_METHOD("enter_difu", "full_health"), &GameManager::enter_difu, DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("huan_yang"), &GameManager::huan_yang);
 	ClassDB::bind_method(D_METHOD("request_scene_change", "scene_path", "spawn_pos"),
 	                     &GameManager::request_scene_change);
 	ClassDB::bind_method(D_METHOD("get_kill_count"), &GameManager::get_kill_count);
@@ -185,20 +192,107 @@ void GameManager::on_player_died() {
 	if (_state == STATE_GAME_OVER)
 		return;
 
-	_state = STATE_GAME_OVER;
+	// ---- 分支 1：改簿免死一次（最高优先，不暂停不进 GAME_OVER）----
+	if (_soul_ledger && _player && _soul_ledger->consume_soul_protection()) {
+		_player->current_health = _player->max_health;
+		_player->set("velocity", Vector2(0, 0));
+		_player->set_last_damage_source(nullptr);
+		if (_signal_bus) {
+			_signal_bus->emit_signal("player_health_changed",
+				_player->current_health, _player->max_health);
+			_signal_bus->emit_signal("player_respawned"); // 清死亡 overlay + 复位勾魂状态
+			_signal_bus->emit_signal("interaction_prompt", LOC("划名生效——免死一次！"), true);
+			Timer *tip = memnew(Timer);
+			tip->set_process_mode(Node::PROCESS_MODE_ALWAYS);
+			tip->set_one_shot(true);
+			tip->set_wait_time(2.0);
+			tip->connect("timeout", callable_mp(this, &GameManager::_clear_prompt));
+			add_child(tip);
+			tip->start();
+		}
+		return;
+	}
 
-	// Brief pause before respawn
+	_state = STATE_GAME_OVER;
 	get_tree()->set_pause(true);
 
-	// Use a timer to delay respawn
-	Timer *respawn_timer = memnew(Timer);
-	respawn_timer->set_name("RespawnTimer");
-	respawn_timer->set_process_mode(Node::PROCESS_MODE_ALWAYS); // 世界已暂停，计时器必须继续走
-	respawn_timer->set_one_shot(true);
-	respawn_timer->set_wait_time(_respawn_delay);
-	respawn_timer->connect("timeout", Callable(this, "trigger_respawn"));
-	add_child(respawn_timer);
-	respawn_timer->start();
+	// ---- 分支 2：勾魂使击杀 → 魂魄入地府 ----
+	if (_soul_ledger && _player && _soul_ledger->was_killed_by_reaper(_player->get_last_damage_source())) {
+		Timer *t = _make_death_timer(TXT("DifuTimer"));
+		t->connect("timeout", Callable(this, "_enter_difu_from_death"));
+		t->start();
+		return;
+	}
+
+	// ---- 分支 3：地府内死亡 → 还阳回主场景检查点（防 respawn 放到 difu 本地坐标）----
+	Node *cur = get_tree()->get_current_scene();
+	if (cur && cur->get_scene_file_path() == String(DIFU_SCENE)) {
+		Timer *t = _make_death_timer(TXT("HuanyangTimer"));
+		t->connect("timeout", Callable(this, "huan_yang"));
+		t->start();
+		return;
+	}
+
+	// ---- 分支 4：正常死亡 → 回检查点（原逻辑）----
+	Timer *t = _make_death_timer(TXT("RespawnTimer"));
+	t->connect("timeout", Callable(this, "trigger_respawn"));
+	t->start();
+}
+
+Timer *GameManager::_make_death_timer(const String &p_name) {
+	Timer *t = memnew(Timer);
+	t->set_name(p_name);
+	t->set_process_mode(Node::PROCESS_MODE_ALWAYS); // 世界已暂停，计时器必须继续走
+	t->set_one_shot(true);
+	t->set_wait_time(_respawn_delay);
+	add_child(t);
+	return t;
+}
+
+void GameManager::_enter_difu_from_death() {
+	enter_difu(true);
+}
+
+void GameManager::_clear_prompt() {
+	if (_signal_bus)
+		_signal_bus->emit_signal("interaction_prompt", "", false);
+}
+
+void GameManager::enter_difu(bool p_full_health) {
+	// 死亡时世界已暂停，新场景别带着暂停
+	get_tree()->set_pause(false);
+	if (!_player)
+		return;
+	Dictionary data = collect_save_data();
+	if (p_full_health) {
+		Dictionary pd = data.get("player", Dictionary());
+		if (!pd.is_empty())
+			pd["health"] = (double)_player->max_health;
+		data["player"] = pd;
+	}
+	set_travel_bridge(data);
+	set_travel_target(DIFU_SPAWN); // 到岸落点，新场景 _process 全血传送
+	get_tree()->change_scene_to_file(String(DIFU_SCENE));
+}
+
+void GameManager::huan_yang() {
+	get_tree()->set_pause(false);
+	if (!_player)
+		return;
+	Dictionary data = collect_save_data();
+	Dictionary pd = data.get("player", Dictionary());
+	if (!pd.is_empty())
+		pd["health"] = (double)_player->max_health;
+	data["player"] = pd;
+	set_travel_bridge(data);
+	// 还阳回主场景检查点（enter_difu 用 change_scene_to_file 直切，_respawn_scene 未被污染）
+	set_travel_target(_respawn_pos);
+	String target = _respawn_scene.is_empty() ? String(MAIN_SCENE) : _respawn_scene;
+	get_tree()->change_scene_to_file(target);
+}
+
+void GameManager::set_soul_ledger(SoulLedgerSystem *p_ledger) {
+	_soul_ledger = p_ledger;
 }
 
 void GameManager::trigger_respawn() {
@@ -216,6 +310,7 @@ void GameManager::trigger_respawn() {
 	// Reset player state
 	_player->set("velocity", Vector2(0, 0));
 	_player->current_health = _player->max_health;
+	_player->set_last_damage_source(nullptr); // 防悬垂
 	_state = STATE_PLAYING;
 
 	// Clean up respawn timer
@@ -378,6 +473,11 @@ Dictionary GameManager::collect_save_data() const {
 		if (DongtianManager *dt = Object::cast_to<DongtianManager>(cur->find_child("DongtianManager", false, false))) {
 			data["dongtian"] = dt->save_to_dict();
 		}
+	}
+
+	// ---- 生死簿 ----
+	if (_soul_ledger) {
+		data["soul_ledger"] = _soul_ledger->save_to_dict();
 	}
 
 	return data;
@@ -552,6 +652,17 @@ void GameManager::_apply_save_dict(const Dictionary &data) {
 				dt->load_from_dict(dt_data);
 			}
 		}
+	}
+
+	// ---- Restore 生死簿（cultivation 段已先恢复，load 里刷新实际寿元并广播）----
+	Dictionary sl_data = data.get("soul_ledger", Dictionary());
+	if (!sl_data.is_empty() && _soul_ledger) {
+		_soul_ledger->load_from_dict(sl_data);
+	}
+
+	// 读档/重生后清除伤害来源（防悬垂；死亡判定只在瞬时用）
+	if (_player) {
+		_player->set_last_damage_source(nullptr);
 	}
 }
 
