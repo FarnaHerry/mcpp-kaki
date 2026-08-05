@@ -59,9 +59,10 @@ String SoulLedgerSystem::get_origin_name() const {
 }
 
 bool SoulLedgerSystem::mark_soul_exempt() {
-	if (_soul_protection)
+	if (_soul_protection && _struck)
 		return false;
 	_soul_protection = true;
+	_struck = true; // 划名 = 脱离生死轮回（阴寿豁免：不再被勾魂）
 	SignalBus *bus = SignalBus::get_singleton();
 	if (bus)
 		bus->emit_signal("soul_protection_changed", true);
@@ -88,6 +89,7 @@ Dictionary SoulLedgerSystem::save_to_dict() const {
 	d["original_body"] = _original_body;
 	d["ledger_lifespan"] = _ledger_lifespan;
 	d["soul_protection"] = _soul_protection;
+	d["struck"] = _struck;
 	return d;
 }
 
@@ -95,6 +97,7 @@ void SoulLedgerSystem::load_from_dict(const Dictionary &p_data) {
 	_original_body = p_data.get("original_body", _original_body);
 	_ledger_lifespan = int(p_data.get("ledger_lifespan", _ledger_lifespan));
 	_soul_protection = bool(p_data.get("soul_protection", false));
+	_struck = bool(p_data.get("struck", false));
 	// cultivation 段已先恢复，这里刷新实际寿元缓存并广播给 HUD
 	if (_player && _player->get_cultivation()) {
 		_realm_cache = _player->get_cultivation()->get_realm_index();
@@ -116,6 +119,7 @@ void SoulLedgerSystem::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_original_body", "v"), &SoulLedgerSystem::set_original_body);
 	ClassDB::bind_method(D_METHOD("get_origin_name"), &SoulLedgerSystem::get_origin_name);
 	ClassDB::bind_method(D_METHOD("has_soul_protection"), &SoulLedgerSystem::has_soul_protection);
+	ClassDB::bind_method(D_METHOD("is_struck"), &SoulLedgerSystem::is_struck);
 	ClassDB::bind_method(D_METHOD("mark_soul_exempt"), &SoulLedgerSystem::mark_soul_exempt);
 	ClassDB::bind_method(D_METHOD("consume_soul_protection"), &SoulLedgerSystem::consume_soul_protection);
 	ClassDB::bind_method(D_METHOD("is_reaper_active"), &SoulLedgerSystem::is_reaper_active);
@@ -150,6 +154,8 @@ void SoulLedgerSystem::_process(double p_delta) {
 
 	if (!_player || _player->is_dead())
 		return;
+	if (_struck)
+		return; // 划名=阴寿豁免：脱离生死轮回，不再被勾魂（勾魂错抓的终点）
 	Node *root = get_tree()->get_current_scene();
 	if (!root)
 		return;

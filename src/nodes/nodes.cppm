@@ -352,6 +352,48 @@ private:
 	void _transfer();
 	void _set_msg(const String &p_text);
 };
+
+// 长安坊市商店面板（双栏：商店货架|玩家背包，Q/E 切栏 X 购买/卖出）——灵石货币。
+export class ShopPanel : public CanvasLayer {
+	GDCLASS(ShopPanel, CanvasLayer);
+
+public:
+	void _ready() override;
+	void _process(double p_delta) override;
+	void _input(const Ref<InputEvent> &p_event) override;
+
+	void set_player(Player *p) { _player = p; }
+	void open();
+	void close();
+	bool is_open() const { return _visible; }
+
+protected:
+	static void _bind_methods();
+
+private:
+	Player *_player = nullptr;
+	bool _visible = false;
+	bool _restore_pause = false;
+
+	int _pane = 0; // 0=商店货架 1=玩家背包
+	GridList *_grids[2] = {};   // 双栏格子列表
+	std::vector<int> _slots[1]; // 背包栏：紧凑非空→真实槽位（仅 pane1）
+	Array _stock;               // 商店货架（{id,name,price}）
+
+	ColorRect *_background = nullptr;
+	Label *_title = nullptr;
+	Label *_balance = nullptr; // 灵石余额
+	Label *_headers[2] = {};
+	Label *_hint = nullptr;
+	Label *_msg = nullptr;
+	float _msg_t = 0.0f;
+
+	class ShopSystem *_shop = nullptr;
+	class ShopSystem *_find_shop();
+	void _refresh();
+	void _trade();
+	void _set_msg(const String &p_text);
+};
 export class GameMenu : public CanvasLayer {
 	GDCLASS(GameMenu, CanvasLayer)
 

@@ -43,7 +43,14 @@ func _setup():
 	judge.set("mode", 0) # MODE_INSPECT
 	add_child(judge)
 
-	# 生死簿（改簿划名 → 免死一次）
+	# 秦广王（审判：一殿初审核对生死簿）
+	var qin = ClassDB.instantiate("UnderworldInteractNode")
+	qin.name = "QinGuangWang"
+	qin.position = Vector2(230, 205)
+	qin.set("mode", 2) # MODE_TRIAL
+	add_child(qin)
+
+	# 生死簿（改簿划名 → 免死一次 + 阴寿豁免）
 	var book = ClassDB.instantiate("UnderworldInteractNode")
 	book.name = "ShengSiBo"
 	book.position = Vector2(330, 205)

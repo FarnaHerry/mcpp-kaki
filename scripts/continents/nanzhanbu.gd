@@ -1,4 +1,5 @@
-# 南赡部洲（stub v1：人间王朝，长安坊市主题；design/world-map.md）
+# 南赡部洲（人间王朝，长安坊市；design/world-map.md v4）
+# 长安：商店掌柜（灵石买卖）+ 五庄观人参果 + 地府入口（正式版）
 extends Node2D
 
 const WC = preload("res://scripts/world_common.gd")
@@ -37,4 +38,34 @@ func _setup():
 	WC.spawn_herb(self, Vector2(300, 214), "zhi_xue_cao", 2)
 	WC.spawn_herb(self, Vector2(1300, 134), "wu_dao_cha", 1)
 
-	print("南赡部洲 · 长安郊外（stub）")
+	# ===== 长安坊市（商店系统，灵石买卖）=====
+	WC.make_landmark(self, 1400, 120, "长安 · 坊市", Color(0.95, 0.85, 0.4, 1))
+	var keeper = ClassDB.instantiate("ShopKeeper")
+	keeper.name = "ShopKeeper"
+	keeper.position = Vector2(1500, 205)
+	add_child(keeper)
+
+	# ===== 五庄观：人参果（镇观灵果）=====
+	WC.make_landmark(self, 1800, 120, "五庄观（人参果）", Color(0.6, 0.9, 0.5, 1))
+	WC.spawn_item_pickup(self, Vector2(1850, 232), "ren_shen_guo", 1)
+	WC.spawn_item_pickup(self, Vector2(1900, 232), "spirit_stone", 20)
+
+	# ===== 地府入口（正式版：长安城内，design/world-map.md 南赡部洲地府入口）=====
+	WC.make_landmark(self, 100, 60, "黄泉路入口（地府）", Color(0.6, 0.5, 0.9, 1))
+	var difu_gate = load("res://scripts/gates/scene_gate.gd").new()
+	difu_gate.name = "DifuGate"
+	difu_gate.position = Vector2(240, 210)
+	difu_gate.set("gm_method", "enter_difu")
+	difu_gate.set("prompt", "[↑] 入黄泉路")
+	var gs = CollisionShape2D.new()
+	var gr = RectangleShape2D.new()
+	gr.size = Vector2(32, 80)
+	gs.shape = gr
+	difu_gate.add_child(gs)
+	var gv = Polygon2D.new()
+	gv.color = Color(0.55, 0.4, 0.8, 1)
+	gv.polygon = PackedVector2Array([Vector2(-7, -18), Vector2(7, -18), Vector2(7, 18), Vector2(-7, 18)])
+	difu_gate.add_child(gv)
+	add_child(difu_gate)
+
+	print("南赡部洲 · 长安坊市")

@@ -38,8 +38,9 @@ public:
 	String get_origin_name() const; // 出身名（后天修炼/先天神圣，读 CultivationSystem）
 
 	bool has_soul_protection() const { return _soul_protection; }
-	bool mark_soul_exempt();        // 改簿划名 → 免死一次
-	bool consume_soul_protection(); // 死亡时消耗：true=本次免死（清标记）
+	bool mark_soul_exempt();        // 改簿划名 → 免死一次 + 阴寿豁免（永久）
+	bool consume_soul_protection(); // 死亡时消耗：true=本次免死（清免死标记）
+	bool is_struck() const { return _struck; } // 划名永久标记：脱离生死轮回，不再被勾魂
 
 	bool is_reaper_active() const { return _reaper_active; }
 	bool was_killed_by_reaper(Node *p_source); // 勾魂使击杀判定
@@ -58,7 +59,8 @@ private:
 	int _ledger_lifespan = 100;    // 簿上寿元（物种默认）
 	int _realm_cache = 0;          // 实际寿元按境界缓存
 	String _original_body = TXT("凡人");
-	bool _soul_protection = false; // 划名标记
+	bool _soul_protection = false; // 免死一次标记（划名后置，死亡消耗）
+	bool _struck = false;          // 划名永久标记：脱离生死轮回，不再被勾魂（阴寿豁免）
 
 	Enemy *_reaper_a = nullptr;
 	Enemy *_reaper_b = nullptr;

@@ -46,6 +46,8 @@ export struct Item {
 	StringName buff_id;         // 增益 buff（BuffSystem def id）
 	StringName learn_skill;     // 使用后习得技能（SkillSystem def id，秘籍/残卷类）
 	int grade = 0;              // 品级：0凡 1灵 2地 3天
+	int buy_price = 0;          // 商店买价（玩家付灵石；0=商店不售）
+	int sell_price = 0;         // 商店卖价（玩家得灵石；0=不可卖）
 	float breakthrough_bonus = 0.0f; // 机缘突破事件的加成（事件系统实现后生效）
 	bool plantable = false;     // 可种植（草药类，洞天内灵田播种）
 	int grow_seconds = 0;       // 成熟所需现实秒数（plantable 时有效）

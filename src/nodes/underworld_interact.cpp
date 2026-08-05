@@ -62,7 +62,7 @@ void UnderworldInteractNode::_ready() {
 		hp.append(Vector2(0, -22));
 		hat->set_polygon(hp);
 		add_child(hat);
-	} else {
+	} else if (_mode == MODE_AMEND) {
 		// 生死簿：卷轴 + 朱印
 		Polygon2D *scroll = memnew(Polygon2D);
 		scroll->set_color(Color(0.55f, 0.45f, 0.25f, 1.0f));
@@ -83,6 +83,28 @@ void UnderworldInteractNode::_ready() {
 		sp2.append(Vector2(-4, 4));
 		seal->set_polygon(sp2);
 		add_child(seal);
+	} else {
+		// 秦广王（审判）：黑袍 + 金冠
+		Polygon2D *robe = memnew(Polygon2D);
+		robe->set_color(Color(0.08f, 0.08f, 0.12f, 1.0f));
+		PackedVector2Array bp;
+		bp.append(Vector2(-10, -12));
+		bp.append(Vector2(10, -12));
+		bp.append(Vector2(11, 10));
+		bp.append(Vector2(-11, 10));
+		robe->set_polygon(bp);
+		add_child(robe);
+
+		Polygon2D *crown = memnew(Polygon2D);
+		crown->set_color(Color(0.9f, 0.75f, 0.2f, 1.0f));
+		PackedVector2Array cp;
+		cp.append(Vector2(-8, -14));
+		cp.append(Vector2(8, -14));
+		cp.append(Vector2(6, -22));
+		cp.append(Vector2(0, -18));
+		cp.append(Vector2(-6, -22));
+		crown->set_polygon(cp);
+		add_child(crown);
 	}
 
 	set_process(true);
@@ -124,8 +146,10 @@ void UnderworldInteractNode::_update_prompt() {
 		return;
 	if (_mode == MODE_INSPECT)
 		bus->emit_signal("interaction_prompt", LOC("[X] 查生死簿"), true);
-	else
+	else if (_mode == MODE_AMEND)
 		bus->emit_signal("interaction_prompt", LOC("[X] 改簿划名（免死一次）"), true);
+	else
+		bus->emit_signal("interaction_prompt", LOC("[X] 秦广王审判"), true);
 }
 
 void UnderworldInteractNode::_process(double p_delta) {
@@ -164,12 +188,26 @@ void UnderworldInteractNode::_interact() {
 		if (_player && _player->get_cultivation())
 			d["realm_name"] = _player->get_cultivation()->get_realm_name();
 		bus->emit_signal("ledger_inspect_requested", d, _overlay_open);
-	} else {
+	} else if (_mode == MODE_AMEND) {
 		if (ledger->mark_soul_exempt())
-			bus->emit_signal("interaction_prompt", LOC("改簿成功——已划名，免死一次！"), true);
+			bus->emit_signal("interaction_prompt", LOC("改簿成功——已划名，免死一次，阴寿豁免！"), true);
 		else
 			bus->emit_signal("interaction_prompt", LOC("已划名，无需再改。"), true);
 		_msg_t = 2.5f;
+	} else {
+		// 秦广王审判：核对生死簿（出身/原身/寿元）→ 放还阳/划名提示
+		_overlay_open = !_overlay_open;
+		Dictionary d;
+		d["trial"] = true;
+		d["origin"] = ledger->get_origin_name();
+		d["original_body"] = ledger->get_original_body();
+		d["ledger_lifespan"] = ledger->get_ledger_lifespan();
+		d["actual_lifespan"] = ledger->get_actual_lifespan();
+		d["soul_protection"] = ledger->has_soul_protection();
+		d["struck"] = ledger->is_struck();
+		if (_player && _player->get_cultivation())
+			d["realm_name"] = _player->get_cultivation()->get_realm_name();
+		bus->emit_signal("ledger_inspect_requested", d, _overlay_open);
 	}
 }
 

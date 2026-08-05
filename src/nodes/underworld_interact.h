@@ -14,7 +14,7 @@ class UnderworldInteractNode : public Area2D {
 	GDCLASS(UnderworldInteractNode, Area2D);
 
 public:
-	enum Mode { MODE_INSPECT = 0, MODE_AMEND = 1 };
+	enum Mode { MODE_INSPECT = 0, MODE_AMEND = 1, MODE_TRIAL = 2 };
 
 	void _ready() override;
 	void _process(double p_delta) override;

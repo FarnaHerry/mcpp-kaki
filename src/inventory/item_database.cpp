@@ -49,6 +49,8 @@ void ItemDatabase::_ready() {
 				if (d.has("mana_amount")) it.mana_amount = float(d["mana_amount"]);
 				if (d.has("energy_amount")) it.energy_amount = float(d["energy_amount"]);
 				if (d.has("fullness_amount")) it.fullness_amount = float(d["fullness_amount"]);
+				if (d.has("buy_price")) it.buy_price = int(d["buy_price"]);
+				if (d.has("sell_price")) it.sell_price = int(d["sell_price"]);
 				if (d.has("buff_id")) { StringName b = d["buff_id"]; if (!b.is_empty()) it.buff_id = b; }
 				if (d.has("learn_skill")) { StringName ls = d["learn_skill"]; if (!ls.is_empty()) it.learn_skill = ls; }
 				if (d.has("breakthrough_bonus")) it.breakthrough_bonus = float(d["breakthrough_bonus"]);
@@ -89,6 +91,8 @@ Dictionary ItemDatabase::get_item_info(const StringName &p_id) const {
 	d["mana_amount"] = it->mana_amount;
 	d["energy_amount"] = it->energy_amount;
 	d["fullness_amount"] = it->fullness_amount;
+	d["buy_price"] = it->buy_price;
+	d["sell_price"] = it->sell_price;
 	d["buff_id"] = it->buff_id;
 	d["learn_skill"] = it->learn_skill;
 	d["plantable"] = it->plantable;
@@ -369,6 +373,22 @@ void ItemDatabase::_register_items() {
 		food.plantable = true;
 		food.grow_seconds = 180;
 		_items[food.id] = food;
+	}
+
+	// 人参果：五庄观镇观灵果（design/world-map.md 南赡部洲五庄观）
+	{
+		Item fruit;
+		fruit.id = "ren_shen_guo";
+		fruit.name = LOC("人参果");
+		fruit.description = LOC("五庄观镇观灵果，三千年一熟。食之气满神足，修为大涨。");
+		fruit.type = Item::CONSUMABLE;
+		fruit.max_stack = 9;
+		fruit.grade = 2;
+		fruit.heal_pct = 0.8f;
+		fruit.energy_amount = 800.0f;
+		fruit.fullness_amount = 100.0f;
+		fruit.buff_id = "buff_ren_shen_guo";
+		_items[fruit.id] = fruit;
 	}
 }
 

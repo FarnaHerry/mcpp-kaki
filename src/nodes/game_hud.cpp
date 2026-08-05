@@ -1009,6 +1009,19 @@ void GameHUD::on_ledger_inspect(const Dictionary &p_data, bool p_show) {
     bool protected_ = bool(p_data.get("soul_protection", false));
     String realm = p_data.get("realm_name", String());
 
+    if (bool(p_data.get("trial", false))) {
+        // 秦广王审判叙事（初次核簿 → 放还阳/划名提示）
+        _ledger_lines[0]->set_text(LOC("—— 一殿 · 秦广王 初审 ——"));
+        _ledger_lines[1]->set_text(LOC("簿对：出身 ") + origin + LOC(" · 原身 ") + body);
+        _ledger_lines[2]->set_text(LOC("境界 ") + realm + LOC("，簿上寿元 ") + String::num_int64(ledger_life) +
+                                   LOC("，实际 ") + String::num_int64(actual_life));
+        _ledger_lines[3]->set_text(LOC("「阳寿未绝，放还阳去；"));
+        _ledger_lines[4]->set_text(LOC("  若改簿划名，永离勾魂。」"));
+        for (int i = 0; i < 5; i++)
+            _ledger_lines[i]->add_theme_color_override("font_color", Color(0.9f, 0.9f, 0.95f, 1));
+        return;
+    }
+
     _ledger_lines[0]->set_text(LOC("—— 生死簿 · 崔判官 ——"));
     _ledger_lines[1]->set_text(LOC("出身：") + origin + LOC("   原身：") + body);
     _ledger_lines[2]->set_text(LOC("境界：") + realm);

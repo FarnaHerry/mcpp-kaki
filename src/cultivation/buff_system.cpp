@@ -25,6 +25,7 @@ namespace godot {
 		{ "buff_fullness_mid",  "干粮", 600.0f,  0.05f, 0.0f,  ELEM_NONE,  0.0f  }, // 干粮：攻击+5%
 		{ "buff_fullness_high", "饱足", 900.0f,  0.08f, 0.08f, ELEM_NONE,  0.0f  }, // 灵米：攻击+8% 防御+8%
 		{ "buff_hunger",        "饥饿", 99999.0f, -0.2f, -0.2f, ELEM_NONE,  0.0f  }, // 饥饿：饱食度归零（force-managed，吃食物解除）
+		{ "buff_ren_shen_guo",  "人参果", 900.0f, 0.15f, 0.15f, ELEM_NONE,  0.0f  }, // 人参果：攻击+15% 防御+15%（五庄观镇观灵果）
 	};
 
 	const BuffSystem::Def *BuffSystem::find_def(const StringName &p_id) {

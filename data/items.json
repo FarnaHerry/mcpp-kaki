@@ -6,7 +6,9 @@
     "type": 0,
     "max_stack": 20,
     "grade": 0,
-    "heal_amount": 30.0
+    "heal_amount": 30.0,
+    "buy_price": 30,
+    "sell_price": 15
   },
   {
     "id": "qi_pill",
@@ -15,7 +17,9 @@
     "type": 0,
     "max_stack": 30,
     "grade": 0,
-    "mana_amount": 50.0
+    "mana_amount": 50.0,
+    "buy_price": 40,
+    "sell_price": 20
   },
   {
     "id": "foundation_pill",
@@ -24,7 +28,9 @@
     "type": 0,
     "max_stack": 5,
     "grade": 0,
-    "breakthrough_bonus": 0.2
+    "breakthrough_bonus": 0.2,
+    "buy_price": 200,
+    "sell_price": 100
   },
   {
     "id": "spirit_stone",
@@ -32,7 +38,9 @@
     "desc": "蕴含灵气的晶石，修炼界的通用货币。",
     "type": 1,
     "max_stack": 999,
-    "grade": 0
+    "grade": 0,
+    "buy_price": 0,
+    "sell_price": 0
   },
   {
     "id": "flying_sword",
@@ -40,7 +48,9 @@
     "desc": "低阶飞行法器。筑基期御之可短暂凌空飞行，持续消耗灵力；金丹之后肉身自飞，此物仅作代步。",
     "type": 2,
     "max_stack": 1,
-    "grade": 0
+    "grade": 0,
+    "buy_price": 0,
+    "sell_price": 0
   },
   {
     "id": "iron_sword",
@@ -50,7 +60,9 @@
     "max_stack": 1,
     "grade": 0,
     "equip_slot": 0,
-    "attack_bonus": 5.0
+    "attack_bonus": 5.0,
+    "buy_price": 150,
+    "sell_price": 75
   },
   {
     "id": "protect_robe",
@@ -60,7 +72,9 @@
     "max_stack": 1,
     "grade": 0,
     "equip_slot": 1,
-    "defense_bonus": 3.0
+    "defense_bonus": 3.0,
+    "buy_price": 200,
+    "sell_price": 100
   },
   {
     "id": "xian_tao",
@@ -70,7 +84,9 @@
     "max_stack": 10,
     "grade": 1,
     "heal_pct": 0.5,
-    "energy_amount": 300.0
+    "energy_amount": 300.0,
+    "buy_price": 500,
+    "sell_price": 250
   },
   {
     "id": "shen_wai_can_juan",
@@ -79,7 +95,9 @@
     "type": 0,
     "max_stack": 1,
     "grade": 2,
-    "learn_skill": "shen_wai_hua_shen"
+    "learn_skill": "shen_wai_hua_shen",
+    "buy_price": 0,
+    "sell_price": 0
   },
   {
     "id": "ding_hai_shen_zhen",
@@ -89,7 +107,9 @@
     "max_stack": 1,
     "grade": 2,
     "equip_slot": 0,
-    "attack_bonus": 25.0
+    "attack_bonus": 25.0,
+    "buy_price": 0,
+    "sell_price": 0
   },
   {
     "id": "zhi_xue_cao",
@@ -99,7 +119,9 @@
     "max_stack": 99,
     "grade": 0,
     "plantable": true,
-    "grow_seconds": 60
+    "grow_seconds": 60,
+    "buy_price": 20,
+    "sell_price": 10
   },
   {
     "id": "ju_ling_cao",
@@ -109,7 +131,9 @@
     "max_stack": 99,
     "grade": 0,
     "plantable": true,
-    "grow_seconds": 60
+    "grow_seconds": 60,
+    "buy_price": 25,
+    "sell_price": 12
   },
   {
     "id": "bing_xin_lian",
@@ -119,7 +143,9 @@
     "max_stack": 99,
     "grade": 1,
     "plantable": true,
-    "grow_seconds": 180
+    "grow_seconds": 180,
+    "buy_price": 30,
+    "sell_price": 15
   },
   {
     "id": "chi_yan_hua",
@@ -129,7 +155,9 @@
     "max_stack": 99,
     "grade": 1,
     "plantable": true,
-    "grow_seconds": 180
+    "grow_seconds": 180,
+    "buy_price": 35,
+    "sell_price": 17
   },
   {
     "id": "jin_gang_teng",
@@ -139,7 +167,9 @@
     "max_stack": 99,
     "grade": 1,
     "plantable": true,
-    "grow_seconds": 180
+    "grow_seconds": 180,
+    "buy_price": 35,
+    "sell_price": 17
   },
   {
     "id": "wu_dao_cha",
@@ -149,7 +179,9 @@
     "max_stack": 99,
     "grade": 2,
     "plantable": true,
-    "grow_seconds": 600
+    "grow_seconds": 600,
+    "buy_price": 60,
+    "sell_price": 30
   },
   {
     "id": "qian_nian_ling_zhi",
@@ -159,7 +191,9 @@
     "max_stack": 99,
     "grade": 2,
     "plantable": true,
-    "grow_seconds": 600
+    "grow_seconds": 600,
+    "buy_price": 100,
+    "sell_price": 50
   },
   {
     "id": "bing_xin_dan",
@@ -168,7 +202,9 @@
     "type": 0,
     "max_stack": 10,
     "grade": 1,
-    "buff_id": "buff_bing_xin"
+    "buff_id": "buff_bing_xin",
+    "buy_price": 120,
+    "sell_price": 60
   },
   {
     "id": "chi_yan_dan",
@@ -177,7 +213,9 @@
     "type": 0,
     "max_stack": 10,
     "grade": 1,
-    "buff_id": "buff_chi_yan"
+    "buff_id": "buff_chi_yan",
+    "buy_price": 120,
+    "sell_price": 60
   },
   {
     "id": "jin_gang_dan",
@@ -186,7 +224,9 @@
     "type": 0,
     "max_stack": 10,
     "grade": 1,
-    "buff_id": "buff_jin_gang"
+    "buff_id": "buff_jin_gang",
+    "buy_price": 120,
+    "sell_price": 60
   },
   {
     "id": "wu_dao_dan",
@@ -195,7 +235,9 @@
     "type": 0,
     "max_stack": 5,
     "grade": 2,
-    "energy_amount": 200.0
+    "energy_amount": 200.0,
+    "buy_price": 80,
+    "sell_price": 40
   },
   {
     "id": "da_huan_dan",
@@ -205,7 +247,9 @@
     "max_stack": 5,
     "grade": 2,
     "heal_pct": 0.5,
-    "energy_amount": 100.0
+    "energy_amount": 100.0,
+    "buy_price": 300,
+    "sell_price": 150
   },
   {
     "id": "brown_rice",
@@ -215,7 +259,9 @@
     "max_stack": 99,
     "grade": 0,
     "fullness_amount": 15.0,
-    "buff_id": "buff_fullness_low"
+    "buff_id": "buff_fullness_low",
+    "buy_price": 10,
+    "sell_price": 5
   },
   {
     "id": "dry_ration",
@@ -225,7 +271,9 @@
     "max_stack": 50,
     "grade": 0,
     "fullness_amount": 25.0,
-    "buff_id": "buff_fullness_mid"
+    "buff_id": "buff_fullness_mid",
+    "buy_price": 15,
+    "sell_price": 7
   },
   {
     "id": "spirit_rice",
@@ -237,6 +285,22 @@
     "fullness_amount": 40.0,
     "buff_id": "buff_fullness_high",
     "plantable": true,
-    "grow_seconds": 180
+    "grow_seconds": 180,
+    "buy_price": 50,
+    "sell_price": 25
+  },
+  {
+    "id": "ren_shen_guo",
+    "name": "人参果",
+    "desc": "五庄观镇观灵果，三千年一熟。食之气满神足，修为大涨。",
+    "type": 0,
+    "max_stack": 9,
+    "grade": 2,
+    "heal_pct": 0.8,
+    "energy_amount": 800.0,
+    "fullness_amount": 100.0,
+    "buff_id": "buff_ren_shen_guo",
+    "buy_price": 800,
+    "sell_price": 400
   }
 ]

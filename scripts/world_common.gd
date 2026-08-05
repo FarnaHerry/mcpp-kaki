@@ -81,6 +81,15 @@ static func setup(root: Node) -> Dictionary:
 	storage_panel.name = "StoragePanel"
 	root.add_child(storage_panel)
 
+	# 商店（长安坊市灵石买卖）
+	var shop_system = ClassDB.instantiate("ShopSystem")
+	shop_system.name = "ShopSystem"
+	root.add_child(shop_system)
+
+	var shop_panel = ClassDB.instantiate("ShopPanel")
+	shop_panel.name = "ShopPanel"
+	root.add_child(shop_panel)
+
 	# 洲框架（云游图/旅行）
 	var continents = ClassDB.instantiate("ContinentManager")
 	continents.name = "ContinentManager"
@@ -110,6 +119,7 @@ static func setup(root: Node) -> Dictionary:
 	inv_panel.call("set_player", player)
 	telemetry.call("set_player", player)
 	storage_panel.call("set_player", player)
+	shop_panel.call("set_player", player)
 
 	# 旅行到岸：桥未应用前不碰初始检查点（否则用新档白板覆盖自动存档）
 	if not game_mgr.call("has_pending_bridge"):

@@ -11,11 +11,13 @@ import mcpp_kaki.core;
 #include "core/drop_system.h"
 import mcpp_kaki.core;
 #include "core/soul_ledger_system.h"
+#include "core/shop_system.h"
 #include "nodes/camera_room_2d.h"
 #include "nodes/dongtian_manager.h"
 #include "nodes/farm_plot.h"
 #include "nodes/storage_chest.h"
 #include "nodes/underworld_interact.h"
+#include "nodes/shop_keeper.h"
 #include "nodes/item_pickup.h"
 #include "nodes/herb_node.h"
 #include "nodes/portal.h"
@@ -40,6 +42,7 @@ void initialize_mcpp_kaki_module(ModuleInitializationLevel p_level) {
 	GDREGISTER_CLASS(FarmPlot);
 	GDREGISTER_CLASS(StorageChest);
 	GDREGISTER_CLASS(UnderworldInteractNode);
+	GDREGISTER_CLASS(ShopKeeper);
 	GDREGISTER_CLASS(HitBox);
 	GDREGISTER_CLASS(HurtBox);
 	GDREGISTER_CLASS(Projectile);
@@ -55,12 +58,14 @@ void initialize_mcpp_kaki_module(ModuleInitializationLevel p_level) {
 	GDREGISTER_CLASS(SignalBus);
 	GDREGISTER_CLASS(GameManager);
 	GDREGISTER_CLASS(SoulLedgerSystem);
+	GDREGISTER_CLASS(ShopSystem);
 	GDREGISTER_CLASS(ContinentManager);
 	GDREGISTER_CLASS(DataLoader);
 	GDREGISTER_CLASS(GameHUD);
 	GDREGISTER_CLASS(TelemetryPanel);
 	GDREGISTER_CLASS(InventoryPanel);
 	GDREGISTER_CLASS(StoragePanel);
+	GDREGISTER_CLASS(ShopPanel);
 	GDREGISTER_CLASS(GridList);
 	GDREGISTER_CLASS(ItemDatabase);
 	GDREGISTER_CLASS(ItemPickup);
