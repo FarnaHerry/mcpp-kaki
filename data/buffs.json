@@ -97,5 +97,23 @@
     "def_mult": 0.15,
     "elem": 0,
     "elem_resist": 0.0
+  },
+  {
+    "id": "buff_lianti",
+    "name": "炼体",
+    "duration": 600.0,
+    "atk_mult": 0.0,
+    "def_mult": 0.2,
+    "elem": 0,
+    "elem_resist": 0.0
+  },
+  {
+    "id": "buff_xuan_long",
+    "name": "玄龙",
+    "duration": 600.0,
+    "atk_mult": 0.15,
+    "def_mult": 0.15,
+    "elem": 0,
+    "elem_resist": 0.0
   }
 ]

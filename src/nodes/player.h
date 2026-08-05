@@ -94,6 +94,8 @@ class Player : public CharacterBody2D {
 		float _fullness = 100.0f;
 		float _max_fullness = 100.0f;
 		bool _flight_blocked = false; // 弱水区禁飞（NoFlyZone 置位）
+		bool _slippery = false;       // 冰面打滑（IceZone 置位，Idle/Run 手感改惯性）
+		bool _chilled = false;        // 极寒减速（ColdZone 置位，_update_move_speed ×0.7）
 		float get_fullness() const { return _fullness; }
 		float get_max_fullness() const { return _max_fullness; }
 		void set_fullness(float v) { _fullness = Math::clamp(v, 0.0f, _max_fullness); }
@@ -101,6 +103,16 @@ class Player : public CharacterBody2D {
 		float get_food_mult() const;   // 食物效果倍率（凡人1.0/炼气1.2）
 		bool is_flight_blocked() const { return _flight_blocked; } // 弱水区禁飞
 		void set_flight_blocked(bool v) { _flight_blocked = v; }
+		// 冰面打滑（北俱芦洲·极北冰原）：Idle 摩擦骤减 + Run 渐进加速，惯性滑冰
+		bool is_slippery() const { return _slippery; }
+		void set_slippery(bool v) { _slippery = v; }
+		// 极寒（玄冰窟）：减速 30%（_update_move_speed 乘区）+ ColdZone DoT
+		bool is_chilled() const { return _chilled; }
+		void set_chilled(bool v) {
+			if (_chilled == v) return;
+			_chilled = v;
+			_update_move_speed();
+		}
 
 		StateMachine<Player> *state_machine = nullptr;
 		InputBuffer jump_buffer;

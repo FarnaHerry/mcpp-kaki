@@ -40,6 +40,10 @@ namespace godot {
 		{ "da_huan_dan", "大还丹",
 		  { "qian_nian_ling_zhi", "bing_xin_lian", nullptr }, { 1, 1, 0 }, 2,
 		  2, 3, 1.0f, "回血50%+修为100" },
+		// 玄龙丹：北俱芦洲（渡劫）镇洲灵丹，上古巨兽龙骨淬炼
+		{ "xuan_long_dan", "玄龙丹",
+		  { "long_gu", "xuan_bing_shen", nullptr }, { 1, 2, 0 }, 2,
+		  3, 9, 1.0f, "攻击+15% 防御+15% 600s" },
 	};
 // Runtime cache (DataLoader JSON or static fallback)
 std::vector<AlchemySystem::Recipe> AlchemySystem::s_recipes;

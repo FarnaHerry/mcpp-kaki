@@ -236,6 +236,7 @@ private:
 	GridList *_grid = nullptr;       // 物品格子列表（统一 GridList 组件）
 	std::vector<int> _slot_map;      // 紧凑格子索引 → 背包真实槽位
 	Label *_action_hint = nullptr;   // 选中项操作提示（[X]使用/装备）
+	Label *_desc_label = nullptr;    // 选中项说明（物品 desc，网格下方单行）
 
 	// ---- 类型筛选（全部/消耗品/材料/装备/关键物品）----
 	static constexpr int FILTER_COUNT = 5;

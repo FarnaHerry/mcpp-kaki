@@ -177,6 +177,21 @@ void InventoryPanel::refresh(const String &p_item_id, int p_qty) {
 	}
 	_action_hint->set_text(hint);
 
+	// 选中项说明（物品 desc：效果/来源；筛选行/空槽则给操作提示）
+	if (_desc_label) {
+		String desc;
+		if (_filtering) {
+			desc = LOC("←/→ 筛选类型  ↑/↓ 返回");
+		} else if (!_slot_map.empty()) {
+			int sel = _grid->get_selected();
+			Dictionary slot_data = inv->get_slot(_slot_map[sel]);
+			const Item *def = ItemDatabase::get_singleton()->get_item(slot_data.get("id", StringName()));
+			if (def)
+				desc = LOC(def->description);
+		}
+		_desc_label->set_text(desc);
+	}
+
 	// ---- Stats ----
 	String stats_txt;
 	stats_txt += "HP: " + String::num(int(_player->current_health)) + "/" +
@@ -377,11 +392,11 @@ void InventoryPanel::_build_item_list() {
 	_inv_header->set_text(LOC("物品"));
 	add_child(_inv_header);
 
-	// 统一格子列表：6 列 × 7 行窗口（480×270 内 74×22 格）
+	// 统一格子列表：6 列 × 6 行窗口（480×270 内 75×22 格；底行留说明区）
 	_grid = memnew(GridList);
 	_grid->set_name("ItemGrid");
 	_grid->set_position(Vector2(16, ITEM_LIST_Y));
-	_grid->set_size(Vector2(452, 154));
+	_grid->set_size(Vector2(452, 132));
 	add_child(_grid);
 	_grid->set_columns(6);
 	_grid->set_cell_size(Vector2(75, 22));
@@ -393,12 +408,22 @@ void InventoryPanel::_build_item_list() {
 	add_child(_filter_label);
 	_update_filter_label();
 
-	// 选中项操作提示
+	// 选中项操作提示（网格下方一行）
 	_action_hint = memnew(Label);
-	_action_hint->set_position(Vector2(16, 228));
+	_action_hint->set_position(Vector2(16, 206));
 	_action_hint->add_theme_font_size_override("font_size", FONT_SZ);
 	_action_hint->add_theme_color_override("font_color", Color(1.0f, 0.9f, 0.4f, 1));
 	add_child(_action_hint);
+
+	// 选中项说明（物品 desc：效果/来源，单行截断）
+	_desc_label = memnew(Label);
+	_desc_label->set_name("ItemDesc");
+	_desc_label->set_position(Vector2(16, 222));
+	_desc_label->set_size(Vector2(452, 16));
+	_desc_label->add_theme_font_size_override("font_size", 11);
+	_desc_label->add_theme_color_override("font_color", Color(0.75f, 0.8f, 0.88f, 1));
+	_desc_label->set_clip_text(true);
+	add_child(_desc_label);
 }
 
 void InventoryPanel::_build_stats() {

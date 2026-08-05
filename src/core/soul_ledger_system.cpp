@@ -24,14 +24,17 @@ namespace godot {
 
 int SoulLedgerSystem::lifespan_for_realm(int p_realm) {
 	// 凡人100 / 炼气150 / 筑基250 / 金丹500 / 元婴2000 / 化神5000 / 炼虚8000
-	// / 合体12000 / 大乘20000 / 渡劫~天尊 50000（后续境界兜底拉大）
+	// / 合体12000 / 大乘20000 / 渡劫50000 / 真仙100000 / 金仙200000
+	// / 天尊（三清级，跳出五行）寿元无限（-1）——成仙后寿元正常，仅三清不入轮回
 	static const int TABLE[CultivationSystem::REALM_COUNT] = {
-		100, 150, 250, 500, 2000, 5000, 8000, 12000, 20000, 50000, 50000, 50000, 50000
+		100, 150, 250, 500, 2000, 5000, 8000, 12000, 20000, 50000, 100000, 200000, 0
 	};
 	if (p_realm < 0)
 		p_realm = 0;
 	if (p_realm >= CultivationSystem::REALM_COUNT)
 		p_realm = CultivationSystem::REALM_COUNT - 1;
+	if (p_realm >= CultivationSystem::TIAN_ZUN)
+		return LIFESPAN_INFINITE;
 	return TABLE[p_realm];
 }
 
@@ -156,6 +159,10 @@ void SoulLedgerSystem::_process(double p_delta) {
 		return;
 	if (_struck)
 		return; // 划名=阴寿豁免：脱离生死轮回，不再被勾魂（勾魂错抓的终点）
+	// 天尊（三清级，跳出五行，寿元无限）：不在生死簿可勾之列，不再刷勾魂使
+	if (_player && _player->get_cultivation() &&
+			_player->get_cultivation()->get_realm_index() >= CultivationSystem::TIAN_ZUN)
+		return;
 	Node *root = get_tree()->get_current_scene();
 	if (!root)
 		return;

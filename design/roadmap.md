@@ -1,6 +1,15 @@
-# 开发路线图（截至 session 009）
+# 开发路线图（截至 session 010）
 
 ## 一、最近修改总结
+
+### Session 010（本次）：北俱芦洲 v1 + 寿元无限 + 物品说明
+- **北俱芦洲 v1**（design/world-map.md v5，渡劫门槛 realm 9，最后一洲）：
+  极北冰原（冰面打滑 IceZone：Idle 摩擦骤减 + Run 渐进加速）→ 玄冰高原
+  （极寒 ColdZone：减速30% + 冰伤 dot，冰心丹可减免；玄冰窟秘境）→
+  上古荒原（上古巨兽·玄冥 Boss realm 10 → 炼体圣地 RefineSpot → 南天门序章）
+- **新数据**：龙骨/玄冰参/玄龙丹（渡劫丹方 攻防+15% 600s）；buff_lianti/buff_xuan_long
+- **寿元无限**：成仙（真仙 realm 10+）实际寿元 ∞（HUD 显示「寿 簿上/∞」金），勾魂使不再刷
+- **物品说明**：items.json 全物品 desc 补全/加强 + 背包面板选中项显示说明行
 
 ### Session 009（本次）：机缘突破事件系统
 - **BreakthroughManager**（src/cultivation/）：所有突破机缘的唯一入口。

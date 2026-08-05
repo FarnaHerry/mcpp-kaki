@@ -60,7 +60,7 @@ func _process(delta) -> bool:
 			var al = p.call("get_alchemy")
 			_check(al != null, "player has AlchemySystem")
 			var list = al.call("get_recipe_list")
-			_check(list.size() == 7, "7 recipes")
+			_check(list.size() == 8, "8 recipes")
 			# 材料不足拒炼
 			_check(not al.call("craft", "healing_pill"), "craft without mats fails")
 			_check("材料" in al.call("get_last_message"), "message: 材料不足")

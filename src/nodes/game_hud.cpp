@@ -34,6 +34,13 @@ import mcpp_kaki.inventory;
 import mcpp_kaki.utils;
 namespace godot {
 
+// 寿元显示：负值 = 无限（天尊，跳出五行）→ "∞"
+static String _lifespan_txt(int p_lifespan) {
+    if (p_lifespan < 0)
+        return TXT("∞");
+    return String::num_int64(p_lifespan);
+}
+
 // Layout constants (480×270 viewport)
 static constexpr float BAR_WIDTH = 140.0f;
 static constexpr float BAR_HEIGHT = 16.0f; // tall enough to hold the value text inside
@@ -965,9 +972,11 @@ void GameHUD::on_lifespan_changed(int p_ledger, int p_actual) {
     if (!_lifespan_label)
         return;
     // 寿元信息差可视化：实际 > 簿上 = 超出簿上（绿），实际 < 簿上 = 红
-    String txt = TXT("寿 ") + String::num_int64(p_ledger) + TXT(" / ") + String::num_int64(p_actual);
+    // 天尊（跳出五行）实际寿元无限 → 金「寿 簿上/∞」
+    String txt = TXT("寿 ") + String::num_int64(p_ledger) + TXT(" / ") + _lifespan_txt(p_actual);
     _lifespan_label->set_text(txt);
-    Color c = p_actual > p_ledger ? Color(0.5f, 0.9f, 0.5f, 1)
+    Color c = p_actual < 0 ? Color(1.0f, 0.85f, 0.4f, 1)
+            : p_actual > p_ledger ? Color(0.5f, 0.9f, 0.5f, 1)
             : p_actual < p_ledger ? Color(1.0f, 0.5f, 0.5f, 1)
             : Color(0.7f, 0.85f, 0.9f, 1);
     _lifespan_label->add_theme_color_override("font_color", c);
@@ -1014,7 +1023,7 @@ void GameHUD::on_ledger_inspect(const Dictionary &p_data, bool p_show) {
         _ledger_lines[0]->set_text(LOC("—— 一殿 · 秦广王 初审 ——"));
         _ledger_lines[1]->set_text(LOC("簿对：出身 ") + origin + LOC(" · 原身 ") + body);
         _ledger_lines[2]->set_text(LOC("境界 ") + realm + LOC("，簿上寿元 ") + String::num_int64(ledger_life) +
-                                   LOC("，实际 ") + String::num_int64(actual_life));
+                                   LOC("，实际 ") + _lifespan_txt(actual_life));
         _ledger_lines[3]->set_text(LOC("「阳寿未绝，放还阳去；"));
         _ledger_lines[4]->set_text(LOC("  若改簿划名，永离勾魂。」"));
         for (int i = 0; i < 5; i++)
@@ -1026,10 +1035,11 @@ void GameHUD::on_ledger_inspect(const Dictionary &p_data, bool p_show) {
     _ledger_lines[1]->set_text(LOC("出身：") + origin + LOC("   原身：") + body);
     _ledger_lines[2]->set_text(LOC("境界：") + realm);
     _ledger_lines[3]->set_text(LOC("簿上寿元：") + String::num_int64(ledger_life) +
-                               LOC("    实际：") + String::num_int64(actual_life));
+                               LOC("    实际：") + _lifespan_txt(actual_life));
     _ledger_lines[4]->set_text(protected_ ? LOC("名讳已划——免死一次！") : LOC("注：簿上阳寿已尽，勾魂将至"));
-    // 信息差着色：实际 > 簿上 绿
-    Color c = actual_life > ledger_life ? Color(0.5f, 0.9f, 0.5f, 1) : Color(1.0f, 0.5f, 0.5f, 1);
+    // 信息差着色：实际无限（跳出五行）金 / 实际 > 簿上 绿 / 其余红
+    Color c = actual_life < 0 ? Color(1.0f, 0.85f, 0.4f, 1)
+            : actual_life > ledger_life ? Color(0.5f, 0.9f, 0.5f, 1) : Color(1.0f, 0.5f, 0.5f, 1);
     _ledger_lines[3]->add_theme_color_override("font_color", c);
 }
 

@@ -23,7 +23,9 @@ class SoulLedgerSystem : public Node {
 
 public:
 	// 实际寿元表（按 Realm index）：凡人100/炼气150/筑基250/金丹500/元婴2000/化神5000…
-	// 超出前几境走数组兜底（越后期寿元越长）。
+	// 成仙后寿元正常（真仙10万/金仙20万），仅天尊（三清级，跳出五行）寿元无限。
+	static const int LIFESPAN_INFINITE = -1;
+	static bool is_lifespan_infinite(int v) { return v < 0; }
 	static int lifespan_for_realm(int p_realm);
 
 	void set_player(Player *p);

@@ -92,7 +92,9 @@ namespace godot {
 
 			// Stay idle — apply friction
 			Vector2 vel = p->get_velocity();
-			vel.x = Math::move_toward(vel.x, 0.0f, float(p->move_speed * 10.0 * delta));
+			// 冰面（北俱芦洲）：摩擦骤减，惯性滑行
+			float fric = p->is_slippery() ? 1.5f : 10.0f;
+			vel.x = Math::move_toward(vel.x, 0.0f, float(p->move_speed * fric * delta));
 			p->set_velocity(vel);
 			p->move_and_slide();
 		}
@@ -136,7 +138,12 @@ namespace godot {
 			}
 
 			Vector2 vel = p->get_velocity();
-			vel.x = input * p->move_speed;
+			if (p->is_slippery()) {
+				// 冰面：渐进加速（动量保持，松键滑行而非骤停）
+				vel.x = Math::move_toward(vel.x, input * p->move_speed, float(p->move_speed * 8.0 * delta));
+			} else {
+				vel.x = input * p->move_speed;
+			}
 			p->set_velocity(vel);
 			p->move_and_slide();
 		}
@@ -708,6 +715,10 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("get_food_mult"), &Player::get_food_mult);
 		ClassDB::bind_method(D_METHOD("set_flight_blocked", "v"), &Player::set_flight_blocked);
 		ClassDB::bind_method(D_METHOD("is_flight_blocked"), &Player::is_flight_blocked);
+		ClassDB::bind_method(D_METHOD("set_slippery", "v"), &Player::set_slippery);
+		ClassDB::bind_method(D_METHOD("is_slippery"), &Player::is_slippery);
+		ClassDB::bind_method(D_METHOD("set_chilled", "v"), &Player::set_chilled);
+		ClassDB::bind_method(D_METHOD("is_chilled"), &Player::is_chilled);
 		ClassDB::bind_method(D_METHOD("get_inventory"), &Player::get_inventory);
 		ClassDB::bind_method(D_METHOD("get_cultivation"), &Player::get_cultivation);
 	ClassDB::bind_method(D_METHOD("get_gongfa"), &Player::get_gongfa);
@@ -1563,6 +1574,9 @@ namespace godot {
 		}
 		if (_skills) {
 			move_speed *= _skills->get_passive_spd_mult(); // 被动（神行百变）乘区
+		}
+		if (_chilled) {
+			move_speed *= 0.7f; // 极寒减速（玄冰窟 ColdZone）
 		}
 	}
 
