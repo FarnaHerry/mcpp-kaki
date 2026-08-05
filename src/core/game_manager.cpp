@@ -23,6 +23,11 @@ Vector2 GameManager::_s_travel_spawn;
 bool GameManager::_s_has_travel_spawn = false;
 const Vector2 GameManager::DIFU_SPAWN = Vector2(240, 200);
 
+GameManager::~GameManager() {
+	if (_save_system)
+		memdelete(_save_system);
+}
+
 Dictionary &GameManager::_bridge_storage() {
 	static Dictionary bridge;
 	return bridge;

@@ -21,6 +21,19 @@ import mcpp_kaki.inventory;
 import mcpp_kaki.utils;
 namespace godot {
 
+	Player::~Player() {
+		// 释放 memnew 的 Object 成员（Object 非 RefCounted，不随 Node 释放）
+		if (_cultivation) memdelete(_cultivation);
+		if (_abilities) memdelete(_abilities);
+		if (_gongfa) memdelete(_gongfa);
+		if (_skills) memdelete(_skills);
+		if (_artifacts) memdelete(_artifacts);
+		if (_buffs) memdelete(_buffs);
+		if (_sect) memdelete(_sect);
+		if (_alchemy) memdelete(_alchemy);
+		if (_inventory) memdelete(_inventory);
+	}
+
 	// ============================================================
 	// Player states
 	// ============================================================

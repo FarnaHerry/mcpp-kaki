@@ -36,6 +36,7 @@ public:
 	};
 
 	static GameManager *get_singleton() { return _singleton; }
+	~GameManager(); // 释放 memnew 的 _save_system（Object 非 RefCounted）
 
 	// ---- Game state ----
 	GameState get_game_state() const { return _state; }

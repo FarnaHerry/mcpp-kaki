@@ -17,6 +17,8 @@ class Player : public CharacterBody2D {
 		GDCLASS(Player, CharacterBody2D);
 
 	public:
+		~Player(); // 释放 memnew 的 Object 成员（CultivationSystem 等，非 RefCounted）
+
 		static constexpr int EQUIP_SLOT_WEAPON = 0;
 		static constexpr int EQUIP_SLOT_ARMOR = 1;
 		static constexpr int EQUIP_SLOT_ACCESSORY = 2;

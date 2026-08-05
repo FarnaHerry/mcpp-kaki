@@ -47,3 +47,11 @@
 - `constexpr Vector2` 不合法 → `static const Vector2 DIFU_SPAWN` + cpp 定义
 - 场景切换新建 SignalBus，测试需重连
 - 无常 spawn 后 0.2s 内触发勾魂死亡（无常很快能杀死 10% 血玩家）
+
+## 追加：工程清理——退出时 ObjectDB 内存泄漏（2026-08-05 补）
+
+- **根因**：`memnew` 创建的 Object（非 RefCounted、非 Node）成员不随拥有者释放。
+  - `Player` 的 9 个系统成员（`_cultivation/_abilities/_gongfa/_skills/_artifacts/_buffs/_sect/_alchemy/_inventory`）
+  - `GameManager::_save_system`（SaveSystem）
+- **修复**：`~Player()` / `~GameManager()` 析构 `memdelete` 各成员（null 守卫）
+- **效果**：简单载入 + 地府全链路（场景切换/战斗/无常 spawn）均 0 泄漏（原 11 个）
