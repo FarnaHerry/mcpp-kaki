@@ -29,11 +29,16 @@ func _setup():
 	WC.create_checkpoint(self, 1000)
 
 	# 山贼（近战）+ 蛊雕（飞行）
+	# 平衡（session 011）：炼虚区（realm6）原默认 HP1 一击秒，抬到 2~3 击量级 + 攻 30 成威胁
 	for i in range(3):
-		WC.spawn_enemy(self, Vector2(500 + i * 350, 210), Color(0.5, 0.4, 0.2, 1), 85.0, 240.0, "ShanZei%d" % i).set("realm", 6)
+		var z = WC.spawn_enemy(self, Vector2(500 + i * 350, 210), Color(0.5, 0.4, 0.2, 1), 85.0, 240.0, "ShanZei%d" % i)
+		z.set("realm", 6)
+		z.set("max_health", 120.0); z.set("current_health", 120.0)
+		z.set("attack_damage", 30.0)
 	var gu = WC.spawn_enemy(self, Vector2(1300, 110), Color(0.4, 0.5, 0.6, 1), 115.0, 330.0, "GuDiao")
 	gu.set("is_flying", true)
-	gu.set("max_health", 5.0); gu.set("current_health", 5.0); gu.set("realm", 6)
+	gu.set("max_health", 90.0); gu.set("current_health", 90.0); gu.set("realm", 6)
+	gu.set("attack_damage", 30.0)
 
 	WC.spawn_herb(self, Vector2(300, 214), "zhi_xue_cao", 2)
 	WC.spawn_herb(self, Vector2(1300, 134), "wu_dao_cha", 1)

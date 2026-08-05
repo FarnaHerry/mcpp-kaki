@@ -80,12 +80,15 @@ func _setup():
 	WC.spawn_herb(self, Vector2(1200, 84), "wu_dao_cha", 1)
 
 	# 雪魈（近战厚血，realm 8）+ 冰鸾（飞行，realm 8）
+	# 平衡（session 011）：渡劫区 HP 抬到 2~3 击量级，攻 60 成威胁
 	for i in range(2):
 		var xx = WC.spawn_enemy(self, Vector2(700 + i * 400, 210), Color(0.7, 0.8, 0.9, 1), 75.0, 260.0, "XueXiao%d" % i)
-		xx.set("max_health", 12.0); xx.set("current_health", 12.0); xx.set("realm", 8)
+		xx.set("max_health", 250.0); xx.set("current_health", 250.0); xx.set("realm", 8)
+		xx.set("attack_damage", 60.0)
 	var luan = WC.spawn_enemy(self, Vector2(1050, 90), Color(0.5, 0.7, 1.0, 1), 120.0, 340.0, "BingLuan")
 	luan.set("is_flying", true)
-	luan.set("max_health", 6.0); luan.set("current_health", 6.0); luan.set("realm", 8)
+	luan.set("max_health", 150.0); luan.set("current_health", 150.0); luan.set("realm", 8)
+	luan.set("attack_damage", 60.0)
 
 	WC.spawn_herb(self, Vector2(300, 214), "bing_xin_lian", 2)
 	WC.spawn_herb(self, Vector2(950, 78), "jin_gang_teng", 1)
@@ -99,10 +102,11 @@ func _setup():
 	WC.make_platform(self, 2000, 130, 90)
 	# 玄冰窟入口（Portal 秘境：上古巨兽巢穴遗迹，进洞避寒）
 	WC.create_portal(self, 1950, "res://scenes/rooms/xuanbing_ku.tscn", "[↑] 入玄冰窟", player, camera, hint)
-	# 冰甲巨猿（realm 9 渡劫级精英，极寒区两侧）
+	# 冰甲巨猿（realm 9 渡劫级精英，极寒区两侧；平衡：HP 14→320 攻 70）
 	for i in range(2):
 		var yuan = WC.spawn_enemy(self, Vector2(1450 + i * 900, 210), Color(0.65, 0.8, 0.95, 1), 80.0, 280.0, "BingJiaYuan%d" % i)
-		yuan.set("max_health", 14.0); yuan.set("current_health", 14.0); yuan.set("realm", 9)
+		yuan.set("max_health", 320.0); yuan.set("current_health", 320.0); yuan.set("realm", 9)
+		yuan.set("attack_damage", 70.0)
 	WC.spawn_herb(self, Vector2(1700, 230), "xuan_bing_shen", 2)
 	WC.spawn_herb(self, Vector2(2400, 214), "xuan_bing_shen", 1)
 	WC.create_checkpoint(self, 1700)
@@ -111,17 +115,19 @@ func _setup():
 	WC.make_landmark(self, 2700, 60, "上古荒原", Color(0.75, 0.85, 0.95, 1))
 	WC.create_checkpoint(self, 2750)
 	# 上古巨兽·玄冥（守关 Boss，realm 10 真仙级——渡劫玩家的终战）
+	# 平衡（session 011）：45→3000 血（渡劫攻140 → ~21击 30~45s），攻 30→100（~12击威胁）
 	var ju = WC.spawn_enemy(self, Vector2(2900, 195), Color(0.35, 0.5, 0.7, 1), 45.0, 450.0, "Boss_XuanMing")
 	ju.set("is_boss", true)
 	ju.set("display_name", "上古巨兽·玄冥")
 	ju.set("realm", 10)
-	ju.set("max_health", 45.0); ju.set("current_health", 45.0)
-	ju.set("attack_damage", 30.0)
+	ju.set("max_health", 3000.0); ju.set("current_health", 3000.0)
+	ju.set("attack_damage", 100.0)
 	ju.set("attack_cooldown", 1.0)
 	ju.get_node("Polygon2D").scale = Vector2(2.2, 2.2)
 	ju.connect("boss_died", Callable(WC, "on_boss_died"))
-	# 遗骸（Boss 掉落 龙骨——玄龙丹主材，仅此一处 + 玄冰窟秘藏）
+	# 遗骸（Boss 掉落 龙骨——玄龙丹主材，仅此一处 + 玄冰窟秘藏）+ 渡劫终战奖励 玄龙丹
 	WC.spawn_item_pickup(self, Vector2(2950, 228), "long_gu", 1)
+	WC.spawn_item_pickup(self, Vector2(2970, 232), "xuan_long_dan", 1)
 	# 闪避平台
 	WC.make_platform(self, 2800, 150, 80)
 	WC.make_platform(self, 3050, 140, 90)
@@ -136,7 +142,8 @@ func _setup():
 	WC.make_wall(self, 3700, 60, 238, Color(0.7, 0.75, 0.9, 1))
 	WC.make_platform(self, 3650, 60, 160, false)
 	var tianbing = WC.spawn_enemy(self, Vector2(3480, 210), Color(0.9, 0.85, 0.6, 1), 80.0, 300.0, "TianBingShouJiang")
-	tianbing.set("max_health", 20.0); tianbing.set("current_health", 20.0); tianbing.set("realm", 9)
+	tianbing.set("max_health", 380.0); tianbing.set("current_health", 380.0); tianbing.set("realm", 9)
+	tianbing.set("attack_damage", 80.0)
 	WC.spawn_herb(self, Vector2(3500, 230), "xuan_bing_shen", 1)
 	WC.create_checkpoint(self, 3450)
 

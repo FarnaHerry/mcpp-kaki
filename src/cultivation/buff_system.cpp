@@ -28,7 +28,7 @@ namespace godot {
 		{ "buff_ren_shen_guo",  "人参果", 900.0f, 0.15f, 0.15f, ELEM_NONE,  0.0f  }, // 人参果：攻击+15% 防御+15%（五庄观镇观灵果）
 		// ---- 北俱芦洲（极北莽荒，design/world-map.md v5）：炼体圣地 + 玄龙丹 ----
 		{ "buff_lianti",    "炼体", 600.0f, 0.0f,  0.20f, ELEM_NONE,  0.0f  }, // 炼体圣地：防御+20%（极寒淬体，圣地交互）
-		{ "buff_xuan_long", "玄龙", 600.0f, 0.15f, 0.15f, ELEM_NONE,  0.0f  }, // 玄龙丹：攻击+15% 防御+15%（上古巨兽龙骨淬炼）
+		{ "buff_xuan_long", "玄龙", 900.0f, 0.20f, 0.20f, ELEM_NONE,  0.0f  }, // 玄龙丹：攻击+20% 防御+20%（渡劫灵丹，强于人参果）
 	};
 
 	const BuffSystem::Def *BuffSystem::find_def(const StringName &p_id) {

@@ -32,7 +32,7 @@
     "mana_cost": 0,
     "law_cost": 0,
     "cooldown": 1.8,
-    "power": 5.0,
+    "power": 3.5,
     "effect": 1,
     "min_realm": 0,
     "proj_speed": 0,

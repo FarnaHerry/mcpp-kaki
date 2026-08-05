@@ -65,7 +65,7 @@ func _process(delta) -> bool:
 				_check(root.find_child(n, true, false) != null, "enemy spawned: " + n)
 			var chi = root.find_child("Boss_ChiLong", true, false)
 			_check(String(chi.call("get_display_name")) == "幽谷螭龙", "boss display name 幽谷螭龙")
-			_check(float(chi.get("max_health")) == 30.0, "boss hp 30")
+			_check(float(chi.get("max_health")) == 300.0, "boss hp 300（平衡：30→300）")
 		6:
 			_next = _t + 0.3
 			# 草药：新增点位（悟道茶×2/赤焰花×2/冰心莲新增/金刚藤新增）

@@ -630,9 +630,9 @@ namespace godot {
 		if (current_health <= 0.0f) {
 			current_health = 0.0f;
 
-			// Give spiritual energy
+			// Give spiritual energy（平衡：随境界成长，防高境击杀无用）
 			if (p_source) {
-				float energy = is_boss ? 150.0f : 15.0f;
+				float energy = (is_boss ? 150.0f : 15.0f) * (1.0f + realm);
 				p_source->call("gain_spiritual_energy", energy);
 			}
 

@@ -56,8 +56,8 @@ func _setup_game():
 	boss.set("display_name", "赤瞳魔狼")
 	boss.set("realm", 2)
 	# 属性注册后才真正生效；_ready 的 ×5 已过（add_child 时 is_boss 还是 false），
-	# 这里直接给最终值 3×5=15
-	boss.set("max_health", 15.0); boss.set("current_health", 15.0)
+	# 这里直接给最终值。平衡（session 011）：15→150，凡人攻10 → ~15击 20~30s 守关战
+	boss.set("max_health", 150.0); boss.set("current_health", 150.0)
 	boss.set("attack_damage", 20.0)
 	boss.set("attack_cooldown", 1.2)
 	boss.set("detection_radius", 500.0)
@@ -159,7 +159,8 @@ func _setup_game():
 	chi.set("is_boss", true)
 	chi.set("display_name", "幽谷螭龙")
 	chi.set("realm", 4)
-	chi.set("max_health", 30.0); chi.set("current_health", 30.0)
+	# 平衡（session 011）：30→300，筑基攻17 → ~18击 25~40s
+	chi.set("max_health", 300.0); chi.set("current_health", 300.0)
 	chi.set("attack_damage", 24.0)
 	chi.set("attack_cooldown", 1.1)
 	chi.get_node("Polygon2D").scale = Vector2(1.8, 1.8)
@@ -186,10 +187,10 @@ func _setup_game():
 	WC.spawn_item_pickup(self, Vector2(7500, 144), "xian_tao", 1)
 	WC.spawn_herb(self, Vector2(6300, 174), "ju_ling_cao", 2)
 	WC.spawn_herb(self, Vector2(7200, 164), "wu_dao_cha", 1)
-	# 猿怪：桃林泼猴（近战，轻捷）
+	# 猿怪：桃林泼猴（近战，轻捷；平衡：HP 5→25，筑基+玩家 2 击）
 	for i in range(3):
 		var yuan = WC.spawn_enemy(self, Vector2(6400 + i * 500, 210), Color(0.75, 0.55, 0.35, 1), 95.0, 260.0, "YuanGuai%d" % i)
-		yuan.set("max_health", 5.0); yuan.set("current_health", 5.0)
+		yuan.set("max_health", 25.0); yuan.set("current_health", 25.0)
 		yuan.set("attack_damage", 12.0); yuan.set("realm", 1)
 	# 水帘洞秘境入口（复用 Portal 房间模式；洞内另有乾坤）
 	WC.create_portal(self, 7000, "res://scenes/rooms/shuilian_dong.tscn", "[↑] 入水帘洞", player, camera, hint)
@@ -201,12 +202,12 @@ func _setup_game():
 	WC.make_platform(self, 8350, 175, 80)
 	WC.make_platform(self, 8550, 135, 80)
 	WC.make_platform(self, 8750, 100, 90, false) # 神针礁石：非单向，跳台尽头
-	# 巡海夜叉（精英：远程钢叉，厚血）
+	# 巡海夜叉（精英：远程钢叉，厚血；平衡：HP 14→40，金丹玩家 2 击）
 	for i in range(2):
 		var yecha = WC.spawn_enemy(self, Vector2(8300 + i * 350, 210), Color(0.2, 0.45, 0.7, 1), 80.0, 380.0, "XunHaiYeCha%d" % i)
 		yecha.set("is_ranged", true); yecha.set("attack_range", 300.0); yecha.set("preferred_distance", 190.0)
 		yecha.set("attack_damage", 16.0); yecha.set("attack_cooldown", 1.4); yecha.set("realm", 3)
-		yecha.set("max_health", 14.0); yecha.set("current_health", 14.0)
+		yecha.set("max_health", 40.0); yecha.set("current_health", 40.0)
 	# 定海神针铁：沉于礁石之上，静待有缘
 	WC.spawn_item_pickup(self, Vector2(8750, 94), "ding_hai_shen_zhen", 1)
 	WC.spawn_herb(self, Vector2(8550, 129), "bing_xin_lian", 1)

@@ -204,7 +204,7 @@
     "grade": 1,
     "buff_id": "buff_bing_xin",
     "buy_price": 120,
-    "sell_price": 60
+    "sell_price": 40
   },
   {
     "id": "chi_yan_dan",
@@ -215,7 +215,7 @@
     "grade": 1,
     "buff_id": "buff_chi_yan",
     "buy_price": 120,
-    "sell_price": 60
+    "sell_price": 40
   },
   {
     "id": "jin_gang_dan",
@@ -226,7 +226,7 @@
     "grade": 1,
     "buff_id": "buff_jin_gang",
     "buy_price": 120,
-    "sell_price": 60
+    "sell_price": 40
   },
   {
     "id": "wu_dao_dan",
@@ -249,7 +249,7 @@
     "heal_pct": 0.5,
     "energy_amount": 100.0,
     "buy_price": 300,
-    "sell_price": 150
+    "sell_price": 60
   },
   {
     "id": "brown_rice",
@@ -300,8 +300,8 @@
     "energy_amount": 800.0,
     "fullness_amount": 100.0,
     "buff_id": "buff_ren_shen_guo",
-    "buy_price": 800,
-    "sell_price": 400
+    "buy_price": 600,
+    "sell_price": 300
   },
   {
     "id": "ba_jiao_shan",
@@ -351,12 +351,12 @@
   {
     "id": "xuan_long_dan",
     "name": "玄龙丹",
-    "desc": "龙骨与玄冰参淬炼的渡劫灵丹。攻防+15%，持续 600s。",
+    "desc": "龙骨与玄冰参淬炼的渡劫灵丹。攻防+20%，持续 900s。",
     "type": 0,
     "max_stack": 9,
     "grade": 3,
     "buff_id": "buff_xuan_long",
     "buy_price": 1000,
-    "sell_price": 500
+    "sell_price": 180
   }
 ]

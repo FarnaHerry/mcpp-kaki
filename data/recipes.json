@@ -1,10 +1,154 @@
 [
-  {"id":"healing_pill","name":"回春丹","mats":["zhi_xue_cao",null,null],"counts":[3,0,0],"mat_count":1,"grade":1,"min_realm":0,"success_rate":1.0,"desc":"回血 30"},
-  {"id":"qi_pill","name":"聚气丹","mats":["ju_ling_cao",null,null],"counts":[3,0,0],"mat_count":1,"grade":1,"min_realm":0,"success_rate":1.0,"desc":"回灵 50"},
-  {"id":"bing_xin_dan","name":"冰心丹","mats":["bing_xin_lian","ju_ling_cao",null],"counts":[2,1,0],"mat_count":2,"grade":2,"min_realm":1,"success_rate":1.0,"desc":"水抗+15% 300s"},
-  {"id":"chi_yan_dan","name":"赤焰丹","mats":["chi_yan_hua","zhi_xue_cao",null],"counts":[2,1,0],"mat_count":2,"grade":2,"min_realm":1,"success_rate":1.0,"desc":"攻击+15% 300s"},
-  {"id":"jin_gang_dan","name":"金刚丹","mats":["jin_gang_teng","zhi_xue_cao",null],"counts":[2,1,0],"mat_count":2,"grade":2,"min_realm":1,"success_rate":1.0,"desc":"防御+20% 300s"},
-  {"id":"wu_dao_dan","name":"悟道丹","mats":["wu_dao_cha","ju_ling_cao",null],"counts":[1,2,0],"mat_count":2,"grade":2,"min_realm":3,"success_rate":1.0,"desc":"修为+200"},
-  {"id":"da_huan_dan","name":"大还丹","mats":["qian_nian_ling_zhi","bing_xin_lian",null],"counts":[1,1,0],"mat_count":2,"grade":2,"min_realm":3,"success_rate":1.0,"desc":"回血50%+修为100"},
-  {"id":"xuan_long_dan","name":"玄龙丹","mats":["long_gu","xuan_bing_shen",null],"counts":[1,2,0],"mat_count":2,"grade":3,"min_realm":9,"success_rate":1.0,"desc":"攻击+15% 防御+15% 600s"}
+  {
+    "id": "healing_pill",
+    "name": "回春丹",
+    "mats": [
+      "zhi_xue_cao",
+      null,
+      null
+    ],
+    "counts": [
+      3,
+      0,
+      0
+    ],
+    "mat_count": 1,
+    "grade": 1,
+    "min_realm": 0,
+    "success_rate": 1.0,
+    "desc": "回血 30"
+  },
+  {
+    "id": "qi_pill",
+    "name": "聚气丹",
+    "mats": [
+      "ju_ling_cao",
+      null,
+      null
+    ],
+    "counts": [
+      3,
+      0,
+      0
+    ],
+    "mat_count": 1,
+    "grade": 1,
+    "min_realm": 0,
+    "success_rate": 1.0,
+    "desc": "回灵 50"
+  },
+  {
+    "id": "bing_xin_dan",
+    "name": "冰心丹",
+    "mats": [
+      "bing_xin_lian",
+      "ju_ling_cao",
+      null
+    ],
+    "counts": [
+      2,
+      1,
+      0
+    ],
+    "mat_count": 2,
+    "grade": 2,
+    "min_realm": 1,
+    "success_rate": 1.0,
+    "desc": "水抗+15% 300s"
+  },
+  {
+    "id": "chi_yan_dan",
+    "name": "赤焰丹",
+    "mats": [
+      "chi_yan_hua",
+      "zhi_xue_cao",
+      null
+    ],
+    "counts": [
+      2,
+      1,
+      0
+    ],
+    "mat_count": 2,
+    "grade": 2,
+    "min_realm": 1,
+    "success_rate": 1.0,
+    "desc": "攻击+15% 300s"
+  },
+  {
+    "id": "jin_gang_dan",
+    "name": "金刚丹",
+    "mats": [
+      "jin_gang_teng",
+      "zhi_xue_cao",
+      null
+    ],
+    "counts": [
+      2,
+      1,
+      0
+    ],
+    "mat_count": 2,
+    "grade": 2,
+    "min_realm": 1,
+    "success_rate": 1.0,
+    "desc": "防御+20% 300s"
+  },
+  {
+    "id": "wu_dao_dan",
+    "name": "悟道丹",
+    "mats": [
+      "wu_dao_cha",
+      "ju_ling_cao",
+      null
+    ],
+    "counts": [
+      1,
+      2,
+      0
+    ],
+    "mat_count": 2,
+    "grade": 2,
+    "min_realm": 3,
+    "success_rate": 1.0,
+    "desc": "修为+200"
+  },
+  {
+    "id": "da_huan_dan",
+    "name": "大还丹",
+    "mats": [
+      "qian_nian_ling_zhi",
+      "bing_xin_lian",
+      null
+    ],
+    "counts": [
+      1,
+      1,
+      0
+    ],
+    "mat_count": 2,
+    "grade": 2,
+    "min_realm": 3,
+    "success_rate": 1.0,
+    "desc": "回血50%+修为100"
+  },
+  {
+    "id": "xuan_long_dan",
+    "name": "玄龙丹",
+    "mats": [
+      "long_gu",
+      "xuan_bing_shen",
+      null
+    ],
+    "counts": [
+      1,
+      2,
+      0
+    ],
+    "mat_count": 2,
+    "grade": 3,
+    "min_realm": 9,
+    "success_rate": 1.0,
+    "desc": "攻击+20% 防御+20% 900s"
+  }
 ]

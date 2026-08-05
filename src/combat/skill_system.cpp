@@ -20,9 +20,9 @@ namespace godot {
 static const SkillSystem::Def SKILL_DEFS[] = {
 	// 武技（物理，冷却驱动，凡人可用）
 	{ "po_kong_zhan", "破空斩", SkillSystem::TYPE_MARTIAL, DMG_PHYSICAL, ELEM_NONE,
-	  0.0f, 0.0f, 3.0f, 2.5f, SkillSystem::FX_MELEE_SWING, 0, 0.0f, Color(), 0.0f, nullptr, SkillSystem::PAS_NONE, 0.0f },
+	  0.0f, 0.0f, 2.5f, 3.0f, SkillSystem::FX_MELEE_SWING, 0, 0.0f, Color(), 0.0f, nullptr, SkillSystem::PAS_NONE, 0.0f },
 	{ "tu_jin_zhan", "突进斩", SkillSystem::TYPE_MARTIAL, DMG_PHYSICAL, ELEM_NONE,
-	  0.0f, 0.0f, 5.0f, 1.8f, SkillSystem::FX_LUNGE, 0, 0.0f, Color(), 0.0f, nullptr, SkillSystem::PAS_NONE, 0.0f },
+	  0.0f, 0.0f, 1.8f, 3.5f, SkillSystem::FX_LUNGE, 0, 0.0f, Color(), 0.0f, nullptr, SkillSystem::PAS_NONE, 0.0f },
 	{ "xuan_feng_zhan", "旋风斩", SkillSystem::TYPE_MARTIAL, DMG_PHYSICAL, ELEM_NONE,
 	  0.0f, 0.0f, 6.0f, 3.0f, SkillSystem::FX_AOE_SWING, 1, 0.0f, Color(), 0.0f, nullptr, SkillSystem::PAS_NONE, 0.0f },
 	{ "sheng_long_ji", "升龙击", SkillSystem::TYPE_MARTIAL, DMG_PHYSICAL, ELEM_NONE,

@@ -2026,7 +2026,8 @@ namespace godot {
 
 	bool Player::cast_lin_pressure() {
 		if (_time < _lin_cd_until) return false;
-		if (!_cultivation || !_cultivation->consume_mana(60.0f)) return false;
+		// 平衡：60→45 蓝，与同代技能性价比相称（单目标法伤 3~3.5×atk，15s 大技能）
+		if (!_cultivation || !_cultivation->consume_mana(45.0f)) return false;
 		_lin_cd_until = _time + 15.0;
 
 		int prealm = _cultivation->get_realm_index();
