@@ -443,6 +443,9 @@ public:
 		float proj_speed;
 		Color proj_color;
 		float passive_def;
+		float passive_atk = 0.0f;       // 辅助型常驻攻击加成（比例）
+		Element resist_elem = ELEM_NONE; // 辅助型常驻元素抗性（ELEM_NONE=无）
+		float resist_elem_pct = 0.0f;   // 辅助型常驻元素抗性比例
 	};
 
 	static const int MAX_SLOTS = 6;
@@ -461,6 +464,16 @@ public:
 	void nurture_equipped(float p_amount);
 	float get_slot_coeff(int p_slot) const;
 	float get_passive_def_bonus() const;
+	float get_passive_atk_bonus() const;
+	float get_passive_elem_resist(int p_elem) const;
+
+	// 飞升（真仙）：次要法宝槽 2→5（共 6 槽），随档持久化
+	void unlock_secondary_slots();
+	bool is_secondary_unlocked() const { return _secondary_unlocked; }
+
+	// 渡劫「只带本命法宝」：三灾 arena 内禁用次要法宝祭出与被动（装备加成由 Player 侧置空）
+	void set_tribulation_mode(bool p_on);
+	bool is_tribulation_mode() const { return _tribulation_mode; }
 
 	int get_slot_limit() const;
 	StringName get_slot_artifact(int p_slot) const;
@@ -479,6 +492,8 @@ private:
 	StringName _slots[MAX_SLOTS];
 	HashMap<StringName, float> _nurture;
 	HashMap<StringName, double> _cooldown_until;
+	bool _secondary_unlocked = false; // 飞升解锁次要槽 +3
+	bool _tribulation_mode = false;   // 渡劫中：只带本命法宝
 
 	double _now() const;
 	static constexpr float NURTURE_STAGE1 = 300.0f;

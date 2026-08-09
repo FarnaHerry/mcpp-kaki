@@ -202,7 +202,7 @@ void GameMenu::_rebuild_page() {
 		case PAGE_ARTIFACT:
 			if (_inv_panel) _inv_panel->close();
 			_build_artifact_page();
-			_set_hint(LOC("Q/E 切换页  ESC 关闭"));
+			_set_hint(LOC("Q/E 切换页  ↑/↓ 选法宝  X 设本命  A~H 装入对应槽  ESC 关闭"));
 			break;
 		case PAGE_SECT:
 			if (_inv_panel) _inv_panel->close();
@@ -637,7 +637,7 @@ void GameMenu::_handle_skill_input() {
 }
 
 // ============================================================
-// 法宝页（本命 + 次要槽：系数/温养/祭出参数）
+// 法宝页（本命 + 次要槽总览；已拥有法宝可选中，X 设本命 / A~H 装入对应槽）
 // ============================================================
 
 void GameMenu::_build_artifact_page() {
@@ -662,62 +662,205 @@ void GameMenu::_build_artifact_page() {
 	Color head_c(1.0f, 0.85f, 0.5f);
 	Color body_c(0.85f, 0.85f, 0.85f);
 	Color dim_c(0.55f, 0.55f, 0.55f);
+	Color sel_c(1.0f, 0.95f, 0.6f);
+	Color ok_c(0.6f, 1.0f, 0.6f);
+	Color bad_c(1.0f, 0.5f, 0.5f);
+	Color benming_c(1.0f, 0.85f, 0.45f);
 
 	ArtifactSystem *arts = _player ? _player->get_artifacts() : nullptr;
 	int limit = arts ? arts->get_slot_limit() : 3;
 	static const char *KEYS[ArtifactSystem::MAX_SLOTS] = { "A", "S", "D", "F", "G", "H" };
 
-	// 槽位格子列表（本命/次要分区头 + 每槽一格）
-	float y = 60.0f;
-	for (int i = 0; i < ArtifactSystem::MAX_SLOTS; i++) {
-		if (i >= limit) {
-			add_line(LOC("—— 飞升后解锁 ——"), 70.0f, y, 8, dim_c);
-			break;
-		}
-		String head = i == 0 ? LOC("— 本命法宝 —") : (i == 1 ? LOC("— 次要法宝 —") : String());
-		if (!head.is_empty()) {
-			add_line(head, 70.0f, y, 10, head_c);
-			y += 15.0f;
-		}
-
-		Dictionary info = arts ? arts->get_slot_info(i) : Dictionary();
-		Array items;
-		Dictionary cell;
-		if (info.is_empty()) {
-			cell["text"] = String("[") + KEYS[i] + LOC("] （空）");
-			cell["dim"] = true;
-		} else {
-			String txt = String("[") + KEYS[i] + "] " + LOC(String(info.get("name", ""))) +
-				LOC(" ·") + String(info.get("kind_name", "")) +
-				LOC(" ×") + String::num(float(info.get("coeff", 1.0f)), 2);
-			if (int(info.get("kind", 0)) == int(ArtifactSystem::KIND_ATTACK)) {
-				txt += LOC(" 祭出×") + String::num(float(info.get("power", 1.0f)), 1) +
-					LOC(" 灵") + String::num_int64(int64_t(float(info.get("mana_cost", 0.0f))));
+	// 槽位总览（3 列 × 2 行只读格：本命槽金色，锁定槽灰显）
+	add_line(LOC("— 槽位（本命A + 次要S~H） —"), 40.0f, 54.0f, 9, head_c);
+	{
+		Array slot_items;
+		for (int i = 0; i < ArtifactSystem::MAX_SLOTS; i++) {
+			Dictionary cell;
+			if (i >= limit) {
+				cell["text"] = String("[") + KEYS[i] + LOC("] 飞升解锁");
+				cell["dim"] = true;
 			} else {
-				txt += LOC(" 防+") + String::num(float(info.get("passive_def", 0.0f)) * 100.0f, 0) + LOC("%");
+				Dictionary info = arts ? arts->get_slot_info(i) : Dictionary();
+				if (info.is_empty()) {
+					cell["text"] = String("[") + KEYS[i] + LOC("] （空）");
+					cell["dim"] = true;
+				} else {
+					cell["text"] = String("[") + KEYS[i] + "] " + LOC(String(info.get("name", ""))) +
+						LOC(" ×") + String::num(float(info.get("coeff", 1.0f)), 2);
+					cell["color"] = i == 0 ? benming_c : body_c;
+				}
 			}
-			txt += LOC(" 温养") + String::num_int64(int64_t(float(info.get("nurture", 0.0f))));
-			if (i == 0 && _player && _player->is_benming_awakened())
-				txt += LOC("·觉醒");
-			cell["text"] = txt;
-			cell["color"] = i == 0 ? Color(1.0f, 0.85f, 0.45f, 1.0f) : Color(0.85f, 0.85f, 0.85f, 1.0f);
+			slot_items.push_back(cell);
 		}
-		items.push_back(cell);
-
-		GridList *grid = memnew(GridList);
-		grid->set_position(Vector2(70, y));
-		grid->set_size(Vector2(350, 22));
-		add_child(grid);
-		grid->set_columns(1);
-		grid->set_cell_size(Vector2(350, 22));
-		grid->set_items(items);
-		grid->set_active(false); // 只读
-		_page_nodes.push_back(grid);
-		y += 24.0f;
+		GridList *slot_grid = memnew(GridList);
+		slot_grid->set_position(Vector2(40, 66));
+		slot_grid->set_size(Vector2(400, 52)); // 2 行 × 3 列
+		add_child(slot_grid);
+		slot_grid->set_columns(3);
+		slot_grid->set_cell_size(Vector2(133, 26));
+		slot_grid->set_items(slot_items);
+		slot_grid->set_active(false); // 只读
+		_page_nodes.push_back(slot_grid);
 	}
 
-	add_line(LOC("战斗中按 B 整页切换法宝页，A~H 即法宝快捷键；祭出复用技能管线，耗灵力。"), 70.0f, 232.0f, 8, dim_c);
-	add_line(LOC("本命温养 120%→150%，渡劫觉醒 200% 并锁定；次要 100%→120%→150%。"), 70.0f, 246.0f, 8, dim_c);
+	// 已拥有法宝（可选中列表：↑/↓←/→ 移动光标，X 设本命，A~H 装入对应槽）
+	add_line(LOC("已拥有法宝:"), 40.0f, 124.0f, 9, head_c);
+	Array owned = arts ? arts->get_owned_list() : Array();
+	static const int GRID_COLS = 3;
+	if (owned.is_empty()) {
+		add_line(LOC("（尚未获得任何法宝；筑基赐飞剑，残篇类物品使用即得）"), 40.0f, 140.0f, 9, dim_c);
+	} else {
+		_artifact_sel = CLAMP(_artifact_sel, 0, (int)owned.size() - 1);
+
+		// 选中项详情并入标题行右侧
+		Dictionary selk = owned[_artifact_sel];
+		StringName sel_id = StringName(String(selk.get("id", "")));
+		String detail = LOC(String(selk.get("name", ""))) + LOC(" ·") + String(selk.get("kind_name", ""));
+		if (arts) {
+			const ArtifactSystem::Def *sdef = ArtifactSystem::find_def(sel_id);
+			if (sdef) {
+				if (sdef->kind == ArtifactSystem::KIND_ATTACK) {
+					detail += LOC(" 祭出×") + String::num(sdef->power, 1) +
+						LOC(" 灵") + String::num_int64(int64_t(sdef->mana_cost)) +
+						LOC(" 冷却") + String::num(sdef->cooldown, 1) + LOC("s");
+				} else {
+					if (sdef->passive_def > 0.0f)
+						detail += LOC(" 防+") + String::num_int64(int64_t(sdef->passive_def * 100.0f)) + LOC("%");
+					if (sdef->passive_atk > 0.0f)
+						detail += LOC(" 攻+") + String::num_int64(int64_t(sdef->passive_atk * 100.0f)) + LOC("%");
+					if (sdef->resist_elem_pct > 0.0f) {
+						static const char *ELEM_SHORT[8] = { "", "金", "木", "水", "火", "土", "雷", "风" };
+						int el = CLAMP(int(sdef->resist_elem), 0, 7);
+						detail += LOC(" ") + LOC(ELEM_SHORT[el]) + LOC("抗+") +
+							String::num_int64(int64_t(sdef->resist_elem_pct * 100.0f)) + LOC("%");
+					}
+				}
+			}
+		}
+		add_line(detail, 130.0f, 124.0f, 9, sel_c);
+
+		// 装配标记：本命=金「·本命」，次要槽=「·[S]」等
+		Array items;
+		for (int i = 0; i < owned.size(); i++) {
+			Dictionary k = owned[i];
+			StringName oid = StringName(String(k.get("id", "")));
+			String txt = LOC(String(k.get("name", "")));
+			if (arts) {
+				for (int s = 0; s < limit; s++) {
+					if (arts->get_slot_artifact(s) == oid) {
+						txt += s == 0 ? LOC(" ·本命") : String(LOC(" ·[")) + KEYS[s] + "]";
+						break;
+					}
+				}
+			}
+			Dictionary cell;
+			cell["text"] = txt;
+			cell["color"] = int(k.get("kind", 0)) == int(ArtifactSystem::KIND_ATTACK)
+				? Color(0.9f, 0.9f, 0.9f, 1.0f) : Color(0.7f, 0.9f, 0.7f, 1.0f);
+			items.push_back(cell);
+		}
+		GridList *grid = memnew(GridList);
+		grid->set_position(Vector2(40, 138));
+		grid->set_size(Vector2(400, 52)); // 2 行窗口，选中驱动滚动
+		add_child(grid);
+		grid->set_columns(GRID_COLS);
+		grid->set_cell_size(Vector2(133, 26));
+		grid->set_items(items);
+		grid->set_selected(_artifact_sel);
+		_page_nodes.push_back(grid);
+	}
+
+	// 装配结果提示 / 操作说明
+	if (!_artifact_msg.is_empty()) {
+		bool ok = _artifact_msg.contains(LOC("已设")) || _artifact_msg.contains(LOC("已装配"));
+		add_line(_artifact_msg, 40.0f, 206.0f, 9, ok ? ok_c : bad_c);
+	} else {
+		add_line(LOC("↑/↓←/→ 选法宝，X 设本命法宝，A/S/D/F/G/H 装入对应槽。"), 40.0f, 206.0f, 8, dim_c);
+	}
+	add_line(LOC("战斗中按 B 整页切换法宝页，A~H 即法宝快捷键；祭出复用技能管线，耗灵力。"), 40.0f, 232.0f, 8, dim_c);
+	add_line(LOC("本命温养 120%→150%，渡劫觉醒 200% 并锁定；次要 100%→120%→150%。"), 40.0f, 246.0f, 8, dim_c);
+}
+
+void GameMenu::_handle_artifact_input() {
+	ArtifactSystem *arts = _player ? _player->get_artifacts() : nullptr;
+	if (!arts) return;
+	Input *input = Input::get_singleton();
+	Array owned = arts->get_owned_list();
+	int count = owned.size();
+	if (count == 0) return;
+	_artifact_sel = CLAMP(_artifact_sel, 0, count - 1);
+	static const int GRID_COLS = 3; // 与 _build_artifact_page 一致
+	if (input->is_action_just_pressed(LOC("up"))) {
+		_artifact_sel = Math::max(0, _artifact_sel - GRID_COLS);
+		_rebuild_page();
+	}
+	if (input->is_action_just_pressed(LOC("down"))) {
+		_artifact_sel = Math::min(count - 1, _artifact_sel + GRID_COLS);
+		_rebuild_page();
+	}
+	if (input->is_action_just_pressed(LOC("left"))) {
+		int row = _artifact_sel / GRID_COLS;
+		int col = Math::max(0, _artifact_sel % GRID_COLS - 1);
+		_artifact_sel = Math::min(count - 1, row * GRID_COLS + col);
+		_rebuild_page();
+	}
+	if (input->is_action_just_pressed(LOC("right"))) {
+		int row = _artifact_sel / GRID_COLS;
+		int col = Math::min(GRID_COLS - 1, _artifact_sel % GRID_COLS + 1);
+		_artifact_sel = Math::min(count - 1, row * GRID_COLS + col);
+		_rebuild_page();
+	}
+
+	Dictionary k = owned[_artifact_sel];
+	StringName id = StringName(String(k.get("id", "")));
+	String kname = LOC(String(k.get("name", "")));
+	int limit = arts->get_slot_limit();
+	static const char *KEYS[ArtifactSystem::MAX_SLOTS] = { "A", "S", "D", "F", "G", "H" };
+
+	// X：设本命法宝（觉醒锁定后拒绝；换本命会重置温养）
+	if (input->is_action_just_pressed(LOC("interact"))) {
+		StringName cur = arts->get_slot_artifact(0);
+		if (cur == id) {
+			_artifact_msg = kname + LOC(" 已是本命法宝");
+		} else if (_player && _player->is_benming_awakened()) {
+			_artifact_msg = LOC("本命已锁定（渡劫觉醒后不可更换）");
+		} else if (arts->equip(0, id) && arts->get_slot_artifact(0) == id) {
+			_artifact_msg = LOC("已设本命法宝 ") + kname;
+		} else {
+			_artifact_msg = LOC("本命设定失败");
+		}
+		_artifact_msg_t = 2.5f;
+		_rebuild_page();
+		return;
+	}
+
+	// A~H：装入对应法宝槽（A=本命槽同 X 规则；次要槽越限提示飞升解锁）
+	static const char *SLOT_ACTIONS[6] = { "skill_a", "skill_s", "skill_d", "skill_f", "skill_g", "skill_h" };
+	for (int i = 0; i < 6; i++) {
+		if (!input->is_action_just_pressed(LOC(SLOT_ACTIONS[i]))) continue;
+		if (i >= limit) {
+			_artifact_msg = LOC("[") + KEYS[i] + LOC("] 槽飞升后解锁");
+		} else if (i == 0) {
+			StringName cur = arts->get_slot_artifact(0);
+			if (cur == id) {
+				_artifact_msg = kname + LOC(" 已是本命法宝");
+			} else if (_player && _player->is_benming_awakened()) {
+				_artifact_msg = LOC("本命已锁定（渡劫觉醒后不可更换）");
+			} else if (arts->equip(0, id) && arts->get_slot_artifact(0) == id) {
+				_artifact_msg = LOC("已设本命法宝 ") + kname;
+			} else {
+				_artifact_msg = LOC("本命设定失败");
+			}
+		} else if (arts->equip(i, id)) {
+			_artifact_msg = LOC("已装配 [") + KEYS[i] + LOC("] ") + kname;
+		} else {
+			_artifact_msg = LOC("装配失败");
+		}
+		_artifact_msg_t = 2.5f;
+		_rebuild_page();
+		break;
+	}
 }
 
 // ============================================================
@@ -1289,6 +1432,14 @@ void GameMenu::_process(double p_delta) {
 		}
 	}
 
+	if (_artifact_msg_t > 0.0f) {
+		_artifact_msg_t -= float(p_delta);
+		if (_artifact_msg_t <= 0.0f && _page == PAGE_ARTIFACT) {
+			_artifact_msg = String();
+			_rebuild_page();
+		}
+	}
+
 	if (_sect_msg_t > 0.0f) {
 		_sect_msg_t -= float(p_delta);
 		if (_sect_msg_t <= 0.0f && _page == PAGE_SECT) {
@@ -1332,6 +1483,9 @@ void GameMenu::_process(double p_delta) {
 			break;
 		case PAGE_SKILL:
 			_handle_skill_input();
+			break;
+		case PAGE_ARTIFACT:
+			_handle_artifact_input();
 			break;
 		case PAGE_SECT:
 			_handle_sect_input();

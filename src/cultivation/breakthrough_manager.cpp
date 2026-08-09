@@ -358,6 +358,11 @@ namespace godot {
 		if (!_active)
 			return;
 
+		// 渡劫失败/战死：恢复次要法宝与装备加成（重生后照旧）
+		Player *p = _player();
+		if (p && p->is_in_tribulation())
+			p->exit_tribulation();
+
 		if (_tribulation) {
 			_tribulation->abort();
 			_tribulation->queue_free();
@@ -562,6 +567,11 @@ namespace godot {
 		if (cs)
 			cs->set_realm(CultivationSystem::DU_JIE);
 
+		// 渡劫「只带本命法宝」：卸下次要法宝与装备加成（渡劫毕恢复）
+		Player *p = _player();
+		if (p)
+			p->enter_tribulation();
+
 		_tribulation = memnew(TribulationController);
 		_tribulation->set_name("TribulationController");
 		add_child(_tribulation);
@@ -572,6 +582,10 @@ namespace godot {
 	void BreakthroughManager::_on_tribulation_finished(bool p_success) {
 		if (!_active)
 			return;
+		// 渡劫毕（成败皆然）：恢复次要法宝与装备加成
+		Player *p = _player();
+		if (p && p->is_in_tribulation())
+			p->exit_tribulation();
 		if (p_success) {
 			_victory();
 		} else {

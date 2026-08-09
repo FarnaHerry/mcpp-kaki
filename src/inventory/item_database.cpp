@@ -483,6 +483,45 @@ void ItemDatabase::_register_items() {
 		scroll.learn_skill = StringName("pu_ti_xin_fa");
 		_items[scroll.id] = scroll;
 	}
+
+	// 八卦炉残篇：化神境赐（使用得辅助法宝「八卦炉」，常驻攻+15%×系数）
+	{
+		Item scroll;
+		scroll.id = "ba_gua_lu";
+		scroll.name = LOC("八卦炉残篇");
+		scroll.description = LOC("兜率宫八卦炉残片所化，炉中六丁神火余温犹存。使用得法宝（辅助·攻+15%）。");
+		scroll.type = Item::CONSUMABLE;
+		scroll.max_stack = 1;
+		scroll.grade = 2;
+		scroll.learn_artifact = StringName("ba_gua_lu");
+		_items[scroll.id] = scroll;
+	}
+
+	// 捆仙绳残篇：炼虚境赐（使用得攻击法宝「捆仙绳」，瞬身锁敌束缚一击）
+	{
+		Item scroll;
+		scroll.id = "kun_xian_sheng";
+		scroll.name = LOC("捆仙绳残篇");
+		scroll.description = LOC("惧留孙捆仙绳仿品图谱，金丝绞成，仙神难脱。使用得法宝（攻击·瞬身锁敌一击）。");
+		scroll.type = Item::CONSUMABLE;
+		scroll.max_stack = 1;
+		scroll.grade = 2;
+		scroll.learn_artifact = StringName("kun_xian_sheng");
+		_items[scroll.id] = scroll;
+	}
+
+	// 定风珠残篇：合体境赐（使用得辅助法宝「定风珠」，常驻风抗+30%×系数）
+	{
+		Item scroll;
+		scroll.id = "ding_feng_zhu";
+		scroll.name = LOC("定风珠残篇");
+		scroll.description = LOC("灵吉菩萨定风珠余晖所凝，赑风近身自息。使用得法宝（辅助·风抗+30%）。");
+		scroll.type = Item::CONSUMABLE;
+		scroll.max_stack = 1;
+		scroll.grade = 2;
+		scroll.learn_artifact = StringName("ding_feng_zhu");
+		_items[scroll.id] = scroll;
+	}
 }
 
 const Item *ItemDatabase::get_item(const StringName &p_id) const {
