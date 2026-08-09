@@ -1253,6 +1253,10 @@ void GameMenu::_process(double p_delta) {
 			StoragePanel *sp = scene ? Object::cast_to<StoragePanel>(scene->find_child("StoragePanel", true, false)) : nullptr;
 			if (sp && sp->is_open())
 				return;
+			// 丹房面板（洞天 GDScript 面板）打开时 ESC/I 同样归它处理
+			Node *pp = scene ? scene->find_child("PillLabPanel", true, false) : nullptr;
+			if (pp && pp->has_method("is_open") && bool(pp->call("is_open")))
+				return;
 			if (input->is_action_just_pressed(LOC("menu"))) {
 				_open_menu(_page); // 记住上次页
 			} else {

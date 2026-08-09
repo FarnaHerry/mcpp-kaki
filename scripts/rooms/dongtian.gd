@@ -1,4 +1,5 @@
-# 洞天（v2 灵田 + 仓库 / v4 扩张经营）—— C++ 节点运行时创建（GDExtension 注册时序，勿写进 .tscn）
+# 洞天（v2 灵田 + 仓库 / v4 扩张经营 / 设施补全：灵泉打坐点+丹房+灵植采集点×2）
+# —— C++ 节点运行时创建（GDExtension 注册时序，勿写进 .tscn）
 extends Node2D
 
 const BASE_PLOTS := 6
@@ -10,6 +11,9 @@ const PLOT2_Y := 196.0
 
 const ExpandMonument := preload("res://scripts/spots/expand_monument.gd")
 const JlzEye := preload("res://scripts/spots/jlz_eye.gd")
+const MeditateSpot := preload("res://scripts/spots/meditate_spot.gd")
+const PillLab := preload("res://scripts/spots/pill_lab.gd")
+const DongtianHerbSpot := preload("res://scripts/spots/dongtian_herb_spot.gd")
 
 func _mgr():
 	return get_tree().current_scene.find_child("DongtianManager", true, false)
@@ -40,6 +44,47 @@ func _ready():
 	eye.name = "JlzEye"
 	eye.position = Vector2(365, 216)
 	add_child(eye)
+
+	# 设施补全：灵泉打坐点（灵泉右侧，x=415 避开阵眼 345..385 交互区）
+	var spot = MeditateSpot.new()
+	spot.name = "MeditateSpot"
+	spot.position = Vector2(415, 216)
+	add_child(spot)
+
+	# 设施补全：丹房（仓库与灵泉之间，x=316 避开箱子 272..298 交互区）
+	var lab = PillLab.new()
+	lab.name = "PillLab"
+	lab.position = Vector2(316, 216)
+	add_child(lab)
+
+	# 设施补全：灵植采集点×2（浮空苗圃单向高台，跳跃可达；地面让位既有设施）
+	# 聚灵草台：仓库/丹房上空（x=296）；千年灵芝台：灵泉上空（x=420）
+	_make_herb_ledge("HerbLedge0", Vector2(296, 176), 0)
+	_make_herb_ledge("HerbLedge1", Vector2(420, 168), 1)
+
+# 浮空苗圃：单向高台（可跳上/从下方穿过）+ 土壤视觉 + 灵植采集点
+func _make_herb_ledge(ledge_name: String, pos: Vector2, spot_index: int):
+	var platform = StaticBody2D.new()
+	platform.name = ledge_name
+	platform.position = pos
+	platform.collision_layer = 1
+	platform.collision_mask = 0
+	var pshape = CollisionShape2D.new()
+	var prect = RectangleShape2D.new()
+	prect.size = Vector2(48, 6)
+	pshape.shape = prect
+	pshape.one_way_collision = true
+	platform.add_child(pshape)
+	var soil = Polygon2D.new()
+	soil.color = Color(0.38, 0.27, 0.16, 1)
+	soil.polygon = PackedVector2Array([-24, -6, 24, -6, 20, 0, -20, 0])
+	platform.add_child(soil)
+	add_child(platform)
+	var herb = DongtianHerbSpot.new()
+	herb.name = "HerbSpot%d" % spot_index
+	herb.position = pos + Vector2(0, -3)
+	herb.set("spot_index", spot_index)
+	add_child(herb)
 
 # 按 DongtianManager 当前地块数补建缺失的 FarmPlot（v4 扩张后新地立即可种）
 func refresh_plots():
