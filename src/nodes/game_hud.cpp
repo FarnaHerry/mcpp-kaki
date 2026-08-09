@@ -479,7 +479,16 @@ void GameHUD::_on_language_changed(const String &p_locale) {
     if (_realm_label) _realm_label->set_text(LOC("凡人"));
     if (_jiyuan_label) _jiyuan_label->set_text(LOC("机缘已至 [Q]"));
     if (_page_badge) _page_badge->set_text(LOC("法宝页 [B 返回]"));
-    _mana_prefix = LOC("灵力");
+    // 灵力/修为条前缀随境界（凡尘=灵力/修为，仙级=仙元）重取本地化
+    bool immortal = false;
+    if (!_player && get_tree()) {
+        _player = Object::cast_to<Player>(get_tree()->get_root()->find_child("Player", true, false));
+    }
+    if (_player && _player->get_cultivation()) {
+        immortal = _player->get_cultivation()->get_realm_index() >= CultivationSystem::TRUE_IMMORTAL;
+    }
+    _mana_prefix = immortal ? LOC("仙元") : LOC("灵力");
+    _xp_prefix = immortal ? LOC("仙元") : LOC("修为");
     _realm_name = LOC("凡人");
     _refresh_mana_label();
     _refresh_xp_label();
@@ -920,7 +929,7 @@ void GameHUD::_refresh_mana_label() {
 void GameHUD::_refresh_xp_label() {
     if (_xp_label) {
         _xp_label->set_text(
-            LOC("修为 ") + String::num_int64(int64_t(_xp_progress * 100.0f)) + "%");
+            _xp_prefix + " " + String::num_int64(int64_t(_xp_progress * 100.0f)) + "%");
     }
 }
 
@@ -960,11 +969,18 @@ void GameHUD::on_realm_changed(int p_old_realm, int p_new_realm, const String &p
     }
 
     // 法力体系随境界切换：凡尘用灵力，仙级用仙元
-    String new_prefix = p_new_realm >= CultivationSystem::TRUE_IMMORTAL
-        ? LOC("仙元") : LOC("灵力");
+    bool immortal = p_new_realm >= CultivationSystem::TRUE_IMMORTAL;
+    String new_prefix = immortal ? LOC("仙元") : LOC("灵力");
     if (new_prefix != _mana_prefix) {
         _mana_prefix = new_prefix;
         _refresh_mana_label();
+    }
+
+    // 修为条同步：真仙+ 修为经验即仙元（九九归一），条名改显「仙元」
+    String new_xp_prefix = immortal ? LOC("仙元") : LOC("修为");
+    if (new_xp_prefix != _xp_prefix) {
+        _xp_prefix = new_xp_prefix;
+        _refresh_xp_label();
     }
 }
 

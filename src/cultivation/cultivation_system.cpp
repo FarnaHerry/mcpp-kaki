@@ -9,8 +9,8 @@ module mcpp_kaki.cultivation;
 import mcpp_kaki.utils;
 namespace godot {
 
-	// 渡劫成功、灵力转仙元时的初始仙元
-	static constexpr int64_t INITIAL_XIANYUAN = 100;
+	// 渡劫成功、灵力转仙元：仙元清零重起数（九九归一，凡尘修为尽数归一）
+	static constexpr int64_t INITIAL_XIANYUAN = 0;
 
 	// 境界圆满门槛（9 为尊，累计经验上限；0 = 无经验条）
 	// 凡尘九境全局累计；仙阶九九归一（仙元重新起数）
@@ -26,8 +26,8 @@ namespace godot {
 		443999,     // 合体
 		1443999,    // 大乘
 		0,          // 渡劫（过渡态，无经验条）
-		99999,      // 真仙（仙元）
-		500000,     // 金仙（仙元）
+		99999,      // 真仙（仙元 9 系门槛）
+		999999,     // 金仙（仙元 9 系门槛；满=大圆满，混元一气为特殊解锁非经验堆叠）
 		0           // 天尊
 	};
 
@@ -419,8 +419,9 @@ namespace godot {
 		Realm old = _current_realm;
 		_current_realm = p_realm;
 
-		// 渡劫成仙：灵力转仙元（九九归一），五仙身份重置待选择
+		// 渡劫成仙：灵力转仙元（九九归一——凡尘修为清零、仙元从零重起数），五仙身份重置待选择
 		if (old < TRUE_IMMORTAL && _current_realm >= TRUE_IMMORTAL) {
+			_lingqi = 0;
 			_xianyuan = INITIAL_XIANYUAN;
 			_immortal_type = TYPE_NONE;
 		}
