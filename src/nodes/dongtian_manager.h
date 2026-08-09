@@ -31,7 +31,9 @@ public:
 
 	// ---- 灵田（v2 种植，design/dongtian.md）----
 	// 状态自持于 Manager（洞天场景卸载后生长不丢），现实时间生长。
-	static constexpr int PLOT_COUNT = 6;
+	// v4 扩张：6 → 最多 12 块，扩张碑灵石购买（价格递增，下品基准）。
+	static constexpr int BASE_PLOTS = 6;
+	static constexpr int MAX_PLOTS = 12;
 
 	// 地块状态：{empty, herb, herb_name, mature, remaining}（empty=true 时其余无意义）
 	Dictionary get_plot(int p_index) const;
@@ -42,6 +44,23 @@ public:
 	int harvest(int p_index);
 	// 测试用：拨快生长（planted_at 回拨 seconds 秒）
 	void debug_age_plot(int p_index, double p_seconds);
+
+	// ---- v4 灵田扩张 ----
+	int get_plot_count() const { return _plot_count; }
+	// 下一块地的价格（下品基准）；已满（12 块）返回 0
+	int get_expand_cost() const;
+	// 购买下一块地（走 CurrencySystem 扣款，不足/已满返回 false）
+	bool expand_plot();
+
+	// ---- v4 聚灵阵升级（两级，每级打坐倍率 +0.5）----
+	static constexpr int JLZ_MAX_LEVEL = 2;
+	int get_jlz_level() const { return _jlz_level; }
+	// 下一级价格（下品基准：500 / 1500）；满级返回 0
+	int get_jlz_upgrade_cost() const;
+	// 升级聚灵阵（走 CurrencySystem 扣款，不足/满级返回 false）
+	bool upgrade_jlz();
+	// 打坐倍率加成（Player::get_dongtian_meditate_mult 叠加）
+	double get_jlz_bonus() const { return 0.5 * _jlz_level; }
 
 	Dictionary save_to_dict() const;
 	void load_from_dict(const Dictionary &p_data);
@@ -85,7 +104,9 @@ private:
 		StringName herb;
 		int64_t planted_at = 0;
 	};
-	Plot _plots[PLOT_COUNT];
+	Plot _plots[MAX_PLOTS];
+	int _plot_count = BASE_PLOTS; // v4：已开辟地块数（6→12）
+	int _jlz_level = 0;           // v4：聚灵阵等级（0→2，每级打坐 +0.5）
 	static int64_t _now();
 
 	// 仓库槽位：item 空 = 空格
