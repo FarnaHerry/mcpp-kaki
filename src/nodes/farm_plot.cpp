@@ -220,15 +220,11 @@ namespace godot {
         if (!_player)
             return;
 
-        // 生长中提示每秒刷新倒计时
+        // 周期重声明提示（生长中刷倒计时；其余状态防同帧 enter/exit 乱序误清）
         _prompt_refresh -= float(p_delta);
         if (_prompt_refresh <= 0.0f) {
-            _prompt_refresh = 1.0f;
-            if (mgr) {
-                Dictionary plot = mgr->get_plot(_plot_index);
-                if (!plot.get("empty", true) && !plot.get("mature", false))
-                    _update_prompt();
-            }
+            _prompt_refresh = 0.3f;
+            _update_prompt();
         }
 
         if (Input::get_singleton()->is_action_just_pressed("interact")) {

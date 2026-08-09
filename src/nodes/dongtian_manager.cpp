@@ -2,6 +2,7 @@
 #include "camera_room_2d.h"
 #include "enemy.h"
 #include "player.h"
+#include "../core/currency_system.h"
 
 #include <godot_cpp/classes/input.hpp>
 #include <godot_cpp/classes/marker2d.hpp>
@@ -10,6 +11,7 @@
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/classes/time.hpp>
 #include <godot_cpp/core/class_db.hpp>
+#include <godot_cpp/core/math.hpp>
 #include <godot_cpp/variant/array.hpp>
 
 import mcpp_kaki.cultivation; // BreakthroughManager / AbilityManager / GongfaSystem
@@ -29,6 +31,13 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("plant", "index"), &DongtianManager::plant);
         ClassDB::bind_method(D_METHOD("harvest", "index"), &DongtianManager::harvest);
         ClassDB::bind_method(D_METHOD("debug_age_plot", "index", "seconds"), &DongtianManager::debug_age_plot);
+        ClassDB::bind_method(D_METHOD("get_plot_count"), &DongtianManager::get_plot_count);
+        ClassDB::bind_method(D_METHOD("get_expand_cost"), &DongtianManager::get_expand_cost);
+        ClassDB::bind_method(D_METHOD("expand_plot"), &DongtianManager::expand_plot);
+        ClassDB::bind_method(D_METHOD("get_jlz_level"), &DongtianManager::get_jlz_level);
+        ClassDB::bind_method(D_METHOD("get_jlz_upgrade_cost"), &DongtianManager::get_jlz_upgrade_cost);
+        ClassDB::bind_method(D_METHOD("upgrade_jlz"), &DongtianManager::upgrade_jlz);
+        ClassDB::bind_method(D_METHOD("get_jlz_bonus"), &DongtianManager::get_jlz_bonus);
         ClassDB::bind_method(D_METHOD("save_to_dict"), &DongtianManager::save_to_dict);
         ClassDB::bind_method(D_METHOD("load_from_dict", "data"), &DongtianManager::load_from_dict);
         ClassDB::bind_method(D_METHOD("get_storage_slot", "index"), &DongtianManager::get_storage_slot);
@@ -201,7 +210,7 @@ namespace godot {
 
     Dictionary DongtianManager::get_plot(int p_index) const {
         Dictionary d;
-        ERR_FAIL_INDEX_V(p_index, PLOT_COUNT, d);
+        ERR_FAIL_INDEX_V(p_index, _plot_count, d);
         const Plot &p = _plots[p_index];
         d["empty"] = p.herb.is_empty();
         if (p.herb.is_empty())
@@ -231,7 +240,7 @@ namespace godot {
     }
 
     bool DongtianManager::plant(int p_index) {
-        ERR_FAIL_INDEX_V(p_index, PLOT_COUNT, false);
+        ERR_FAIL_INDEX_V(p_index, _plot_count, false);
         if (!_plots[p_index].herb.is_empty() || !_player || !_player->get_inventory())
             return false;
         StringName herb = get_first_plantable();
@@ -245,7 +254,7 @@ namespace godot {
     }
 
     int DongtianManager::harvest(int p_index) {
-        ERR_FAIL_INDEX_V(p_index, PLOT_COUNT, 0);
+        ERR_FAIL_INDEX_V(p_index, _plot_count, 0);
         Plot &p = _plots[p_index];
         if (p.herb.is_empty() || !_player)
             return 0;
@@ -266,8 +275,50 @@ namespace godot {
     }
 
     void DongtianManager::debug_age_plot(int p_index, double p_seconds) {
-        ERR_FAIL_INDEX(p_index, PLOT_COUNT);
+        ERR_FAIL_INDEX(p_index, _plot_count);
         _plots[p_index].planted_at -= int64_t(p_seconds);
+    }
+
+    // ============================================================
+    // v4 扩张经营：灵田扩张 + 聚灵阵升级（灵石四阶钱包扣款）
+    // ============================================================
+
+    int DongtianManager::get_expand_cost() const {
+        // 第 7~12 块价格递增（下品基准）
+        static const int COSTS[MAX_PLOTS - BASE_PLOTS] = { 500, 800, 1200, 1800, 2500, 3500 };
+        if (_plot_count >= MAX_PLOTS)
+            return 0;
+        return COSTS[_plot_count - BASE_PLOTS];
+    }
+
+    bool DongtianManager::expand_plot() {
+        int cost = get_expand_cost();
+        if (cost <= 0)
+            return false; // 已至极限
+        CurrencySystem *cur = CurrencySystem::get_singleton();
+        if (!cur || !cur->spend(cost))
+            return false; // 灵石不足
+        _plot_count++;
+        return true;
+    }
+
+    int DongtianManager::get_jlz_upgrade_cost() const {
+        // 两级：上品×5（500 下品）/ 上品×15（1500 下品）
+        static const int COSTS[JLZ_MAX_LEVEL] = { 500, 1500 };
+        if (_jlz_level >= JLZ_MAX_LEVEL)
+            return 0;
+        return COSTS[_jlz_level];
+    }
+
+    bool DongtianManager::upgrade_jlz() {
+        int cost = get_jlz_upgrade_cost();
+        if (cost <= 0)
+            return false; // 已至极限
+        CurrencySystem *cur = CurrencySystem::get_singleton();
+        if (!cur || !cur->spend(cost))
+            return false; // 灵石不足
+        _jlz_level++;
+        return true;
     }
 
     // ============================================================
@@ -341,8 +392,10 @@ namespace godot {
 
     Dictionary DongtianManager::save_to_dict() const {
         Dictionary d;
+        d["plot_count"] = _plot_count;
+        d["jlz_level"] = _jlz_level;
         Array plots;
-        for (int i = 0; i < PLOT_COUNT; i++) {
+        for (int i = 0; i < MAX_PLOTS; i++) {
             Dictionary p;
             p["herb"] = _plots[i].herb;
             p["planted_at"] = _plots[i].planted_at;
@@ -361,8 +414,11 @@ namespace godot {
     }
 
     void DongtianManager::load_from_dict(const Dictionary &p_data) {
+        // v4 字段缺省走默认值（老档迁移安全）
+        _plot_count = CLAMP(int(p_data.get("plot_count", BASE_PLOTS)), BASE_PLOTS, MAX_PLOTS);
+        _jlz_level = CLAMP(int(p_data.get("jlz_level", 0)), 0, JLZ_MAX_LEVEL);
         Array plots = p_data.get("plots", Array());
-        for (int i = 0; i < PLOT_COUNT && i < plots.size(); i++) {
+        for (int i = 0; i < MAX_PLOTS && i < plots.size(); i++) {
             Dictionary p = plots[i];
             _plots[i].herb = StringName(p.get("herb", StringName()));
             _plots[i].planted_at = int64_t(p.get("planted_at", int64_t(0)));
