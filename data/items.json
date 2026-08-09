@@ -338,6 +338,19 @@
     "sell_price": 300
   },
   {
+    "id": "pan_tao",
+    "name": "蟠桃",
+    "desc": "王母娘娘蟠桃园仙果，九千年一熟，紫纹缃核。食之回血 100%，修为+5000，饱食+50。",
+    "type": 0,
+    "max_stack": 3,
+    "grade": 3,
+    "heal_pct": 1.0,
+    "energy_amount": 5000.0,
+    "fullness_amount": 50.0,
+    "buy_price": 0,
+    "sell_price": 0
+  },
+  {
     "id": "ba_jiao_shan",
     "name": "芭蕉扇",
     "desc": "铁扇公主之物，一扇风起火灭。使用得法宝（风刃+灭火开道）。",
