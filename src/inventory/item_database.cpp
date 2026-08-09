@@ -62,6 +62,11 @@ void ItemDatabase::_ready() {
 				if (d.has("attack_bonus")) it.attack_bonus = float(d["attack_bonus"]);
 				if (d.has("defense_bonus")) it.defense_bonus = float(d["defense_bonus"]);
 				if (d.has("speed_bonus")) it.speed_bonus = float(d["speed_bonus"]);
+				if (d.has("elem_resist")) {
+					Array ar = d["elem_resist"];
+					for (int i = 0; i < ar.size() && i < 8; i++)
+						it.elem_resist[i] = float(double(ar[i]));
+				}
 				_items[it.id] = it;
 			}
 			return;
@@ -276,6 +281,34 @@ void ItemDatabase::_register_items() {
 		rod.grade = 2;
 		rod.attack_bonus = 25.0f;
 		_items[rod.id] = rod;
+	}
+
+	// 避水珠 — 东海龙宫秘藏（饰品：水元素抗性+20%，弱水不侵）
+	{
+		Item orb;
+		orb.id = "bi_shui_zhu";
+		orb.name = LOC("避水珠");
+		orb.description = LOC("龙宫夜明珠，入水不溺。装备：水元素抗性+20%（北俱极寒/弱水可减）。");
+		orb.type = Item::EQUIPMENT;
+		orb.equip_slot = Item::SLOT_ACCESSORY;
+		orb.max_stack = 1;
+		orb.grade = 2;
+		orb.elem_resist[3] = 0.2f; // ELEM_SHUI
+		_items[orb.id] = orb;
+	}
+
+	// 千年珍珠 — 东海龙宫秘藏（消耗品：修为+2000，灵力全满）
+	{
+		Item pearl;
+		pearl.id = "qian_nian_zhen_zhu";
+		pearl.name = LOC("千年珍珠");
+		pearl.description = LOC("蚌中孕珠，千年养灵。服之修为+2000，灵力回满。");
+		pearl.type = Item::CONSUMABLE;
+		pearl.max_stack = 3;
+		pearl.grade = 2;
+		pearl.energy_amount = 2000.0f;
+		pearl.mana_amount = 999999.0f;
+		_items[pearl.id] = pearl;
 	}
 
 	// ---- 草药（MATERIAL，design/alchemy.md 第二节）----

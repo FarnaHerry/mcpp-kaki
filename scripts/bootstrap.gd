@@ -212,6 +212,8 @@ func _setup_game():
 	WC.spawn_item_pickup(self, Vector2(8750, 94), "ding_hai_shen_zhen", 1)
 	WC.spawn_herb(self, Vector2(8550, 129), "bing_xin_lian", 1)
 	WC.spawn_item_pickup(self, Vector2(8650, 232), "spirit_stone", 10)
+	# 东海龙宫入口（水下秘境；design/world-map.md 东胜神洲补完）
+	WC.create_portal(self, 8600, "res://scenes/rooms/longgong.tscn", "[↑] 入东海龙宫", player, camera, hint)
 
 	print("东胜神洲 · 落霞山地")
 	print("Open world ready. Walk to portal markers and press X.")

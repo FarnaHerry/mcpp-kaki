@@ -58,6 +58,7 @@ export struct Item {
 	float attack_bonus = 0.0f;   // flat damage added
 	float defense_bonus = 0.0f;  // flat damage reduction
 	float speed_bonus = 0.0f;    // multiplier on move speed (0.05 = +5%)
+	float elem_resist[8] = {};   // 元素抗性（按 Element 枚举下标；避水珠 ELEM_SHUI=3 水抗）
 };
 
 // Slot-based inventory container. Owned by Player.

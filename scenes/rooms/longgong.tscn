@@ -1,0 +1,87 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/rooms/longgong.gd" id="1"]
+
+[sub_resource type="RectangleShape2D" id="ground_shape"]
+size = Vector2(450, 24)
+
+[sub_resource type="RectangleShape2D" id="wall_shape"]
+size = Vector2(16, 140)
+
+[sub_resource type="RectangleShape2D" id="platform_shape"]
+size = Vector2(70, 10)
+
+[node name="LongGong" type="Node2D"]
+script = ExtResource("1")
+
+; Background（深海幽蓝）
+[node name="Background" type="Polygon2D" parent="."]
+color = Color(0.02, 0.06, 0.12, 1)
+polygon = PackedVector2Array(0, 0, 450, 0, 450, 270, 0, 270)
+
+; 水光（顶部斜射光柱，半透明蓝白）
+[node name="LightBeam1" type="Polygon2D" parent="."]
+color = Color(0.5, 0.8, 1.0, 0.08)
+polygon = PackedVector2Array(90, 0, 130, 0, 150, 240, 110, 240)
+
+[node name="LightBeam2" type="Polygon2D" parent="."]
+color = Color(0.5, 0.8, 1.0, 0.06)
+polygon = PackedVector2Array(300, 0, 325, 0, 340, 240, 315, 240)
+
+; 宫柱（入口走廊，营造水下宫门）
+[node name="PillarL" type="Polygon2D" parent="."]
+color = Color(0.25, 0.45, 0.6, 1)
+polygon = PackedVector2Array(30, 120, 46, 120, 46, 236, 30, 236)
+
+[node name="PillarR" type="Polygon2D" parent="."]
+color = Color(0.25, 0.45, 0.6, 1)
+polygon = PackedVector2Array(150, 120, 166, 120, 166, 236, 30, 236)
+
+; Ground
+[node name="Ground" type="StaticBody2D" parent="."]
+position = Vector2(225, 238)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
+shape = SubResource("ground_shape")
+
+[node name="GroundVisual" type="Polygon2D" parent="Ground"]
+color = Color(0.1, 0.25, 0.35, 1)
+polygon = PackedVector2Array(-225, -5, 225, -5, 225, 12, -225, 12)
+
+; Walls
+[node name="WallL" type="StaticBody2D" parent="."]
+position = Vector2(0, 150)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallL"]
+shape = SubResource("wall_shape")
+
+[node name="WallVisualL" type="Polygon2D" parent="WallL"]
+color = Color(0.08, 0.2, 0.28, 1)
+polygon = PackedVector2Array(-8, -70, 8, -70, 8, 70, -8, 70)
+
+[node name="WallR" type="StaticBody2D" parent="."]
+position = Vector2(450, 150)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallR"]
+shape = SubResource("wall_shape")
+
+[node name="WallVisualR" type="Polygon2D" parent="WallR"]
+color = Color(0.08, 0.2, 0.28, 1)
+polygon = PackedVector2Array(-8, -70, 8, -70, 8, 70, -8, 70)
+
+; 秘藏台（Boss 身后珊瑚礁台）
+[node name="TreasurePlatform" type="StaticBody2D" parent="."]
+position = Vector2(390, 190)
+
+[node name="PlatformShape" type="CollisionShape2D" parent="TreasurePlatform"]
+shape = SubResource("platform_shape")
+
+[node name="PlatformVisual" type="Polygon2D" parent="TreasurePlatform"]
+color = Color(0.3, 0.5, 0.55, 1)
+polygon = PackedVector2Array(-35, -4, 35, -4, 35, 6, -35, 6)
+
+[node name="SpawnEntrance" type="Marker2D" parent="."]
+position = Vector2(60, 200)
+
+[node name="SpawnExit" type="Marker2D" parent="."]
+position = Vector2(200, 200)

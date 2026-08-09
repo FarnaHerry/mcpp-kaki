@@ -55,12 +55,12 @@ func _process(delta) -> bool:
 			_check(String(_cm().call("get_current_id")) == "dongsheng", "当前洲=东胜神洲")
 			_check(String(_cm().call("get_current_name")) == "东胜神洲", "洲名")
 			var list = _cm().call("get_continent_list")
-			_check(list.size() == 4, "四大部洲注册")
+			_check(list.size() == 5, "五洲注册（东胜/西牛/南赡/北俱/天界）")
 			var locked_count = 0
 			for c in list:
 				if not bool(c.get("unlocked")):
 					locked_count += 1
-			_check(locked_count == 3, "凡人期三洲未解锁")
+			_check(locked_count == 4, "凡人期四洲未解锁（西牛/南赡/北俱/天界）")
 			_check(not _cm().call("can_travel", "xiniuhe"), "凡人不可去西牛贺洲")
 			_check(not _cm().call("travel_to", "xiniuhe"), "travel_to 拒绝未解锁")
 			_step = 1

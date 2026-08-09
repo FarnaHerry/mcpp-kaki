@@ -123,7 +123,7 @@ func _process(delta) -> bool:
 			_check(_has_menu_label("西牛贺洲"), "洲行：西牛贺洲")
 			_check(_has_menu_label("南赡部洲") and _has_menu_label("北俱芦洲"), "洲行：南赡/北俱")
 			_check(_has_menu_label("【当前】"), "当前洲标记")
-			_check(_count_menu_label("未解锁") == 3, "凡人期三洲未解锁灰显")
+			_check(_count_menu_label("未解锁") == 4, "凡人期四洲未解锁灰显（西牛/南赡/北俱/天界）")
 			_check(_has_menu_label("条件："), "门控条件话术")
 			_press("down") # → 选西牛贺洲
 			_step = 7

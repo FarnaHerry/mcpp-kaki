@@ -1082,8 +1082,19 @@ namespace godot {
 		def.defense = defense;
 		def.spell_resist = spell_resist;
 		def.self_element = self_element;
+		// 装备元素抗性（避水珠水抗）：叠加进防御档，随后 buff/被动乘区照旧
+		float equip_resist[ELEM_CAPACITY] = {};
+		for (int ei = 0; ei < EQUIP_SLOT_COUNT; ei++) {
+			if (_equipment[ei].is_empty()) continue;
+			const Item *ed = ItemDatabase::get_singleton()->get_item(_equipment[ei]);
+			if (ed) {
+				for (int i = 0; i < ELEM_CAPACITY; i++)
+					equip_resist[i] += ed->elem_resist[i];
+			}
+		}
 		for (int i = 0; i < ELEM_CAPACITY; i++) {
-			def.elem_resist[i] = elem_resist[i] + (_buffs ? _buffs->get_elem_resist_bonus(i) : 0.0f)
+			def.elem_resist[i] = elem_resist[i] + equip_resist[i]
+				+ (_buffs ? _buffs->get_elem_resist_bonus(i) : 0.0f)
 				+ (_skills ? _skills->get_passive_elem_resist() : 0.0f); // 被动（菩提心法）全元素抗性
 		}
 		float actual_damage = DamageCalculator::compute(info, def);
