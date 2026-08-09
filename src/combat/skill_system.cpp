@@ -45,7 +45,7 @@ static const SkillSystem::Def SKILL_DEFS[] = {
 	  0.0f, 40.0f, 30.0f, 0.0f, SkillSystem::FX_INVULN, 5, 0.0f, Color(), 2.5f, nullptr, SkillSystem::PAS_NONE, 0.0f },
 	{ "san_mei_zhen_huo", "三昧真火", SkillSystem::TYPE_SHENTONG, DMG_ELEMENTAL, ELEM_HUO,
 	  0.0f, 35.0f, 12.0f, 6.0f, SkillSystem::FX_PROJECTILE, 5, 320.0f, Color(1.0f, 0.3f, 0.1f), 0.0f, nullptr, SkillSystem::PAS_NONE, 0.0f },
-	// 身外化身（大圣神通·占位：毫毛助威入攻击乘区；分身实体协同作战后做）
+	// 身外化身（大圣神通：召唤分身实体协同作战 30s（CloneAvatar，至多 2 个）+ 本体攻+35% buff）
 	// 非境界授予——水帘洞「身外化身残卷」习得（花果山秘藏奖励）
 	{ "shen_wai_hua_shen", "身外化身", SkillSystem::TYPE_SHENTONG, DMG_PHYSICAL, ELEM_NONE,
 	  0.0f, 50.0f, 60.0f, 0.0f, SkillSystem::FX_SELF_BUFF, 5, 0.0f, Color(), 0.0f, "buff_shen_wai", SkillSystem::PAS_NONE, 0.0f },
