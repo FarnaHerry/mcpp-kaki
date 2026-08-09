@@ -23,6 +23,8 @@ class DongtianManager : public Node {
 	GDCLASS(DongtianManager, Node);
 
 public:
+	DongtianManager();
+
 	void set_player(Player *p) { _player = p; }
 	void set_camera(CameraRoom2D *c) { _camera = c; }
 
@@ -61,6 +63,17 @@ public:
 	bool upgrade_jlz();
 	// 打坐倍率加成（Player::get_dongtian_meditate_mult 叠加）
 	double get_jlz_bonus() const { return 0.5 * _jlz_level; }
+
+	// ---- 设施补全：灵植采集点×2（现实时间刷新，状态自持于 Manager）----
+	// 与灵田不同：采集点草药固定（聚灵草/千年灵芝），采后枯萎，刷新时长到点复生。
+	static constexpr int HERB_SPOTS = 2;
+
+	// 采集点状态：{herb, herb_name, qty, refresh, available, remaining}
+	Dictionary get_herb_spot(int p_index) const;
+	// 采集（枯萎/未刷新返回 false）：入包 + 喂练气
+	bool gather_herb_spot(int p_index);
+	// 测试用：拨快刷新（harvested_at 回拨 seconds 秒）
+	void debug_age_herb_spot(int p_index, double p_seconds);
 
 	Dictionary save_to_dict() const;
 	void load_from_dict(const Dictionary &p_data);
@@ -115,6 +128,13 @@ private:
 		int qty = 0;
 	};
 	StorageSlot _storage[STORAGE_SLOTS];
+
+	// 灵植采集点：herb 固定（见 cpp 定义表）；harvested_at=0 = 可采集
+	struct HerbSpot {
+		StringName herb;
+		int64_t harvested_at = 0;
+	};
+	HerbSpot _herb_spots[HERB_SPOTS];
 
 	void _try_enter();
 	void _enter();

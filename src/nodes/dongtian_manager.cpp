@@ -20,6 +20,22 @@ import mcpp_kaki.utils;       // SignalBus
 
 namespace godot {
 
+    // 灵植采集点静态定义表：{固定草药, 产量, 刷新时长 s（现实时间）}
+    struct HerbSpotDef {
+        const char *herb;
+        int qty;
+        int64_t refresh;
+    };
+    static const HerbSpotDef HERB_SPOT_DEFS[DongtianManager::HERB_SPOTS] = {
+        { "ju_ling_cao", 2, 120 },        // 聚灵草（灵品，2 分钟复生）
+        { "qian_nian_ling_zhi", 1, 600 }, // 千年灵芝（地品，10 分钟复生）
+    };
+
+    DongtianManager::DongtianManager() {
+        for (int i = 0; i < HERB_SPOTS; i++)
+            _herb_spots[i].herb = StringName(HERB_SPOT_DEFS[i].herb);
+    }
+
     void DongtianManager::_bind_methods() {
         ClassDB::bind_method(D_METHOD("set_player", "player"), &DongtianManager::set_player);
         ClassDB::bind_method(D_METHOD("set_camera", "camera"), &DongtianManager::set_camera);
@@ -43,6 +59,9 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("get_storage_slot", "index"), &DongtianManager::get_storage_slot);
         ClassDB::bind_method(D_METHOD("deposit_from_player", "inv_slot"), &DongtianManager::deposit_from_player);
         ClassDB::bind_method(D_METHOD("withdraw_to_player", "storage_slot"), &DongtianManager::withdraw_to_player);
+        ClassDB::bind_method(D_METHOD("get_herb_spot", "index"), &DongtianManager::get_herb_spot);
+        ClassDB::bind_method(D_METHOD("gather_herb_spot", "index"), &DongtianManager::gather_herb_spot);
+        ClassDB::bind_method(D_METHOD("debug_age_herb_spot", "index", "seconds"), &DongtianManager::debug_age_herb_spot);
     }
 
     void DongtianManager::_process(double p_delta) {
@@ -61,6 +80,10 @@ namespace godot {
         Node *root = get_tree()->get_current_scene();
         Node *panel = root ? root->find_child("StoragePanel", true, false) : nullptr;
         if (panel && bool(panel->call("is_open")))
+            return;
+        // 丹房面板（GDScript）同理
+        Node *pill = root ? root->find_child("PillLabPanel", true, false) : nullptr;
+        if (pill && bool(pill->call("is_open")))
             return;
         if (_inside) {
             _exit(true);
@@ -390,6 +413,50 @@ namespace godot {
         return qty;
     }
 
+    // ============================================================
+    // 灵植采集点（现实时间刷新；状态自持，场景卸载不丢）
+    // ============================================================
+
+    Dictionary DongtianManager::get_herb_spot(int p_index) const {
+        Dictionary d;
+        ERR_FAIL_INDEX_V(p_index, HERB_SPOTS, d);
+        const HerbSpot &s = _herb_spots[p_index];
+        const HerbSpotDef &def = HERB_SPOT_DEFS[p_index];
+        StringName herb = s.herb.is_empty() ? StringName(def.herb) : s.herb;
+        const Item *idef = ItemDatabase::get_singleton()->get_item(herb);
+        int64_t elapsed = s.harvested_at > 0 ? _now() - s.harvested_at : def.refresh;
+        bool available = s.harvested_at <= 0 || elapsed >= def.refresh;
+        d["herb"] = herb;
+        d["herb_name"] = idef ? idef->name : String(herb);
+        d["qty"] = def.qty;
+        d["refresh"] = def.refresh;
+        d["available"] = available;
+        d["remaining"] = available ? 0 : int(def.refresh - elapsed);
+        return d;
+    }
+
+    bool DongtianManager::gather_herb_spot(int p_index) {
+        ERR_FAIL_INDEX_V(p_index, HERB_SPOTS, false);
+        Dictionary info = get_herb_spot(p_index);
+        if (!bool(info.get("available", false)) || !_player)
+            return false;
+        StringName herb = info["herb"];
+        _player->pickup_item(herb, int(info["qty"]));
+        // 采集 = 练气行为（同 HerbNode，+2）
+        if (_player->get_gongfa()) {
+            _player->get_gongfa()->feed(GongfaSystem::SCHOOL_QI, 2.0f);
+        }
+        _herb_spots[p_index].herb = herb;
+        _herb_spots[p_index].harvested_at = _now();
+        return true;
+    }
+
+    void DongtianManager::debug_age_herb_spot(int p_index, double p_seconds) {
+        ERR_FAIL_INDEX(p_index, HERB_SPOTS);
+        if (_herb_spots[p_index].harvested_at > 0)
+            _herb_spots[p_index].harvested_at -= int64_t(p_seconds);
+    }
+
     Dictionary DongtianManager::save_to_dict() const {
         Dictionary d;
         d["plot_count"] = _plot_count;
@@ -410,6 +477,14 @@ namespace godot {
             storage.push_back(s);
         }
         d["storage"] = storage;
+        Array herb_spots;
+        for (int i = 0; i < HERB_SPOTS; i++) {
+            Dictionary h;
+            h["herb"] = _herb_spots[i].herb;
+            h["harvested_at"] = _herb_spots[i].harvested_at;
+            herb_spots.push_back(h);
+        }
+        d["herb_spots"] = herb_spots;
         return d;
     }
 
@@ -428,6 +503,14 @@ namespace godot {
             Dictionary s = storage[i];
             _storage[i].item = StringName(s.get("id", StringName()));
             _storage[i].qty = int(s.get("qty", 0));
+        }
+        // 灵植采集点（缺省走定义表默认 = 全部可采集，老档迁移安全）
+        Array herb_spots = p_data.get("herb_spots", Array());
+        for (int i = 0; i < HERB_SPOTS && i < herb_spots.size(); i++) {
+            Dictionary h = herb_spots[i];
+            StringName herb = StringName(h.get("herb", StringName()));
+            _herb_spots[i].herb = herb.is_empty() ? StringName(HERB_SPOT_DEFS[i].herb) : herb;
+            _herb_spots[i].harvested_at = int64_t(h.get("harvested_at", int64_t(0)));
         }
     }
 
