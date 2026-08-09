@@ -1,5 +1,6 @@
 #include "player.h"
 #include "enemy.h"
+#include "clone_avatar.h"
 #include "dongtian_manager.h"
 
 
@@ -695,6 +696,7 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("_on_skills_changed"), &Player::_on_skills_changed);
 	ClassDB::bind_method(D_METHOD("take_damage_typed", "amount", "cat", "elem", "source"), &Player::take_damage_typed);
 		ClassDB::bind_method(D_METHOD("gain_spiritual_energy", "amount"), &Player::gain_spiritual_energy);
+		ClassDB::bind_method(D_METHOD("debug_summon_clone"), &Player::_summon_clone); // 测试用：绕过冷却直接召唤分身
 		ClassDB::bind_method(D_METHOD("on_attack_landed", "victim", "damage"), &Player::on_attack_landed);
 		ClassDB::bind_method(D_METHOD("_on_hurtbox_hit", "hitbox", "source"), &Player::_on_hurtbox_hit);
 		ClassDB::bind_method(D_METHOD("pickup_item", "item_id", "qty"), &Player::pickup_item, DEFVAL(1));
@@ -1498,6 +1500,34 @@ namespace godot {
 		if (_buffs) {
 			_buffs->apply(p_buff_id); // 同名刷新不叠加
 		}
+		// 身外化身：buff（攻+35%）之外再召唤分身实体协同作战（SkillSystem FX_SELF_BUFF 统一入口）
+		if (p_buff_id == StringName("buff_shen_wai")) {
+			_summon_clone();
+		}
+	}
+
+	void Player::_summon_clone() {
+		Node *parent = get_parent();
+		SceneTree *st = get_tree();
+		if (!parent || !st) return;
+		// 同时存活上限 2：第 3 次施放顶掉最老的分身（dissipate 立即离组，重扫有效）
+		TypedArray<Node> clones = st->get_nodes_in_group("shen_wai_clones");
+		while (clones.size() >= 2) {
+			CloneAvatar *oldest = nullptr;
+			for (int i = 0; i < clones.size(); i++) {
+				CloneAvatar *c = Object::cast_to<CloneAvatar>(clones[i]);
+				if (c && (!oldest || c->get_age() > oldest->get_age())) {
+					oldest = c;
+				}
+			}
+			if (!oldest) break;
+			oldest->dissipate();
+			clones = st->get_nodes_in_group("shen_wai_clones");
+		}
+		CloneAvatar *clone = memnew(CloneAvatar);
+		clone->setup_from_player(this); // 属性快照：HP×50% / 攻×60% / 速×80%
+		parent->add_child(clone);       // 与玩家同层（换场景随父节点自然清理）
+		clone->set_global_position(get_global_position() + Vector2(-30.0f * (float)facing_direction, 0.0f));
 	}
 
 	void Player::exec_skill_proj_fan(float p_power, DamageCategory p_cat, Element p_elem,

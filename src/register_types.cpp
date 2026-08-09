@@ -14,6 +14,7 @@ import mcpp_kaki.core;
 #include "core/shop_system.h"
 #include "core/currency_system.h"
 #include "nodes/camera_room_2d.h"
+#include "nodes/clone_avatar.h"
 #include "nodes/dongtian_manager.h"
 #include "nodes/farm_plot.h"
 #include "nodes/storage_chest.h"
@@ -37,6 +38,7 @@ void initialize_mcpp_kaki_module(ModuleInitializationLevel p_level) {
 
 	GDREGISTER_CLASS(Player);
 	GDREGISTER_CLASS(Enemy);
+	GDREGISTER_CLASS(CloneAvatar);
 	GDREGISTER_CLASS(CameraRoom2D);
 	GDREGISTER_CLASS(Portal);
 	GDREGISTER_CLASS(DongtianManager);

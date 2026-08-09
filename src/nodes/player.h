@@ -266,6 +266,7 @@ class Player : public CharacterBody2D {
 		void _setup_collision();
 		void _create_cultivation();
 		void _create_inventory();
+		void _summon_clone(); // 身外化身：生成分身实体（同时存活 ≤2，第 3 次顶掉最老）
 		void _on_ability_unlocked(const StringName &p_ability_id);
 		void _on_cultivation_realm_changed(int p_old_realm, int p_new_realm);
 	};
