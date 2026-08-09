@@ -7,6 +7,7 @@ var _step := 0
 var _attack_toggle := false
 var _crowd_ticks := 0
 var _fail := 0
+var _realm_checked := {}
 
 func _initialize():
 	var scene = load("res://scenes/main.tscn").instantiate()
@@ -59,6 +60,15 @@ func _process(delta) -> bool:
 		_dump_tree(root)
 
 	if enemy != null:
+		# 回归断言：心魔/三尸 realm 必须=玩家当前 realm（否则被威压 V 直接慑服，劫数虚设）
+		var eid = enemy.get_instance_id()
+		if not _realm_checked.has(eid):
+			_realm_checked[eid] = true
+			if int(enemy.get("realm")) == realm:
+				print("[PASS] 劫敌 realm 与玩家同境: ", realm)
+			else:
+				_fail += 1
+				print("[FAIL] 劫敌 realm=", enemy.get("realm"), " 玩家 realm=", realm)
 		# 挤压场景：把心魔压在玩家身上，跳跃+攻击连按——攻击给击杀路径，验证战斗可否终结
 		var p = _get_player()
 		if p != null:

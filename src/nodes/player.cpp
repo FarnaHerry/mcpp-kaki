@@ -547,10 +547,10 @@ namespace godot {
 			// Setup HitBox with combo multipliers
 			HitBox *hb = Object::cast_to<HitBox>(p->get_node_or_null("HitBox"));
 			if (hb) {
-				float realm_mult = p->get_cultivation() ? p->get_cultivation()->get_damage_multiplier() : 1.0f;
 				float combo_mult = p->combo_chain.get_damage_multiplier();
 				float kbr_mult = p->combo_chain.get_knockback_multiplier();
-				hb->damage = p->attack_damage * realm_mult * combo_mult;
+				// 普攻走全乘区入口（装备/功法/buff/被动/宗门/本命/境界全计入），与技能口径一致
+				hb->damage = p->get_effective_attack() * combo_mult;
 				hb->damage_category = DMG_PHYSICAL;
 				hb->element = ELEM_NONE;
 				hb->knockback_force = 200.0f * kbr_mult;

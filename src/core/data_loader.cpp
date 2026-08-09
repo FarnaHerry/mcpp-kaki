@@ -24,6 +24,8 @@ void DataLoader::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_sect", "id"), &DataLoader::get_sect);
 	ClassDB::bind_method(D_METHOD("get_all_sects"), &DataLoader::get_all_sects);
 	ClassDB::bind_method(D_METHOD("get_drop_table"), &DataLoader::get_drop_table);
+	ClassDB::bind_method(D_METHOD("get_recipe", "id"), &DataLoader::get_recipe);
+	ClassDB::bind_method(D_METHOD("get_all_recipes"), &DataLoader::get_all_recipes);
 }
 
 void DataLoader::_ready() {

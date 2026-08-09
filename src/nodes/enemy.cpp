@@ -436,6 +436,23 @@ namespace godot {
 		ADD_SIGNAL(MethodInfo("boss_died"));
 	}
 
+	void Enemy::_apply_boss_hp_scale() {
+		if (_boss_hp_scaled)
+			return;
+		_boss_hp_scaled = true;
+		current_health *= 5.0f;
+		max_health *= 5.0f;
+	}
+
+	void Enemy::set_is_boss(bool v) {
+		is_boss = v;
+		// 时序陷阱修复：脚本 add_child 后才 set("is_boss")（_ready 已跑完），
+		// 在此补偿 ×5 血量；之后脚本再显式 set max_health 的以显式值为准（bootstrap/beijulu 现状）
+		if (v && is_inside_tree() && !is_queued_for_deletion()) {
+			_apply_boss_hp_scale();
+		}
+	}
+
 	void Enemy::_ready() {
 		if (Engine::get_singleton()->is_editor_hint())
 			return;
@@ -445,10 +462,10 @@ namespace godot {
 		// 威压/灵压扫描用
 		add_to_group("enemies");
 
-		// Boss gets 5x health
+		// Boss gets 5x health（仅在 _ready 前已置 is_boss 的场景直摆路径；
+		// 脚本 add_child 后再 set("is_boss") 的由 set_is_boss 补偿，二者经 _boss_hp_scaled 幂等）
 		if (is_boss) {
-			current_health *= 5.0f;
-			max_health *= 5.0f;
+			_apply_boss_hp_scale();
 		}
 
 		_setup_collision();
