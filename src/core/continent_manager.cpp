@@ -5,7 +5,10 @@ module;
 #include "../utils/text.h"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
+#include <algorithm>
+#include <deque>
 #include <string>
+#include <vector>
 
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
@@ -35,14 +38,39 @@ bool ContinentManager::s_loaded = false;
 void ContinentManager::ensure_loaded() {
 	if (s_loaded) return;
 	s_loaded = true;
-	static std::vector<std::string> s_strings;
+	// Def 是 const char*——JSON 字符串必须有人持有。deque push_back 不搬动既有元素，
+	// c_str() 不会悬空（vector 扩容搬 SSO 内联缓冲会 dangling，禁用）
+	static std::deque<std::string> s_strings;
+	auto own = [](const String &p_s) -> const char * {
+		s_strings.push_back(std::string(p_s.utf8().get_data()));
+		return s_strings.back().c_str();
+	};
 	SceneTree *st = Object::cast_to<SceneTree>(Engine::get_singleton()->get_main_loop());
 	Node *scene = st ? st->get_current_scene() : nullptr;
 	DataLoader *dl = scene ? Object::cast_to<DataLoader>(scene->find_child("DataLoader", true, false)) : nullptr;
 	if (dl) {
-		Array all = dl->get_all_sects(); // placeholder — continents need separate DataLoader method
+		Array all = dl->get_all_continents();
+		for (int i = 0; i < all.size(); i++) {
+			Dictionary d = all[i];
+			if (!d.has("id") || !d.has("scene")) continue;
+			Def def;
+			def.id = own(d["id"]);
+			def.name = own(d.get("name", d["id"]));
+			def.scene = own(d["scene"]);
+			def.spawn_x = float(double(d.get("spawn_x", 150.0)));
+			def.spawn_y = float(double(d.get("spawn_y", 200.0)));
+			def.min_realm = int(d.get("min_realm", 0));
+			def.desc = own(d.get("desc", String()));
+			def.gate = own(d.get("gate", String()));
+			s_defs.push_back(def);
+		}
+		// HashMap 遍历无序——云游页顺序按门槛境界稳定排序
+		std::sort(s_defs.begin(), s_defs.end(),
+				[](const Def &a, const Def &b) { return a.min_realm < b.min_realm; });
 	}
-	for (const Def &d : CONTINENT_DEFS) { s_defs.push_back(d); }
+	if (s_defs.empty()) { // JSON 不可用退回硬编码
+		for (const Def &d : CONTINENT_DEFS) { s_defs.push_back(d); }
+	}
 }
 
 void ContinentManager::_bind_methods() {
