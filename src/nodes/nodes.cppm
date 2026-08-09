@@ -425,6 +425,11 @@ export class GameMenu : public CanvasLayer {
 	Array _skill_active_knowns() const;
 	void _handle_skill_input();
 
+	int _artifact_sel = 0;
+	String _artifact_msg;
+	float _artifact_msg_t = 0.0f;
+	void _handle_artifact_input();
+
 	int _sect_sel = 0;
 	String _sect_msg;
 	float _sect_msg_t = 0.0f;

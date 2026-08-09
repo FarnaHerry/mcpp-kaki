@@ -750,6 +750,9 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("nurture_benming", "amount"), &Player::nurture_benming);
 		ClassDB::bind_method(D_METHOD("awaken_benming_artifact"), &Player::awaken_benming_artifact);
 		ClassDB::bind_method(D_METHOD("get_artifact_slot_limit"), &Player::get_artifact_slot_limit);
+		ClassDB::bind_method(D_METHOD("enter_tribulation"), &Player::enter_tribulation);
+		ClassDB::bind_method(D_METHOD("exit_tribulation"), &Player::exit_tribulation);
+		ClassDB::bind_method(D_METHOD("is_in_tribulation"), &Player::is_in_tribulation);
 
 		ADD_SIGNAL(MethodInfo("player_died"));
 		ADD_SIGNAL(MethodInfo("player_damaged", PropertyInfo(Variant::FLOAT, "amount")));
@@ -1083,19 +1086,23 @@ namespace godot {
 		def.spell_resist = spell_resist;
 		def.self_element = self_element;
 		// 装备元素抗性（避水珠水抗）：叠加进防御档，随后 buff/被动乘区照旧
+		// 渡劫「只带本命法宝」：装备抗性同样置空（三灾只认自身修为/丹药/被动/本命）
 		float equip_resist[ELEM_CAPACITY] = {};
-		for (int ei = 0; ei < EQUIP_SLOT_COUNT; ei++) {
-			if (_equipment[ei].is_empty()) continue;
-			const Item *ed = ItemDatabase::get_singleton()->get_item(_equipment[ei]);
-			if (ed) {
-				for (int i = 0; i < ELEM_CAPACITY; i++)
-					equip_resist[i] += ed->elem_resist[i];
+		if (!_in_tribulation) {
+			for (int ei = 0; ei < EQUIP_SLOT_COUNT; ei++) {
+				if (_equipment[ei].is_empty()) continue;
+				const Item *ed = ItemDatabase::get_singleton()->get_item(_equipment[ei]);
+				if (ed) {
+					for (int i = 0; i < ELEM_CAPACITY; i++)
+						equip_resist[i] += ed->elem_resist[i];
+				}
 			}
 		}
 		for (int i = 0; i < ELEM_CAPACITY; i++) {
 			def.elem_resist[i] = elem_resist[i] + equip_resist[i]
 				+ (_buffs ? _buffs->get_elem_resist_bonus(i) : 0.0f)
-				+ (_skills ? _skills->get_passive_elem_resist() : 0.0f); // 被动（菩提心法）全元素抗性
+				+ (_skills ? _skills->get_passive_elem_resist() : 0.0f) // 被动（菩提心法）全元素抗性
+				+ (_artifacts ? _artifacts->get_passive_elem_resist(i) : 0.0f); // 法宝（定风珠风抗）
 		}
 		float actual_damage = DamageCalculator::compute(info, def);
 
@@ -1415,10 +1422,27 @@ namespace godot {
 			_skills->learn(StringName("dao_fa_zi_ran")); // 被动：道法自然
 		}
 
-		// 渡劫成仙：本命法宝觉醒（150% → 200%）+ 首个仙法（天雷引）
+		// 化神/炼虚/合体：赐次要法宝残篇（入背包，使用习得；次要栏位有限，自行换装配）
+		if (p_old_realm < CultivationSystem::SPIRIT_SEVERING &&
+		    p_new_realm >= CultivationSystem::SPIRIT_SEVERING) {
+			pickup_item(StringName("ba_gua_lu"), 1); // 八卦炉（辅助·攻+15%）
+		}
+		if (p_old_realm < CultivationSystem::LIAN_XU &&
+		    p_new_realm >= CultivationSystem::LIAN_XU) {
+			pickup_item(StringName("kun_xian_sheng"), 1); // 捆仙绳（攻击·瞬身锁敌）
+		}
+		if (p_old_realm < CultivationSystem::HE_TI &&
+		    p_new_realm >= CultivationSystem::HE_TI) {
+			pickup_item(StringName("ding_feng_zhu"), 1); // 定风珠（辅助·风抗+30%）
+		}
+
+		// 渡劫成仙：本命法宝觉醒（150% → 200%）+ 首个仙法（天雷引）+ 次要法宝槽 +3
 		if (p_old_realm < CultivationSystem::TRUE_IMMORTAL &&
 		    p_new_realm >= CultivationSystem::TRUE_IMMORTAL) {
 			awaken_benming_artifact();
+			if (_artifacts) {
+				_artifacts->unlock_secondary_slots(); // 飞升：次要槽 2→5（共 6 槽）
+			}
 			if (_skills) {
 				_skills->learn(StringName("tian_lei_yin"));
 				if (_skills->get_slot_skill(7) == StringName())
@@ -1605,6 +1629,21 @@ namespace godot {
 		return immortal ? 6 : 3; // 飞升前 1本命+2次要；飞升后 1本命+5次要
 	}
 
+	// 渡劫「只带本命法宝」：入三灾 arena 卸下次要法宝与装备加成，渡劫毕（成败皆然）恢复
+	void Player::enter_tribulation() {
+		if (_in_tribulation) return;
+		_in_tribulation = true;
+		if (_artifacts) _artifacts->set_tribulation_mode(true);
+		_update_move_speed(); // 装备速度加成置空
+	}
+
+	void Player::exit_tribulation() {
+		if (!_in_tribulation) return;
+		_in_tribulation = false;
+		if (_artifacts) _artifacts->set_tribulation_mode(false);
+		_update_move_speed();
+	}
+
 	void Player::_update_move_speed() {
 		move_speed = base_move_speed;
 		if (_cultivation) {
@@ -1641,6 +1680,9 @@ namespace godot {
 		}
 		if (_sect) {
 			atk *= _sect->get_atk_mult(); // 宗门（蜀山/魔罗）乘区
+		}
+		if (_artifacts) {
+			atk *= 1.0f + _artifacts->get_passive_atk_bonus(); // 辅助型法宝（八卦炉）常驻攻加成
 		}
 		atk *= get_benming_coeff(); // 本命法宝加成
 		return atk;
@@ -1698,6 +1740,7 @@ namespace godot {
 	}
 
 	float Player::get_equip_bonus_attack() const {
+		if (_in_tribulation) return 0.0f; // 渡劫：只带本命法宝，装备加成置空
 		float bonus = 0.0f;
 		for (int i = 0; i < EQUIP_SLOT_COUNT; i++) {
 			if (!_equipment[i].is_empty()) {
@@ -1709,6 +1752,7 @@ namespace godot {
 	}
 
 	float Player::get_equip_bonus_defense() const {
+		if (_in_tribulation) return 0.0f;
 		float bonus = 0.0f;
 		for (int i = 0; i < EQUIP_SLOT_COUNT; i++) {
 			if (!_equipment[i].is_empty()) {
@@ -1720,6 +1764,7 @@ namespace godot {
 	}
 
 	float Player::get_equip_bonus_speed() const {
+		if (_in_tribulation) return 0.0f;
 		float bonus = 0.0f;
 		for (int i = 0; i < EQUIP_SLOT_COUNT; i++) {
 			if (!_equipment[i].is_empty()) {

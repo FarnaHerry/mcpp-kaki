@@ -168,6 +168,11 @@ class Player : public CharacterBody2D {
 		// 法宝栏位：飞升前 1本命+2次要，飞升后 1本命+5次要（次要法宝待物品定义）
 		int get_artifact_slot_limit() const;
 
+		// 渡劫「只带本命法宝」（design：三灾 arena 内卸下次要法宝与装备加成，渡劫毕恢复）
+		void enter_tribulation();
+		void exit_tribulation();
+		bool is_in_tribulation() const { return _in_tribulation; }
+
 		// Inventory
 		Inventory *get_inventory() const { return _inventory; }
 		void pickup_item(const StringName &p_item_id, int p_qty = 1);
@@ -256,6 +261,7 @@ class Player : public CharacterBody2D {
 		StringName _benming_item;
 		float _benming_nurture = 0.0f;   // 温养进度（0~1000）
 		bool _benming_awakened = false;  // 渡劫成功觉醒（150%→200%）
+		bool _in_tribulation = false;    // 渡劫三灾中：次要法宝禁用 + 装备加成置空
 
 		void _update_buffers();
 		void _update_facing();

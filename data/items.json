@@ -373,6 +373,39 @@
   "sell_price": 0
  },
  {
+  "id": "ba_gua_lu",
+  "name": "八卦炉残篇",
+  "desc": "兜率宫八卦炉残片所化，炉中六丁神火余温犹存。使用得法宝（辅助·攻+15%）。化神境赐。",
+  "type": 0,
+  "max_stack": 1,
+  "grade": 2,
+  "learn_artifact": "ba_gua_lu",
+  "buy_price": 0,
+  "sell_price": 0
+ },
+ {
+  "id": "kun_xian_sheng",
+  "name": "捆仙绳残篇",
+  "desc": "惧留孙捆仙绳仿品图谱，金丝绞成，仙神难脱。使用得法宝（攻击·瞬身锁敌束缚一击）。炼虚境赐。",
+  "type": 0,
+  "max_stack": 1,
+  "grade": 2,
+  "learn_artifact": "kun_xian_sheng",
+  "buy_price": 0,
+  "sell_price": 0
+ },
+ {
+  "id": "ding_feng_zhu",
+  "name": "定风珠残篇",
+  "desc": "灵吉菩萨定风珠余晖所凝，赑风近身自息。使用得法宝（辅助·风抗+30%）。合体境赐。",
+  "type": 0,
+  "max_stack": 1,
+  "grade": 2,
+  "learn_artifact": "ding_feng_zhu",
+  "buy_price": 0,
+  "sell_price": 0
+ },
+ {
   "id": "long_gu",
   "name": "龙骨",
   "desc": "上古巨兽骸骨，历经万年仍含龙元之力。玄龙丹主材（巨兽遗骸/玄冰窟）。",

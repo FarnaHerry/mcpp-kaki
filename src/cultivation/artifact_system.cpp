@@ -1,12 +1,13 @@
 module;
 #include "../nodes/player.h"
+#include "../nodes/enemy.h"
 
 #include "../utils/text.h"
 
 module mcpp_kaki.cultivation;
 namespace godot {
 
-// 法宝定义表（v1 静态表；示例 攻击×2 + 辅助×1）
+// 法宝定义表（v1 静态表；攻击型 = 祭出复用 Skill 管线，辅助型 = 常驻被动乘区）
 static const ArtifactSystem::Def ARTIFACT_DEFS[] = {
 	// 飞剑：筑基飞行道具升级为法宝，剑气祭出（金元素）
 	{ "fei_jian", "飞剑", ArtifactSystem::KIND_ATTACK, DMG_ELEMENTAL, ELEM_JIN,
@@ -20,6 +21,17 @@ static const ArtifactSystem::Def ARTIFACT_DEFS[] = {
 	// 芭蕉扇：风刃扇形（火焰山，扇灭环境火开道）
 	{ "ba_jiao_shan", "芭蕉扇", ArtifactSystem::KIND_ATTACK, DMG_ELEMENTAL, ELEM_NONE,
 	  25.0f, 4.0f, 3.0f, SkillSystem::FX_PROJ_FAN, 300.0f, Color(0.6f, 0.9f, 0.6f), 0.0f },
+	// 八卦炉：辅助型，常驻攻击 +15%×系数（化神残篇习得）
+	{ "ba_gua_lu", "八卦炉", ArtifactSystem::KIND_SUPPORT, DMG_PHYSICAL, ELEM_NONE,
+	  0.0f, 0.0f, 0.0f, SkillSystem::FX_MELEE_SWING, 0.0f, Color(), 0.0f,
+	  0.15f, ELEM_NONE, 0.0f },
+	// 捆仙绳：祭出瞬身锁敌——blink 至最近敌人身侧 + 束缚(慑服) + 一击（炼虚残篇习得）
+	{ "kun_xian_sheng", "捆仙绳", ArtifactSystem::KIND_ATTACK, DMG_PHYSICAL, ELEM_NONE,
+	  25.0f, 8.0f, 2.5f, SkillSystem::FX_BLINK, 0.0f, Color(), 0.0f },
+	// 定风珠：辅助型，常驻风抗 +30%×系数（合体残篇习得）
+	{ "ding_feng_zhu", "定风珠", ArtifactSystem::KIND_SUPPORT, DMG_PHYSICAL, ELEM_NONE,
+	  0.0f, 0.0f, 0.0f, SkillSystem::FX_MELEE_SWING, 0.0f, Color(), 0.0f,
+	  0.0f, ELEM_FENG, 0.30f },
 };
 
 void ArtifactSystem::_bind_methods() {
@@ -28,7 +40,14 @@ void ArtifactSystem::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("equip", "slot", "id"), &ArtifactSystem::equip);
 	ClassDB::bind_method(D_METHOD("activate_slot", "slot"), &ArtifactSystem::activate_slot);
 	ClassDB::bind_method(D_METHOD("get_slot_coeff", "slot"), &ArtifactSystem::get_slot_coeff);
+	ClassDB::bind_method(D_METHOD("nurture_equipped", "amount"), &ArtifactSystem::nurture_equipped);
 	ClassDB::bind_method(D_METHOD("get_passive_def_bonus"), &ArtifactSystem::get_passive_def_bonus);
+	ClassDB::bind_method(D_METHOD("get_passive_atk_bonus"), &ArtifactSystem::get_passive_atk_bonus);
+	ClassDB::bind_method(D_METHOD("get_passive_elem_resist", "elem"), &ArtifactSystem::get_passive_elem_resist);
+	ClassDB::bind_method(D_METHOD("unlock_secondary_slots"), &ArtifactSystem::unlock_secondary_slots);
+	ClassDB::bind_method(D_METHOD("is_secondary_unlocked"), &ArtifactSystem::is_secondary_unlocked);
+	ClassDB::bind_method(D_METHOD("set_tribulation_mode", "on"), &ArtifactSystem::set_tribulation_mode);
+	ClassDB::bind_method(D_METHOD("is_tribulation_mode"), &ArtifactSystem::is_tribulation_mode);
 	ClassDB::bind_method(D_METHOD("get_slot_limit"), &ArtifactSystem::get_slot_limit);
 	ClassDB::bind_method(D_METHOD("get_slot_info", "slot"), &ArtifactSystem::get_slot_info);
 	ClassDB::bind_method(D_METHOD("get_owned_list"), &ArtifactSystem::get_owned_list);
@@ -55,7 +74,21 @@ double ArtifactSystem::_now() const {
 }
 
 int ArtifactSystem::get_slot_limit() const {
+	// 飞升解锁标记 或 玩家境界已达真仙（旧档兼容：realm 推导兜底）→ 6 槽
+	if (_secondary_unlocked) return MAX_SLOTS;
 	return _player ? _player->get_artifact_slot_limit() : 3;
+}
+
+void ArtifactSystem::unlock_secondary_slots() {
+	if (_secondary_unlocked) return;
+	_secondary_unlocked = true;
+	emit_signal("artifacts_changed");
+}
+
+void ArtifactSystem::set_tribulation_mode(bool p_on) {
+	if (_tribulation_mode == p_on) return;
+	_tribulation_mode = p_on;
+	emit_signal("artifacts_changed");
 }
 
 bool ArtifactSystem::acquire(const StringName &p_id) {
@@ -111,7 +144,9 @@ float ArtifactSystem::get_slot_coeff(int p_slot) const {
 
 float ArtifactSystem::get_passive_def_bonus() const {
 	float sum = 0.0f;
-	for (int i = 0; i < get_slot_limit(); i++) {
+	// 渡劫「只带本命法宝」：三灾中仅本命槽（0）被动生效
+	int n = _tribulation_mode ? 1 : get_slot_limit();
+	for (int i = 0; i < n; i++) {
 		StringName id = get_slot_artifact(i);
 		if (id == StringName()) continue;
 		const Def *def = find_def(id);
@@ -121,8 +156,37 @@ float ArtifactSystem::get_passive_def_bonus() const {
 	return sum;
 }
 
+float ArtifactSystem::get_passive_atk_bonus() const {
+	float sum = 0.0f;
+	int n = _tribulation_mode ? 1 : get_slot_limit();
+	for (int i = 0; i < n; i++) {
+		StringName id = get_slot_artifact(i);
+		if (id == StringName()) continue;
+		const Def *def = find_def(id);
+		if (!def || def->kind != KIND_SUPPORT) continue;
+		sum += def->passive_atk * get_slot_coeff(i);
+	}
+	return sum;
+}
+
+float ArtifactSystem::get_passive_elem_resist(int p_elem) const {
+	float sum = 0.0f;
+	int n = _tribulation_mode ? 1 : get_slot_limit();
+	for (int i = 0; i < n; i++) {
+		StringName id = get_slot_artifact(i);
+		if (id == StringName()) continue;
+		const Def *def = find_def(id);
+		if (!def || def->kind != KIND_SUPPORT) continue;
+		if (int(def->resist_elem) != p_elem || def->resist_elem_pct <= 0.0f) continue;
+		sum += def->resist_elem_pct * get_slot_coeff(i);
+	}
+	return sum;
+}
+
 bool ArtifactSystem::activate_slot(int p_slot) {
 	if (p_slot < 0 || p_slot >= get_slot_limit() || !_player) return false;
+	// 渡劫「只带本命法宝」：次要法宝不可祭出
+	if (_tribulation_mode && p_slot != 0) return false;
 	StringName id = get_slot_artifact(p_slot);
 	if (id == StringName()) return false;
 	const Def *def = find_def(id);
@@ -157,6 +221,31 @@ bool ArtifactSystem::activate_slot(int p_slot) {
 			_player->exec_skill_proj_fan(power, def->category, def->element,
 			                             def->proj_speed, def->proj_color);
 			break;
+		case SkillSystem::FX_BLINK: {
+			// 捆仙绳：瞬身锁敌——blink 至最近敌人身侧，束缚（慑服 2.5s）后一击
+			Enemy *target = nullptr;
+			float best = 300.0f; // 锁敌半径
+			if (_player->get_tree()) {
+				TypedArray<Node> foes = _player->get_tree()->get_nodes_in_group("enemies");
+				Vector2 pp = _player->get_global_position();
+				for (int i = 0; i < foes.size(); i++) {
+					Enemy *e = Object::cast_to<Enemy>(foes[i]);
+					if (!e) continue;
+					float d = pp.distance_to(e->get_global_position());
+					if (d < best) { best = d; target = e; }
+				}
+			}
+			if (target) {
+				Vector2 to = target->get_global_position() - _player->get_global_position();
+				_player->facing_direction = to.x >= 0.0f ? 1 : -1;
+				float dist = Math::max(0.0f, Math::abs(to.x) - 20.0f); // 停在敌身侧
+				if (dist > 1.0f)
+					_player->exec_skill_blink(dist);
+				target->suppress(2.5); // 束缚：定身+灰显
+			}
+			_player->exec_skill_melee(power, def->category, def->element);
+			break;
+		}
 	}
 
 	// 芭蕉扇：扇灭火焰山环境火（design/world-map.md 火焰山「芭蕉扇开路」）
@@ -221,6 +310,11 @@ Dictionary ArtifactSystem::get_slot_info(int p_slot) const {
 	d["mana_cost"] = def->mana_cost;
 	d["power"] = def->power;
 	d["passive_def"] = def->passive_def;
+	d["passive_atk"] = def->passive_atk;
+	d["resist_elem"] = int(def->resist_elem);
+	d["resist_elem_pct"] = def->resist_elem_pct;
+	if (_tribulation_mode && p_slot != 0)
+		d["tribulation_off"] = true; // 渡劫中次要法宝禁用（UI 灰显）
 	d["nurture"] = p_slot == 0 ? (_player ? _player->get_benming_nurture() : 0.0f)
 	                           : (_nurture.has(id) ? _nurture[id] : 0.0f);
 	d["benming"] = p_slot == 0;
@@ -259,6 +353,7 @@ Dictionary ArtifactSystem::save_to_dict() const {
 		nurture[String(kv.key)] = kv.value;
 	}
 	d["nurture"] = nurture;
+	d["secondary_unlocked"] = _secondary_unlocked; // 飞升解锁次要槽 +3
 	return d;
 }
 
@@ -266,6 +361,7 @@ void ArtifactSystem::load_from_dict(const Dictionary &p_data) {
 	_owned.clear();
 	for (int i = 1; i < MAX_SLOTS; i++) _slots[i] = StringName();
 	_nurture.clear();
+	_secondary_unlocked = false;
 
 	if (p_data.has("owned")) {
 		Array owned = p_data["owned"];
@@ -290,6 +386,9 @@ void ArtifactSystem::load_from_dict(const Dictionary &p_data) {
 			String k = keys[i];
 			_nurture[StringName(k)] = float(nurture[k]);
 		}
+	}
+	if (p_data.has("secondary_unlocked")) {
+		_secondary_unlocked = bool(p_data["secondary_unlocked"]);
 	}
 	// 本命槽镜像 Player（benming 段由 GameManager 恢复后此处只回读）
 	_slots[0] = _player ? _player->get_benming_artifact() : StringName();

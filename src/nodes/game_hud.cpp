@@ -750,6 +750,13 @@ void GameHUD::_update_skill_bar() {
             _skill_cd_labels[i]->set_text("");
             continue;
         }
+        // 渡劫「只带本命法宝」：次要法宝灰显（×）
+        if (info.has("tribulation_off")) {
+            _skill_name_labels[i]->set_text(LOC("×"));
+            _skill_name_labels[i]->add_theme_color_override("font_color", Color(1, 1, 1, 0.35f));
+            _skill_cd_labels[i]->set_text("");
+            continue;
+        }
         String name = info.get("name", "");
         _skill_name_labels[i]->set_text(name.is_empty() ? LOC("·") : name.substr(0, 1));
         double rem = double(info.get("cd_remaining", 0.0));
