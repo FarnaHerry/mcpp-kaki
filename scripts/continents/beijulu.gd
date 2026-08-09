@@ -7,6 +7,7 @@ const WC = preload("res://scripts/world_common.gd")
 const ICE_ZONE = preload("res://scripts/zones/ice_zone.gd")
 const COLD_ZONE = preload("res://scripts/zones/cold_zone.gd")
 const REFINE_SPOT = preload("res://scripts/spots/refine_spot.gd")
+const TIANJIE_GATE = preload("res://scripts/gates/tianjie_gate.gd")
 
 func _ready():
 	call_deferred("_setup")
@@ -148,6 +149,16 @@ func _setup():
 	WC.spawn_herb(self, Vector2(3500, 230), "xuan_bing_shen", 1)
 	# 南天门：极品灵石（仙家洞府之遗）
 	WC.spawn_item_pickup(self, Vector2(3650, 228), "spirit_stone_peak", 1)
+	# 南天门 → 天界之门（↑ 登天：realm<10 拒绝话术，真仙 travel_to_direct 直达天界）
+	var tj_gate = TIANJIE_GATE.new()
+	tj_gate.name = "TianjieGate"
+	tj_gate.position = Vector2(3650, 210)
+	var tj_shape = CollisionShape2D.new()
+	var tj_rect = RectangleShape2D.new()
+	tj_rect.size = Vector2(32, 80)
+	tj_shape.shape = tj_rect
+	tj_gate.add_child(tj_shape)
+	add_child(tj_gate)
 	WC.create_checkpoint(self, 3450)
 
 	print("北俱芦洲 · 极北冰原/玄冰高原/上古荒原")
