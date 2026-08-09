@@ -57,7 +57,7 @@ func _process(delta) -> bool:
 			p.call("use_consumable", "shen_wai_can_juan")
 			var sk = p.call("get_skills")
 			_check(bool(sk.call("is_known", "shen_wai_hua_shen")), "shen_wai_hua_shen learned from canjuan")
-			_check(bool(sk.call("assign", 6, "shen_wai_hua_shen")), "assigned to shentong slot T")
+			_check(bool(sk.call("assign", 4, "shen_wai_hua_shen")), "assigned to shentong slot T")
 		3:
 			_next = _t + 0.5
 			var p = root.find_child("Player", true, false)
@@ -65,7 +65,7 @@ func _process(delta) -> bool:
 			var sk = p.call("get_skills")
 			cult.call("set_law_power", 100.0)
 			var law0 = float(cult.call("get_law_power"))
-			var ok = bool(sk.call("cast_slot", 6))
+			var ok = bool(sk.call("cast_slot", 4))
 			var law1 = float(cult.call("get_law_power"))
 			print("[TEST] cast=", ok, " law ", law0, "->", law1, " clones=", _clones().size())
 			_check(ok, "shen_wai cast succeeds")

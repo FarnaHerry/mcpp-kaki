@@ -370,11 +370,19 @@ void SkillSystem::load_from_dict(const Dictionary &p_data) {
 	}
 	if (p_data.has("slots")) {
 		Array slots = p_data["slots"];
-		for (int i = 0; i < slots.size() && i < SLOT_COUNT; i++) {
+		// 旧档迁移：8 槽布局（A/S/D/F=0..3、G/H=4/5、T/Y=6/7）→ 12 槽新布局
+		// （Q..Y=0..5、A..H=6..11）。旧存档 slots.size()<SLOT_COUNT 时按旧索引读出，
+		// 经 OLD_TO_NEW 重排进新槽；新档（size==SLOT_COUNT）直读。
+		static const int OLD8_TO_NEW[8] = { 6, 7, 8, 9, -1, -1, 4, 5 }; // A/S/D/F→6..9，G/H 弃，T/Y→4/5
+		bool is_old8 = slots.size() < SLOT_COUNT;
+		for (int i = 0; i < slots.size(); i++) {
 			StringName id = StringName(String(slots[i]));
 			const Def *def = find_def(id);
-			if (def && _known.has(id) && def->type == slot_type(i)) {
-				_slots[i] = id;
+			if (!def || !_known.has(id)) continue;
+			int dst = is_old8 ? OLD8_TO_NEW[i] : i;
+			if (dst < 0 || dst >= SLOT_COUNT) continue;
+			if (def->type == slot_type(dst)) {
+				_slots[dst] = id;
 			}
 		}
 	}

@@ -102,7 +102,7 @@ bin/              # 编译产物 (.so)，gitignored
 - **`CameraRoom2D`** (`src/nodes/camera_room_2d.h/cpp`) — 跟随增益随距离缩放（高速飞行不落后）+ room lock
 - **`CultivationSystem`** (`src/cultivation/`) — 13 境界、int64 累计修为经验（9系门槛，**到顶封顶卡境界**）、期数、四轴（门派/五仙/出身/果位）、混元一气、TitleComposer 称号、灵力法力池（与修为分离，自动回复）、生命/攻防速随境界、突破调试开关。**数值平衡（session 011）**：修为门槛金丹起 ~3.3×/境（非×10，打怪路线可持续）、击杀修为随境界 `15×(1+realm)`、顶端金仙/天尊攻防平滑（42/38→32/30，100/100→60/50）。**仙元体系（session 014）**：飞升入真仙 `_set_realm_internal` 凡尘修为清零(`_lingqi=0`)+仙元从0重起（九九归一，渡劫后灵力清零转仙元）；9 系门槛 真仙 99,999/金仙 **999,999**（大圆满=金仙经验满期数、混元走 `attain_hunyuan()` 特殊解锁非经验堆出）；`_xianyuan`/`is_immortal`/`get_mana_name()`（灵力→仙元）地基本已在，存档 `cd["xianyuan"]`；**HUD 修为条真仙+ 改显「仙元 N%」**（前缀随境界切换，`_on_language_changed` 按当前境界重取防错显）
 - **`AbilityManager`** (`src/cultivation/`) — 境界门控能力（纳戒/飞行/云游等）
-- **`BreakthroughManager`** (`src/cultivation/`) — 机缘突破唯一入口：Q → SignalBus `breakthrough_requested` → 叙事事件×6 / 心魔劫·三尸劫（战斗秘境，属性随玩家缩放，**镜像 realm=玩家同境**——威压/灵压不可慑服劫数，Enemy `no_drops`）/ 三灾连考；秘境复用 Portal 模式（场景加载+玩家重挂载+相机锁定）；失败境界不变、经验保持封顶可重试
+- **`BreakthroughManager`** (`src/cultivation/`) — 机缘突破唯一入口：L 打坐（修为封顶自动请求）→ SignalBus `breakthrough_requested` → 叙事事件×6 / 心魔劫·三尸劫（战斗秘境，属性随玩家缩放，**镜像 realm=玩家同境**——威压/灵压不可慑服劫数，Enemy `no_drops`）/ 三灾连考；秘境复用 Portal 模式（场景加载+玩家重挂载+相机锁定）；失败境界不变、经验保持封顶可重试
 - **`TribulationController`** (`src/cultivation/`) — 三灾：雷灾（预警落雷走位）→ 阴火（DoT 生存）→ 赑风（控制反转 `input_inverted`+罡风推移+风蚀）；**三灾伤害全走 `take_damage_typed(DMG_ELEMENTAL, ELEM_LEI/HUO/FENG)`**（元素抗性可减免，物理防御不可——渡劫非堆防硬抗）；渡劫过渡态 DU_JIE（失败退回大乘）
 - **`Inventory` / `ItemDatabase` / `ItemPickup`** (`src/inventory/`, `src/nodes/`) — 24→999 纳戒扩容、装备三槽、掉落拾取
 - **`DropSystem`** (`src/core/drop_system.h/cpp`) — 所有掉落物的唯一入口（掉落表+生成）
@@ -112,7 +112,7 @@ bin/              # 编译产物 (.so)，gitignored
 - **DamageNumbers** (`src/nodes/`) — 伤害数字唯一入口：SignalBus `damage_dealt(pos,amount,is_player_victim)` → 世界坐标上浮淡出（敌=金/玩家=红）
 - **DamageCalculator** (`src/combat/damage_calculator.h`, header-only) — 伤害统一结算：物理(防御减免,min1)/法术(抗性比例,cap0.9)/元素(五行抗性,克制×1.25只增伤)；`DamageInfo`+`DefenseProfile`；HitBox/Projectile 携带 `damage_category`+`element`，投射物经 `take_damage_typed` 入口
 - **GongfaSystem** (`src/cultivation/gongfa_system.*`) — 功法：炼体/练气双槽(1+1)，黄/玄/地品(3/5/7层)，行为喂养主系100%/副系20%(受击/近战击杀养炼体，耗灵养练气)，层数乘区(1+每层×层数)，切换保留熟练(_known)，存档 pd["gongfa"]
-- **SkillSystem** (`src/combat/skill_system.*`) — 武技/法术/神通/仙法/被动统一 Skill 管线：8槽(A/S武技 D/F法术 G/H战斗页闲置 T神通 Y仙法)，武技=物理+冷却驱动(凡人起步破空斩/突进斩)，法术=元素伤害+耗灵+冷却(炼气授予火弹/冰锥)，神通=耗法则之力(化神授予缩地成寸,FX_BLINK碰撞安全瞬移)；存档 pd["skills"]
+- **SkillSystem** (`src/combat/skill_system.*`) — 武技/法术/神通/仙法/被动统一 Skill 管线：**12槽**(QWERTY上行0..5 + ASDFGH下行6..11；`slot_type()` 分组门控 Q/W/A/S武技 E/R/D/F法术 T/Y/G神通 H仙法)，武技=物理+冷却驱动(凡人起步破空斩/突进斩装A/S)，法术=元素伤害+耗灵+冷却(炼气授予火弹/冰锥装D/F)，神通=耗法则之力(化神授予缩地成寸装T,FX_BLINK碰撞安全瞬移)，仙法(真仙授予天雷引装H)；存档 pd["skills"]（**旧 8 槽档经 OLD8_TO_NEW 索引迁移**：A/S/D/F 0..3→6..9、T/Y 6/7→4/5、G/H 弃）
   - 主动 13 个：武技×4(+旋风斩AOE/升龙击上跃，炼气) 法术×5(+雷咒雷元素/土盾自buff，筑基；御剑术3发剑扇，金丹) 神通×3(+金刚不坏2.5s无敌/三昧真火，化神) 仙法×1(天雷引，真仙)；FX 9 种(MELEE_SWING/LUNGE/PROJECTILE/BLINK/AOE_SWING/RISING/SELF_BUFF/PROJ_FAN/INVULN)
   - 被动 TYPE_PASSIVE×6（学会即常驻不占槽，乘区添头）：神行百变(炼气,速12%)/剑心通明(筑基,攻10%)/铁布衫(金丹,防15%)/灵台清明(金丹,回灵25%)/风雷双翼(元婴,飞速15%)/道法自然(化神,法则回复25%)；挂钩 攻→get_effective_attack / 防→take_damage / 速→_update_move_speed / 飞速→FlyState / 回灵→mana_regen_mult(功法×被动) / 法则→_law_regen_mult
   - 雷元素 ELEM_LEI：不入五行克制环
@@ -128,7 +128,7 @@ bin/              # 编译产物 (.so)，gitignored
 - **B键切页**: `Player._skill_page` + `skill_page_changed` 信号；法宝页 A~H=法宝槽0..5(T/Y两页通用)；页机制通用可扩技能多页
 - **法则之力** (CultivationSystem) — 化神解锁独立能量条(max100,回复3/s+击杀+10)，神通唯一消耗源；HUD右上角紫条；存档 cd["law_power"]
 - **SectSystem** (`src/cultivation/sect_system.*`) — 宗门：四宗一散（蜀山攻/昆仑灵力回灵/蓬莱生命防御/魔罗击杀修为+攻），职位 外门(0)/内门(100)/真传(300) 加成随档升；贡献=击杀+1/Boss+10；炼气门槛拜师、叛门贡献清零、已学专属技保留；乘区全走既有组合点（攻/生命/灵力上限+回灵/防御/击杀修为）；专属技×4（万剑归宗金系剑扇/太清神光水系法术/玄龟护体自buff防25%/血影斩突进）；存档 pd["sect"]
-- **威压/灵压** (`src/nodes/player.*` + `enemy.*`) — 威压 V：耗灵30/cd8s/r240px，realm<玩家→慑服(suppress:定身+灰显 2+0.5×gap s cap5)；灵压 R：耗灵60/cd15s/r200px，realm≤玩家-2→法伤 atk×(2+0.5×gap)，gap≥4→镇杀99999；护佑：敌方高阶(realm≥玩家)在场→300px低阶全免+反弹5%(V)/8%(R)生命；Enemy新增 realm 字段+suppress(t)+enemies group；bootstrap 全敌 realm 标注（0小怪→4螭龙→8北俱）
+- **威压/灵压** (`src/nodes/player.*` + `enemy.*`) — 威压 U：耗灵30/cd8s/r240px，realm<玩家→慑服(suppress:定身+灰显 2+0.5×gap s cap5)；灵压 P：耗灵60/cd15s/r200px，realm≤玩家-2→法伤 atk×(2+0.5×gap)，gap≥4→镇杀99999；护佑：敌方高阶(realm≥玩家)在场→300px低阶全免+反弹5%(U)/8%(P)生命；Enemy新增 realm 字段+suppress(t)+enemies group；bootstrap 全敌 realm 标注（0小怪→4螭龙→8北俱）
 - **地府/生死簿/勾魂** (`design/cultivation-realms.md` §五) — **SoulLedgerSystem** (`src/core/soul_ledger_system.*`) 独立生死簿：簿上寿元=物种默认100 ≠ 实际寿元(随境界 凡人100/炼气150/筑基250/金丹500/元婴2000/化神5000/炼虚8000/合体12000/大乘20000/渡劫50000/真仙100000/金仙200000，**天尊（三清级）跳出五行寿元无限 ∞**——HUD 显「寿 簿上/∞」金，且天尊不再被勾魂)，信息差=勾魂错抓；出身/原身/**划名标记**：`_soul_protection`(免死一次)+`_struck`(永久阴寿豁免——划名后不再被勾魂，勾魂错抓的终点)，存档 pd["soul_ledger"]；HUD 寿元小标签「寿 簿上/实际」（实际>簿上绿）+ SignalBus `lifespan_changed/soul_protection_changed/ledger_inspect_requested`。**勾魂使**：濒死(HP<20%)刷黑/白无常（Enemy `is_soul_reaper`+no_drops，realm≥玩家），反杀+30修为、被击杀→魂魄入地府。**死亡三分支** (`GameManager::on_player_died`)：免死(划名→原地满血复活，最高优先)/勾魂使击杀→入地府/正常→回检查点；地府内死亡→还阳。**地府场景** `scenes/continents/difu.tscn`（全场景切换，`enter_difu/huan_yang` 走 change_scene_to_file+旅行桥，**不走 request_scene_change** 防污染 `_respawn_scene`）：判官(mode=查簿, HUD overlay 显出身/原身/寿元/划名状态)+**秦广王(mode=审判，一殿初审核对生死簿叙事)**+生死簿(mode=改簿划名→免死+阴寿豁免)+还阳出口；入口在南赡部洲长安 `SceneGate`(scripts/gates/, ↑ 触发 gm_method)；互斥：地府内不再刷无常、子空间/机缘中不刷
 - **灵石货币（四阶通用钱包）** (`src/core/currency_system.*`) — 灵石独立成钱包不占背包：下品/中品/上品/极品 四档，每档 ×10 价值（1极=10上=100中=1000下），价格一律下品基准；`add/spend(自动破零+找零高档回填)/can_afford/get_total/exchange(from,qty,to 保值兑换)`；存档 data["currency"]+老档迁移（inventory spirit_stone→钱包下品）；拾取路由 Item 新字段 `currency_tier`（-1普通/0..3档位，拾取直入钱包）；SignalBus `currency_changed`；物品 `spirit_stone`(下品)/`spirit_stone_mid/high/peak`
 - **商店系统** (`src/core/shop_system.*` + `src/nodes/shop_panel.*`/`shop_keeper.*`) — 长安坊市灵石买卖：Item 新字段 `buy_price/sell_price`(0=不可买卖，JSON+fallback)；**ShopSystem** buy(扣钱包+入库,不足拒)/sell(扣物品+回钱包下品,货币/关键物不可卖)/get_stock(硬编码货架)；**ShopPanel**(CanvasLayer 116，三栏 GridList 商店货架|玩家背包|灵石兑换，Q/E 切栏循环，X 购买/卖出/兑换，顶部四阶余额，打开暂停)；**ShopKeeper**(Area2D, StorageChest 模板, "[X] 交易")；人参果(五庄观镇观灵果, 80%回血+800修为+饱食+攻防15% 900s)
@@ -138,7 +138,7 @@ bin/              # 编译产物 (.so)，gitignored
 - **天界** (`scenes/continents/tianjie.tscn` + `scripts/continents/tianjie.gd` + `scripts/gates/tianjie_gate.gd`，真仙门槛 realm 10，**南天门登天**) — 北俱芦洲上古荒原「南天门序章」地标处 ↑ 触发 `travel_to_direct("tianjie")`（真仙腾云直达，**不渡云海**——云海是金丹门控的凡俗强渡；realm<10 拒行「天威浩荡，真仙方可登天」，SceneGate 交互模板）。三段：**南天门外**(云海石阶 + 天兵×2 + 增长天将精英远程)、**天庭街市/凌霄殿外**(琼楼高台 + 天将×2 + 飞檐隐藏秘藏上品灵石×2)、**兜率宫+蟠桃园**(老君丹炉 + 遗丹玄龙丹 + 桃树/蟠桃拾取×2 + **巨灵神** Boss realm11 金仙级 HP4000 守关，Boss 身后蟠桃+极品灵石赏格)。检查点 200/1700/2750；新物品 **pan_tao 蟠桃**；data/continents.json 注册（真仙门槛）
 - **ContinentManager JSON 接线** (`src/core/continent_manager.cpp`) — 洲定义表已接 `data/continents.json`（JSON 优先 + `CONTINENT_DEFS` 硬编码兜底），云游页按 min_realm 升序；const char* 生命期用 `std::deque<std::string>` 静态池承接（vector 重分配会悬垂 SSO 缓冲）
 - **GameMenu** (`src/nodes/game_menu.*`) — ESC 多页管理菜单（背包/能力/功法/技能/法宝/宗门/云游/炼丹/设置 共9页），托管 InventoryPanel（外部驱动 ext_navigate/ext_navigate_h/ext_use）；背包页=GridList 2D 导航（↑/↓ 行移 ←/→ 列移，顶行↑进类型筛选行）+ 筛选；能力页=主动/被动分区技能树总览（只读 v1）；技能页=主动装配（↑/↓←/→ 选已学主动，A/S/D/F/T/Y 装入对应槽，类型不符拒装提示）+被动分区（名+效果%）；宗门页=未入门四宗列表选宗拜入/已入门职位贡献加成总览+叛门；设置页含音量(持久化 user://settings.cfg)/保存/退出；嵌套暂停安全（还原原暂停状态）；页签条独立 CanvasLayer 130；**翻页严格只用 Q/E**（`_input` 原始键码，←/→ 不被顶部翻页拦截，留给页内横向导航/筛选）
-- **HUD 底部技能栏**: 武技[A/S] 法术[D/F] 法宝[G/H]（技能系统已填充：显示装配技能名+冷却）
+- **HUD 底部技能栏**: 12 槽两排紧凑居中（QWERTY 上行 y=222 / ASDFGH 下行 y=246，各 6 槽×20px），显示装配技能名首字+冷却秒数；B 切法宝页时下行 ASDFGH 显示法宝槽（上行 QWERTY 仍技能）；渡劫次要法宝灰显
 - **BuffSystem** (`src/cultivation/buff_system.*`) — 丹药/食物/状态统一 Buff：def 表（冰心水抗15%/赤焰攻15%/金刚防20%, 300s）、同名刷新不叠加、到期自消、攻/防/元素抗性乘区钩子、HUD buff 行（名+秒）、存档 pd["buffs"]
 - **AlchemySystem** (`src/cultivation/alchemy_system.*`) — 炼丹：丹炉随身，7 固定配方（**已接 DataLoader recipes.json**——JSON 优先 + 硬编码兜底，装入 `std::vector<Recipe>` 前**必须 reserve** 防 c_str 悬垂；`get_recipe_count/get_recipe/find_recipe/get_recipe_list` 全走 `ensure_loaded` 后的 s_recipes），成功率字段 v1=100%（失败机制预留），地品金丹门控，每炉喂练气+5；GameMenu 第8页「炼丹」**卡片化**（3 列 GridList：锁定=灰、材料够=绿、不够=红），**2D 导航** ↑/↓ 行移 ←/→ 列移（行内钳制不跨行回卷），X 炼制；详情行（y=170）显示 丹方名+效果（锁定附「（金丹起）」）+材料行（y=184）
 - **草药** — Item grade 字段（0凡/1灵/2地）；7 草药（MATERIAL）；**HerbNode** (`src/nodes/`) 采集点（[X] 采集入包+喂练气+2，枯萎，房间重进刷新）；小怪掉止血草/聚灵草，Boss 千年灵芝保底
@@ -153,11 +153,11 @@ bin/              # 编译产物 (.so)，gitignored
 - **纳戒磁吸** (`src/nodes/item_pickup.*` + `herb_node.*`) — 炼气解锁后 150px 内掉落物/草药自动飞向玩家，渐加速，接触即拾取（草药跳过 X 交互）；速度随境界缩放 `1 + realm × 0.3`（炼气 1.3x → 天尊 4.6x）；未解锁时零开销
 - **HUD 消耗品栏** 移至屏幕左下角（x=8, y=246），右端(x=138)对接技能栏左端
 - **HUD V/R 冷却指示器** 位于法则条下方（右上角），就绪亮色/冷却灰+秒数
-- **GameMenu 能力页** 新增「战技」分区（威压 V / 灵压 R，始终可用）
+- **GameMenu 能力页** 新增「战技」分区（威压 U / 灵压 P，始终可用）
 
 ### Input Map
 
-方向键移动（WASD 已腾出给技能槽，DNF 式），X 普攻+交互+菜单确认合一（交互优先；采集/储物箱/背包使用装备/炼丹/设置确认都用 X，菜单内暂停不冲突；**门口传送门交互已改用 ↑**，X 不进门），C 跳跃（空中再按=飞行），Z 冲刺，V 威压，R 灵压，O 进出洞天（炼虚解锁），Space 确认副键，I 背包（背包页 ↑/↓ 行移 ←/→ 列移，网格顶行再按 ↑ 进类型筛选行、←/→ 循环切类型、↓/X 返回网格），Q 修炼突破，ESC 多页菜单（菜单内 **Q/E 翻页**——翻页严格只用 Q/E 任何行都生效，设置页音量/语言行 ←/→ 为调节，←/→ 不被顶部翻页拦截）；技能槽：A/S 武技、D/F 法术、T 神通、Y 仙法（预留），B 切法宝页（A~H=法宝槽）；数字键 1~6 消耗品快捷栏
+方向键移动（WASD 已腾出给技能槽，DNF 式），X 普攻+交互+菜单确认合一（交互优先；采集/储物箱/背包使用装备/炼丹/设置确认都用 X，菜单内暂停不冲突；**门口传送门交互已改用 ↑**，X 不进门），C 跳跃（空中再按=飞行），Z 冲刺，ESC 多页菜单（菜单内 **Q/E 翻页**——翻页严格只用 Q/E 任何行都生效，与正常游戏的 Q/E 技能键分属「菜单暂停/正常游戏」两态不冲突，设置页 ←/→ 调节），Space 确认副键。**技能键区（12 槽，QWERTY 上行 0..5 + ASDFGH 下行 6..11，紧凑两排居中）**：Q/W/A/S 武技、E/R/D/F 法术、T/Y/G 神通、H 仙法（`slot_type()` 分组门控；B 切法宝页时 ASDFGH=法宝槽 0..5，QWERTY 上行仍技能）。**功能键区**：U 威压、P 灵压、L 打坐修炼（修为封顶自动请求机缘突破）、I 背包（背包页 ↑/↓ 行移 ←/→ 列移，网格顶行再按 ↑ 进类型筛选行、←/→ 循环切类型、↓/X 返回网格）、O 进出洞天（炼虚解锁）、B 切法宝页。数字键 1~6 消耗品快捷栏
 
 ### Collision Layers
 

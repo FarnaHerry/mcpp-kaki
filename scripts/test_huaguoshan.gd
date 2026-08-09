@@ -104,8 +104,8 @@ func _process(delta) -> bool:
 			# 化神+法则之力 → 装配 T 槽施放
 			_breakthrough_to(5)
 			_cult().call("set_law_power", 100.0)
-			_check(bool(skills.call("assign", 6, "shen_wai_hua_shen")), "身外化身装配 T 槽")
-			_check(bool(skills.call("cast_slot", 6)), "施放身外化身")
+			_check(bool(skills.call("assign", 4, "shen_wai_hua_shen")), "身外化身装配 T 槽")
+			_check(bool(skills.call("cast_slot", 4)), "施放身外化身")
 			var buffs = _player().call("get_buffs")
 			_check(buffs != null and bool(buffs.call("has", "buff_shen_wai")), "毫毛助威 buff 生效")
 			# 出洞：ExitPortal 在 (200,220)

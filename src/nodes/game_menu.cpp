@@ -143,7 +143,8 @@ void GameMenu::_input(const Ref<InputEvent> &p_event) {
 	Ref<InputEventKey> k = p_event;
 	if (k.is_null() || !k->is_pressed() || k->is_echo()) return;
 
-	// Q/E 翻页任何行都生效（设置页 ←/→ 音量/语言调节走 _process，互不干扰）
+	// Q/E 翻页任何行都生效（设置页 ←/→ 音量/语言调节走 _process，互不干扰）。
+	// 菜单打开即暂停，Q/E 在此翻页与正常游戏中的 Q/E 技能键分属两态，不冲突。
 	if (k->get_keycode() == KEY_Q) {
 		_switch_page(_page - 1);
 		return;
@@ -335,7 +336,7 @@ void GameMenu::_build_ability_page() {
 		_page_nodes.push_back(ph);
 
 		Label *v = memnew(Label);
-		v->set_text(LOC("✓ 威压 V  — 慑服低阶（耗灵30 cd8s）"));
+		v->set_text(LOC("✓ 威压 U  — 慑服低阶（耗灵30 cd8s）"));
 		v->add_theme_font_size_override("font_size", 8);
 		v->add_theme_color_override("font_color", Color(0.55f, 0.9f, 0.55f));
 		v->set_position(Vector2(60, 238));
@@ -343,7 +344,7 @@ void GameMenu::_build_ability_page() {
 		_page_nodes.push_back(v);
 
 		Label *r = memnew(Label);
-		r->set_text(LOC("✓ 灵压 R  — 法伤低阶/镇杀（耗灵60 cd15s）"));
+		r->set_text(LOC("✓ 灵压 P  — 法伤低阶/镇杀（耗灵60 cd15s）"));
 		r->add_theme_font_size_override("font_size", 8);
 		r->add_theme_color_override("font_color", Color(0.55f, 0.9f, 0.55f));
 		r->set_position(Vector2(60, 250));
@@ -477,15 +478,20 @@ void GameMenu::_build_skill_page() {
 
 	SkillSystem *skills = _player ? _player->get_skills() : nullptr;
 
-	// 槽位总览（武技A/S 法术D/F 法宝G/H 神通T 仙法Y）
-	static const char *KEYS[SkillSystem::SLOT_COUNT] = { "A", "S", "D", "F", "G", "H", "T", "Y" };
-	static const char *GNAMES[5] = { "武技", "法术", "法宝", "神通", "仙法" };
-	for (int group = 0; group < 5; group++) {
-		add_line(LOC("— ") + LOC(GNAMES[group]) + LOC(" —"), 40.0f + group * 90.0f, 54.0f, 10, head_c);
-		int first = group < 3 ? group * 2 : group + 3; // 0/2/4/6/7
-		int count = group < 3 ? 2 : 1;
-		for (int k = 0; k < count; k++) {
-			int slot = first + k;
+	// 槽位总览（QWERTY 上行 0..5 / ASDFGH 下行 6..11；按类型分两行展示）
+	static const char *KEYS[SkillSystem::SLOT_COUNT] = { "Q", "W", "E", "R", "T", "Y", "A", "S", "D", "F", "G", "H" };
+	// 每类列出其槽位：武技 Q/W/A/S、法术 E/R/D/F、神通 T/Y/G、仙法 H
+	struct TypeGroup { const char *name; int slots[4]; int count; };
+	static const TypeGroup GROUPS[4] = {
+		{ "武技", { 0, 1, 6, 7 }, 4 },
+		{ "法术", { 2, 3, 8, 9 }, 4 },
+		{ "神通", { 4, 5, 10, -1 }, 3 },
+		{ "仙法", { 11, -1, -1, -1 }, 1 },
+	};
+	for (int g = 0; g < 4; g++) {
+		add_line(LOC("— ") + LOC(GROUPS[g].name) + LOC(" —"), 40.0f + g * 115.0f, 54.0f, 10, head_c);
+		for (int k = 0; k < GROUPS[g].count; k++) {
+			int slot = GROUPS[g].slots[k];
 			String text = String("[") + KEYS[slot] + "] ";
 			if (skills) {
 				Dictionary info = skills->get_slot_info(slot);
@@ -493,7 +499,7 @@ void GameMenu::_build_skill_page() {
 			} else {
 				text += LOC("（空）");
 			}
-			add_line(text, 40.0f + group * 90.0f, 69.0f + k * 13, 9, body_c);
+			add_line(text, 40.0f + g * 115.0f, 69.0f + k * 12, 9, body_c);
 		}
 	}
 
@@ -582,7 +588,7 @@ void GameMenu::_build_skill_page() {
 		bool ok = _skill_msg.contains(LOC("已装配"));
 		add_line(_skill_msg, 40.0f, 248.0f, 9, ok ? ok_c : bad_c);
 	} else {
-		add_line(LOC("↑/↓ 选择主动技，按 A/S/D/F/T/Y 装入对应槽；G/H 留给法宝页（B 键切换）。"), 40.0f, 248.0f, 8, dim_c);
+		add_line(LOC("↑/↓ 选择主动技，按 QWERTY/ASDFGH 装入对应槽（类型须匹配）；B 键切法宝页。"), 40.0f, 248.0f, 8, dim_c);
 	}
 }
 
@@ -615,11 +621,14 @@ void GameMenu::_handle_skill_input() {
 		_skill_sel = Math::min(count - 1, row * GRID_COLS + col);
 		_rebuild_page();
 	}
-	// 按槽键装配当前选中技能（G/H 槽留给法宝页，不参与装配）
-	static const char *SLOT_ACTIONS[6] = { "skill_a", "skill_s", "skill_d", "skill_f", "skill_t", "skill_y" };
-	static const int SLOT_IDX[6] = { 0, 1, 2, 3, 6, 7 };
-	static const char *SLOT_KEYS[6] = { "A", "S", "D", "F", "T", "Y" };
-	for (int i = 0; i < 6; i++) {
+	// 按槽键装配当前选中技能（QWERTY 上行 0..5 + ASDFGH 下行 6..11，共 12 槽）
+	static const char *SLOT_ACTIONS[12] = {
+		"skill_q", "skill_w", "skill_e", "skill_r", "skill_t", "skill_y",
+		"skill_a", "skill_s", "skill_d", "skill_f", "skill_g", "skill_h"
+	};
+	static const int SLOT_IDX[12] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
+	static const char *SLOT_KEYS[12] = { "Q", "W", "E", "R", "T", "Y", "A", "S", "D", "F", "G", "H" };
+	for (int i = 0; i < 12; i++) {
 		if (input->is_action_just_pressed(LOC(SLOT_ACTIONS[i]))) {
 			Dictionary k = actives[_skill_sel];
 			StringName id = StringName(String(k.get("id", "")));

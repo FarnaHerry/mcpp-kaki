@@ -252,7 +252,7 @@ void GameHUD::_create_jiyuan_label() {
     _jiyuan_label->add_theme_color_override("font_color", Color(1.0f, 0.95f, 0.4f, 1));
     _jiyuan_label->add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9f));
     _jiyuan_label->add_theme_constant_override("outline_size", 2);
-    _jiyuan_label->set_text(LOC("机缘已至 [Q]"));
+    _jiyuan_label->set_text(LOC("机缘已至 [L]"));
     _jiyuan_label->set_visible(false);
     add_child(_jiyuan_label);
 }
@@ -338,27 +338,29 @@ void GameHUD::_create_death_overlay() {
 // ============================================================
 
 void GameHUD::_create_skill_bar() {
-    // DNF 式布局预留：武技(A/S) 法术(D/F) 法宝(G/H)，空槽暗框 + 键位标签。
-    // 技能系统落地后：槽内填图标/冷却扫层，此处只负责槽位与可见性。
-    struct SlotSpec { const char *caption; const char *key; Color tint; };
-    static const SlotSpec SLOTS[] = {
-        { "武技", "A", Color(0.55f, 0.25f, 0.20f, 0.85f) },
-        { nullptr, "S", Color(0.55f, 0.25f, 0.20f, 0.85f) },
-        { "法术", "D", Color(0.20f, 0.35f, 0.60f, 0.85f) },
-        { nullptr, "F", Color(0.20f, 0.35f, 0.60f, 0.85f) },
-        { "法宝", "G", Color(0.55f, 0.45f, 0.15f, 0.85f) },
-        { nullptr, "H", Color(0.55f, 0.45f, 0.15f, 0.85f) },
-        { "神通", "T", Color(0.40f, 0.20f, 0.55f, 0.85f) },
-        { "仙法", "Y", Color(0.60f, 0.55f, 0.25f, 0.85f) },
+    // QWERTY+ASDFGH 12 技能槽，两排紧凑居中：上行 QWERTY(slot 0..5) / 下行 ASDFGH(slot 6..11)。
+    // 槽内填技能名首字 + 冷却秒数；空槽显 ·，锁定显 ×，渡劫次要法宝灰显。
+    struct SlotSpec { const char *key; Color tint; };
+    static const Color WU(0.55f, 0.25f, 0.20f, 0.85f);   // 武技 红棕
+    static const Color FA(0.20f, 0.35f, 0.60f, 0.85f);   // 法术 蓝
+    static const Color SHEN(0.40f, 0.20f, 0.55f, 0.85f); // 神通 紫
+    static const Color XIAN(0.60f, 0.55f, 0.25f, 0.85f); // 仙法 金
+    // 12 槽按 slot 索引：Q W E R T Y / A S D F G H
+    static const SlotSpec SLOTS[12] = {
+        { "Q", WU }, { "W", WU }, { "E", FA }, { "R", FA }, { "T", SHEN }, { "Y", XIAN }, // 上行
+        { "A", WU }, { "S", WU }, { "D", FA }, { "F", FA }, { "G", SHEN }, { "H", SHEN }, // 下行
     };
-    const float SLOT_W = 20.0f, SLOT_GAP = 2.0f, GROUP_GAP = 10.0f;
-    const int GROUP_SIZE = 2, N = 8;
-    const float total_w = N * SLOT_W + (N - 1) * SLOT_GAP + 3 * GROUP_GAP; // 204
-    const float x0 = (480.0f - total_w) * 0.5f;
-    const float y = 270.0f - 24.0f;
+    const float SLOT_W = 20.0f, SLOT_GAP = 2.0f;
+    const int COLS = 6, N = 12;
+    const float row_w = COLS * SLOT_W + (COLS - 1) * SLOT_GAP; // 130
+    const float x0 = (480.0f - row_w) * 0.5f;                  // 175
+    const float y_top = 270.0f - 48.0f;  // 上排 y=222
+    const float y_bot = 270.0f - 24.0f;  // 下排 y=246
 
     for (int i = 0; i < N; i++) {
-        float x = x0 + i * (SLOT_W + SLOT_GAP) + (i / GROUP_SIZE) * GROUP_GAP;
+        int row = i / COLS, col = i % COLS;
+        float x = x0 + col * (SLOT_W + SLOT_GAP);
+        float y = (row == 0) ? y_top : y_bot;
 
         ColorRect *slot = memnew(ColorRect);
         slot->set_position(Vector2(x, y));
@@ -394,16 +396,6 @@ void GameHUD::_create_skill_bar() {
         add_child(cd);
         _skill_bar_nodes.push_back(cd);
         _skill_cd_labels.push_back(cd);
-
-        if (SLOTS[i].caption) {
-            Label *cap = memnew(Label);
-            cap->set_text(LOC(SLOTS[i].caption));
-            cap->add_theme_font_size_override("font_size", 7);
-            cap->add_theme_color_override("font_color", Color(0.6f, 0.6f, 0.6f, 0.9f));
-            cap->set_position(Vector2(x + 2, y - 10));
-            add_child(cap);
-            _skill_bar_nodes.push_back(cap);
-        }
     }
 
     // 法宝页徽标（B 切换；仅法宝页显示）
@@ -411,7 +403,7 @@ void GameHUD::_create_skill_bar() {
     _page_badge->set_text(LOC("法宝页 [B 返回]"));
     _page_badge->add_theme_font_size_override("font_size", 8);
     _page_badge->add_theme_color_override("font_color", Color(1.0f, 0.85f, 0.4f, 0.95f));
-    _page_badge->set_position(Vector2(x0 + total_w + 8.0f, y + 6.0f));
+    _page_badge->set_position(Vector2(x0 + row_w + 8.0f, y_bot + 6.0f));
     _page_badge->set_visible(false);
     add_child(_page_badge);
     _skill_bar_nodes.push_back(_page_badge);
@@ -477,7 +469,7 @@ void GameHUD::on_dongtian_exited() {
 void GameHUD::_on_language_changed(const String &p_locale) {
     // Refresh static labels that are set once in _create_* methods
     if (_realm_label) _realm_label->set_text(LOC("凡人"));
-    if (_jiyuan_label) _jiyuan_label->set_text(LOC("机缘已至 [Q]"));
+    if (_jiyuan_label) _jiyuan_label->set_text(LOC("机缘已至 [L]"));
     if (_page_badge) _page_badge->set_text(LOC("法宝页 [B 返回]"));
     // 灵力/修为条前缀随境界（凡尘=灵力/修为，仙级=仙元）重取本地化
     bool immortal = false;
@@ -607,7 +599,7 @@ void GameHUD::_create_pressure_indicators() {
 	add_child(_wei_bg);
 
 	_wei_label = memnew(Label);
-	_wei_label->set_text(LOC("V 威压"));
+	_wei_label->set_text(LOC("U 威压"));
 	_wei_label->add_theme_font_size_override("font_size", FONT_SIZE_XS);
 	_wei_label->add_theme_color_override("font_color", Color(0.9f, 0.7f, 0.3f, 0.95f));
 	_wei_label->set_position(Vector2(x0 + 2, y - 1));
@@ -621,7 +613,7 @@ void GameHUD::_create_pressure_indicators() {
 	add_child(_lin_bg);
 
 	_lin_label = memnew(Label);
-	_lin_label->set_text(LOC("R 灵压"));
+	_lin_label->set_text(LOC("P 灵压"));
 	_lin_label->add_theme_font_size_override("font_size", FONT_SIZE_XS);
 	_lin_label->add_theme_color_override("font_color", Color(0.7f, 0.5f, 0.95f, 0.95f));
 	_lin_label->set_position(Vector2(x0 + W + 6, y - 1));
@@ -647,7 +639,7 @@ void GameHUD::_update_pressure_indicators() {
 		_wei_label->add_theme_color_override("font_color", Color(0.4f, 0.35f, 0.30f, 0.9f));
 		_wei_bg->set_color(Color(0.08f, 0.06f, 0.03f, 0.7f));
 	} else {
-		_wei_label->set_text(LOC("V 威压"));
+		_wei_label->set_text(LOC("U 威压"));
 		_wei_label->add_theme_color_override("font_color", Color(1.0f, 0.85f, 0.35f, 0.95f));
 		_wei_bg->set_color(Color(0.18f, 0.14f, 0.05f, 0.85f));
 	}
@@ -657,7 +649,7 @@ void GameHUD::_update_pressure_indicators() {
 		_lin_label->add_theme_color_override("font_color", Color(0.40f, 0.30f, 0.35f, 0.9f));
 		_lin_bg->set_color(Color(0.06f, 0.03f, 0.10f, 0.7f));
 	} else {
-		_lin_label->set_text(LOC("R 灵压"));
+		_lin_label->set_text(LOC("P 灵压"));
 		_lin_label->add_theme_color_override("font_color", Color(0.85f, 0.65f, 1.0f, 0.95f));
 		_lin_bg->set_color(Color(0.12f, 0.07f, 0.18f, 0.85f));
 	}
@@ -746,13 +738,14 @@ void GameHUD::_update_skill_bar() {
     int page = _player->get_skill_page();
     if (_page_badge)
         _page_badge->set_visible(page == 1);
-    // 槽 i 的数据源：法宝页且 i<6 → 法宝槽；其余 → 技能槽（T/Y 两页通用）
+    // 槽 i 的数据源：法宝页且对应下行 A~H（slot 6..11）→ 法宝槽 0..5；其余 → 技能槽
     SkillSystem *skills = _player->get_skills();
     ArtifactSystem *arts = _player->get_artifacts();
     for (int i = 0; i < (int)_skill_name_labels.size(); i++) {
-        bool artifact_side = (page == 1 && i < 6);
+        bool artifact_side = (page == 1 && i >= 6 && i < 12); // 下行 ASDFGH
+        int art_slot = i - 6;
         Dictionary info = artifact_side
-            ? (arts ? arts->get_slot_info(i) : Dictionary())
+            ? (arts ? arts->get_slot_info(art_slot) : Dictionary())
             : (skills ? skills->get_slot_info(i) : Dictionary());
         if (info.is_empty() || info.has("locked")) {
             _skill_name_labels[i]->set_text(info.has("locked") ? LOC("×") : LOC("·"));

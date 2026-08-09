@@ -246,14 +246,18 @@ public:
 	float get_passive_law_regen_mult() const { return 1.0f + _passive_sum(PAS_LAW_REGEN); }
 	float get_passive_elem_resist() const { return _passive_sum(PAS_ELEM_RESIST); } // 全元素抗性加成（0.1 = +10%）
 
-	static const int SLOT_COUNT = 8;
+	static const int SLOT_COUNT = 12;
+	// 键位映射（QWERTY 上行 0..5 / ASDFGH 下行 6..11）：
+	//   Q W E R T Y  = slot 0 1 2 3 4 5
+	//   A S D F G H  = slot 6 7 8 9 10 11
+	// 类型分组：Q/W/A/S 武技，E/R/D/F 法术，T/Y/G 神通，H 仙法
 	static SkillType slot_type(int p_slot) {
 		switch (p_slot) {
-			case 0: case 1: return TYPE_MARTIAL;
-			case 2: case 3: return TYPE_SPELL;
-			case 6: return TYPE_SHENTONG;
-			case 7: return TYPE_XIANFA;
-			default: return TYPE_SHENTONG;
+			case 0: case 1: case 6: case 7: return TYPE_MARTIAL;   // Q W A S
+			case 2: case 3: case 8: case 9: return TYPE_SPELL;     // E R D F
+			case 4: case 5: case 10: return TYPE_SHENTONG;         // T Y G
+			case 11: return TYPE_XIANFA;                           // H
+			default: return TYPE_MARTIAL;
 		}
 	}
 

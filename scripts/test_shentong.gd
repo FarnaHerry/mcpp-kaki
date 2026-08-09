@@ -47,7 +47,7 @@ func _process(delta) -> bool:
 			_check(float(cult.call("get_law_power_max")) == 100.0, "law power max 100 at SPIRIT_SEVERING")
 			_check(float(cult.call("get_law_power")) == 100.0, "law power refilled on unlock")
 			var sk = p.call("get_skills")
-			var s6 = sk.call("get_slot_info", 6)
+			var s6 = sk.call("get_slot_info", 4)
 			print("[TEST] slot T: ", s6.get("id"))
 			_check(String(s6.get("id")) == "suo_di_cheng_cun", "suo_di_cheng_cun granted to slot T")
 		3:
@@ -59,7 +59,7 @@ func _process(delta) -> bool:
 			var x0 = p.global_position.x
 			print("[TEST] blink from ", p.global_position)
 			var law0 = float(cult.call("get_law_power"))
-			var ok = bool(sk.call("cast_slot", 6))
+			var ok = bool(sk.call("cast_slot", 4))
 			var x1 = p.global_position.x
 			var law1 = float(cult.call("get_law_power"))
 			print("[TEST] blink cast=", ok, " x ", x0, "->", x1, " law ", law0, "->", law1)
@@ -67,14 +67,14 @@ func _process(delta) -> bool:
 			_check(int(cult.call("get_realm_index")) >= 5, "realm unchanged after blink")
 			_check(x1 - x0 > 60.0, "blink moved player forward")
 			_check(abs(law0 - law1 - 30.0) < 0.01, "shentong consumed 30 law power")
-			_check(not bool(sk.call("cast_slot", 6)), "shentong cooldown blocks recast")
+			_check(not bool(sk.call("cast_slot", 4)), "shentong cooldown blocks recast")
 		4:
 			_next = _t + 0.3
 			var p = root.find_child("Player", true, false)
 			var sk = p.call("get_skills")
 			# 槽型校验：神通不能装仙法槽 Y，也不能装武技槽 A
-			_check(not bool(sk.call("assign", 7, "suo_di_cheng_cun")), "shentong rejected from xianfa slot")
-			_check(not bool(sk.call("assign", 0, "suo_di_cheng_cun")), "shentong rejected from martial slot")
+			_check(not bool(sk.call("assign", 11, "suo_di_cheng_cun")), "shentong rejected from xianfa slot H")
+			_check(not bool(sk.call("assign", 0, "suo_di_cheng_cun")), "shentong rejected from martial slot Q")
 		5:
 			_next = _t + 0.3
 			var p = root.find_child("Player", true, false)
@@ -86,7 +86,7 @@ func _process(delta) -> bool:
 			# 技能槽存档往返
 			var d = sk.call("save_to_dict")
 			sk.call("load_from_dict", d)
-			var s6 = sk.call("get_slot_info", 6)
+			var s6 = sk.call("get_slot_info", 4)
 			_check(String(s6.get("id")) == "suo_di_cheng_cun", "save/load shentong slot roundtrip")
 		6:
 			print("[TEST] DONE fail=", _fail)

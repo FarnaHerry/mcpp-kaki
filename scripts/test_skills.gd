@@ -45,8 +45,8 @@ func _process(delta) -> bool:
 			_check(p != null, "player exists")
 			var sk = p.call("get_skills")
 			_check(sk != null, "skill system exists")
-			var s0 = sk.call("get_slot_info", 0)
-			var s1 = sk.call("get_slot_info", 1)
+			var s0 = sk.call("get_slot_info", 6)
+			var s1 = sk.call("get_slot_info", 7)
 			print("[TEST] slot A: ", s0.get("id"), " slot S: ", s1.get("id"))
 			_check(String(s0.get("id")) == "po_kong_zhan", "slot A = po_kong_zhan (starter martial)")
 			_check(String(s1.get("id")) == "tu_jin_zhan", "slot S = tu_jin_zhan")
@@ -54,8 +54,8 @@ func _process(delta) -> bool:
 			_next = _t + 0.3
 			var p = root.find_child("Player", true, false)
 			var sk = p.call("get_skills")
-			var ok1 = bool(sk.call("cast_slot", 0))
-			var ok2 = bool(sk.call("cast_slot", 0))
+			var ok1 = bool(sk.call("cast_slot", 6))
+			var ok2 = bool(sk.call("cast_slot", 6))
 			print("[TEST] cast A: first=", ok1, " immediate recast=", ok2)
 			_check(ok1, "martial cast succeeds")
 			_check(not ok2, "cooldown blocks immediate recast")
@@ -73,7 +73,7 @@ func _process(delta) -> bool:
 			_next = _t + 0.6
 			var p = root.find_child("Player", true, false)
 			var sk = p.call("get_skills")
-			var ok = bool(sk.call("cast_slot", 0)) # 破空斩 ×2.5
+			var ok = bool(sk.call("cast_slot", 6)) # 破空斩 ×2.5
 			_check(ok, "martial recast after cooldown")
 		5:
 			_next = _t + 0.3
@@ -98,8 +98,8 @@ func _process(delta) -> bool:
 			_next = _t + 0.3
 			var p = root.find_child("Player", true, false)
 			var sk = p.call("get_skills")
-			var s2 = sk.call("get_slot_info", 2)
-			var s3 = sk.call("get_slot_info", 3)
+			var s2 = sk.call("get_slot_info", 8)
+			var s3 = sk.call("get_slot_info", 9)
 			print("[TEST] slot D: ", s2.get("id"), " slot F: ", s3.get("id"))
 			_check(String(s2.get("id")) == "huo_dan_shu", "slot D = huo_dan_shu (granted at QI_REFINING)")
 			_check(String(s3.get("id")) == "bing_zhui_shu", "slot F = bing_zhui_shu")
@@ -111,22 +111,22 @@ func _process(delta) -> bool:
 			cult.call("set_mana", 100.0)
 			var mana0 = float(cult.call("get_mana"))
 			var proj0 = root.find_children("*", "Projectile", true, false).size()
-			var ok = bool(sk.call("cast_slot", 2))
+			var ok = bool(sk.call("cast_slot", 8))
 			var mana1 = float(cult.call("get_mana"))
 			var proj1 = root.find_children("*", "Projectile", true, false).size()
 			print("[TEST] spell cast=", ok, " mana ", mana0, "->", mana1, " projectiles ", proj0, "->", proj1)
 			_check(ok, "spell cast succeeds")
 			_check(mana1 < mana0, "spell consumed mana")
 			_check(proj1 > proj0, "projectile spawned")
-			_check(not bool(sk.call("cast_slot", 2)), "spell cooldown blocks recast")
+			_check(not bool(sk.call("cast_slot", 8)), "spell cooldown blocks recast")
 		9:
 			_next = _t + 0.3
 			var p = root.find_child("Player", true, false)
 			var sk = p.call("get_skills")
 			var d = sk.call("save_to_dict")
 			sk.call("load_from_dict", d)
-			var s0 = sk.call("get_slot_info", 0)
-			var s2 = sk.call("get_slot_info", 2)
+			var s0 = sk.call("get_slot_info", 6)
+			var s2 = sk.call("get_slot_info", 8)
 			_check(String(s0.get("id")) == "po_kong_zhan", "save/load martial slot roundtrip")
 			_check(String(s2.get("id")) == "huo_dan_shu", "save/load spell slot roundtrip")
 		10:

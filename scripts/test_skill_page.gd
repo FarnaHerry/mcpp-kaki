@@ -83,13 +83,13 @@ func _process(delta) -> bool:
 			_press("skill_a") # 装 A 槽（武技 ✓）
 			_step = 7
 		7:
-			var info = _player().call("get_skills").call("get_slot_info", 0)
+			var info = _player().call("get_skills").call("get_slot_info", 6)
 			_check(String(info.get("id", "")) == "tu_jin_zhan", "突进斩已装 A 槽")
 			_check(_has_label("已装配 [A] 突进斩"), "装配成功提示")
 			_press("skill_d") # 武技装法术槽（✗）
 			_step = 8
 		8:
-			var info = _player().call("get_skills").call("get_slot_info", 2)
+			var info = _player().call("get_skills").call("get_slot_info", 8)
 			_check(info.is_empty(), "类型不符拒装（D 槽仍空）")
 			_check(_has_label("类型不符"), "拒装提示")
 			_step = 9

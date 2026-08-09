@@ -141,8 +141,8 @@ class Player : public CharacterBody2D {
 		void leave_sect();                           // 叛门（贡献清零，技能保留）
 		AlchemySystem *get_alchemy() const { return _alchemy; }
 		// 威压/灵压（design/sect-pressure.md §二）
-		bool cast_wei_pressure(); // 威压 V：慑服低阶敌人（debuff 无伤）
-		bool cast_lin_pressure(); // 灵压 R：法术伤害低阶敌人，大境界差直接镇杀
+		bool cast_wei_pressure(); // 威压 U：慑服低阶敌人（debuff 无伤）
+		bool cast_lin_pressure(); // 灵压 P：法术伤害低阶敌人，大境界差直接镇杀
 		double get_wei_cooldown_left() const { return Math::max(0.0, _wei_cd_until - _time); }
 		double get_lin_cooldown_left() const { return Math::max(0.0, _lin_cd_until - _time); }
 		// B 键技能页：0=战斗页(A/S武技 D/F法术) 1=法宝页(A~H=法宝槽0..5)

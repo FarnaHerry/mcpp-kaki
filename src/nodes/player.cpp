@@ -371,7 +371,7 @@ namespace godot {
 		}
 	};
 
-	// ------- Meditate（打坐：平常修炼 + 突破入口，Q 入坐/收功）-------
+	// ------- Meditate（打坐：平常修炼 + 突破入口，L 入坐/收功）-------
 	class PlayerMeditateState : public State<Player> {
 		double _sit_time = 0.0;    // 入坐时长（1s 后自动请求突破）
 		double _energy_frac = 0.0; // 修为小数积累（每帧增量可能 <1）
@@ -861,12 +861,13 @@ namespace godot {
 			toggle_skill_page();
 		}
 
-		// 技能槽输入（DNF 式字母区）：战斗页=A/S武技 D/F法术；法宝页=A~H=法宝槽0..5
+		// 技能槽输入（DNF 式字母区）：技能页=QWERTY/ASDFGH 12 槽；法宝页=A~H=法宝槽0..5
 		Input *input = Input::get_singleton();
-		static const char *SLOT_ACTIONS[8] = {
-			"skill_a", "skill_s", "skill_d", "skill_f", "skill_g", "skill_h", "skill_t", "skill_y"
+		static const char *SLOT_ACTIONS[12] = {
+			"skill_q", "skill_w", "skill_e", "skill_r", "skill_t", "skill_y", // 上行 QWERTY = 0..5
+			"skill_a", "skill_s", "skill_d", "skill_f", "skill_g", "skill_h"  // 下行 ASDFGH = 6..11
 		};
-		for (int i = 0; i < 8; i++) {
+		for (int i = 0; i < 12; i++) {
 			if (!input->is_action_just_pressed(SLOT_ACTIONS[i])) continue;
 			if (_skill_page == 1 && i < 6) {
 				// 法宝页：A~H = 法宝槽 0..5（T/Y 神通/仙法两页通用）
@@ -901,7 +902,7 @@ namespace godot {
 			}
 		}
 
-		// Q 打坐/收功：地面入坐修炼（修为+灵力回复）；修为封顶后打坐中自动请求机缘突破
+		// L 打坐/收功：地面入坐修炼（修为+灵力回复）；修为封顶后打坐中自动请求机缘突破
 		if (Input::get_singleton()->is_action_just_pressed("cultivate")) {
 			if (is_meditating()) {
 				state_machine->transition_to(PlayerStates::Idle);
@@ -910,7 +911,7 @@ namespace godot {
 			}
 		}
 
-		// V 威压 / R 灵压（design/sect-pressure.md §二）
+		// U 威压 / P 灵压（design/sect-pressure.md §二）
 		if (Input::get_singleton()->is_action_just_pressed("pressure_wei")) {
 			cast_wei_pressure();
 		}
@@ -1225,8 +1226,8 @@ namespace godot {
 		// 凡人起步即会的基础武技（拳脚刀剑是凡人的本事）
 		_skills->learn(StringName("po_kong_zhan"));
 		_skills->learn(StringName("tu_jin_zhan"));
-		_skills->assign(0, StringName("po_kong_zhan")); // A
-		_skills->assign(1, StringName("tu_jin_zhan"));  // S
+		_skills->assign(6, StringName("po_kong_zhan")); // A（下行武技）
+		_skills->assign(7, StringName("tu_jin_zhan"));  // S（下行武技）
 		_abilities->set_cultivation(_cultivation);
 		_abilities->connect("ability_unlocked", Callable(this, "_on_ability_unlocked"));
 		_cultivation->connect("realm_changed", Callable(this, "_on_cultivation_realm_changed"));
@@ -1349,10 +1350,10 @@ namespace godot {
 			if (_skills) {
 				_skills->learn(StringName("huo_dan_shu"));
 				_skills->learn(StringName("bing_zhui_shu"));
-				if (_skills->get_slot_skill(2) == StringName())
-					_skills->assign(2, StringName("huo_dan_shu")); // D
-				if (_skills->get_slot_skill(3) == StringName())
-					_skills->assign(3, StringName("bing_zhui_shu")); // F
+				if (_skills->get_slot_skill(8) == StringName())
+					_skills->assign(8, StringName("huo_dan_shu")); // D（下行法术）
+				if (_skills->get_slot_skill(9) == StringName())
+					_skills->assign(9, StringName("bing_zhui_shu")); // F（下行法术）
 				// 炼气武技精进：旋风斩/升龙击（v1 境界授予，后续改师傅/掉落）
 				_skills->learn(StringName("xuan_feng_zhan"));
 				_skills->learn(StringName("sheng_long_ji"));
@@ -1414,8 +1415,8 @@ namespace godot {
 		if (_skills && p_old_realm < CultivationSystem::SPIRIT_SEVERING &&
 		    p_new_realm >= CultivationSystem::SPIRIT_SEVERING) {
 			_skills->learn(StringName("suo_di_cheng_cun"));
-			if (_skills->get_slot_skill(6) == StringName())
-				_skills->assign(6, StringName("suo_di_cheng_cun")); // T
+			if (_skills->get_slot_skill(4) == StringName())
+				_skills->assign(4, StringName("suo_di_cheng_cun")); // T（上行神通）
 			// 金刚不坏（金之法则）/ 三昧真火（火之法则）
 			_skills->learn(StringName("jin_gang_bu_huai"));
 			_skills->learn(StringName("san_mei_zhen_huo"));
@@ -1445,8 +1446,8 @@ namespace godot {
 			}
 			if (_skills) {
 				_skills->learn(StringName("tian_lei_yin"));
-				if (_skills->get_slot_skill(7) == StringName())
-					_skills->assign(7, StringName("tian_lei_yin")); // Y
+				if (_skills->get_slot_skill(11) == StringName())
+					_skills->assign(11, StringName("tian_lei_yin")); // H（仙法槽）
 			}
 		}
 	}
