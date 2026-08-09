@@ -140,8 +140,9 @@ namespace godot {
 				if (_time >= bolt.strike_at) {
 					bolt.struck = true;
 					// 命中判定：玩家 x 在雷柱半宽内（竞技场内全高度）
+					// 雷灾 = 雷元素结算：元素抗性可减免，物理防御不可（渡劫非堆防硬抗）
 					if (Math::abs(_player->get_global_position().x - bolt.x) <= THUNDER_HIT_HALF_W) {
-						_player->take_damage(dmg, this);
+						_player->take_damage_typed(dmg, int(DMG_ELEMENTAL), int(ELEM_LEI), this);
 					}
 					if (bolt.visual)
 						bolt.visual->set_color(Color(1, 1, 1, 1));
@@ -203,7 +204,8 @@ namespace godot {
 		_dot_accum += p_delta;
 		while (_dot_accum >= FIRE_TICK) {
 			_dot_accum -= FIRE_TICK;
-			_player->take_damage(_player->max_health * FIRE_DMG_FRAC, this);
+			// 阴火 = 火元素结算（比例抗性减免，防御无效）
+			_player->take_damage_typed(_player->max_health * FIRE_DMG_FRAC, int(DMG_ELEMENTAL), int(ELEM_HUO), this);
 		}
 		if (_phase_elapsed >= FIRE_DURATION) {
 			_begin_phase(PHASE_WIND);
@@ -224,11 +226,11 @@ namespace godot {
 		}
 		_player->set_velocity(_player->get_velocity() + _gust_dir * GUST_FORCE * (float)p_delta);
 
-		// 风蚀骨肉
+		// 风蚀骨肉（赑风 = 风元素结算）
 		_erode_accum += p_delta;
 		while (_erode_accum >= 0.5) {
 			_erode_accum -= 0.5;
-			_player->take_damage(_player->max_health * WIND_ERODE_FRAC, this);
+			_player->take_damage_typed(_player->max_health * WIND_ERODE_FRAC, int(DMG_ELEMENTAL), int(ELEM_FENG), this);
 		}
 
 		if (_phase_elapsed >= WIND_DURATION) {

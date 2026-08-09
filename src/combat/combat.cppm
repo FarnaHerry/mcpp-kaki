@@ -21,7 +21,8 @@ namespace godot {
 
 // 伤害类型体系（design/gongfa-skills.md 第六节，已定稿）：
 //   三大类：物理 / 法术 / 元素（五行起步，预留拓展）
-//   注意：三灾（Tribulation）是渡劫劫难专用独立枚举，不进本元素系统。
+//   注意：三灾（Tribulation）走 DMG_ELEMENTAL 元素结算（雷=LEI/阴火=HUO/赑风=FENG），
+//   比例抗性可减免、物理防御不能——渡劫不可堆防硬抗。
 export enum DamageCategory {
 	DMG_PHYSICAL = 0, // 物理：普攻、武技；被防御平减
 	DMG_SPELL,        // 法术：无属性法术；被法术抗性按比例减免
@@ -36,7 +37,8 @@ export enum Element {
 	ELEM_HUO,   // 火
 	ELEM_TU,    // 土
 	ELEM_LEI,   // 雷（拓展位启用；不入五行克制环）
-	ELEM_COUNT, // 后续：风/冰/毒…（数组容量预留 8）
+	ELEM_FENG,  // 风（赑风天劫用；不入五行克制环）
+	ELEM_COUNT, // 后续：冰/毒…（数组容量预留 8）
 	ELEM_CAPACITY = 8,
 };
 

@@ -59,6 +59,9 @@ void AlchemySystem::ensure_loaded() {
 	if (dl) {
 		Array all = dl->get_all_recipes();
 		if (all.size() > 0) {
+			// 每方 6 串（id/name/desc/3材）：必须预留容量——vector 扩容会使已存 Recipe 的 c_str 指针悬垂
+			s_strings.reserve((size_t)all.size() * 6);
+			s_recipes.reserve((size_t)all.size());
 			for (int i = 0; i < all.size(); i++) {
 				Dictionary d = all[i];
 				// Push all strings first, then reference by index
@@ -144,18 +147,24 @@ void AlchemySystem::ensure_loaded() {
 
 	static constexpr int RECIPE_COUNT = sizeof(RECIPES) / sizeof(RECIPES[0]);
 
+	// 配方访问统一走 s_recipes（DataLoader JSON 优先，硬编码 RECIPES 兜底——见 ensure_loaded）
 	const AlchemySystem::Recipe *AlchemySystem::find_recipe(const StringName &p_id) {
-		for (const Recipe &r : RECIPES) {
+		ensure_loaded();
+		for (const Recipe &r : s_recipes) {
 			if (StringName(r.id) == p_id) return &r;
 		}
 		return nullptr;
 	}
 
-	int AlchemySystem::get_recipe_count() { return RECIPE_COUNT; }
+	int AlchemySystem::get_recipe_count() {
+		ensure_loaded();
+		return (int)s_recipes.size();
+	}
 
 	const AlchemySystem::Recipe *AlchemySystem::get_recipe(int p_idx) {
-		if (p_idx < 0 || p_idx >= RECIPE_COUNT) return nullptr;
-		return &RECIPES[p_idx];
+		ensure_loaded();
+		if (p_idx < 0 || p_idx >= (int)s_recipes.size()) return nullptr;
+		return &s_recipes[p_idx];
 	}
 
 	void AlchemySystem::_bind_methods() {
@@ -221,11 +230,12 @@ void AlchemySystem::ensure_loaded() {
 	}
 
 	Array AlchemySystem::get_recipe_list() const {
+		ensure_loaded();
 		Array out;
 		Inventory *inv = (_player && _player->get_inventory()) ? _player->get_inventory() : nullptr;
 		ItemDatabase *db = ItemDatabase::get_singleton();
-		for (int ri = 0; ri < RECIPE_COUNT; ri++) {
-			const Recipe &r = RECIPES[ri];
+		for (int ri = 0; ri < (int)s_recipes.size(); ri++) {
+			const Recipe &r = s_recipes[ri];
 			Dictionary d;
 			d["id"] = StringName(r.id);
 			d["name"] = LOC(r.name);

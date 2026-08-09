@@ -490,6 +490,7 @@ namespace godot {
 		e->move_speed = 70.0f * cs->get_speed_multiplier();
 		e->detection_radius = 999.0f; // 秘境锁死，全图索敌
 		e->attack_range = 36.0f;
+		e->realm = cs->get_realm_index(); // 与玩家同境：威压/灵压不可慑服劫数（否则镜像战形同虚设）
 
 		CollisionShape2D *shape = memnew(CollisionShape2D);
 		Ref<CapsuleShape2D> cap;

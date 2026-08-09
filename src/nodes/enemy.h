@@ -75,6 +75,8 @@ class Enemy : public CharacterBody2D {
 
 		void _activate_boss_hud();         // aggro/受击时上报 HUD Boss 条（状态类需访问，公开）
 		bool _boss_hud_active = false;     // 已上报 HUD Boss 条（避免重复 started）
+		void _apply_boss_hp_scale();       // Boss ×5 血量（幂等）
+		bool _boss_hp_scaled = false;      // Boss ×5 血量已应用（幂等标记）
 
 		void take_damage(float p_amount, Node *p_source);
 		void take_damage_typed(float p_amount, int p_cat, int p_elem, Node *p_source); // 投射物用（Variant 可传 int）
@@ -94,7 +96,7 @@ class Enemy : public CharacterBody2D {
 		void set_attack_cooldown(float v) { attack_cooldown = v; }
 		void set_is_ranged(bool v) { is_ranged = v; }
 		void set_is_flying(bool v) { is_flying = v; }
-		void set_is_boss(bool v) { is_boss = v; }
+		void set_is_boss(bool v); // 见 enemy.cpp：×5 血量在置位时补偿（_ready 时序陷阱修复）
 		void set_no_drops(bool v) { no_drops = v; }
 		void set_show_hp_bar(bool v) { show_hp_bar = v; }
 		void set_is_soul_reaper(bool v) { is_soul_reaper = v; }
