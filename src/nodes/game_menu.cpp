@@ -1529,14 +1529,24 @@ void GameMenu::_apply_window_geometry() {
 	_geom_target_h = h;
 }
 
+// 整数最大公约数（viewport 整除用）
+static int _igcd(int a, int b) {
+	while (b) { int t = a % b; a = b; b = t; }
+	return a;
+}
+
 void GameMenu::_apply_content_scale(int p_w, int p_h) {
 	Window *wnd = get_tree() ? get_tree()->get_root() : nullptr;
 	if (!wnd) return;
-	// 整数 scale N：视口逻辑尺寸 = 窗口/N（比例=窗口比例）。scale=N 整数 → 像素整齐不花屏；
-	// 视口 ≥ 480×270（内容完整），宽/高超出整数倍的余量由视口扩展显示更多世界（16 和 9 同时多也吃满）。
+	// 视口跟随窗口比例且**精确整除**：N = 最接近理想整数倍(≤min(宽/480,高/270))的 gcd 因子。
+	// 保证 floor(宽/vw)==floor(高/vh)==N → Godot integer scale 恰好 = N → viewport×N == 窗口，
+	// 任意窗口/全屏（含 16 和 9 同时超出整数倍）双轴精确吃满无黑边。
+	// 视口比例 = 窗口比例（非裁剪 16:9），480×270 内容完整显示，多余部分延伸显示更多世界。
+	int g = _igcd(p_w, p_h);
 	int n = MAX(1, MIN(p_w / 480, p_h / 270));
-	int vw = MAX(480, (int)Math::round(p_w / (float)n));
-	int vh = MAX(270, (int)Math::round(p_h / (float)n));
+	while (n > 1 && (g % n) != 0) n--;
+	int vw = MAX(1, p_w / n);
+	int vh = MAX(1, p_h / n);
 	wnd->set_content_scale_size(Vector2i(vw, vh));
 }
 
