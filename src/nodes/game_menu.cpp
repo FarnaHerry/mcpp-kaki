@@ -22,6 +22,7 @@ module;
 #include <godot_cpp/classes/audio_server.hpp>
 #include <godot_cpp/classes/color_rect.hpp>
 #include <godot_cpp/classes/config_file.hpp>
+#include <godot_cpp/classes/display_server.hpp>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/input.hpp>
 #include <godot_cpp/classes/input_event_key.hpp>
@@ -91,6 +92,7 @@ void GameMenu::_ready() {
 
 	_load_settings();
 	_apply_volume();
+	_apply_display();
 
 	_dim->set_visible(false);
 	_tabs_layer->set_visible(false);
@@ -123,6 +125,7 @@ void GameMenu::_open_menu(int p_page) {
 
 void GameMenu::_close_menu() {
 	_open = false;
+	_res_editing = false; // 自定义分辨率微调子态随菜单关闭复位
 	if (_inv_panel) _inv_panel->close();
 	for (CanvasItem *n : _page_nodes) {
 		if (n) n->queue_free();
@@ -135,6 +138,7 @@ void GameMenu::_close_menu() {
 
 void GameMenu::_switch_page(int p_page) {
 	_page = (p_page + PAGE_COUNT) % PAGE_COUNT;
+	_res_editing = false; // 离开设置页时复位微调子态
 	_rebuild_page();
 }
 
@@ -344,7 +348,7 @@ void GameMenu::_build_ability_page() {
 		_page_nodes.push_back(v);
 
 		Label *r = memnew(Label);
-		r->set_text(LOC("✓ 灵压 P  — 法伤低阶/镇杀（耗灵60 cd15s）"));
+		r->set_text(LOC("✓ 灵压 I  — 法伤低阶/镇杀（耗灵60 cd15s）"));
 		r->add_theme_font_size_override("font_size", 8);
 		r->add_theme_color_override("font_color", Color(0.55f, 0.9f, 0.55f));
 		r->set_position(Vector2(60, 250));
@@ -1262,29 +1266,49 @@ void GameMenu::_build_settings_page() {
 	_refresh_settings_page();
 }
 
+// 设置页行序：0主音量 1语言 2窗口模式 3分辨率 4保存 5退出
+static const int SETTINGS_ROWS = 6;
+// 窗口模式 4 档：窗口 / 无边框窗口 / 全屏（无边框） / 独占全屏
+static const char *WMODE_NAMES[4] = { "窗口", "无边框窗口", "全屏", "独占全屏" };
+// 分辨率预设档（内部 480×270 canvas_items stretch，窗口尺寸=放大倍数）
+static const int RES_PRESETS[][2] = {
+	{ 960, 540 }, { 1280, 720 }, { 1600, 900 }, { 1920, 1080 }, { 2560, 1440 }, { 3840, 2160 },
+};
+static const int RES_PRESET_COUNT = 6;
+
+String GameMenu::_resolution_label() const {
+	if (_resolution_custom) {
+		return LOC("自定义") + " " + String::num_int64(_custom_w) + "×" + String::num_int64(_custom_h);
+	}
+	return String::num_int64(RES_PRESETS[_resolution_idx][0]) + "×" + String::num_int64(RES_PRESETS[_resolution_idx][1]);
+}
+
 void GameMenu::_refresh_settings_page() {
 	for (CanvasItem *n : _page_nodes) {
 		if (n) n->queue_free();
 	}
 	_page_nodes.clear();
 
-	static const char *ITEM_NAMES[3] = { "保存游戏", "退出游戏", "" };
 	bool is_en = Localization::get_singleton() && Localization::get_singleton()->get_language() == "en";
 	String lang_label = LOC("语言") + ": < " + LOC(is_en ? "English" : "中文") + " >";
 	String vol = LOC("主音量") + "  < " + String::num_int64(int64_t(Math::round(_volume * 100.0f))) + "% >";
-	String names[4] = { vol, lang_label, LOC(ITEM_NAMES[0]), LOC(ITEM_NAMES[1]) };
+	String wmode = LOC("窗口模式") + "  < " + LOC(WMODE_NAMES[_window_mode_opt]) + " >";
+	bool fullscreen = _window_mode_opt >= 2; // 全屏档分辨率由屏幕决定
+	String res = LOC("分辨率") + (fullscreen ? String("  ") + LOC("（全屏由屏幕决定）")
+										 : "  < " + _resolution_label() + " >");
+	String names[SETTINGS_ROWS] = { vol, lang_label, wmode, res, LOC("保存游戏"), LOC("退出游戏") };
 
 	Label *title = memnew(Label);
 	title->set_text(LOC("—— 设置 ——"));
 	title->add_theme_font_size_override("font_size", 13);
 	title->add_theme_color_override("font_color", Color(1.0f, 0.9f, 0.5f));
-	title->set_position(Vector2(195, 40));
+	title->set_position(Vector2(195, 34));
 	add_child(title);
 	_page_nodes.push_back(title);
 
-	for (int i = 0; i < 4; i++) {
+	for (int i = 0; i < SETTINGS_ROWS; i++) {
 		Label *l = memnew(Label);
-		if (_saved_flash > 0.0f && i == 2) {
+		if (_saved_flash > 0.0f && i == 4) {
 			l->set_text(LOC("   ") + LOC("已存档！"));
 		} else if (i == _settings_sel) {
 			l->set_text(LOC("▶ ") + names[i]);
@@ -1292,23 +1316,53 @@ void GameMenu::_refresh_settings_page() {
 			l->set_text(LOC("   ") + names[i]);
 		}
 		l->add_theme_font_size_override("font_size", 9);
-		l->add_theme_color_override("font_color",
-			i == _settings_sel ? Color(1.0f, 0.95f, 0.6f) : Color(0.85f, 0.85f, 0.85f));
-		l->set_position(Vector2(170, 80 + i * 22));
+		Color c = i == _settings_sel ? Color(1.0f, 0.95f, 0.6f) : Color(0.85f, 0.85f, 0.85f);
+		if (i == 3 && fullscreen) c = Color(0.45f, 0.45f, 0.45f); // 全屏下分辨率行灰显
+		l->add_theme_color_override("font_color", c);
+		l->set_position(Vector2(150, 66 + i * 24));
 		add_child(l);
 		_page_nodes.push_back(l);
+	}
+
+	// 分辨率行说明（选中且窗口模式时提示 X 进自定义）
+	if (_settings_sel == 3 && !fullscreen) {
+		Label *hint = memnew(Label);
+		hint->set_text(LOC("←/→ 预设档位，X 自定义微调（←/→ 宽 ↑/↓ 高）"));
+		hint->add_theme_font_size_override("font_size", 8);
+		hint->add_theme_color_override("font_color", Color(0.55f, 0.6f, 0.7f));
+		hint->set_position(Vector2(150, 66 + SETTINGS_ROWS * 24));
+		add_child(hint);
+		_page_nodes.push_back(hint);
 	}
 }
 
 void GameMenu::_handle_settings_input() {
 	Input *input = Input::get_singleton();
 
+	// 自定义分辨率微调子态：↑/↓←/→ 全归它，X/ESC 退出
+	if (_res_editing) {
+		bool changed = false;
+		if (input->is_action_just_pressed(LOC("left")))  { _custom_w = MAX(480, _custom_w - 10); changed = true; }
+		if (input->is_action_just_pressed(LOC("right"))) { _custom_w = MIN(7680, _custom_w + 10); changed = true; }
+		if (input->is_action_just_pressed(LOC("up")))    { _custom_h = MIN(4320, _custom_h + 10); changed = true; }
+		if (input->is_action_just_pressed(LOC("down")))  { _custom_h = MAX(270, _custom_h - 10); changed = true; }
+		if (changed) {
+			_apply_display(); _save_settings(); _refresh_settings_page();
+			return;
+		}
+		if (input->is_action_just_pressed(LOC("interact"))) {
+			_res_editing = false;
+			_refresh_settings_page();
+		}
+		return;
+	}
+
 	if (input->is_action_just_pressed(LOC("up"))) {
-		_settings_sel = (_settings_sel + 3) % 4;
+		_settings_sel = (_settings_sel + SETTINGS_ROWS - 1) % SETTINGS_ROWS;
 		_refresh_settings_page();
 	}
 	if (input->is_action_just_pressed(LOC("down"))) {
-		_settings_sel = (_settings_sel + 1) % 4;
+		_settings_sel = (_settings_sel + 1) % SETTINGS_ROWS;
 		_refresh_settings_page();
 	}
 	if (_settings_sel == 0) {
@@ -1334,13 +1388,49 @@ void GameMenu::_handle_settings_input() {
 		}
 		return;
 	}
+	// Row 2: window mode cycle
+	if (_settings_sel == 2) {
+		if (input->is_action_just_pressed(LOC("left")) || input->is_action_just_pressed(LOC("right"))) {
+			int dir = input->is_action_just_pressed(LOC("left")) ? -1 : 1;
+			_window_mode_opt = (_window_mode_opt + dir + 4) % 4;
+			_apply_display(); _save_settings(); _refresh_settings_page();
+		}
+		return;
+	}
+	// Row 3: resolution presets / custom (fullscreen 档下由屏幕决定，不响应)
+	if (_settings_sel == 3) {
+		if (_window_mode_opt < 2) {
+			if (input->is_action_just_pressed(LOC("left")) || input->is_action_just_pressed(LOC("right"))) {
+				int dir = input->is_action_just_pressed(LOC("left")) ? -1 : 1;
+				if (_resolution_custom) {
+					// 自定义态 ←/→ 先回到最近预设档再循环
+					_resolution_custom = false;
+				} else {
+					_resolution_idx = (_resolution_idx + dir + RES_PRESET_COUNT) % RES_PRESET_COUNT;
+				}
+				_apply_display(); _save_settings(); _refresh_settings_page();
+			}
+			if (input->is_action_just_pressed(LOC("interact"))) {
+				// X 进/出自定义微调
+				if (!_resolution_custom) {
+					_resolution_custom = true;
+					_custom_w = RES_PRESETS[_resolution_idx][0];
+					_custom_h = RES_PRESETS[_resolution_idx][1];
+					_save_settings();
+				}
+				_res_editing = !_res_editing;
+				_refresh_settings_page();
+			}
+		}
+		return;
+	}
 	if (input->is_action_just_pressed(LOC("interact"))) {
 		switch (_settings_sel) {
 			case 0:
 				_volume = CLAMP(_volume + 0.1f, 0.0f, 1.0f);
 				_apply_volume(); _save_settings(); _refresh_settings_page();
 				break;
-			case 2: {
+			case 4: {
 				Node *gm = get_tree()->get_current_scene()->get_node_or_null(NodePath("GameManager"));
 				if (gm) {
 					gm->call("save_game", String("auto"));
@@ -1349,7 +1439,7 @@ void GameMenu::_handle_settings_input() {
 				}
 				break;
 			}
-			case 3:
+			case 5:
 				get_tree()->quit();
 				break;
 		}
@@ -1365,11 +1455,49 @@ void GameMenu::_apply_volume() {
 	}
 }
 
+void GameMenu::_apply_display() {
+	DisplayServer *ds = DisplayServer::get_singleton();
+	if (!ds) return;
+	switch (_window_mode_opt) {
+		case 0: // 窗口
+			ds->window_set_mode(DisplayServer::WINDOW_MODE_WINDOWED);
+			ds->window_set_flag(DisplayServer::WINDOW_FLAG_BORDERLESS, false);
+			break;
+		case 1: // 无边框窗口
+			ds->window_set_mode(DisplayServer::WINDOW_MODE_WINDOWED);
+			ds->window_set_flag(DisplayServer::WINDOW_FLAG_BORDERLESS, true);
+			break;
+		case 2: // 全屏（无边框全屏）
+			ds->window_set_mode(DisplayServer::WINDOW_MODE_FULLSCREEN);
+			break;
+		case 3: // 独占全屏
+			ds->window_set_mode(DisplayServer::WINDOW_MODE_EXCLUSIVE_FULLSCREEN);
+			break;
+	}
+	// 分辨率仅窗口档生效（全屏由屏幕决定）
+	if (_window_mode_opt < 2) {
+		int w = _resolution_custom ? _custom_w : RES_PRESETS[_resolution_idx][0];
+		int h = _resolution_custom ? _custom_h : RES_PRESETS[_resolution_idx][1];
+		ds->window_set_size(Vector2i(w, h));
+		// 居中（像素窗缩放后偏左上体验差）
+		int screen = ds->window_get_current_screen();
+		Vector2i ss = ds->screen_get_size(screen);
+		if (ss.x > 0 && ss.y > 0) {
+			ds->window_set_position(Vector2i((ss.x - w) / 2, (ss.y - h) / 2));
+		}
+	}
+}
+
 void GameMenu::_load_settings() {
 	Ref<ConfigFile> cfg;
 	cfg.instantiate();
 	if (cfg->load(LOC("user://settings.cfg")) == OK) {
 		_volume = CLAMP(float(cfg->get_value(LOC("audio"), LOC("master_volume"), 0.8f)), 0.0f, 1.0f);
+		_window_mode_opt = CLAMP(int(cfg->get_value(LOC("display"), LOC("window_mode"), 0)), 0, 3);
+		_resolution_idx = CLAMP(int(cfg->get_value(LOC("display"), LOC("resolution_idx"), 3)), 0, RES_PRESET_COUNT - 1);
+		_resolution_custom = bool(cfg->get_value(LOC("display"), LOC("resolution_custom"), false));
+		_custom_w = CLAMP(int(cfg->get_value(LOC("display"), LOC("custom_w"), 1920)), 480, 7680);
+		_custom_h = CLAMP(int(cfg->get_value(LOC("display"), LOC("custom_h"), 1080)), 270, 4320);
 	}
 }
 
@@ -1377,6 +1505,11 @@ void GameMenu::_save_settings() {
 	Ref<ConfigFile> cfg;
 	cfg.instantiate();
 	cfg->set_value("audio", "master_volume", _volume);
+	cfg->set_value("display", "window_mode", _window_mode_opt);
+	cfg->set_value("display", "resolution_idx", _resolution_idx);
+	cfg->set_value("display", "resolution_custom", _resolution_custom);
+	cfg->set_value("display", "custom_w", _custom_w);
+	cfg->set_value("display", "custom_h", _custom_h);
 	cfg->save("user://settings.cfg");
 }
 
@@ -1399,21 +1532,18 @@ void GameMenu::_process(double p_delta) {
 	Input *input = Input::get_singleton();
 
 	if (!_open) {
-		if (input->is_action_just_pressed(LOC("menu")) || input->is_action_just_pressed(LOC("inventory"))) {
-			// 储物面板打开时 ESC/I 归它处理（关面板），菜单不抢
+		if (input->is_action_just_pressed(LOC("menu"))) {
+			// 储物面板打开时 ESC 归它处理（关面板），菜单不抢
 			Node *scene = get_tree()->get_current_scene();
 			StoragePanel *sp = scene ? Object::cast_to<StoragePanel>(scene->find_child("StoragePanel", true, false)) : nullptr;
 			if (sp && sp->is_open())
 				return;
-			// 丹房面板（洞天 GDScript 面板）打开时 ESC/I 同样归它处理
+			// 丹房面板（洞天 GDScript 面板）打开时 ESC 同样归它处理
 			Node *pp = scene ? scene->find_child("PillLabPanel", true, false) : nullptr;
 			if (pp && pp->has_method("is_open") && bool(pp->call("is_open")))
 				return;
-			if (input->is_action_just_pressed(LOC("menu"))) {
-				_open_menu(_page); // 记住上次页
-			} else {
-				_open_menu(PAGE_INVENTORY);
-			}
+			_open_menu(_page); // 记住上次页
+			return;
 		}
 		return;
 	}
@@ -1467,14 +1597,6 @@ void GameMenu::_process(double p_delta) {
 
 	if (input->is_action_just_pressed(LOC("menu"))) {
 		_close_menu();
-		return;
-	}
-	if (input->is_action_just_pressed(LOC("inventory"))) {
-		if (_page == PAGE_INVENTORY) {
-			_close_menu();
-		} else {
-			_switch_page(PAGE_INVENTORY);
-		}
 		return;
 	}
 	// 翻页严格只用 Q/E（_input 处理）；←/→ 保留给各页内部横向导航，不被顶部拦截

@@ -92,7 +92,11 @@ func _process(delta) -> bool:
 			if bus and not bus.is_connected("damage_dealt", _on_dmg):
 				bus.connect("damage_dealt", _on_dmg)
 			# 放一只 1HP 敌人在玩家身旁 80px（分身索敌 300px 内唯一目标）
+			# 先清场：出生点附近有巡逻小怪（@Enemy@xxxx），分身索敌取最近——
+			# 不清场分身会去追巡逻怪而非测试敌人（巡游相位导致 flaky）
 			var p = root.find_child("Player", true, false)
+			for e in get_nodes_in_group("enemies"):
+				e.queue_free()
 			_enemy = ClassDB.instantiate("Enemy")
 			_enemy.name = "EnemyShenWaiTest"
 			var eshape = CollisionShape2D.new()

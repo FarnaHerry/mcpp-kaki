@@ -605,7 +605,7 @@ void GameHUD::_create_pressure_indicators() {
 	_wei_label->set_position(Vector2(x0 + 2, y - 1));
 	add_child(_wei_label);
 
-	// R 灵压
+	// I 灵压
 	_lin_bg = memnew(ColorRect);
 	_lin_bg->set_position(Vector2(x0 + W + 4, y));
 	_lin_bg->set_size(Vector2(W, H));
@@ -613,7 +613,7 @@ void GameHUD::_create_pressure_indicators() {
 	add_child(_lin_bg);
 
 	_lin_label = memnew(Label);
-	_lin_label->set_text(LOC("P 灵压"));
+	_lin_label->set_text(LOC("I 灵压"));
 	_lin_label->add_theme_font_size_override("font_size", FONT_SIZE_XS);
 	_lin_label->add_theme_color_override("font_color", Color(0.7f, 0.5f, 0.95f, 0.95f));
 	_lin_label->set_position(Vector2(x0 + W + 6, y - 1));
@@ -635,7 +635,7 @@ void GameHUD::_update_pressure_indicators() {
 	double lin_cd = _player->get_lin_cooldown_left();
 
 	if (wei_cd > 0.05) {
-		_wei_label->set_text(vformat(LOC("V %.1fs"), wei_cd));
+		_wei_label->set_text(vformat(LOC("U %.1fs"), wei_cd));
 		_wei_label->add_theme_color_override("font_color", Color(0.4f, 0.35f, 0.30f, 0.9f));
 		_wei_bg->set_color(Color(0.08f, 0.06f, 0.03f, 0.7f));
 	} else {
@@ -645,11 +645,11 @@ void GameHUD::_update_pressure_indicators() {
 	}
 
 	if (lin_cd > 0.05) {
-		_lin_label->set_text(vformat(LOC("R %.1fs"), lin_cd));
+		_lin_label->set_text(vformat(LOC("I %.1fs"), lin_cd));
 		_lin_label->add_theme_color_override("font_color", Color(0.40f, 0.30f, 0.35f, 0.9f));
 		_lin_bg->set_color(Color(0.06f, 0.03f, 0.10f, 0.7f));
 	} else {
-		_lin_label->set_text(LOC("P 灵压"));
+		_lin_label->set_text(LOC("I 灵压"));
 		_lin_label->add_theme_color_override("font_color", Color(0.85f, 0.65f, 1.0f, 0.95f));
 		_lin_bg->set_color(Color(0.12f, 0.07f, 0.18f, 0.85f));
 	}

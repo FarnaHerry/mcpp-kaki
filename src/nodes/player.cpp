@@ -911,7 +911,7 @@ namespace godot {
 			}
 		}
 
-		// U 威压 / P 灵压（design/sect-pressure.md §二）
+		// U 威压 / I 灵压（design/sect-pressure.md §二）
 		if (Input::get_singleton()->is_action_just_pressed("pressure_wei")) {
 			cast_wei_pressure();
 		}

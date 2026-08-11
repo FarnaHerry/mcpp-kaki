@@ -1,4 +1,4 @@
-# 验证 GameMenu: ESC 开关、Q/E 翻页到设置页、设置页被选中行时 Q/E 仍可翻页（回归）、I 关闭
+# 验证 GameMenu: ESC 开关、Q/E 翻页到设置页、设置页被选中行时 Q/E 仍可翻页（回归）、ESC 关闭
 extends SceneTree
 
 var _t := 0.0
@@ -71,8 +71,8 @@ func _process(delta) -> bool:
 			_check(_has_label("Q/E 切换页"), "回到背包页（提示行 Q/E 切换页）")
 			_step = 12
 		12:
-			_press("inventory") # I 关闭
-			print("[TEST] I close: paused=", paused, " (expect false)")
+			_press("menu") # ESC 关闭（I 背包独立键已移除）
+			print("[TEST] ESC close: paused=", paused, " (expect false)")
 			_step = 13
 		13:
 			print("[TEST] final state: paused=", paused, " (expect false)")

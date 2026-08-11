@@ -31,6 +31,10 @@ namespace godot {
 	void CloneAvatar::setup_from_player(Player *p) {
 		_owner = p;
 		if (!p) return;
+		// 与玩家互加碰撞例外：所有 body 默认带 layer 1 位（set_collision_layer_value 只加不清），
+		// 分身 mask 含 layer 1(Ground) → 会被玩家身体挡住（设计意图是「不挡玩家路」）
+		add_collision_exception_with(p);
+		p->add_collision_exception_with(this);
 		max_health = p->get_max_health() * 0.5f;
 		current_health = max_health;
 		attack_damage = p->get_effective_attack() * 0.6f;

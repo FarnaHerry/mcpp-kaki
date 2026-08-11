@@ -318,7 +318,7 @@ void ShopPanel::_process(double p_delta) {
 
 	Input *input = Input::get_singleton();
 
-	if (input->is_action_just_pressed(LOC("menu")) || input->is_action_just_pressed(LOC("inventory"))) {
+	if (input->is_action_just_pressed(LOC("menu"))) {
 		close();
 		return;
 	}
