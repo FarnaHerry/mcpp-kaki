@@ -26,9 +26,13 @@
 
 设置页 4 行 → **6 行**：主音量 / 语言 / **窗口模式** / **分辨率** / 保存游戏 / 退出游戏。
 
-- **窗口模式 4 档循环**（←/→）：窗口 / 无边框窗口 / 全屏 / 独占全屏。
-  `_apply_display()`：DisplayServer `window_set_mode(WINDOWED/FULLSCREEN/EXCLUSIVE_FULLSCREEN)` +
-  `WINDOW_FLAG_BORDERLESS`；Godot 4 的 FULLSCREEN 即无边框全屏，EXCLUSIVE 为独占。
+- **窗口模式 3 档循环**（←/→）：窗口 / 无边框全屏 / 独占全屏。
+  `_apply_display()`：DisplayServer `window_set_mode(WINDOWED/FULLSCREEN/EXCLUSIVE_FULLSCREEN)`；
+  Godot 4 的 FULLSCREEN 即无边框全屏（EXCLUSIVE 为独占）。**去掉「无边框窗口」档**（用户反馈无用）。
+  **全屏→窗口几何纠偏**：全屏退出窗口时 WM 异步处理尺寸，立即 `window_set_size` 无效——
+  probe 复现窗口停留全屏尺寸(3120×2080)+expand 视口被拉成非16:9(480×320) → 内容只占一小块；
+  加 `_pending_geometry`，窗口档下 `_process` 每帧对齐到 clamp 目标尺寸（匹配即停），
+  `_apply_window_geometry` 存 clamp 后 `_geom_target_w/h` 供比较（防超屏值永不等抖动）。
 - **分辨率**：6 预设档 960×540 / 1440×810 / 1920×1080 / 2400×1350 / 2880×1620 / 3840×2160 ←/→ 循环；
   **X 进自定义整数倍**（`_res_editing` 子态：方向键调倍 N∈[2,8]，窗口=480N×270N，X 退出）。
   全屏档分辨率行灰显「（全屏由屏幕决定）」不响应。窗口档按屏幕 clamp 最大整数倍 + 居中。

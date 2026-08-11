@@ -1268,8 +1268,8 @@ void GameMenu::_build_settings_page() {
 
 // 设置页行序：0主音量 1语言 2窗口模式 3分辨率 4保存 5退出
 static const int SETTINGS_ROWS = 6;
-// 窗口模式 4 档：窗口 / 无边框窗口 / 全屏（无边框） / 独占全屏
-static const char *WMODE_NAMES[4] = { "窗口", "无边框窗口", "全屏", "独占全屏" };
+// 窗口模式 3 档：窗口 / 无边框全屏 / 独占全屏（Godot 4 WINDOW_MODE_FULLSCREEN 即无边框全屏）
+static const char *WMODE_NAMES[3] = { "窗口", "无边框全屏", "独占全屏" };
 // 分辨率预设档（内部 480×270 canvas_items stretch）。**stretch aspect=expand + scale_mode=integer**
 // 已保证整数倍渲染（不花屏）；但 integer 会把 screen_size clamp 到 viewport×整数scale，
 // 非整数倍窗口（如 1280×720=2.67×）多余区域走黑边（window.cpp _update_viewport_size）。
@@ -1301,7 +1301,7 @@ void GameMenu::_refresh_settings_page() {
 	String lang_label = LOC("语言") + ": < " + LOC(is_en ? "English" : "中文") + " >";
 	String vol = LOC("主音量") + "  < " + String::num_int64(int64_t(Math::round(_volume * 100.0f))) + "% >";
 	String wmode = LOC("窗口模式") + "  < " + LOC(WMODE_NAMES[_window_mode_opt]) + " >";
-	bool fullscreen = _window_mode_opt >= 2; // 全屏档分辨率由屏幕决定
+	bool fullscreen = _window_mode_opt >= 1; // 全屏档分辨率由屏幕决定
 	String res = LOC("分辨率") + (fullscreen ? String("  ") + LOC("（全屏由屏幕决定）")
 										 : "  < " + _resolution_label() + " >");
 	String names[SETTINGS_ROWS] = { vol, lang_label, wmode, res, LOC("保存游戏"), LOC("退出游戏") };
@@ -1401,14 +1401,14 @@ void GameMenu::_handle_settings_input() {
 	if (_settings_sel == 2) {
 		if (input->is_action_just_pressed(LOC("left")) || input->is_action_just_pressed(LOC("right"))) {
 			int dir = input->is_action_just_pressed(LOC("left")) ? -1 : 1;
-			_window_mode_opt = (_window_mode_opt + dir + 4) % 4;
+			_window_mode_opt = (_window_mode_opt + dir + 3) % 3;
 			_apply_display(); _save_settings(); _refresh_settings_page();
 		}
 		return;
 	}
 	// Row 3: resolution presets / custom (fullscreen 档下由屏幕决定，不响应)
 	if (_settings_sel == 3) {
-		if (_window_mode_opt < 2) {
+		if (_window_mode_opt == 0) {
 			if (input->is_action_just_pressed(LOC("left")) || input->is_action_just_pressed(LOC("right"))) {
 				int dir = input->is_action_just_pressed(LOC("left")) ? -1 : 1;
 				if (_resolution_custom) {
@@ -1472,37 +1472,45 @@ void GameMenu::_apply_display() {
 			ds->window_set_mode(DisplayServer::WINDOW_MODE_WINDOWED);
 			ds->window_set_flag(DisplayServer::WINDOW_FLAG_BORDERLESS, false);
 			break;
-		case 1: // 无边框窗口
-			ds->window_set_mode(DisplayServer::WINDOW_MODE_WINDOWED);
-			ds->window_set_flag(DisplayServer::WINDOW_FLAG_BORDERLESS, true);
-			break;
-		case 2: // 全屏（无边框全屏）
+		case 1: // 无边框全屏（Godot 4 FULLSCREEN 即无边框全屏）
 			ds->window_set_mode(DisplayServer::WINDOW_MODE_FULLSCREEN);
 			break;
-		case 3: // 独占全屏
+		case 2: // 独占全屏
 			ds->window_set_mode(DisplayServer::WINDOW_MODE_EXCLUSIVE_FULLSCREEN);
 			break;
 	}
-	// 分辨率仅窗口档生效（全屏由屏幕决定）
-	if (_window_mode_opt < 2) {
-		int w = _resolution_custom ? _custom_w : RES_PRESETS[_resolution_idx][0];
-		int h = _resolution_custom ? _custom_h : RES_PRESETS[_resolution_idx][1];
-		// clamp 到屏幕（整数倍约束下，窗口不超过屏幕能容纳的最大 480×270 倍）
-		int screen = ds->window_get_current_screen();
-		Vector2i ss = ds->screen_get_size(screen);
-		if (ss.x > 0 && ss.y > 0) {
-			int n = MIN(w / 480, h / 270);
-			int max_n = MIN(ss.x / 480, ss.y / 270);
-			if (max_n >= 1 && n > max_n) {
-				n = max_n;
-				w = 480 * n;
-				h = 270 * n;
-			}
-			// 居中
-			ds->window_set_position(Vector2i(MAX(0, (ss.x - w) / 2), MAX(0, (ss.y - h) / 2)));
-		}
-		ds->window_set_size(Vector2i(w, h));
+	if (_window_mode_opt == 0) {
+		// 窗口档：立即应用几何，并置 pending 由 _process 持续纠偏——
+		// 全屏→窗口时 WM 异步处理全屏退出，立即 set_size 无效（窗口停留全屏尺寸，
+		// expand 视口被拉成非 16:9 → 内容只占一小块）
+		_apply_window_geometry();
+		_pending_geometry = true;
+	} else {
+		_pending_geometry = false;
 	}
+}
+
+void GameMenu::_apply_window_geometry() {
+	DisplayServer *ds = DisplayServer::get_singleton();
+	if (!ds) return;
+	int w = _resolution_custom ? _custom_w : RES_PRESETS[_resolution_idx][0];
+	int h = _resolution_custom ? _custom_h : RES_PRESETS[_resolution_idx][1];
+	// clamp 到屏幕（整数倍约束下，窗口不超过屏幕能容纳的最大 480×270 倍）+ 居中
+	int screen = ds->window_get_current_screen();
+	Vector2i ss = ds->screen_get_size(screen);
+	if (ss.x > 0 && ss.y > 0) {
+		int n = MIN(w / 480, h / 270);
+		int max_n = MIN(ss.x / 480, ss.y / 270);
+		if (max_n >= 1 && n > max_n) {
+			n = max_n;
+			w = 480 * n;
+			h = 270 * n;
+		}
+		ds->window_set_position(Vector2i(MAX(0, (ss.x - w) / 2), MAX(0, (ss.y - h) / 2)));
+	}
+	ds->window_set_size(Vector2i(w, h));
+	_geom_target_w = w;
+	_geom_target_h = h;
 }
 
 void GameMenu::_load_settings() {
@@ -1510,7 +1518,9 @@ void GameMenu::_load_settings() {
 	cfg.instantiate();
 	if (cfg->load(LOC("user://settings.cfg")) == OK) {
 		_volume = CLAMP(float(cfg->get_value(LOC("audio"), LOC("master_volume"), 0.8f)), 0.0f, 1.0f);
-		_window_mode_opt = CLAMP(int(cfg->get_value(LOC("display"), LOC("window_mode"), 0)), 0, 3);
+		// 窗口模式档位迁移（旧 4 档→新 3 档）：0窗口 1无边框窗口→无边框全屏 2全屏→无边框全屏 3独占→独占
+		int wm = int(cfg->get_value(LOC("display"), LOC("window_mode"), 0));
+		_window_mode_opt = wm <= 0 ? 0 : (wm >= 3 ? 2 : 1);
 		_resolution_idx = CLAMP(int(cfg->get_value(LOC("display"), LOC("resolution_idx"), 2)), 0, RES_PRESET_COUNT - 1);
 		_resolution_custom = bool(cfg->get_value(LOC("display"), LOC("resolution_custom"), false));
 		_custom_w = int(cfg->get_value(LOC("display"), LOC("custom_w"), 1920));
@@ -1556,6 +1566,18 @@ void GameMenu::_process(double p_delta) {
 	if (!_startup_applied) {
 		_startup_applied = true;
 		_apply_display();
+	}
+	// 窗口档几何持续纠偏：全屏→窗口 WM 异步恢复尺寸，期间反复对齐直到窗口尺寸到位
+	if (_pending_geometry && _window_mode_opt == 0) {
+		DisplayServer *ds = DisplayServer::get_singleton();
+		if (ds) {
+			Vector2i cur = ds->window_get_size();
+			if (cur.x != _geom_target_w || cur.y != _geom_target_h) {
+				_apply_window_geometry();
+			} else {
+				_pending_geometry = false;
+			}
+		}
 	}
 
 	if (!_open) {

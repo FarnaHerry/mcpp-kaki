@@ -359,7 +359,7 @@
  "U %.1fs": "U %.1fs",
  "窗口模式": "Window Mode",
  "窗口": "Windowed",
- "无边框窗口": "Borderless",
+ "无边框全屏": "Borderless Fullscreen",
  "全屏": "Fullscreen",
  "独占全屏": "Exclusive FS",
  "分辨率": "Resolution",

@@ -14,6 +14,9 @@ func _initialize():
 	if cfg.load("user://settings.cfg") == OK:
 		for k in ["window_mode", "resolution_idx", "resolution_custom", "custom_w", "custom_h"]:
 			_saved_display[k] = cfg.get_value("display", k, null)
+	# 测试前置：窗口模式置 0，保证档位循环从窗口开始（确定 label 断言）
+	cfg.set_value("display", "window_mode", 0)
+	cfg.save("user://settings.cfg")
 	var scene = load("res://scenes/main.tscn").instantiate()
 	root.add_child(scene)
 	current_scene = scene
@@ -80,24 +83,26 @@ func _process(delta) -> bool:
 			_step = 11
 		11:
 			_check(_has_label("▶ 窗口模式"), "选中窗口模式行")
-			_press("right") # 循环一档
+			_press("right") # 窗口 → 无边框全屏
 			_step = 12
 		12:
 			var m = int(_cfg_display("window_mode", -1))
-			_check(m >= 0 and m <= 3, "cfg window_mode 写入合法档（" + str(m) + "）")
-			# 再循环三档回 0=窗口
-			_press("right")
+			_check(m == 1, "窗口→无边框全屏（cfg window_mode=1）")
+			_check(_has_label("无边框全屏"), "档位 label=无边框全屏（替换无边框窗口）")
+			_press("right") # → 独占全屏
 			_step = 13
 		13:
-			_press("right")
+			var m2 = int(_cfg_display("window_mode", -1))
+			_check(m2 == 2, "无边框全屏→独占全屏（cfg window_mode=2）")
+			_check(_has_label("独占全屏"), "档位 label=独占全屏")
+			_press("right") # → 回窗口
 			_step = 14
 		14:
-			_press("right") # 1→2→3→0（起点取决于存档，总归环回合法档）
+			var m3 = int(_cfg_display("window_mode", -1))
+			_check(m3 == 0, "独占全屏→窗口（cfg window_mode=0，3 档循环闭合）")
+			_check(_has_label("▶ 窗口模式"), "回到窗口档")
 			_step = 15
 		15:
-			var m2 = int(_cfg_display("window_mode", -1))
-			_check(m2 >= 0 and m2 <= 3, "窗口模式循环后 cfg 仍合法（" + str(m2) + "）")
-			# 全屏档下分辨率行灰显提示（当前若不是全屏则先切到全屏验证）
 			_step = 16
 		16:
 			_press("down") # → sel3 分辨率
