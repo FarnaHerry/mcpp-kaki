@@ -80,9 +80,10 @@ void GameHUD::_bind_methods() {
     ClassDB::bind_method(D_METHOD("on_player_respawned"), &GameHUD::on_player_respawned);
     ClassDB::bind_method(D_METHOD("on_boss_fight_update", "name", "current", "max"),
                          &GameHUD::on_boss_fight_update);
-    ClassDB::bind_method(D_METHOD("on_boss_fight_ended"), &GameHUD::on_boss_fight_ended);
+    ClassDB::bind_method(D_METHOD("on_boss_fight_ended", "name"), &GameHUD::on_boss_fight_ended);
     ClassDB::bind_method(D_METHOD("is_boss_bar_visible"), &GameHUD::is_boss_bar_visible);
     ClassDB::bind_method(D_METHOD("get_boss_bar_name"), &GameHUD::get_boss_bar_name);
+    ClassDB::bind_method(D_METHOD("get_boss_bar_count"), &GameHUD::get_boss_bar_count);
     ClassDB::bind_method(D_METHOD("set_hud_visible", "visible"), &GameHUD::set_hud_visible);
     ClassDB::bind_method(D_METHOD("is_hud_visible"), &GameHUD::is_hud_visible);
     ClassDB::bind_method(D_METHOD("set_all_visible", "visible"), &GameHUD::set_all_visible);
@@ -118,7 +119,7 @@ void GameHUD::_ready() {
     _buff_label->add_theme_color_override("font_color", Color(0.7f, 0.9f, 1.0f, 1.0f));
     _buff_label->set_visible(false);
     add_child(_buff_label);
-    _create_boss_bar();
+    // Boss 血条惰性创建（多 Boss 同场时按名动态增删）
 
     // 洲名横幅（进入新洲时大字淡入淡出，不随 _hud_visible 隐藏——过场也要看得到）
     _continent_label = memnew(Label);
@@ -777,54 +778,89 @@ void GameHUD::_update_skill_bar() {
 // Boss 血条（顶部居中；SignalBus 驱动）
 // ============================================================
 
-void GameHUD::_create_boss_bar() {
+GameHUD::BossBarUi *GameHUD::_create_boss_bar_item() {
     const float W = 240.0f, H = 8.0f;
-    const float x = (480.0f - W) * 0.5f, y = 8.0f;
+    const float x = (480.0f - W) * 0.5f;
 
-    _boss_bg = memnew(ColorRect);
-    _boss_bg->set_position(Vector2(x, y));
-    _boss_bg->set_size(Vector2(W, H));
-    _boss_bg->set_color(Color(0.10f, 0.06f, 0.06f, 0.88f));
-    add_child(_boss_bg);
+    _boss_bars.push_back(BossBarUi());
+    BossBarUi &bar = _boss_bars.back();
 
-    _boss_fill = memnew(ColorRect);
-    _boss_fill->set_position(Vector2(x, y));
-    _boss_fill->set_size(Vector2(W, H));
-    _boss_fill->set_color(Color(0.80f, 0.12f, 0.12f, 1.0f));
-    add_child(_boss_fill);
+    bar.bg = memnew(ColorRect);
+    bar.bg->set_position(Vector2(x, 8.0f));
+    bar.bg->set_size(Vector2(W, H));
+    bar.bg->set_color(Color(0.10f, 0.06f, 0.06f, 0.88f));
+    bar.bg->set_visible(false);
+    add_child(bar.bg);
 
-    _boss_name = memnew(Label);
-    _boss_name->set_text("");
-    _boss_name->add_theme_font_size_override("font_size", FONT_SIZE_XS);
-    _boss_name->add_theme_color_override("font_color", Color(1.0f, 0.85f, 0.75f, 0.95f));
-    _boss_name->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
-    _boss_name->set_position(Vector2(x, y + H + 1));
-    _boss_name->set_size(Vector2(W, 12));
-    add_child(_boss_name);
+    bar.fill = memnew(ColorRect);
+    bar.fill->set_position(Vector2(x, 8.0f));
+    bar.fill->set_size(Vector2(W, H));
+    bar.fill->set_color(Color(0.80f, 0.12f, 0.12f, 1.0f));
+    bar.fill->set_visible(false);
+    add_child(bar.fill);
 
-    _boss_bg->set_visible(false);
-    _boss_fill->set_visible(false);
-    _boss_name->set_visible(false);
+    bar.name_label = memnew(Label);
+    bar.name_label->set_text("");
+    bar.name_label->add_theme_font_size_override("font_size", FONT_SIZE_XS);
+    bar.name_label->add_theme_color_override("font_color", Color(1.0f, 0.85f, 0.75f, 0.95f));
+    bar.name_label->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
+    bar.name_label->set_size(Vector2(W, 12));
+    bar.name_label->set_visible(false);
+    add_child(bar.name_label);
+
+    return &_boss_bars.back();
+}
+
+GameHUD::BossBarUi *GameHUD::_find_boss_bar(const String &p_name) {
+    for (BossBarUi &b : _boss_bars) {
+        if (b.name == p_name) return &b;
+    }
+    return nullptr;
+}
+
+void GameHUD::_relayout_boss_bars() {
+    // 任意数量：自上而下排列（血条 + 下方名字）
+    const float W = 240.0f, H = 8.0f;
+    const float x = (480.0f - W) * 0.5f;
+    for (int i = 0; i < (int)_boss_bars.size(); i++) {
+        BossBarUi &b = _boss_bars[i];
+        float y = 8.0f + (float)i * 16.0f;
+        b.bg->set_position(Vector2(x, y));
+        b.fill->set_position(Vector2(x, y));
+        b.name_label->set_position(Vector2(x, y + H + 1));
+    }
 }
 
 void GameHUD::on_boss_fight_update(const String &p_name, double p_current, double p_max) {
-    if (!_boss_bg || p_max <= 0.0)
+    if (p_max <= 0.0)
         return;
+    BossBarUi *bar = _find_boss_bar(p_name);
+    if (!bar) {
+        bar = _create_boss_bar_item();
+        bar->name = p_name;
+        _relayout_boss_bars();
+    }
     float frac = Math::clamp(float(p_current / p_max), 0.0f, 1.0f);
-    _boss_fill->set_size(Vector2(240.0f * frac, 8.0f));
-    _boss_name->set_text(LOC(p_name));
-    bool show = _hud_visible && p_current > 0.0;
-    _boss_bg->set_visible(show);
-    _boss_fill->set_visible(show);
-    _boss_name->set_visible(show);
+    bar->fill->set_size(Vector2(240.0f * frac, 8.0f));
+    bar->name_label->set_text(LOC(p_name));
+    bar->alive = p_current > 0.0;
+    bool show = _hud_visible && bar->alive;
+    bar->bg->set_visible(show);
+    bar->fill->set_visible(show);
+    bar->name_label->set_visible(show);
 }
 
-void GameHUD::on_boss_fight_ended() {
-    if (!_boss_bg)
-        return;
-    _boss_bg->set_visible(false);
-    _boss_fill->set_visible(false);
-    _boss_name->set_visible(false);
+void GameHUD::on_boss_fight_ended(const String &p_name) {
+    for (auto it = _boss_bars.begin(); it != _boss_bars.end(); ++it) {
+        if (it->name == p_name) {
+            if (it->bg) it->bg->queue_free();
+            if (it->fill) it->fill->queue_free();
+            if (it->name_label) it->name_label->queue_free();
+            _boss_bars.erase(it);
+            _relayout_boss_bars();
+            return;
+        }
+    }
 }
 
 // ============================================================
@@ -871,6 +907,13 @@ void GameHUD::_apply_hud_visibility() {
     if (_interact_label) _interact_label->set_visible(_hud_visible && _prompt_showing);
     for (CanvasItem *n : _skill_bar_nodes) {
         if (n) n->set_visible(_hud_visible);
+    }
+    // 多 Boss 血条：按各自 alive 状态恢复/隐藏
+    for (BossBarUi &b : _boss_bars) {
+        bool s = _hud_visible && b.alive;
+        if (b.bg) b.bg->set_visible(s);
+        if (b.fill) b.fill->set_visible(s);
+        if (b.name_label) b.name_label->set_visible(s);
     }
 }
 
@@ -1101,7 +1144,13 @@ void GameHUD::on_interaction_prompt(const String &p_text, bool p_show) {
 }
 
 void GameHUD::on_player_died() {
-    on_boss_fight_ended(); // 玩家阵亡即撤下 Boss 条
+    // 玩家阵亡即撤下全部 Boss 条（多 Boss 同场）
+    for (BossBarUi &b : _boss_bars) {
+        if (b.bg) b.bg->queue_free();
+        if (b.fill) b.fill->queue_free();
+        if (b.name_label) b.name_label->queue_free();
+    }
+    _boss_bars.clear();
     if (_death_overlay) {
         _death_overlay->set_visible(true);
     }

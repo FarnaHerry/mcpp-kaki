@@ -43,7 +43,8 @@ void SignalBus::_bind_methods() {
 	// 伤害结算广播（伤害数字显示等）。is_player_victim=true 表示玩家挨打。
 	ADD_SIGNAL(MethodInfo("boss_fight_update", PropertyInfo(Variant::STRING, "name"),
 	                      PropertyInfo(Variant::FLOAT, "current"), PropertyInfo(Variant::FLOAT, "max")));
-	ADD_SIGNAL(MethodInfo("boss_fight_ended"));
+	// name 指明结束的是哪个 Boss（多 Boss 同场：黑白无常各一条血条，按名移除）
+	ADD_SIGNAL(MethodInfo("boss_fight_ended", PropertyInfo(Variant::STRING, "name")));
 	ADD_SIGNAL(MethodInfo("law_power_changed", PropertyInfo(Variant::FLOAT, "current"), PropertyInfo(Variant::FLOAT, "max")));
 	ADD_SIGNAL(MethodInfo("buffs_changed", PropertyInfo(Variant::ARRAY, "active"))); // BuffSystem 施加/到期/清空
 	ADD_SIGNAL(MethodInfo("skill_page_changed", PropertyInfo(Variant::INT, "page")));

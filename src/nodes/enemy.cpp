@@ -350,10 +350,13 @@ namespace godot {
 	class EnemyDeathState : public State<Enemy> {
 	public:
 		void enter(Enemy *e) override {
-			// Boss 战结束：撤下 HUD Boss 条
+			// Boss 战结束：撤下 HUD Boss 条（带名字——多 Boss 同场各移除各的）
 			if (e->_boss_hud_active) {
 				SignalBus *bus = SignalBus::get_singleton();
-				if (bus) bus->emit_signal("boss_fight_ended");
+				if (bus) {
+					String nm = e->display_name.is_empty() ? String(e->get_name()) : e->display_name;
+					bus->emit_signal("boss_fight_ended", nm);
+				}
 			}
 			// Boss: big energy reward
 			float energy = e->is_boss ? 150.0f : 15.0f;

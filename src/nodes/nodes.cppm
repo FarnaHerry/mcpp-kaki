@@ -5,6 +5,7 @@
 module;
 
 #include <vector>
+#include <deque>
 
 #include <godot-cpp-m/macros.h>
 
@@ -66,7 +67,7 @@ public:
 	void on_player_died();
 	void on_player_respawned();
 	void on_boss_fight_update(const String &p_name, double p_current, double p_max);
-	void on_boss_fight_ended();
+	void on_boss_fight_ended(const String &p_name);
 	void on_buffs_changed(const Array &p_active);
 	void on_continent_changed(const String &p_id, const String &p_name);
 	void on_dongtian_entered();
@@ -76,8 +77,16 @@ public:
 	void on_fullness_changed(float p_current, float p_max);
 	void on_bigu_changed(bool p_bigu);
 	void _on_language_changed(const String &p_locale);
-	bool is_boss_bar_visible() const { return _boss_bg && _boss_bg->is_visible(); }
-	String get_boss_bar_name() const { return _boss_name ? _boss_name->get_text() : String(); }
+	bool is_boss_bar_visible() const {
+		for (const BossBarUi &b : _boss_bars) {
+			if (b.bg && b.bg->is_visible()) return true;
+		}
+		return false;
+	}
+	String get_boss_bar_name() const {
+		return _boss_bars.empty() ? String() : _boss_bars[0].name;
+	}
+	int get_boss_bar_count() const { return (int)_boss_bars.size(); }
 
 	void set_hud_visible(bool p_visible);
 	bool is_hud_visible() const { return _hud_visible; }
@@ -162,9 +171,15 @@ private:
 	ColorRect *_lin_bg = nullptr;
 	Label *_lin_label = nullptr;
 
-	ColorRect *_boss_bg = nullptr;
-	ColorRect *_boss_fill = nullptr;
-	Label *_boss_name = nullptr;
+	// 多 Boss 血条：按名维护（黑白无常同场各一条，自上而下排列）
+	struct BossBarUi {
+		String name;
+		ColorRect *bg = nullptr;
+		ColorRect *fill = nullptr;
+		Label *name_label = nullptr;
+		bool alive = false; // 血条激活（HUD 隐藏后按状态恢复）
+	};
+	std::deque<BossBarUi> _boss_bars; // deque 元素地址稳定（增删不失效）
 
 	bool _hud_visible = true;
 
@@ -183,7 +198,9 @@ private:
 	void _create_consumable_bar();
 	void _update_consumable_bar();
 	void _create_law_bar();
-	void _create_boss_bar();
+	BossBarUi *_find_boss_bar(const String &p_name);
+	BossBarUi *_create_boss_bar_item();
+	void _relayout_boss_bars();
 	void _create_pressure_indicators();
 	void _update_pressure_indicators();
 	void _update_skill_bar();

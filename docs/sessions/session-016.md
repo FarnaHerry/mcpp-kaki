@@ -97,3 +97,14 @@
 全量 52 脚本复跑（修正判定 fail=[1-9]/[1-9] FAILURES）：除 test_shenwai_clone 外全过；
 该测试按上述修复后 3 连过 + 修复后全量复跑全过。
 
+
+## 追加：多 Boss 血条（session 内补）
+
+黑白无常同场（勾魂使）只显示一条血条——原 GameHUD 单 `_boss_bg/_boss_fill/_boss_name` 唯一组。
+改多 Boss 血条（支持任意数量）：
+- **SignalBus** `boss_fight_ended` 加 `name` 参数（原无参，无法区分哪个 Boss）
+- **Enemy::EnemyDeathState::enter** emit 带 `display_name`（与 `_activate_boss_hud` 一致）
+- **GameHUD** `_boss_bars` = `std::deque<BossBarUi>`（name/bg/fill/name_label/alive），按名惰性建条、
+  按名移除重排（自上而下 y=8+i*16）；`_apply_hud_visibility` 按各条 alive 恢复；玩家阵亡全撤
+- 新测试 `test_multi_bossbar.gd`：2 条/4 条（任意多个）/同名不新增/按名移除/全撤，11 断言全过
+- 兼容：单 Boss（test_bossbar）is_boss_bar_visible/get_boss_bar_name 语义保留
