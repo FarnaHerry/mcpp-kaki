@@ -779,7 +779,8 @@ void GameHUD::_update_skill_bar() {
 // ============================================================
 
 GameHUD::BossBarUi *GameHUD::_create_boss_bar_item() {
-    const float W = 240.0f, H = 8.0f;
+    // 名字写进血条内部（条内居中），多血条纵向紧凑排不占额外行
+    const float W = 240.0f, H = 12.0f;
     const float x = (480.0f - W) * 0.5f;
 
     _boss_bars.push_back(BossBarUi());
@@ -799,12 +800,16 @@ GameHUD::BossBarUi *GameHUD::_create_boss_bar_item() {
     bar.fill->set_visible(false);
     add_child(bar.fill);
 
+    // 名字在血条内居中（红底上亮色）
     bar.name_label = memnew(Label);
     bar.name_label->set_text("");
-    bar.name_label->add_theme_font_size_override("font_size", FONT_SIZE_XS);
-    bar.name_label->add_theme_color_override("font_color", Color(1.0f, 0.85f, 0.75f, 0.95f));
+    bar.name_label->add_theme_font_size_override("font_size", 8);
+    bar.name_label->add_theme_color_override("font_color", Color(1.0f, 0.95f, 0.9f, 0.98f));
+    bar.name_label->add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85f));
+    bar.name_label->add_theme_constant_override("outline_size", 2);
     bar.name_label->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
-    bar.name_label->set_size(Vector2(W, 12));
+    bar.name_label->set_vertical_alignment(VERTICAL_ALIGNMENT_CENTER);
+    bar.name_label->set_size(Vector2(W, H));
     bar.name_label->set_visible(false);
     add_child(bar.name_label);
 
@@ -819,15 +824,15 @@ GameHUD::BossBarUi *GameHUD::_find_boss_bar(const String &p_name) {
 }
 
 void GameHUD::_relayout_boss_bars() {
-    // 任意数量：自上而下排列（血条 + 下方名字）
-    const float W = 240.0f, H = 8.0f;
+    // 任意数量：自上而下紧凑排列（名字在条内，每条仅占条高）
+    const float W = 240.0f, H = 12.0f;
     const float x = (480.0f - W) * 0.5f;
     for (int i = 0; i < (int)_boss_bars.size(); i++) {
         BossBarUi &b = _boss_bars[i];
-        float y = 8.0f + (float)i * 16.0f;
+        float y = 8.0f + (float)i * 14.0f;
         b.bg->set_position(Vector2(x, y));
         b.fill->set_position(Vector2(x, y));
-        b.name_label->set_position(Vector2(x, y + H + 1));
+        b.name_label->set_position(Vector2(x, y));
     }
 }
 
@@ -841,7 +846,7 @@ void GameHUD::on_boss_fight_update(const String &p_name, double p_current, doubl
         _relayout_boss_bars();
     }
     float frac = Math::clamp(float(p_current / p_max), 0.0f, 1.0f);
-    bar->fill->set_size(Vector2(240.0f * frac, 8.0f));
+    bar->fill->set_size(Vector2(240.0f * frac, 12.0f));
     bar->name_label->set_text(LOC(p_name));
     bar->alive = p_current > 0.0;
     bool show = _hud_visible && bar->alive;
