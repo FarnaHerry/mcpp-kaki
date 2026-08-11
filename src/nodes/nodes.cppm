@@ -451,9 +451,10 @@ export class GameMenu : public CanvasLayer {
 	bool _resolution_custom = false;
 	bool _res_editing = false; // 自定义分辨率微调子态（←/→ 宽 ↑/↓ 高）
 	bool _startup_applied = false; // 启动窗口就绪后应用一次显示设置（_ready 时窗口未完全就绪）
-	bool _pending_geometry = false; // 窗口档待纠偏：全屏→窗口 WM 异步处理尺寸，_process 持续对齐
+	bool _pending_geometry = false; // 待纠偏：窗口档对齐窗口尺寸，全屏档对齐 content_scale
 	int _geom_target_w = 1920; // clamp 后的目标窗口尺寸（纠偏比较用，防超屏值永不等）
 	int _geom_target_h = 1080;
+	Vector2i _last_geom = Vector2i(); // 全屏档 content_scale 稳定检测（窗口尺寸连续帧不变才停）
 	int _custom_w = 1920;
 	int _custom_h = 1080;
 
@@ -479,6 +480,7 @@ export class GameMenu : public CanvasLayer {
 	void _apply_volume();
 	void _apply_display();
 	void _apply_window_geometry();
+	void _apply_content_scale(int p_w, int p_h);
 	String _resolution_label() const;
 	void _load_settings();
 	void _save_settings();

@@ -1487,7 +1487,10 @@ void GameMenu::_apply_display() {
 		_apply_window_geometry();
 		_pending_geometry = true;
 	} else {
-		_pending_geometry = false;
+		// 全屏档：窗口=屏幕（异步），_process 对齐 content_scale 到屏幕尺寸——
+		// 屏幕非 16:9 时视口需扩展吃满（16 和 9 同时超出整数倍）
+		_pending_geometry = true;
+		_last_geom = Vector2i();
 	}
 }
 
@@ -1519,8 +1522,22 @@ void GameMenu::_apply_window_geometry() {
 	} else {
 		ds->window_set_size(Vector2i(w, h));
 	}
+	// 视口跟随窗口比例：16:9 整数倍窗口 → viewport=480×270（不变）；
+	// 非 16:9 窗口（全屏超宽等）→ viewport 按窗口/整数scale 扩展，双轴吃满无黑边
+	_apply_content_scale(w, h);
 	_geom_target_w = w;
 	_geom_target_h = h;
+}
+
+void GameMenu::_apply_content_scale(int p_w, int p_h) {
+	Window *wnd = get_tree() ? get_tree()->get_root() : nullptr;
+	if (!wnd) return;
+	// 整数 scale N：视口逻辑尺寸 = 窗口/N（比例=窗口比例）。scale=N 整数 → 像素整齐不花屏；
+	// 视口 ≥ 480×270（内容完整），宽/高超出整数倍的余量由视口扩展显示更多世界（16 和 9 同时多也吃满）。
+	int n = MAX(1, MIN(p_w / 480, p_h / 270));
+	int vw = MAX(480, (int)Math::round(p_w / (float)n));
+	int vh = MAX(270, (int)Math::round(p_h / (float)n));
+	wnd->set_content_scale_size(Vector2i(vw, vh));
 }
 
 void GameMenu::_load_settings() {
@@ -1577,11 +1594,13 @@ void GameMenu::_process(double p_delta) {
 		_startup_applied = true;
 		_apply_display();
 	}
-	// 窗口档几何持续纠偏：全屏→窗口 WM 异步恢复尺寸，期间反复对齐直到 Godot 内部
-	// Window::size 到位（检测 root.size 而非 OS 窗口——后者同步了 viewport 仍按旧 size 算）
-	if (_pending_geometry && _window_mode_opt == 0) {
+	// 几何持续纠偏：窗口档对齐窗口尺寸到目标（WM 异步）；全屏档对齐 content_scale 到
+	// 屏幕尺寸（异步生效）。检测 root.size（而非 OS 窗口——后者同步了 viewport 仍按旧 size 算）
+	if (_pending_geometry) {
 		Window *wnd = get_tree() ? get_tree()->get_root() : nullptr;
-		if (wnd) {
+		if (!wnd) {
+			_pending_geometry = false;
+		} else if (_window_mode_opt == 0) {
 			Vector2i cur = wnd->get_size();
 			if (cur.x != _geom_target_w || cur.y != _geom_target_h) {
 				_apply_window_geometry();
@@ -1589,7 +1608,14 @@ void GameMenu::_process(double p_delta) {
 				_pending_geometry = false;
 			}
 		} else {
-			_pending_geometry = false;
+			// 全屏档：窗口=屏幕，视口跟随屏幕比例；尺寸连续帧稳定才停
+			Vector2i cur = wnd->get_size();
+			if (cur != _last_geom) {
+				_last_geom = cur;
+				_apply_content_scale(cur.x, cur.y);
+			} else {
+				_pending_geometry = false;
+			}
 		}
 	}
 
