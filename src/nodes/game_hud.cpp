@@ -846,7 +846,7 @@ void GameHUD::_position_boss_name(BossBarUi *p_bar, float p_x, float p_y) {
             : lbl->get_minimum_size();
     float tw = Math::min((float)t.x, W);
     float th = font.is_valid() ? (float)font->get_height(fs) : Math::min((float)t.y, H);
-    lbl->set_position(Vector2(p_x + (W - tw) * 0.5f, p_y + (H - th) * 0.5f - 2.0f));
+    lbl->set_position(Vector2(p_x + (W - tw) * 0.5f, p_y + (H - th) * 0.5f - 1.0f));
     lbl->set_size(Vector2(tw, th));
 }
 
