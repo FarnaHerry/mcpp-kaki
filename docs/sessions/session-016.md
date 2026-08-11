@@ -29,10 +29,13 @@
 - **窗口模式 4 档循环**（←/→）：窗口 / 无边框窗口 / 全屏 / 独占全屏。
   `_apply_display()`：DisplayServer `window_set_mode(WINDOWED/FULLSCREEN/EXCLUSIVE_FULLSCREEN)` +
   `WINDOW_FLAG_BORDERLESS`；Godot 4 的 FULLSCREEN 即无边框全屏，EXCLUSIVE 为独占。
-- **分辨率**：6 预设档 960×540 / 1280×720 / 1600×900 / 1920×1080 / 2560×1440 / 3840×2160 ←/→ 循环；
-  **X 进自定义微调**（`_res_editing` 子态：←/→ 宽 ±10、↑/↓ 高 ±10，clamp 480×270~7680×4320，
-  再按 X 退出；←/→ 先退出自定义回预设循环）。全屏档分辨率行灰显「（全屏由屏幕决定）」不响应。
-  窗口档应用后按当前屏幕居中。内部仍 480×270 canvas_items stretch，窗口尺寸=放大倍数。
+- **分辨率**：6 预设档 960×540 / 1440×810 / 1920×1080 / 2400×1350 / 2880×1620 / 3840×2160 ←/→ 循环；
+  **X 进自定义整数倍**（`_res_editing` 子态：方向键调倍 N∈[2,8]，窗口=480N×270N，再按 X 退出）。
+  全屏档分辨率行灰显「（全屏由屏幕决定）」不响应。窗口档应用后按当前屏幕居中。
+  内部仍 480×270 canvas_items stretch，窗口尺寸=放大倍数。
+  **整数倍约束（用户反馈修）**：初版预设含 1280×720(2.67×)/2560×1440(5.33×) 非整数倍、自定义任意宽高——
+  nearest 过滤下像素不均匀拉伸花屏（全屏 1920×1080 正好 4× 所以正常）；改为只允许整数倍，
+  读档时自定义值 `round(w/480)` 对齐防旧档花屏。
 - **持久化**：settings.cfg 新增 `[display]` 段（window_mode/resolution_idx/resolution_custom/custom_w/custom_h）；
   `_load_settings` 读回后 `_ready` 里 `_apply_display()` 即调 = **启动应用**（GameMenu 每洲场景都有，
   无需 world_common.gd 另写一套）。

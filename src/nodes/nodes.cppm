@@ -447,7 +447,7 @@ export class GameMenu : public CanvasLayer {
 	float _saved_flash = 0.0f;
 	// 显示设置：窗口模式 4 档（0窗口/1无边框窗口/2全屏/3独占全屏）+ 分辨率预设/自定义
 	int _window_mode_opt = 0;
-	int _resolution_idx = 3; // RES_PRESETS 下标，默认 1920×1080
+	int _resolution_idx = 2; // RES_PRESETS 下标，默认 1920×1080（×4）
 	bool _resolution_custom = false;
 	bool _res_editing = false; // 自定义分辨率微调子态（←/→ 宽 ↑/↓ 高）
 	int _custom_w = 1920;
