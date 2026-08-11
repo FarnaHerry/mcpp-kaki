@@ -450,6 +450,7 @@ export class GameMenu : public CanvasLayer {
 	int _resolution_idx = 2; // RES_PRESETS 下标，默认 1920×1080（×4）
 	bool _resolution_custom = false;
 	bool _res_editing = false; // 自定义分辨率微调子态（←/→ 宽 ↑/↓ 高）
+	bool _startup_applied = false; // 启动窗口就绪后应用一次显示设置（_ready 时窗口未完全就绪）
 	int _custom_w = 1920;
 	int _custom_h = 1080;
 

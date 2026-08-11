@@ -365,5 +365,5 @@
  "分辨率": "Resolution",
  "自定义": "Custom",
  "（全屏由屏幕决定）": "(set by screen in fullscreen)",
- "←/→ 预设档位，X 自定义任意宽高（整数倍渲染，多余扩展视口）": "←/→ presets, X custom size (integer scale, expanded viewport)"
+ "←/→ 预设档位，X 自定义整数倍（×2~×8，方向键调倍）": "←/→ presets, X custom integer scale (×2~×8)"
 }

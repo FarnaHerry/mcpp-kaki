@@ -1271,16 +1271,22 @@ static const int SETTINGS_ROWS = 6;
 // 窗口模式 4 档：窗口 / 无边框窗口 / 全屏（无边框） / 独占全屏
 static const char *WMODE_NAMES[4] = { "窗口", "无边框窗口", "全屏", "独占全屏" };
 // 分辨率预设档（内部 480×270 canvas_items stretch）。**stretch aspect=expand + scale_mode=integer**
-// 已保证任意窗口尺寸下整数倍渲染、多余屏幕扩展视口显示更多（project.godot [display]），
-// 预设只是常用 16:9 快捷档，自定义可调任意宽高。
+// 已保证整数倍渲染（不花屏）；但 integer 会把 screen_size clamp 到 viewport×整数scale，
+// 非整数倍窗口（如 1280×720=2.67×）多余区域走黑边（window.cpp _update_viewport_size）。
+// 因此预设/自定义都限定 **480×270 整数倍**（无黑边无花屏吃满），expand 兜底全屏超宽。
 static const int RES_PRESETS[][2] = {
-	{ 960, 540 }, { 1280, 720 }, { 1600, 900 }, { 1920, 1080 }, { 2560, 1440 }, { 3840, 2160 },
+	{ 960, 540 }, { 1440, 810 }, { 1920, 1080 }, { 2400, 1350 }, { 2880, 1620 }, { 3840, 2160 },
 };
 static const int RES_PRESET_COUNT = 6;
+// 自定义同样按整数倍：N ∈ [2, 8]，窗口 = 480N × 270N
+static const int RES_SCALE_MIN = 2;
+static const int RES_SCALE_MAX = 8;
 
 String GameMenu::_resolution_label() const {
 	if (_resolution_custom) {
-		return LOC("自定义") + " " + String::num_int64(_custom_w) + "×" + String::num_int64(_custom_h);
+		int n = _custom_w / 480;
+		return LOC("自定义") + " " + String::num_int64(_custom_w) + "×" + String::num_int64(_custom_h) +
+			"（×" + String::num_int64(n) + "）";
 	}
 	return String::num_int64(RES_PRESETS[_resolution_idx][0]) + "×" + String::num_int64(RES_PRESETS[_resolution_idx][1]);
 }
@@ -1329,7 +1335,7 @@ void GameMenu::_refresh_settings_page() {
 	// 分辨率行说明（选中且窗口模式时提示 X 进自定义）
 	if (_settings_sel == 3 && !fullscreen) {
 		Label *hint = memnew(Label);
-		hint->set_text(LOC("←/→ 预设档位，X 自定义任意宽高（整数倍渲染，多余扩展视口）"));
+		hint->set_text(LOC("←/→ 预设档位，X 自定义整数倍（×2~×8，方向键调倍）"));
 		hint->add_theme_font_size_override("font_size", 8);
 		hint->add_theme_color_override("font_color", Color(0.55f, 0.6f, 0.7f));
 		hint->set_position(Vector2(150, 66 + SETTINGS_ROWS * 24));
@@ -1341,15 +1347,15 @@ void GameMenu::_refresh_settings_page() {
 void GameMenu::_handle_settings_input() {
 	Input *input = Input::get_singleton();
 
-	// 自定义分辨率微调子态：任意宽高（←/→ 宽 ↑/↓ 高，步进 10），X 退出
-	// expand+integer stretch 兜底：任意尺寸都整数倍渲染 + 视口扩展，不花屏
+	// 自定义分辨率微调子态：方向键调整数倍 N（窗口=480N×270N，整数倍无黑边），X 退出
 	if (_res_editing) {
-		bool changed = false;
-		if (input->is_action_just_pressed(LOC("left")))  { _custom_w = MAX(480, _custom_w - 10); changed = true; }
-		if (input->is_action_just_pressed(LOC("right"))) { _custom_w = MIN(7680, _custom_w + 10); changed = true; }
-		if (input->is_action_just_pressed(LOC("up")))    { _custom_h = MIN(4320, _custom_h + 10); changed = true; }
-		if (input->is_action_just_pressed(LOC("down")))  { _custom_h = MAX(270, _custom_h - 10); changed = true; }
-		if (changed) {
+		int n = CLAMP(_custom_w / 480, RES_SCALE_MIN, RES_SCALE_MAX);
+		if (input->is_action_just_pressed(LOC("left")) || input->is_action_just_pressed(LOC("down"))) n--;
+		if (input->is_action_just_pressed(LOC("right")) || input->is_action_just_pressed(LOC("up"))) n++;
+		n = CLAMP(n, RES_SCALE_MIN, RES_SCALE_MAX);
+		if (n != _custom_w / 480) {
+			_custom_w = 480 * n;
+			_custom_h = 270 * n;
 			_apply_display(); _save_settings(); _refresh_settings_page();
 			return;
 		}
@@ -1481,13 +1487,21 @@ void GameMenu::_apply_display() {
 	if (_window_mode_opt < 2) {
 		int w = _resolution_custom ? _custom_w : RES_PRESETS[_resolution_idx][0];
 		int h = _resolution_custom ? _custom_h : RES_PRESETS[_resolution_idx][1];
-		ds->window_set_size(Vector2i(w, h));
-		// 居中（像素窗缩放后偏左上体验差）
+		// clamp 到屏幕（整数倍约束下，窗口不超过屏幕能容纳的最大 480×270 倍）
 		int screen = ds->window_get_current_screen();
 		Vector2i ss = ds->screen_get_size(screen);
 		if (ss.x > 0 && ss.y > 0) {
-			ds->window_set_position(Vector2i((ss.x - w) / 2, (ss.y - h) / 2));
+			int n = MIN(w / 480, h / 270);
+			int max_n = MIN(ss.x / 480, ss.y / 270);
+			if (max_n >= 1 && n > max_n) {
+				n = max_n;
+				w = 480 * n;
+				h = 270 * n;
+			}
+			// 居中
+			ds->window_set_position(Vector2i(MAX(0, (ss.x - w) / 2), MAX(0, (ss.y - h) / 2)));
 		}
+		ds->window_set_size(Vector2i(w, h));
 	}
 }
 
@@ -1499,8 +1513,11 @@ void GameMenu::_load_settings() {
 		_window_mode_opt = CLAMP(int(cfg->get_value(LOC("display"), LOC("window_mode"), 0)), 0, 3);
 		_resolution_idx = CLAMP(int(cfg->get_value(LOC("display"), LOC("resolution_idx"), 2)), 0, RES_PRESET_COUNT - 1);
 		_resolution_custom = bool(cfg->get_value(LOC("display"), LOC("resolution_custom"), false));
-		_custom_w = CLAMP(int(cfg->get_value(LOC("display"), LOC("custom_w"), 1920)), 480, 7680);
-		_custom_h = CLAMP(int(cfg->get_value(LOC("display"), LOC("custom_h"), 1080)), 270, 4320);
+		_custom_w = int(cfg->get_value(LOC("display"), LOC("custom_w"), 1920));
+		// 自定义一律对齐整数倍（旧档可能存了任意宽高，防黑边/花屏）
+		int n = CLAMP(int(Math::round(_custom_w / 480.0)), RES_SCALE_MIN, RES_SCALE_MAX);
+		_custom_w = 480 * n;
+		_custom_h = 270 * n;
 	}
 }
 
@@ -1533,6 +1550,13 @@ void GameMenu::_on_language_changed(const String &p_locale) {
 
 void GameMenu::_process(double p_delta) {
 	Input *input = Input::get_singleton();
+
+	// 启动首帧（主循环窗口就绪后）应用显示设置——_ready 阶段窗口可能未完全创建，
+	// window_set_size/mode 会被引擎初始化覆盖，导致启动时分辨率/窗口模式不生效
+	if (!_startup_applied) {
+		_startup_applied = true;
+		_apply_display();
+	}
 
 	if (!_open) {
 		if (input->is_action_just_pressed(LOC("menu"))) {

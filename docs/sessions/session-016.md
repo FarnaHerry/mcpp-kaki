@@ -29,13 +29,18 @@
 - **窗口模式 4 档循环**（←/→）：窗口 / 无边框窗口 / 全屏 / 独占全屏。
   `_apply_display()`：DisplayServer `window_set_mode(WINDOWED/FULLSCREEN/EXCLUSIVE_FULLSCREEN)` +
   `WINDOW_FLAG_BORDERLESS`；Godot 4 的 FULLSCREEN 即无边框全屏，EXCLUSIVE 为独占。
-- **分辨率**：6 预设档 960×540 / 1280×720 / 1600×900 / 1920×1080 / 2560×1440 / 3840×2160 ←/→ 循环；
-  **X 进自定义任意宽高**（`_res_editing` 子态：←/→ 宽、↑/↓ 高，步进 10，clamp 480×270~7680×4320，X 退出）。
-  全屏档分辨率行灰显「（全屏由屏幕决定）」不响应。窗口档应用后按当前屏幕居中。
-  **整数倍 + 视口扩展（用户反馈终修）**：初版 aspect 默认 ignore——任意非整数倍窗口都被硬拉伸→花屏/闪烁；
-  试过「只允许整数倍预设」仍受限。正解是 **project.godot `stretch/aspect="expand"` + `stretch/scale_mode="integer"`**：
-  任意窗口尺寸下 scale 向下取整到整数倍（像素整齐不花屏），窗口比视口大的多余区域由 expand **扩展视口显示更多世界内容**
-  （宽窗口看到更宽、高窗口看到更高），比例始终不变、永不裁剪。设置里的自定义因此恢复任意宽高——不再需要手动对齐整数倍。
+- **分辨率**：6 预设档 960×540 / 1440×810 / 1920×1080 / 2400×1350 / 2880×1620 / 3840×2160 ←/→ 循环；
+  **X 进自定义整数倍**（`_res_editing` 子态：方向键调倍 N∈[2,8]，窗口=480N×270N，X 退出）。
+  全屏档分辨率行灰显「（全屏由屏幕决定）」不响应。窗口档按屏幕 clamp 最大整数倍 + 居中。
+  **黑边根因（用户反馈三次迭代）**：①初版 aspect 默认 ignore → 非整数倍硬拉伸花屏/闪烁；
+  ②换 `stretch aspect=expand+scale_mode=integer` 后任意宽高下**仍黑边**——查 Godot 源码
+  `window.cpp::_update_viewport_size`：integer 模式把 `screen_size=viewport×整数scale`，非整数倍窗口
+  （1280×720=2.67× 等）多余区域走 margin 黑边；expand 只对 fractional scale 才真正扩展填满，与 integer 互斥。
+  ③正解：**窗口本身限 480×270 整数倍**——integer scale 下 viewport=窗口、零黑边零花屏吃满；
+  expand 仅兜底全屏超宽屏。真机截图验证 2880×1620(6×) 全画面无黑边。
+  **启动时序（用户反馈）**：_ready 里 `window_set_size/mode` 时窗口未完全就绪，被引擎初始化覆盖 → 启动不生效；
+  加 `_startup_applied` 首帧 `_process` 再 `_apply_display()`，真机 probe 验证 frame=1 窗口即应用
+  settings.cfg 的 clamp 后尺寸（3840×2160→clamp 屏幕 3120×2080→2880×1620）。
 - **持久化**：settings.cfg 新增 `[display]` 段（window_mode/resolution_idx/resolution_custom/custom_w/custom_h）；
   `_load_settings` 读回后 `_ready` 里 `_apply_display()` 即调 = **启动应用**（GameMenu 每洲场景都有，
   无需 world_common.gd 另写一套）。

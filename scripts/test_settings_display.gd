@@ -118,16 +118,17 @@ func _process(delta) -> bool:
 			var r: Window = root
 			_check(r.content_scale_aspect == Window.CONTENT_SCALE_ASPECT_EXPAND, "stretch aspect=expand（多余屏幕扩展视口）")
 			_check(r.content_scale_stretch == Window.CONTENT_SCALE_STRETCH_INTEGER, "stretch scale_mode=integer（整数倍渲染）")
-			_press("right") # 宽 +10
+			_press("right") # 整数倍 +1（N+1）
 			_step = 20
 		20:
 			var cw = int(_cfg_display("custom_w", 0))
-			_check(cw > 0 and cw % 10 == 0, "自定义宽步进 10（custom_w=" + str(cw) + "）")
-			_press("up") # 高 +10
+			_check(cw > 0 and cw % 480 == 0, "自定义宽=480 整数倍（无黑边吃满，custom_w=" + str(cw) + "）")
+			_press("up") # 再 +1 倍
 			_step = 21
 		21:
 			var ch = int(_cfg_display("custom_h", 0))
-			_check(ch > 0 and ch % 10 == 0, "自定义高步进 10（custom_h=" + str(ch) + "）")
+			_check(ch > 0 and ch % 270 == 0, "自定义高=270 整数倍（custom_h=" + str(ch) + "）")
+			_check(_has_label("×"), "自定义行显示倍数（×N）")
 			_press("interact") # X 退出微调
 			_step = 22
 		22:
