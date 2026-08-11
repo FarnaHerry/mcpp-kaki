@@ -29,13 +29,13 @@
 - **窗口模式 4 档循环**（←/→）：窗口 / 无边框窗口 / 全屏 / 独占全屏。
   `_apply_display()`：DisplayServer `window_set_mode(WINDOWED/FULLSCREEN/EXCLUSIVE_FULLSCREEN)` +
   `WINDOW_FLAG_BORDERLESS`；Godot 4 的 FULLSCREEN 即无边框全屏，EXCLUSIVE 为独占。
-- **分辨率**：6 预设档 960×540 / 1440×810 / 1920×1080 / 2400×1350 / 2880×1620 / 3840×2160 ←/→ 循环；
-  **X 进自定义整数倍**（`_res_editing` 子态：方向键调倍 N∈[2,8]，窗口=480N×270N，再按 X 退出）。
+- **分辨率**：6 预设档 960×540 / 1280×720 / 1600×900 / 1920×1080 / 2560×1440 / 3840×2160 ←/→ 循环；
+  **X 进自定义任意宽高**（`_res_editing` 子态：←/→ 宽、↑/↓ 高，步进 10，clamp 480×270~7680×4320，X 退出）。
   全屏档分辨率行灰显「（全屏由屏幕决定）」不响应。窗口档应用后按当前屏幕居中。
-  内部仍 480×270 canvas_items stretch，窗口尺寸=放大倍数。
-  **整数倍约束（用户反馈修）**：初版预设含 1280×720(2.67×)/2560×1440(5.33×) 非整数倍、自定义任意宽高——
-  nearest 过滤下像素不均匀拉伸花屏（全屏 1920×1080 正好 4× 所以正常）；改为只允许整数倍，
-  读档时自定义值 `round(w/480)` 对齐防旧档花屏。
+  **整数倍 + 视口扩展（用户反馈终修）**：初版 aspect 默认 ignore——任意非整数倍窗口都被硬拉伸→花屏/闪烁；
+  试过「只允许整数倍预设」仍受限。正解是 **project.godot `stretch/aspect="expand"` + `stretch/scale_mode="integer"`**：
+  任意窗口尺寸下 scale 向下取整到整数倍（像素整齐不花屏），窗口比视口大的多余区域由 expand **扩展视口显示更多世界内容**
+  （宽窗口看到更宽、高窗口看到更高），比例始终不变、永不裁剪。设置里的自定义因此恢复任意宽高——不再需要手动对齐整数倍。
 - **持久化**：settings.cfg 新增 `[display]` 段（window_mode/resolution_idx/resolution_custom/custom_w/custom_h）；
   `_load_settings` 读回后 `_ready` 里 `_apply_display()` 即调 = **启动应用**（GameMenu 每洲场景都有，
   无需 world_common.gd 另写一套）。
@@ -43,9 +43,10 @@
 
 ## 测试
 
-- 新增 `scripts/test_settings_display.gd`（**14 PASS**）：设置页 6 行存在、窗口模式循环写 cfg 合法档、
-  分辨率预设循环、X 进自定义（cfg resolution_custom）、微调步进 10、退出微调。
-  headless 下 DisplayServer 窗口操作 no-op，断言落点 = 行标签 + cfg 写入；
+- 新增 `scripts/test_settings_display.gd`（**16 PASS**）：设置页 6 行存在、窗口模式循环写 cfg 合法档、
+  分辨率预设循环、X 进自定义（cfg resolution_custom）、微调步进 10、退出微调、
+  **stretch 配置断言**（root.content_scale_aspect==EXPAND / content_scale_stretch==INTEGER）。
+  headless 下 DisplayServer 窗口操作 no-op，断言落点 = 行标签 + cfg 写入 + stretch 属性；
   **进/出快照还原 [display] 段**，不污染本机设置。
 - 键位回归：test_menu / test_skill_qwerty / test_skill_page / test_shentong 全过。
 
