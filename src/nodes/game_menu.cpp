@@ -28,6 +28,7 @@ module;
 #include <godot_cpp/classes/input_event_key.hpp>
 #include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
+#include <godot_cpp/classes/window.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/core/math.hpp>
 
@@ -1508,7 +1509,16 @@ void GameMenu::_apply_window_geometry() {
 		}
 		ds->window_set_position(Vector2i(MAX(0, (ss.x - w) / 2), MAX(0, (ss.y - h) / 2)));
 	}
-	ds->window_set_size(Vector2i(w, h));
+	// 走 Window::set_size 而非 DisplayServer.window_set_size：后者只改 OS 窗口，
+	// 全屏退出后 Godot 内部 Window::size 不跟随（停留全屏尺寸），viewport 按旧 size
+	// 计算 → rect 卡在全屏扩展值（480×320），16:9 窗口配 3:2 视口 → 黑边。
+	// Window::set_size 同步内部 size + 触发 _update_viewport_size 重算。
+	Window *wnd = get_tree() ? get_tree()->get_root() : nullptr;
+	if (wnd) {
+		wnd->set_size(Vector2i(w, h));
+	} else {
+		ds->window_set_size(Vector2i(w, h));
+	}
 	_geom_target_w = w;
 	_geom_target_h = h;
 }
@@ -1567,16 +1577,19 @@ void GameMenu::_process(double p_delta) {
 		_startup_applied = true;
 		_apply_display();
 	}
-	// 窗口档几何持续纠偏：全屏→窗口 WM 异步恢复尺寸，期间反复对齐直到窗口尺寸到位
+	// 窗口档几何持续纠偏：全屏→窗口 WM 异步恢复尺寸，期间反复对齐直到 Godot 内部
+	// Window::size 到位（检测 root.size 而非 OS 窗口——后者同步了 viewport 仍按旧 size 算）
 	if (_pending_geometry && _window_mode_opt == 0) {
-		DisplayServer *ds = DisplayServer::get_singleton();
-		if (ds) {
-			Vector2i cur = ds->window_get_size();
+		Window *wnd = get_tree() ? get_tree()->get_root() : nullptr;
+		if (wnd) {
+			Vector2i cur = wnd->get_size();
 			if (cur.x != _geom_target_w || cur.y != _geom_target_h) {
 				_apply_window_geometry();
 			} else {
 				_pending_geometry = false;
 			}
+		} else {
+			_pending_geometry = false;
 		}
 	}
 

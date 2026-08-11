@@ -33,6 +33,13 @@
   probe 复现窗口停留全屏尺寸(3120×2080)+expand 视口被拉成非16:9(480×320) → 内容只占一小块；
   加 `_pending_geometry`，窗口档下 `_process` 每帧对齐到 clamp 目标尺寸（匹配即停），
   `_apply_window_geometry` 存 clamp 后 `_geom_target_w/h` 供比较（防超屏值永不等抖动）。
+  **黑边持续（用户二次反馈，真机 UI 序列复现）**：切回窗口后 OS 窗口已 1920×1080 但
+  `root.size` 仍卡全屏 3120×2080（`DisplayServer.window_set_size` 只改 OS 层，全屏退出后
+  Godot `Window::size` 不跟随），viewport 按 root.size 算 → rect 卡 480×320（expand 扩展值），
+  16:9 窗口配 3:2 视口 → expand+integer 重算只剩 1707×960 → 两侧黑边。修复：`_apply_window_geometry`
+  改用 **`Window::set_size`**（同步内部 size + 触发 `_update_viewport_size` 重算），
+  `_pending_geometry` 纠偏检测改基于 `root.get_size()`。真机 UI 全流程验证：切回窗口
+  root.size=1920×1080、rect=480×270、截图 170KB 无黑边。
 - **分辨率**：6 预设档 960×540 / 1440×810 / 1920×1080 / 2400×1350 / 2880×1620 / 3840×2160 ←/→ 循环；
   **X 进自定义整数倍**（`_res_editing` 子态：方向键调倍 N∈[2,8]，窗口=480N×270N，X 退出）。
   全屏档分辨率行灰显「（全屏由屏幕决定）」不响应。窗口档按屏幕 clamp 最大整数倍 + 居中。
