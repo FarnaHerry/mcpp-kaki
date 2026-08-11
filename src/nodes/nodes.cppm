@@ -79,7 +79,7 @@ public:
 	void _on_language_changed(const String &p_locale);
 	bool is_boss_bar_visible() const {
 		for (const BossBarUi &b : _boss_bars) {
-			if (b.bg && b.bg->is_visible()) return true;
+			if (b.root && b.root->is_visible()) return true;
 		}
 		return false;
 	}
@@ -171,9 +171,11 @@ private:
 	ColorRect *_lin_bg = nullptr;
 	Label *_lin_label = nullptr;
 
-	// 多 Boss 血条：按名维护（黑白无常同场各一条，自上而下排列）
+	// 多 Boss 血条：按名维护（黑白无常同场各一条，自上而下排列）。
+	// 每条一个独立 Control 控件（root 容器），内部 bg/fill/名字，名字垂直水平居中
 	struct BossBarUi {
 		String name;
+		Control *root = nullptr; // 独立控件容器（Control 内子控件锚定/居中才生效）
 		ColorRect *bg = nullptr;
 		ColorRect *fill = nullptr;
 		Label *name_label = nullptr;
