@@ -1,8 +1,9 @@
-# 设置页显示设置：窗口模式 3 档 + 分辨率（原生分辨率档，全窗口模式可调）+ cfg 持久化
+# 设置页显示设置：窗口模式 3 档 + 分辨率（原生分辨率档，全窗口模式可调）+ 帧率 + cfg 持久化
 # 终案 v4：16:9 固定基准（480×270 内部画布），非 16:9（3:2/4:3/16:10/21:9）由 aspect=keep 居中黑边兼容；
 # 分辨率行=原生分辨率（1920×1080 等，常规游戏语义），全窗口模式可调——
 # 窗口/无边框全屏=窗口尺寸、独占全屏=显示模式（渲染精度）；内部画布固定 16:9，不自动匹配比例；
-# 缩放固定整数倍。headless 下窗口操作为 no-op，断言落点 = 行标签 + cfg + root.size + content_scale
+# 缩放固定分数倍（fractional，窗口/全屏填满无黑边）。帧率行=上限档（30/60/120/144/无限）。
+# headless 下窗口操作为 no-op，断言落点 = 行标签 + cfg + root.size + content_scale + Engine.max_fps
 extends SceneTree
 
 var _t := 0.0
@@ -14,12 +15,13 @@ var _saved_display := {} # 进入时快照 [display] 段，结束还原（不污
 func _initialize():
 	var cfg := ConfigFile.new()
 	if cfg.load("user://settings.cfg") == OK:
-		for k in ["window_mode"]:
+		for k in ["window_mode", "res_idx", "fps_idx"]:
 			if cfg.has_section_key("display", k):
 				_saved_display[k] = cfg.get_value("display", k, null)
-	# 测试前置：窗口模式/分辨率档位置默认，保证档位循环断言确定
+	# 测试前置：窗口模式/分辨率档/帧率档位置默认，保证档位循环断言确定
 	cfg.set_value("display", "window_mode", 0)
 	cfg.set_value("display", "res_idx", 2)
+	cfg.set_value("display", "fps_idx", 1)
 	cfg.save("user://settings.cfg")
 	var scene = load("res://scenes/main.tscn").instantiate()
 	root.add_child(scene)
@@ -85,9 +87,10 @@ func _process(delta) -> bool:
 			_check(_has_label("1920×1080"), "窗口档：分辨率行=原生档（默认1920×1080）")
 			_check(not _has_label("窗口自由拉伸"), "窗口档不再灰显「自由拉伸」")
 			_check(not _has_label("无边框全屏=桌面"), "无边框档不再灰显「=桌面」")
-			_check(_has_label("保存游戏"), "保存游戏行存在（顺延行4）")
+			_check(_has_label("帧率"), "帧率行存在")
+			_check(_has_label("保存游戏"), "保存游戏行存在（顺延行5）")
 			_check(not _has_label("窗口大小"), "窗口大小行已移除")
-			_check(not _has_label("缩放模式"), "缩放模式行已移除（固定整数倍）")
+			_check(not _has_label("缩放模式"), "缩放模式行已移除（固定分数倍）")
 			_check(not _has_label("渲染比例"), "渲染比例行已移除（内部画布固定 16:9）")
 			_press("down") # → sel1 语言
 			_step = 10
@@ -172,8 +175,34 @@ func _process(delta) -> bool:
 			_step = 28
 		28:
 			_check(_cs() == Vector2i(480, 270), "窗口回16:9 → 内部 480×270")
-			_check(root.content_scale_stretch == Window.CONTENT_SCALE_STRETCH_INTEGER, "缩放固定=整数倍")
+			_check(root.content_scale_stretch == Window.CONTENT_SCALE_STRETCH_FRACTIONAL, "缩放=分数倍（窗口填满无黑边）")
 			_check(root.content_scale_aspect == Window.CONTENT_SCALE_ASPECT_KEEP, "stretch aspect=keep")
+			_press("down") # → sel3 分辨率
+			_step = 29
+		29:
+			_press("down") # → sel4 帧率
+			_step = 30
+		30:
+			_check(_has_label("▶ 帧率"), "选中帧率行")
+			_check(_has_label("60"), "帧率默认 60")
+			_check(int(Engine.max_fps) == 60, "Engine.max_fps=60（默认）")
+			_press("right") # → 120
+			_step = 31
+		31:
+			_check(int(_cfg_display("fps_idx", -1)) == 2, "帧率 cfg fps_idx=2（120）")
+			_check(_has_label("120"), "帧率→120")
+			_check(int(Engine.max_fps) == 120, "Engine.max_fps=120")
+			_press("right") # → 144
+			_step = 32
+		32:
+			_check(int(_cfg_display("fps_idx", -1)) == 3, "帧率 cfg fps_idx=3（144）")
+			_check(_has_label("144"), "帧率→144")
+			_press("right") # → 无限
+			_step = 33
+		33:
+			_check(int(_cfg_display("fps_idx", -1)) == 4, "帧率 cfg fps_idx=4（无限）")
+			_check(_has_label("无限"), "帧率→无限（不锁帧）")
+			_check(int(Engine.max_fps) == 0, "Engine.max_fps=0（不锁帧）")
 			# cfg 不再写旧键
 			var cfg2 := ConfigFile.new()
 			cfg2.load("user://settings.cfg")

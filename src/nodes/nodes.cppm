@@ -480,6 +480,7 @@ export class GameMenu : public CanvasLayer {
 	// 内部渲染比例固定 16:9（480×270），非 16:9 由 aspect=keep 居中黑边；缩放固定整数倍。
 	int _window_mode_opt = 0;
 	int _fs_res_idx = 2;    // FS_RES_PRESETS 下标（原生分辨率档），默认 1920×1080
+	int _fps_idx = 1;       // FPS_PRESETS 下标（帧率上限），默认 60
 	bool _startup_applied = false; // 启动窗口就绪后应用一次显示设置（_ready 时窗口未完全就绪）
 
 	void _open_menu(int p_page);
@@ -502,6 +503,7 @@ export class GameMenu : public CanvasLayer {
 
 	void _handle_settings_input();
 	void _apply_volume();
+	void _apply_fps();
 	void _apply_display();
 	void _apply_render_scale();
 	void _load_settings();

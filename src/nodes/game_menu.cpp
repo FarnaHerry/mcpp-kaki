@@ -1295,10 +1295,8 @@ void GameMenu::_build_settings_page() {
 	_refresh_settings_page();
 }
 
-// 设置页行序：0主音量 1语言 2窗口模式 3分辨率 4保存 5退出
-// 分辨率 = 游戏自己的内部分辨率（content_scale_size，和普通游戏一样的「分辨率」选项）；
-// 窗口大小完全是用户自己的事（自由拉伸/全屏=屏幕），游戏一概不管窗口尺寸
-static const int SETTINGS_ROWS = 6;
+// 设置页行序：0主音量 1语言 2窗口模式 3分辨率 4帧率 5保存 6退出
+static const int SETTINGS_ROWS = 7;
 // 窗口模式 3 档：窗口 / 无边框全屏 / 独占全屏（Godot 4 WINDOW_MODE_FULLSCREEN 即无边框全屏）
 static const char *WMODE_NAMES[3] = { "窗口", "无边框全屏", "独占全屏" };
 // 渲染比例固定 16:9（480×270）基准——stretch aspect=keep：非 16:9 比例（16:10/3:2/4:3/21:9）
@@ -1309,6 +1307,9 @@ static const int FS_RES_PRESETS[][2] = {
 	{ 1280, 720 }, { 1600, 900 }, { 1920, 1080 }, { 2560, 1440 }, { 3120, 2080 }, { 3840, 2160 },
 };
 static const int FS_RES_COUNT = 6;
+// 帧率上限档（max_fps，0=无限不锁帧）
+static const int FPS_PRESETS[] = { 30, 60, 120, 144, 0 };
+static const int FPS_COUNT = 5;
 
 void GameMenu::_refresh_settings_page() {
 	for (CanvasItem *n : _page_nodes) {
@@ -1324,7 +1325,9 @@ void GameMenu::_refresh_settings_page() {
 	// 窗口/无边框全屏=窗口尺寸、独占全屏=显示模式（影响渲染精度）。
 	String res = LOC("分辨率") + LOC("  < ") +
 		String::num_int64(FS_RES_PRESETS[_fs_res_idx][0]) + LOC("×") + String::num_int64(FS_RES_PRESETS[_fs_res_idx][1]) + LOC(" >");
-	String names[SETTINGS_ROWS] = { vol, lang_label, wmode, res, LOC("保存游戏"), LOC("退出游戏") };
+	int fpsv = FPS_PRESETS[_fps_idx];
+	String fps = LOC("帧率") + LOC("  < ") + (fpsv == 0 ? LOC("无限") : String::num_int64(int64_t(fpsv))) + LOC(" >");
+	String names[SETTINGS_ROWS] = { vol, lang_label, wmode, res, fps, LOC("保存游戏"), LOC("退出游戏") };
 
 	Label *title = memnew(Label);
 	title->set_text(LOC("—— 设置 ——"));
@@ -1336,7 +1339,7 @@ void GameMenu::_refresh_settings_page() {
 
 	for (int i = 0; i < SETTINGS_ROWS; i++) {
 		Label *l = memnew(Label);
-		if (_saved_flash > 0.0f && i == 4) {
+		if (_saved_flash > 0.0f && i == 5) {
 			l->set_text(LOC("   ") + LOC("已存档！"));
 		} else if (i == _settings_sel) {
 			l->set_text(LOC("▶ ") + names[i]);
@@ -1355,6 +1358,16 @@ void GameMenu::_refresh_settings_page() {
 	if (_settings_sel == 3) {
 		Label *hint = memnew(Label);
 		hint->set_text(LOC("←/→ 选择分辨率（独占全屏=显示模式；窗口/无边框全屏=窗口尺寸）"));
+		hint->add_theme_font_size_override("font_size", 8);
+		hint->add_theme_color_override("font_color", Color(0.55f, 0.6f, 0.7f));
+		hint->set_position(Vector2(150, 66 + SETTINGS_ROWS * 24));
+		add_child(hint);
+		_page_nodes.push_back(hint);
+	}
+	// 帧率行说明
+	if (_settings_sel == 4) {
+		Label *hint = memnew(Label);
+		hint->set_text(LOC("←/→ 选择帧率上限（无限=不锁帧）"));
 		hint->add_theme_font_size_override("font_size", 8);
 		hint->add_theme_color_override("font_color", Color(0.55f, 0.6f, 0.7f));
 		hint->set_position(Vector2(150, 66 + SETTINGS_ROWS * 24));
@@ -1416,13 +1429,23 @@ void GameMenu::_handle_settings_input() {
 		}
 		return;
 	}
+
+	// Row 4: 帧率上限（max_fps，0=无限）
+	if (_settings_sel == 4) {
+		if (input->is_action_just_pressed(LOC("left")) || input->is_action_just_pressed(LOC("right"))) {
+			int dir = input->is_action_just_pressed(LOC("left")) ? -1 : 1;
+			_fps_idx = (_fps_idx + dir + FPS_COUNT) % FPS_COUNT;
+			_apply_fps(); _save_settings(); _refresh_settings_page();
+		}
+		return;
+	}
 	if (input->is_action_just_pressed(LOC("interact"))) {
 		switch (_settings_sel) {
 			case 0:
 				_volume = CLAMP(_volume + 0.1f, 0.0f, 1.0f);
 				_apply_volume(); _save_settings(); _refresh_settings_page();
 				break;
-			case 4: {
+			case 5: {
 				Node *gm = get_tree()->get_current_scene()->get_node_or_null(NodePath("GameManager"));
 				if (gm) {
 					gm->call("save_game", String("auto"));
@@ -1431,7 +1454,7 @@ void GameMenu::_handle_settings_input() {
 				}
 				break;
 			}
-			case 5:
+			case 6:
 				get_tree()->quit();
 				break;
 		}
@@ -1445,6 +1468,10 @@ void GameMenu::_apply_volume() {
 	if (_volume > 0.001f) {
 		as->set_bus_volume_db(0, Math::linear2db(_volume));
 	}
+}
+
+void GameMenu::_apply_fps() {
+	Engine::get_singleton()->set_max_fps(FPS_PRESETS[_fps_idx]);
 }
 
 void GameMenu::_apply_display() {
@@ -1475,13 +1502,14 @@ void GameMenu::_apply_display() {
 }
 
 // 内部渲染分辨率固定 16:9（480×270）基准——与窗口大小完全解耦：
-// 窗口只决定显示区域与整数放大倍率；非 16:9 比例由 project.godot aspect=keep 居中黑边。
+// 窗口只决定显示区域与分数放大倍率；非 16:9 比例由 project.godot aspect=keep 居中黑边。
 void GameMenu::_apply_render_scale() {
 	Window *wnd = get_tree() ? get_tree()->get_root() : nullptr;
 	if (!wnd) return;
 	wnd->set_content_scale_size(Vector2i(480, 270));
-	// 缩放固定整数倍（像素锐利）——非整数倍窗口/非 16:9 比例由 aspect=keep 居中黑边
-	wnd->set_content_scale_stretch(Window::CONTENT_SCALE_STRETCH_INTEGER);
+	// 缩放固定分数倍（fractional）——窗口/全屏填满无黑边（窗口尺寸=所选分辨率一致）；
+	// 非 16:9 比例（3:2/4:3/16:10/21:9）仍由 aspect=keep 居中黑边兼容。
+	wnd->set_content_scale_stretch(Window::CONTENT_SCALE_STRETCH_FRACTIONAL);
 }
 
 
@@ -1494,6 +1522,7 @@ void GameMenu::_load_settings() {
 		int wm = int(cfg->get_value(LOC("display"), LOC("window_mode"), 0));
 		_window_mode_opt = wm <= 0 ? 0 : (wm >= 3 ? 2 : 1);
 		_fs_res_idx = CLAMP(int(cfg->get_value(LOC("display"), LOC("res_idx"), 2)), 0, FS_RES_COUNT - 1);
+		_fps_idx = CLAMP(int(cfg->get_value(LOC("display"), LOC("fps_idx"), 1)), 0, FPS_COUNT - 1);
 		// 旧档 resolution_idx/resolution_custom/custom_w/custom_h/scale_mode/aspect_idx
 		// 不再读取（存档重写时随新 ConfigFile 自动消失）
 	}
@@ -1505,6 +1534,7 @@ void GameMenu::_save_settings() {
 	cfg->set_value("audio", "master_volume", _volume);
 	cfg->set_value("display", "window_mode", _window_mode_opt);
 	cfg->set_value("display", "res_idx", _fs_res_idx);
+	cfg->set_value("display", "fps_idx", _fps_idx);
 	cfg->save("user://settings.cfg");
 }
 
@@ -1531,6 +1561,7 @@ void GameMenu::_process(double p_delta) {
 	if (!_startup_applied) {
 		_startup_applied = true;
 		_apply_display();
+		_apply_fps();
 	}
 	if (!_open) {
 		if (input->is_action_just_pressed(LOC("menu"))) {
