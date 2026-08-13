@@ -136,3 +136,35 @@
   cfg 旧键全消失。
 - test_shentong 加 3 断言：法则条解锁后显示、x=8 左列、修为条上方。
 - 全量回归见尾注。
+
+---
+
+# 追加：HUD 数值条移底部居中 + 个人信息页（session 020）
+
+## 需求
+
+1. 「左上角数值条太拥挤，移到屏幕正下方」→ 竖排保持（方案2），整列移底部居中。
+2. 「寿命加入 ESC 个人信息页，个人信息页存放攻击力/防御力等人物数据」。
+
+## HUD 数值条底部居中
+
+- `_layout_left_column` 重写：自下而上堆叠于技能栏上方（境界→饱食→buff→修为→[法则]→灵力→生命），
+  水平居中 `bx=(vw-BAR_WIDTH)/2`；法则条化神解锁仍动态补位。
+- **寿元从 HUD 移除**：删 `_lifespan_label`/`_create_lifespan_label`/`on_lifespan_changed`/
+  `lifespan_changed` 连接（`_lifespan_txt` 保留，查簿 overlay 仍用）。
+
+## 个人信息页（GameMenu 新首页 tab）
+
+- 页枚举 `PAGE_PROFILE=0` 插首，TAB_NAMES「个人信息」领先，共 10 页。
+- `_build_profile_page()`：境界(get_full_title)/生命/灵力(get_max_mana)/攻击(get_effective_attack)/
+  防御(**新增 get_effective_defense**)/速度(move_speed)/饱食/寿元(簿上/实际，走 GameManager→SoulLedgerSystem)。
+
+## Player::get_effective_defense
+
+- 镜像 `_take_damage_typed` 的 defense 汇总：装备防御 × 境界/功法/法宝/buff/被动/宗门乘区，bind_method。
+
+## 测试
+
+- test_profile（新 10 断言）：Q 回退到个人信息页，标题+8 数据行+境界值「凡人」。
+- test_shentong：法则条断言改底部居中 x=170（原 x=8 左列）。
+- 回归全绿：profile/shentong/settings_display/menu/lifespan/food/balance_fixes/combat/passives/pressure/bossbar/multi_bossbar/skills。

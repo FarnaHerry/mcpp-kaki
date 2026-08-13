@@ -40,7 +40,7 @@ import mcpp_kaki.inventory;
 import mcpp_kaki.utils;
 namespace godot {
 
-static const char *TAB_NAMES[] = { "背包", "能力", "功法", "技能", "法宝", "宗门", "云游", "炼丹", "设置" };
+static const char *TAB_NAMES[] = { "个人信息", "背包", "能力", "功法", "技能", "法宝", "宗门", "云游", "炼丹", "设置" };
 
 void GameMenu::_bind_methods() {
 }
@@ -184,6 +184,11 @@ void GameMenu::_rebuild_page() {
 	_refresh_tabs();
 
 	switch (_page) {
+		case PAGE_PROFILE:
+			if (_inv_panel) _inv_panel->close();
+			_build_profile_page();
+			_set_hint(LOC("Q/E 切换页  ESC 关闭"));
+			break;
 		case PAGE_INVENTORY:
 			if (_inv_panel) _inv_panel->open();
 			_set_hint(LOC("Q/E 切换页  ↑/↓ 选择  ←/→ 列移  ↑筛选  X 使用/装备  ESC 关闭"));
@@ -229,6 +234,53 @@ void GameMenu::_rebuild_page() {
 			_set_hint(LOC("Q/E 切换页  ↑/↓ 选择  ←/→ 调节  X 确认  ESC 关闭"));
 			break;
 	}
+}
+
+void GameMenu::_build_profile_page() {
+	Label *title = memnew(Label);
+	title->set_text(LOC("—— 个人信息 ——"));
+	title->add_theme_font_size_override("font_size", 13);
+	title->add_theme_color_override("font_color", Color(1.0f, 0.9f, 0.5f));
+	title->set_position(Vector2(195, 40));
+	add_child(title);
+	_page_nodes.push_back(title);
+
+	Player *p = _player;
+	CultivationSystem *cult = p ? p->get_cultivation() : nullptr;
+
+	// 寿元：从 GameManager 的 SoulLedgerSystem 读取（簿上/实际；负值=无限）
+	int ledger_ls = 100, actual_ls = 100;
+	Node *scene = get_tree()->get_current_scene();
+	Node *gm = scene ? scene->get_node_or_null(NodePath("GameManager")) : nullptr;
+	if (gm) {
+		Object *ledger = gm->call("get_soul_ledger");
+		if (ledger) {
+			ledger_ls = int(ledger->call("get_ledger_lifespan"));
+			actual_ls = int(ledger->call("get_actual_lifespan"));
+		}
+	}
+
+	auto fmt = [](double v) -> String { return String::num_int64(int64_t(Math::round(v))); };
+
+	auto add_line = [&](const String &label, const String &value, float y) {
+		Label *l = memnew(Label);
+		l->set_text(label + TXT("：") + value);
+		l->add_theme_font_size_override("font_size", 9);
+		l->add_theme_color_override("font_color", Color(0.85f, 0.85f, 0.85f));
+		l->set_position(Vector2(90, y));
+		add_child(l);
+		_page_nodes.push_back(l);
+	};
+
+	float y = 70.0f;
+	add_line(LOC("境界"), cult ? cult->get_full_title() : LOC("凡人"), y); y += 16.0f;
+	add_line(LOC("生命"), p ? fmt(p->get_max_health()) : TXT("0"), y); y += 16.0f;
+	add_line(LOC("灵力"), cult ? fmt(cult->get_max_mana()) : TXT("0"), y); y += 16.0f;
+	add_line(LOC("攻击"), p ? fmt(p->get_effective_attack()) : TXT("0"), y); y += 16.0f;
+	add_line(LOC("防御"), p ? fmt(p->get_effective_defense()) : TXT("0"), y); y += 16.0f;
+	add_line(LOC("速度"), p ? fmt(p->move_speed) : TXT("0"), y); y += 16.0f;
+	add_line(LOC("饱食"), (p ? fmt(p->get_fullness()) : TXT("0")) + TXT(" / ") + (p ? fmt(p->get_max_fullness()) : TXT("0")), y); y += 16.0f;
+	add_line(LOC("寿元"), String::num_int64(ledger_ls) + TXT(" / ") + (actual_ls < 0 ? TXT("∞") : String::num_int64(actual_ls)), y);
 }
 
 void GameMenu::_build_placeholder_page(const String &p_title, const PackedStringArray &p_lines) {

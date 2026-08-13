@@ -72,7 +72,6 @@ public:
 	void on_continent_changed(const String &p_id, const String &p_name);
 	void on_dongtian_entered();
 	void on_dongtian_exited();
-	void on_lifespan_changed(int p_ledger, int p_actual);
 	void on_ledger_inspect(const Dictionary &p_data, bool p_show);
 	void on_fullness_changed(float p_current, float p_max);
 	void on_bigu_changed(bool p_bigu);
@@ -141,7 +140,6 @@ private:
 
 	Label *_realm_label = nullptr;
 	Label *_jiyuan_label = nullptr;
-	Label *_lifespan_label = nullptr;   // 寿元小标签（簿上/实际，信息差可视化）
 	ColorRect *_ledger_overlay = nullptr; // 查簿 overlay 底
 	std::vector<Label *> _ledger_lines;   // 查簿 overlay 5 行
 	String _realm_name = LOC("凡人");
@@ -194,7 +192,6 @@ private:
 	void _create_xp_bar();
 	void _create_realm_label();
 	void _create_jiyuan_label();
-	void _create_lifespan_label();
 	void _create_ledger_overlay();
 	void _create_fullness_bar();
 	void _create_combo_label();
@@ -430,7 +427,7 @@ private:
 export class GameMenu : public CanvasLayer {
 	GDCLASS(GameMenu, CanvasLayer)
 
-	enum Page { PAGE_INVENTORY = 0, PAGE_ABILITY, PAGE_GONGFA, PAGE_SKILL, PAGE_ARTIFACT, PAGE_SECT, PAGE_TRAVEL, PAGE_ALCHEMY, PAGE_SETTINGS, PAGE_COUNT };
+	enum Page { PAGE_PROFILE = 0, PAGE_INVENTORY, PAGE_ABILITY, PAGE_GONGFA, PAGE_SKILL, PAGE_ARTIFACT, PAGE_SECT, PAGE_TRAVEL, PAGE_ALCHEMY, PAGE_SETTINGS, PAGE_COUNT };
 
 	CanvasLayer *_tabs_layer = nullptr;
 	Label *_tab_labels[PAGE_COUNT] = {};
@@ -492,6 +489,7 @@ export class GameMenu : public CanvasLayer {
 	void _refresh_tabs();
 	void _set_hint(const String &p_text);
 
+	void _build_profile_page();
 	void _build_ability_page();
 	void _build_placeholder_page(const String &p_title, const PackedStringArray &p_lines);
 	void _build_gongfa_page();

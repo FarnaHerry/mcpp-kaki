@@ -36,7 +36,7 @@ import mcpp_kaki.inventory;
 import mcpp_kaki.utils;
 namespace godot {
 
-// 寿元显示：负值 = 无限（天尊，跳出五行）→ "∞"
+// 寿元显示：负值 = 无限（天尊，跳出五行）→ "∞"（查簿 overlay 仍用）
 static String _lifespan_txt(int p_lifespan) {
     if (p_lifespan < 0)
         return TXT("∞");
@@ -47,14 +47,13 @@ static String _lifespan_txt(int p_lifespan) {
 static constexpr float BAR_WIDTH = 140.0f;
 static constexpr float BAR_HEIGHT = 16.0f; // tall enough to hold the value text inside
 static constexpr float BAR_X = 8.0f;
-// 左列动态堆叠（_layout_left_column）：生命→灵力→[法则·化神起显示]→修为→饱食→境界→寿元
+// 底部居中竖排（_layout_left_column）：生命→灵力→[法则·化神起显示]→修为→饱食→境界（寿元移个人信息页）
 static constexpr float HEALTH_BAR_Y = 6.0f;
 static constexpr float ENERGY_BAR_Y = 24.0f; // 灵力（法力）
 static constexpr float LAW_BAR_Y = 42.0f;    // 法则（化神解锁后显示；隐藏时下方元素上移补位）
 static constexpr float XP_BAR_Y = 42.0f;     // 修为经验（百分比，法则隐藏时紧贴灵力）
 static constexpr float FULLNESS_BAR_Y = 60.0f;
 static constexpr float REALM_LABEL_Y = 78.0f;
-static constexpr float LIFESPAN_LABEL_Y = 96.0f;
 static constexpr float ROW_STEP = 18.0f;     // 条高16+间距2
 static constexpr int FONT_SIZE_XS = 9;
 static constexpr int FONT_SIZE_MD = 14;
@@ -67,7 +66,6 @@ void GameHUD::_bind_methods() {
     ClassDB::bind_method(D_METHOD("on_continent_changed", "id", "name"), &GameHUD::on_continent_changed);
     ClassDB::bind_method(D_METHOD("on_dongtian_entered"), &GameHUD::on_dongtian_entered);
     ClassDB::bind_method(D_METHOD("on_dongtian_exited"), &GameHUD::on_dongtian_exited);
-    ClassDB::bind_method(D_METHOD("on_lifespan_changed", "ledger", "actual"), &GameHUD::on_lifespan_changed);
     ClassDB::bind_method(D_METHOD("on_ledger_inspect", "data", "show"), &GameHUD::on_ledger_inspect);
     ClassDB::bind_method(D_METHOD("on_fullness_changed", "current", "max"), &GameHUD::on_fullness_changed);
     ClassDB::bind_method(D_METHOD("on_bigu_changed", "bigu"), &GameHUD::on_bigu_changed);
@@ -112,7 +110,6 @@ void GameHUD::_ready() {
     _create_consumable_bar();
     _create_law_bar();
 	_create_pressure_indicators();
-	_create_lifespan_label();
 	_create_ledger_overlay();
 	_create_fullness_bar();
 
@@ -159,7 +156,6 @@ void GameHUD::_ready() {
         bus->connect("continent_changed", Callable(this, "on_continent_changed"));
         bus->connect("dongtian_entered", Callable(this, "on_dongtian_entered"));
         bus->connect("dongtian_exited", Callable(this, "on_dongtian_exited"));
-        bus->connect("lifespan_changed", Callable(this, "on_lifespan_changed"));
         bus->connect("ledger_inspect_requested", Callable(this, "on_ledger_inspect"));
         bus->connect("fullness_changed", Callable(this, "on_fullness_changed"));
         bus->connect("bigu_changed", Callable(this, "on_bigu_changed"));
@@ -261,16 +257,6 @@ void GameHUD::_create_jiyuan_label() {
     _jiyuan_label->set_text(LOC("机缘已至 [L]"));
     _jiyuan_label->set_visible(false);
     add_child(_jiyuan_label);
-}
-
-void GameHUD::_create_lifespan_label() {
-    _lifespan_label = memnew(Label);
-    _lifespan_label->set_name("LifespanLabel");
-    _lifespan_label->set_position(Vector2(BAR_X, LIFESPAN_LABEL_Y));
-    _lifespan_label->add_theme_font_size_override("font_size", FONT_SIZE_XS);
-    _lifespan_label->add_theme_color_override("font_color", Color(0.7f, 0.85f, 0.9f, 1));
-    _lifespan_label->set_text(TXT("寿 100 / 100"));
-    add_child(_lifespan_label);
 }
 
 void GameHUD::_create_ledger_overlay() {
@@ -461,43 +447,46 @@ void GameHUD::_layout_right_side() {
     }
 }
 
-// 左列动态堆叠：生命→灵力→[法则]→修为→饱食→境界→寿元→buff行。
-// 法则条化神解锁才显示——隐藏时下方元素上移补位，不留空槽
+// 底部居中：数值条竖排（生命→灵力→[法则]→修为→饱食→境界），自下而上堆叠于技能栏上方。
+// 法则条化神解锁才显示——隐藏时下方元素上移补位，不留空槽。寿元已移入 ESC 个人信息页。
 void GameHUD::_layout_left_column() {
-    if (_health_bg) {
-        _health_bg->set_position(Vector2(BAR_X, HEALTH_BAR_Y));
-        _health_fill->set_position(Vector2(BAR_X, HEALTH_BAR_Y));
-        _health_label->set_position(Vector2(BAR_X, HEALTH_BAR_Y - 2.0f));
+    const float bx = (_vw - BAR_WIDTH) * 0.5f;
+    // 自下而上：境界 → 饱食 → buff → 修为 → [法则] → 灵力 → 生命
+    float y = _vh - 48.0f - ROW_STEP; // 境界行（技能栏顶行上方一格）
+    if (_realm_label) _realm_label->set_position(Vector2(bx, y));
+    if (_jiyuan_label) _jiyuan_label->set_position(Vector2(bx + BAR_WIDTH + 8.0f, y + 4.0f));
+    y -= ROW_STEP;
+    if (_fullness_bg) {
+        _fullness_bg->set_position(Vector2(bx, y));
+        _fullness_fill->set_position(Vector2(bx, y));
+        _fullness_label->set_position(Vector2(bx, y - 2.0f));
+    }
+    y -= ROW_STEP;
+    if (_buff_label) _buff_label->set_position(Vector2(bx, y + 4.0f));
+    y -= ROW_STEP;
+    if (_xp_bg) {
+        _xp_bg->set_position(Vector2(bx, y));
+        _xp_fill->set_position(Vector2(bx, y));
+        _xp_label->set_position(Vector2(bx, y - 2.0f));
+    }
+    y -= ROW_STEP;
+    if (_law_shown && _law_bg) {
+        _law_bg->set_position(Vector2(bx, y));
+        _law_fill->set_position(Vector2(bx, y));
+        _law_label->set_position(Vector2(bx, y - 2.0f));
+        y -= ROW_STEP;
     }
     if (_energy_bg) {
-        _energy_bg->set_position(Vector2(BAR_X, ENERGY_BAR_Y));
-        _energy_fill->set_position(Vector2(BAR_X, ENERGY_BAR_Y));
-        _energy_label->set_position(Vector2(BAR_X, ENERGY_BAR_Y - 2.0f));
+        _energy_bg->set_position(Vector2(bx, y));
+        _energy_fill->set_position(Vector2(bx, y));
+        _energy_label->set_position(Vector2(bx, y - 2.0f));
     }
-    float y = ENERGY_BAR_Y + ROW_STEP;
-    if (_law_shown && _law_bg) {
-        _law_bg->set_position(Vector2(BAR_X, y));
-        _law_fill->set_position(Vector2(BAR_X, y));
-        _law_label->set_position(Vector2(BAR_X, y - 2.0f));
-        y += ROW_STEP;
+    y -= ROW_STEP;
+    if (_health_bg) {
+        _health_bg->set_position(Vector2(bx, y));
+        _health_fill->set_position(Vector2(bx, y));
+        _health_label->set_position(Vector2(bx, y - 2.0f));
     }
-    if (_xp_bg) {
-        _xp_bg->set_position(Vector2(BAR_X, y));
-        _xp_fill->set_position(Vector2(BAR_X, y));
-        _xp_label->set_position(Vector2(BAR_X, y - 2.0f));
-    }
-    if (_buff_label) _buff_label->set_position(Vector2(BAR_X, y + BAR_HEIGHT + 2.0f));
-    y += ROW_STEP;
-    if (_fullness_bg) {
-        _fullness_bg->set_position(Vector2(BAR_X, y));
-        _fullness_fill->set_position(Vector2(BAR_X, y));
-        _fullness_label->set_position(Vector2(BAR_X, y - 2.0f));
-    }
-    y += ROW_STEP;
-    if (_realm_label) _realm_label->set_position(Vector2(BAR_X, y));
-    if (_jiyuan_label) _jiyuan_label->set_position(Vector2(BAR_X + 170.0f, y + 4.0f));
-    y += ROW_STEP;
-    if (_lifespan_label) _lifespan_label->set_position(Vector2(BAR_X, y));
 }
 
 // 底部居中：12 技能槽两排（节点顺序 = 创建顺序，4 节点/槽：slot/key/name/cd）
@@ -1036,7 +1025,6 @@ void GameHUD::_apply_hud_visibility() {
     if (_xp_label)      _xp_label->set_visible(_hud_visible);
     if (_realm_label)   _realm_label->set_visible(_hud_visible);
     if (_jiyuan_label)  _jiyuan_label->set_visible(_hud_visible && _xp_progress >= 1.0f);
-    if (_lifespan_label) _lifespan_label->set_visible(_hud_visible);
     // 饱食度条：辟谷后隐藏
     bool show_fullness = _hud_visible && !_bigu;
     if (_fullness_bg) _fullness_bg->set_visible(show_fullness);
@@ -1165,20 +1153,6 @@ void GameHUD::on_realm_changed(int p_old_realm, int p_new_realm, const String &p
         _xp_prefix = new_xp_prefix;
         _refresh_xp_label();
     }
-}
-
-void GameHUD::on_lifespan_changed(int p_ledger, int p_actual) {
-    if (!_lifespan_label)
-        return;
-    // 寿元信息差可视化：实际 > 簿上 = 超出簿上（绿），实际 < 簿上 = 红
-    // 天尊（跳出五行）实际寿元无限 → 金「寿 簿上/∞」
-    String txt = TXT("寿 ") + String::num_int64(p_ledger) + TXT(" / ") + _lifespan_txt(p_actual);
-    _lifespan_label->set_text(txt);
-    Color c = p_actual < 0 ? Color(1.0f, 0.85f, 0.4f, 1)
-            : p_actual > p_ledger ? Color(0.5f, 0.9f, 0.5f, 1)
-            : p_actual < p_ledger ? Color(1.0f, 0.5f, 0.5f, 1)
-            : Color(0.7f, 0.85f, 0.9f, 1);
-    _lifespan_label->add_theme_color_override("font_color", c);
 }
 
 void GameHUD::on_fullness_changed(float p_current, float p_max) {

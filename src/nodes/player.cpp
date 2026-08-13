@@ -741,6 +741,7 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("get_equip_bonus_defense"), &Player::get_equip_bonus_defense);
 		ClassDB::bind_method(D_METHOD("get_equip_bonus_speed"), &Player::get_equip_bonus_speed);
 		ClassDB::bind_method(D_METHOD("get_effective_attack"), &Player::get_effective_attack);
+	ClassDB::bind_method(D_METHOD("get_effective_defense"), &Player::get_effective_defense);
 		ClassDB::bind_method(D_METHOD("_on_ability_unlocked", "ability_id"), &Player::_on_ability_unlocked);
 		ClassDB::bind_method(D_METHOD("_on_cultivation_realm_changed", "old_realm", "new_realm"), &Player::_on_cultivation_realm_changed);
 		ClassDB::bind_method(D_METHOD("set_benming_artifact", "item_id"), &Player::set_benming_artifact);
@@ -1703,6 +1704,29 @@ namespace godot {
 		}
 		atk *= get_benming_coeff(); // 本命法宝加成
 		return atk;
+	}
+
+	float Player::get_effective_defense() const {
+		float defense = get_equip_bonus_defense();
+		if (_cultivation) {
+			defense *= _cultivation->get_defense_multiplier();
+		}
+		if (_gongfa) {
+			defense *= _gongfa->get_def_mult(); // 功法（炼体）乘区
+		}
+		if (_artifacts) {
+			defense *= 1.0f + _artifacts->get_passive_def_bonus(); // 辅助型法宝常驻被动
+		}
+		if (_buffs) {
+			defense *= _buffs->get_def_mult(); // buff（金刚丹等）乘区
+		}
+		if (_skills) {
+			defense *= _skills->get_passive_def_mult(); // 被动（铁布衫）乘区
+		}
+		if (_sect) {
+			defense *= _sect->get_def_mult(); // 宗门（蓬莱）乘区
+		}
+		return defense;
 	}
 
 	bool Player::equip_item(int p_inventory_slot) {

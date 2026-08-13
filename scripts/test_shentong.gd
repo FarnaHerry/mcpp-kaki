@@ -46,14 +46,14 @@ func _process(delta) -> bool:
 			print("[TEST] law power=", cult.call("get_law_power"), "/", cult.call("get_law_power_max"))
 			_check(float(cult.call("get_law_power_max")) == 100.0, "law power max 100 at SPIRIT_SEVERING")
 			_check(float(cult.call("get_law_power")) == 100.0, "law power refilled on unlock")
-			# 法则条：解锁后显示在左列（生命/灵力之下，x=8 左缘，修为条上方）
+			# 法则条：解锁后显示在底部居中竖排（修为条上方）
 			var hud = root.find_child("GameHUD", true, false)
 			var law_bg = hud.find_child("LawBg", true, false) if hud != null else null
 			var xp_bg = hud.find_child("XpBg", true, false) if hud != null else null
 			_check(law_bg != null and law_bg.visible, "HUD 法则条解锁后显示")
 			if law_bg != null and xp_bg != null:
-				_check(law_bg.position.x == 8.0, "法则条在左列（x=8，非右上角）")
-				_check(law_bg.position.y < xp_bg.position.y, "法则条在修为条上方（左列堆叠补位）")
+				_check(law_bg.position.x == 170.0, "法则条底部居中（x=170，非右上角/左列）")
+				_check(law_bg.position.y < xp_bg.position.y, "法则条在修为条上方（底部竖排补位）")
 			var sk = p.call("get_skills")
 			var s6 = sk.call("get_slot_info", 4)
 			print("[TEST] slot T: ", s6.get("id"))
