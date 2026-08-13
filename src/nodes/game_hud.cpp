@@ -353,17 +353,11 @@ void GameHUD::_create_skill_bar() {
         { "Q", WU }, { "W", WU }, { "E", FA }, { "R", FA }, { "T", SHEN }, { "Y", XIAN }, // 上行
         { "A", WU }, { "S", WU }, { "D", FA }, { "F", FA }, { "G", SHEN }, { "H", SHEN }, // 下行
     };
-    const float SLOT_W = 20.0f, SLOT_GAP = 2.0f;
-    const int COLS = 6, N = 12;
-    const float row_w = COLS * SLOT_W + (COLS - 1) * SLOT_GAP; // 130
-    const float x0 = (480.0f - row_w) * 0.5f;                  // 175
-    const float y_top = 270.0f - 48.0f;  // 上排 y=222
-    const float y_bot = 270.0f - 24.0f;  // 下排 y=246
+    const float SLOT_W = 20.0f; // 槽尺寸（位置由 _layout_skill_bar() 统一锚定，渲染比例自适应）
+    const int N = 12;
 
     for (int i = 0; i < N; i++) {
-        int row = i / COLS, col = i % COLS;
-        float x = x0 + col * (SLOT_W + SLOT_GAP);
-        float y = (row == 0) ? y_top : y_bot;
+        float x = 0.0f, y = 0.0f;
 
         ColorRect *slot = memnew(ColorRect);
         slot->set_position(Vector2(x, y));
@@ -406,17 +400,114 @@ void GameHUD::_create_skill_bar() {
     _page_badge->set_text(LOC("法宝页 [B 返回]"));
     _page_badge->add_theme_font_size_override("font_size", 8);
     _page_badge->add_theme_color_override("font_color", Color(1.0f, 0.85f, 0.4f, 0.95f));
-    _page_badge->set_position(Vector2(x0 + row_w + 8.0f, y_bot + 6.0f));
+    _page_badge->set_position(Vector2(0, 0)); // _layout_skill_bar() 接管
     _page_badge->set_visible(false);
     add_child(_page_badge);
     _skill_bar_nodes.push_back(_page_badge);
+    _layout_skill_bar();
 }
 
 // ============================================================
 // 技能栏刷新（轮询 Player->SkillSystem；冷却走 Player._time 时基）
 // ============================================================
 
+// ============================================================
+// 渲染比例自适应布局（16:9 基准 480×270；其他比例单边延伸视野，
+// 右/中/底锚定元素跟随 content_scale_size 重排——渲染分辨率与窗口解耦）
+// ============================================================
+
+void GameHUD::_sync_viewport() {
+    Vector2i cs;
+    if (get_tree() && get_tree()->get_root()) cs = get_tree()->get_root()->get_content_scale_size();
+    float vw = cs.x > 0 ? float(cs.x) : 480.0f;
+    float vh = cs.y > 0 ? float(cs.y) : 270.0f;
+    if (vw == _vw && vh == _vh)
+        return;
+    _vw = vw;
+    _vh = vh;
+    _relayout_hud();
+}
+
+void GameHUD::_relayout_hud() {
+    _layout_right_side();
+    _layout_skill_bar();
+    _layout_consumable_bar();
+    // 全宽居中标签/全屏遮罩
+    if (_continent_label) _continent_label->set_size(Vector2(_vw, 30));
+    if (_interact_label) {
+        _interact_label->set_position(Vector2(0, _vh - 40.0f));
+        _interact_label->set_size(Vector2(_vw, 30));
+    }
+    if (_death_overlay) _death_overlay->set_size(Vector2(_vw, _vh));
+    if (_ledger_overlay) _ledger_overlay->set_position(Vector2((_vw - 240.0f) * 0.5f, 58));
+    if (_combo_label) _combo_label->set_position(Vector2(_vw - 100.0f, 130));
+    _relayout_boss_bars();
+}
+
+// 右上：法则条 + 威压/灵压指示器（同一右缘）
+void GameHUD::_layout_right_side() {
+    const float rx = _vw - BAR_WIDTH - 8.0f;
+    if (_law_bg) {
+        _law_bg->set_position(Vector2(rx, 6.0f));
+        _law_fill->set_position(Vector2(rx, 6.0f));
+        _law_label->set_position(Vector2(rx + 2, 5.0f));
+    }
+    if (_wei_bg) {
+        _wei_bg->set_position(Vector2(rx, 20.0f));
+        _wei_label->set_position(Vector2(rx + 2, 19.0f));
+    }
+    if (_lin_bg) {
+        _lin_bg->set_position(Vector2(rx + 70.0f, 20.0f));
+        _lin_label->set_position(Vector2(rx + 72.0f, 19.0f));
+    }
+}
+
+// 底部居中：12 技能槽两排（节点顺序 = 创建顺序，4 节点/槽：slot/key/name/cd）
+void GameHUD::_layout_skill_bar() {
+    if (_skill_bar_nodes.size() < 12 * 4)
+        return;
+    const float SLOT_W = 20.0f, SLOT_GAP = 2.0f;
+    const int COLS = 6;
+    const float row_w = COLS * SLOT_W + (COLS - 1) * SLOT_GAP; // 130
+    const float x0 = (_vw - row_w) * 0.5f;
+    const float y_top = _vh - 48.0f;
+    const float y_bot = _vh - 24.0f;
+    for (int i = 0; i < 12; i++) {
+        int row = i / COLS, col = i % COLS;
+        float x = x0 + col * (SLOT_W + SLOT_GAP);
+        float y = (row == 0) ? y_top : y_bot;
+        if (Control *slot = Object::cast_to<Control>(_skill_bar_nodes[i * 4 + 0]))
+            slot->set_position(Vector2(x, y));
+        if (Control *key = Object::cast_to<Control>(_skill_bar_nodes[i * 4 + 1]))
+            key->set_position(Vector2(x + 1, y + 1));
+        _skill_name_labels[i]->set_position(Vector2(x + 6, y + 7));
+        _skill_cd_labels[i]->set_position(Vector2(x + 10, y + 12));
+    }
+    if (_page_badge)
+        _page_badge->set_position(Vector2(x0 + row_w + 8.0f, y_bot + 6.0f));
+}
+
+// 左下角：消耗品栏（贴左贴底；_skill_bar_nodes 中下标 49 起 = 12 技能槽×4 + page_badge）
+void GameHUD::_layout_consumable_bar() {
+    const int base = 12 * 4 + 1;
+    if (_bar_name_labels.empty() || (int)_skill_bar_nodes.size() < base + 6 * 4)
+        return;
+    const float SLOT_W = 20.0f, SLOT_GAP = 2.0f;
+    const float x0 = 8.0f, y = _vh - 24.0f;
+    for (int i = 0; i < 6; i++) {
+        float x = x0 + i * (SLOT_W + SLOT_GAP);
+        int b = base + i * 4;
+        if (Control *slot = Object::cast_to<Control>(_skill_bar_nodes[b + 0]))
+            slot->set_position(Vector2(x, y));
+        if (Control *key = Object::cast_to<Control>(_skill_bar_nodes[b + 1]))
+            key->set_position(Vector2(x + 1, y + 1));
+        _bar_name_labels[i]->set_position(Vector2(x + 6, y + 4));
+        _bar_count_labels[i]->set_position(Vector2(x + 12, y + 12));
+    }
+}
+
 void GameHUD::_process(double p_delta) {
+    _sync_viewport(); // 渲染比例变更时重排锚定元素
     if (Engine::get_singleton()->is_editor_hint())
         return;
     _update_skill_bar();
@@ -538,7 +629,7 @@ void GameHUD::_update_buff_label(double p_delta) {
 // ============================================================
 
 void GameHUD::_create_law_bar() {
-    const float x = 480.0f - BAR_WIDTH - 8.0f, y = 6.0f, h = 10.0f;
+    const float x = 0.0f, y = 6.0f, h = 10.0f; // x 由 _layout_right_side() 锚定（右边自适应）
     _law_bg = memnew(ColorRect);
     _law_bg->set_position(Vector2(x, y));
     _law_bg->set_size(Vector2(BAR_WIDTH, h));
@@ -561,6 +652,7 @@ void GameHUD::_create_law_bar() {
     _law_bg->set_visible(false);
     _law_fill->set_visible(false);
     _law_label->set_visible(false);
+    _layout_right_side();
 }
 
 void GameHUD::_update_law_bar() {
@@ -590,7 +682,7 @@ void GameHUD::_update_law_bar() {
 // ============================================================
 
 void GameHUD::_create_pressure_indicators() {
-	const float x0 = 480.0f - BAR_WIDTH - 8.0f; // same left edge as law bar
+	const float x0 = 0.0f; // 由 _layout_right_side() 锚定（与法则条同左缘）
 	const float y = 20.0f;
 	const float W = 66.0f, H = 14.0f;
 
@@ -621,6 +713,7 @@ void GameHUD::_create_pressure_indicators() {
 	_lin_label->add_theme_color_override("font_color", Color(0.7f, 0.5f, 0.95f, 0.95f));
 	_lin_label->set_position(Vector2(x0 + W + 6, y - 1));
 	add_child(_lin_label);
+	_layout_right_side();
 }
 
 void GameHUD::_update_pressure_indicators() {
@@ -659,14 +752,12 @@ void GameHUD::_update_pressure_indicators() {
 }
 
 void GameHUD::_create_consumable_bar() {
-    const float SLOT_W = 20.0f, SLOT_GAP = 2.0f;
+    const float SLOT_W = 20.0f; // 槽尺寸（位置由 _layout_consumable_bar() 统一锚定，底边自适应）
     const int N = 6;
-    const float total_w = N * SLOT_W + (N - 1) * SLOT_GAP; // 130
-    const float x0 = 8.0f; // 左下角，与生命条对齐
-    const float y = 270.0f - 24.0f; // 屏幕底部
+    const float y = 0.0f;
 
     for (int i = 0; i < N; i++) {
-        float x = x0 + i * (SLOT_W + SLOT_GAP);
+        float x = 0.0f;
 
         ColorRect *slot = memnew(ColorRect);
         slot->set_position(Vector2(x, y));
@@ -701,6 +792,7 @@ void GameHUD::_create_consumable_bar() {
         _skill_bar_nodes.push_back(count);
         _bar_count_labels.push_back(count);
     }
+    _layout_consumable_bar();
 }
 
 void GameHUD::_update_consumable_bar() {
@@ -783,7 +875,7 @@ void GameHUD::_update_skill_bar() {
 GameHUD::BossBarUi *GameHUD::_create_boss_bar_item() {
     // bg/fill/名字直接挂 CanvasLayer；名字用 font 精确度量绝对定位居中（见 on_boss_fight_update）
     const float W = 240.0f, H = 16.0f;
-    const float x = (480.0f - W) * 0.5f;
+    const float x = (_vw - W) * 0.5f;
 
     _boss_bars.push_back(BossBarUi());
     BossBarUi &bar = _boss_bars.back();
@@ -824,7 +916,7 @@ GameHUD::BossBarUi *GameHUD::_find_boss_bar(const String &p_name) {
 void GameHUD::_relayout_boss_bars() {
     // 任意数量：自上而下排列，血条 16px/条（名字在条内居中）
     const float W = 240.0f, H = 16.0f;
-    const float x = (480.0f - W) * 0.5f;
+    const float x = (_vw - W) * 0.5f;
     for (int i = 0; i < (int)_boss_bars.size(); i++) {
         BossBarUi &b = _boss_bars[i];
         float y = 8.0f + (float)i * 18.0f;

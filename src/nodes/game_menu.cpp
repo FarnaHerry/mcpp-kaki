@@ -1268,12 +1268,11 @@ void GameMenu::_build_settings_page() {
 }
 
 // 设置页行序：0主音量 1语言 2窗口模式 3分辨率 4保存 5退出
-static const int SETTINGS_ROWS = 6;
+static const int SETTINGS_ROWS = 8;
 // 窗口模式 3 档：窗口 / 无边框全屏 / 独占全屏（Godot 4 WINDOW_MODE_FULLSCREEN 即无边框全屏）
 static const char *WMODE_NAMES[3] = { "窗口", "无边框全屏", "独占全屏" };
-// 分辨率预设档（内部 480×270 canvas_items stretch）。**stretch aspect=keep + scale_mode=integer**：
-// 引擎托管整数倍缩放+居中黑边（Celeste/空洞骑士式像素风标准方案），视口恒定 480×270，
-// HUD 绝对坐标/相机房界不被窗口尺寸影响。预设/自定义都取 **480×270 整数倍**——这些尺寸下零黑边。
+// 窗口大小预设档（仅窗口档生效；取 480×270 整数倍——这些尺寸下 16:9 渲染零黑边）。
+// **窗口大小与渲染分辨率解耦**（和普通游戏一样）：窗口只是显示区域，可任意拖大拖小。
 static const int RES_PRESETS[][2] = {
 	{ 960, 540 }, { 1440, 810 }, { 1920, 1080 }, { 2400, 1350 }, { 2880, 1620 }, { 3840, 2160 },
 };
@@ -1281,6 +1280,20 @@ static const int RES_PRESET_COUNT = 6;
 // 自定义同样按整数倍：N ∈ [2, 8]，窗口 = 480N × 270N
 static const int RES_SCALE_MIN = 2;
 static const int RES_SCALE_MAX = 8;
+// 渲染比例档（= content_scale_size 内部渲染分辨率，全窗口模式可调）：
+// **16:9（480×270）为基准核心**，其余比例从基准单边延伸——视野更宽（21:9）或更高（16:10/3:2/4:3）。
+// stretch aspect=keep：渲染比例与窗口比例不符时引擎居中黑边（Celeste/HK 式，像素游戏标准）。
+static const int ASPECT_PRESETS[][2] = {
+	{ 480, 270 }, // 16:9（基准）
+	{ 480, 300 }, // 16:10
+	{ 480, 320 }, // 3:2
+	{ 480, 360 }, // 4:3
+	{ 630, 270 }, // 21:9
+};
+static const char *ASPECT_NAMES[5] = { "16:9", "16:10", "3:2", "4:3", "21:9" };
+static const int ASPECT_COUNT = 5;
+// 缩放模式：整数倍（像素锐利+比例不符时黑边）/ 铺满（fractional 填满窗口，像素大小略不均）
+static const char *SCALE_MODE_NAMES[2] = { "整数倍", "铺满" };
 
 String GameMenu::_resolution_label() const {
 	if (_resolution_custom) {
@@ -1301,10 +1314,14 @@ void GameMenu::_refresh_settings_page() {
 	String lang_label = LOC("语言") + ": < " + LOC(is_en ? "English" : "中文") + " >";
 	String vol = LOC("主音量") + "  < " + String::num_int64(int64_t(Math::round(_volume * 100.0f))) + "% >";
 	String wmode = LOC("窗口模式") + "  < " + LOC(WMODE_NAMES[_window_mode_opt]) + " >";
-	bool fullscreen = _window_mode_opt >= 1; // 全屏档分辨率由屏幕决定
-	String res = LOC("分辨率") + (fullscreen ? String("  ") + LOC("（全屏由屏幕决定）")
+	bool fullscreen = _window_mode_opt >= 1; // 全屏档窗口大小由屏幕决定
+	String res = LOC("窗口大小") + (fullscreen ? String("  ") + LOC("（全屏由屏幕决定）")
 										 : "  < " + _resolution_label() + " >");
-	String names[SETTINGS_ROWS] = { vol, lang_label, wmode, res, LOC("保存游戏"), LOC("退出游戏") };
+	// 渲染比例/缩放模式：全窗口模式可调（渲染分辨率与窗口大小解耦，和普通游戏一样）
+	String aspect = LOC("渲染比例") + "  < " + String(ASPECT_NAMES[_aspect_idx]) + "  " +
+		String::num_int64(ASPECT_PRESETS[_aspect_idx][0]) + "×" + String::num_int64(ASPECT_PRESETS[_aspect_idx][1]) + " >";
+	String smode = LOC("缩放模式") + "  < " + LOC(SCALE_MODE_NAMES[_scale_mode_opt]) + " >";
+	String names[SETTINGS_ROWS] = { vol, lang_label, wmode, res, aspect, smode, LOC("保存游戏"), LOC("退出游戏") };
 
 	Label *title = memnew(Label);
 	title->set_text(LOC("—— 设置 ——"));
@@ -1316,7 +1333,7 @@ void GameMenu::_refresh_settings_page() {
 
 	for (int i = 0; i < SETTINGS_ROWS; i++) {
 		Label *l = memnew(Label);
-		if (_saved_flash > 0.0f && i == 4) {
+		if (_saved_flash > 0.0f && i == 6) {
 			l->set_text(LOC("   ") + LOC("已存档！"));
 		} else if (i == _settings_sel) {
 			l->set_text(LOC("▶ ") + names[i]);
@@ -1325,14 +1342,14 @@ void GameMenu::_refresh_settings_page() {
 		}
 		l->add_theme_font_size_override("font_size", 9);
 		Color c = i == _settings_sel ? Color(1.0f, 0.95f, 0.6f) : Color(0.85f, 0.85f, 0.85f);
-		if (i == 3 && fullscreen) c = Color(0.45f, 0.45f, 0.45f); // 全屏下分辨率行灰显
+		if (i == 3 && fullscreen) c = Color(0.45f, 0.45f, 0.45f); // 全屏下窗口大小行灰显
 		l->add_theme_color_override("font_color", c);
 		l->set_position(Vector2(150, 66 + i * 24));
 		add_child(l);
 		_page_nodes.push_back(l);
 	}
 
-	// 分辨率行说明（选中且窗口模式时提示 X 进自定义）
+	// 窗口大小行说明（选中且窗口模式时提示 X 进自定义）
 	if (_settings_sel == 3 && !fullscreen) {
 		Label *hint = memnew(Label);
 		hint->set_text(LOC("←/→ 预设档位，X 自定义整数倍（×2~×8，方向键调倍）"));
@@ -1433,13 +1450,31 @@ void GameMenu::_handle_settings_input() {
 		}
 		return;
 	}
+	// Row 4: 渲染比例（content_scale_size，全窗口模式可调——渲染分辨率与窗口解耦）
+	if (_settings_sel == 4) {
+		if (input->is_action_just_pressed(LOC("left")) || input->is_action_just_pressed(LOC("right"))) {
+			int dir = input->is_action_just_pressed(LOC("left")) ? -1 : 1;
+			_aspect_idx = (_aspect_idx + dir + ASPECT_COUNT) % ASPECT_COUNT;
+			_apply_render_scale(); _save_settings(); _refresh_settings_page();
+		}
+		return;
+	}
+	// Row 5: 缩放模式（整数倍锐利 / 铺满无黑边）
+	if (_settings_sel == 5) {
+		if (input->is_action_just_pressed(LOC("left")) || input->is_action_just_pressed(LOC("right")) ||
+			input->is_action_just_pressed(LOC("interact"))) {
+			_scale_mode_opt = 1 - _scale_mode_opt;
+			_apply_render_scale(); _save_settings(); _refresh_settings_page();
+		}
+		return;
+	}
 	if (input->is_action_just_pressed(LOC("interact"))) {
 		switch (_settings_sel) {
 			case 0:
 				_volume = CLAMP(_volume + 0.1f, 0.0f, 1.0f);
 				_apply_volume(); _save_settings(); _refresh_settings_page();
 				break;
-			case 4: {
+			case 6: {
 				Node *gm = get_tree()->get_current_scene()->get_node_or_null(NodePath("GameManager"));
 				if (gm) {
 					gm->call("save_game", String("auto"));
@@ -1448,7 +1483,7 @@ void GameMenu::_handle_settings_input() {
 				}
 				break;
 			}
-			case 5:
+			case 7:
 				get_tree()->quit();
 				break;
 		}
@@ -1485,7 +1520,21 @@ void GameMenu::_apply_display() {
 		_apply_window_geometry();
 		_pending_geometry = true;
 	}
-	// 全屏档：窗口=屏幕（异步），缩放/居中黑边由引擎托管（keep+integer），无需纠偏
+	// 渲染比例+缩放模式：全窗口模式应用（渲染分辨率与窗口解耦）
+	_apply_render_scale();
+	// 全屏档：窗口=屏幕（异步），缩放/居中黑边由引擎托管（keep+integer/fractional），无需纠偏
+}
+
+// 渲染分辨率 = content_scale_size（16:9 基准 480×270，其余比例单边延伸视野）；
+// 缩放模式 = 引擎 content_scale_mode（integer 锐利黑边 / fractional 铺满）。
+// 与窗口大小完全解耦：窗口只决定显示区域，渲染比例决定视野与像素网格。
+void GameMenu::_apply_render_scale() {
+	Window *wnd = get_tree() ? get_tree()->get_root() : nullptr;
+	if (!wnd) return;
+	wnd->set_content_scale_size(Vector2i(ASPECT_PRESETS[_aspect_idx][0], ASPECT_PRESETS[_aspect_idx][1]));
+	// 注意绑定命名：stretch/scale_mode（integer/fractional）对应 Window::ContentScaleStretch
+	wnd->set_content_scale_stretch(_scale_mode_opt == 0 ? Window::CONTENT_SCALE_STRETCH_INTEGER
+													 : Window::CONTENT_SCALE_STRETCH_FRACTIONAL);
 }
 
 void GameMenu::_apply_window_geometry() {
@@ -1530,6 +1579,8 @@ void GameMenu::_load_settings() {
 		_window_mode_opt = wm <= 0 ? 0 : (wm >= 3 ? 2 : 1);
 		_resolution_idx = CLAMP(int(cfg->get_value(LOC("display"), LOC("resolution_idx"), 2)), 0, RES_PRESET_COUNT - 1);
 		_resolution_custom = bool(cfg->get_value(LOC("display"), LOC("resolution_custom"), false));
+		_aspect_idx = CLAMP(int(cfg->get_value(LOC("display"), LOC("aspect_idx"), 0)), 0, ASPECT_COUNT - 1);
+		_scale_mode_opt = CLAMP(int(cfg->get_value(LOC("display"), LOC("scale_mode"), 0)), 0, 1);
 		_custom_w = int(cfg->get_value(LOC("display"), LOC("custom_w"), 1920));
 		// 自定义一律对齐整数倍（旧档可能存了任意宽高，防黑边/花屏）
 		int n = CLAMP(int(Math::round(_custom_w / 480.0)), RES_SCALE_MIN, RES_SCALE_MAX);
@@ -1545,6 +1596,8 @@ void GameMenu::_save_settings() {
 	cfg->set_value("display", "window_mode", _window_mode_opt);
 	cfg->set_value("display", "resolution_idx", _resolution_idx);
 	cfg->set_value("display", "resolution_custom", _resolution_custom);
+	cfg->set_value("display", "aspect_idx", _aspect_idx);
+	cfg->set_value("display", "scale_mode", _scale_mode_opt);
 	cfg->set_value("display", "custom_w", _custom_w);
 	cfg->set_value("display", "custom_h", _custom_h);
 	cfg->save("user://settings.cfg");

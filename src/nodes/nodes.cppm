@@ -182,6 +182,10 @@ private:
 	};
 	std::deque<BossBarUi> _boss_bars; // deque 元素地址稳定（增删不失效）
 
+	// 渲染比例自适应（content_scale_size 变更 → 右/中/底锚定元素重排；渲染分辨率与窗口解耦）
+	float _vw = 480.0f;
+	float _vh = 270.0f;
+
 	bool _hud_visible = true;
 
 	void _create_health_bar();
@@ -205,6 +209,11 @@ private:
 	void _position_boss_name(BossBarUi *p_bar, float p_x, float p_y);
 	void _create_pressure_indicators();
 	void _update_pressure_indicators();
+	void _sync_viewport();
+	void _relayout_hud();
+	void _layout_right_side();
+	void _layout_skill_bar();
+	void _layout_consumable_bar();
 	void _update_skill_bar();
 	void _update_law_bar();
 	void _update_buff_label(double p_delta);
@@ -464,11 +473,14 @@ export class GameMenu : public CanvasLayer {
 	int _settings_sel = 0;
 	float _volume = 0.8f;
 	float _saved_flash = 0.0f;
-	// 显示设置：窗口模式 3 档（0窗口/1无边框全屏/2独占全屏）+ 分辨率预设/自定义
+	// 显示设置：窗口模式 3 档（0窗口/1无边框全屏/2独占全屏）+ 窗口大小预设/自定义（与渲染解耦）
 	int _window_mode_opt = 0;
 	int _resolution_idx = 2; // RES_PRESETS 下标，默认 1920×1080（×4）
 	bool _resolution_custom = false;
-	bool _res_editing = false; // 自定义分辨率微调子态（←/→ 宽 ↑/↓ 高）
+	bool _res_editing = false; // 自定义窗口大小微调子态（←/→ 宽 ↑/↓ 高）
+	// 渲染比例（content_scale_size，全模式可调）+ 缩放模式（0整数倍/1铺满）
+	int _aspect_idx = 0;    // ASPECT_PRESETS 下标，默认 16:9 480×270
+	int _scale_mode_opt = 0;
 	bool _startup_applied = false; // 启动窗口就绪后应用一次显示设置（_ready 时窗口未完全就绪）
 	bool _pending_geometry = false; // 待纠偏：窗口档对齐窗口尺寸（WM 异步）；全屏档缩放引擎托管（keep+integer）无需纠偏
 	int _geom_target_w = 1920; // clamp 后的目标窗口尺寸（纠偏比较用，防超屏值永不等）
@@ -498,6 +510,7 @@ export class GameMenu : public CanvasLayer {
 	void _apply_volume();
 	void _apply_display();
 	void _apply_window_geometry();
+	void _apply_render_scale();
 	String _resolution_label() const;
 	void _load_settings();
 	void _save_settings();
