@@ -1,8 +1,8 @@
 # 设置页显示设置：窗口模式 3 档 + 分辨率（原生分辨率档，全窗口模式可调）+ cfg 持久化
-# 终案 v3：分辨率行=原生分辨率（1920×1080 等，常规游戏语义），全窗口模式均可调——
-# 窗口/无边框全屏=窗口尺寸、独占全屏=显示模式（渲染精度）；内部渲染比例（480 基准 5 档）按显示比例自动匹配；
-# 缩放固定整数倍（fractional=高级能力不做）
-# headless 下 DisplayServer 窗口操作为 no-op，断言落点 = 行标签 + cfg + root.size + content_scale + 自动匹配
+# 终案 v4：16:9 固定基准（480×270 内部画布），非 16:9（3:2/4:3/16:10/21:9）由 aspect=keep 居中黑边兼容；
+# 分辨率行=原生分辨率（1920×1080 等，常规游戏语义），全窗口模式可调——
+# 窗口/无边框全屏=窗口尺寸、独占全屏=显示模式（渲染精度）；内部画布固定 16:9，不自动匹配比例；
+# 缩放固定整数倍。headless 下窗口操作为 no-op，断言落点 = 行标签 + cfg + root.size + content_scale
 extends SceneTree
 
 var _t := 0.0
@@ -88,7 +88,7 @@ func _process(delta) -> bool:
 			_check(_has_label("保存游戏"), "保存游戏行存在（顺延行4）")
 			_check(not _has_label("窗口大小"), "窗口大小行已移除")
 			_check(not _has_label("缩放模式"), "缩放模式行已移除（固定整数倍）")
-			_check(not _has_label("渲染比例"), "渲染比例行已移除（内部自动匹配）")
+			_check(not _has_label("渲染比例"), "渲染比例行已移除（内部画布固定 16:9）")
 			_press("down") # → sel1 语言
 			_step = 10
 		10:
@@ -111,7 +111,7 @@ func _process(delta) -> bool:
 		14:
 			_check(_has_label("3120×2080"), "窗口档分辨率→3120×2080")
 			_check(root.size == Vector2i(3120, 2080), "窗口档：窗口尺寸=3120×2080 " + str(root.size))
-			_check(_cs() == Vector2i(480, 320), "内部比例自动匹配 3:2 → 480×320: " + str(_cs()))
+			_check(_cs() == Vector2i(480, 270), "内部画布固定 16:9 → 480×270（3:2 不再延伸）: " + str(_cs()))
 			_press("left") # → 回 2560×1440
 			_step = 15
 		15:
@@ -151,11 +151,11 @@ func _process(delta) -> bool:
 		23:
 			_check(int(_cfg_display("res_idx", -1)) == 5, "独占全屏 cfg res_idx=5（可调）")
 			_check(_has_label("3840×2160"), "独占全屏分辨率→3840×2160")
-			_check(_cs() == Vector2i(480, 270), "内部比例 16:9 → 480×270: " + str(_cs()))
+			_check(_cs() == Vector2i(480, 270), "内部画布 16:9 → 480×270: " + str(_cs()))
 			_press("left") # → 回 3120×2080（3:2）
 			_step = 24
 		24:
-			_check(_cs() == Vector2i(480, 320), "独占全屏内部比例 3:2 → 480×320: " + str(_cs()))
+			_check(_cs() == Vector2i(480, 270), "独占全屏切 3:2 档仍 480×270（黑边兼容）: " + str(_cs()))
 			_press("up") # → sel2 窗口模式
 			_step = 25
 		25:
@@ -163,11 +163,11 @@ func _process(delta) -> bool:
 			_step = 26
 		26:
 			_check(int(_cfg_display("window_mode", -1)) == 0, "独占全屏→窗口（3 档循环闭合）")
-			# 窗口档：内部比例跟随窗口尺寸（分辨率设后仍可自由拉伸，视野自适应）
+			# 窗口档：内部画布固定 16:9，窗口拖成 21:9/3:2 等非 16:9 均不再改变 content_scale_size
 			root.size = Vector2i(2100, 900) # 21:9 窗口
 			_step = 27
 		27:
-			_check(_cs() == Vector2i(630, 270), "窗口拖成21:9 → 内部 630×270: " + str(_cs()))
+			_check(_cs() == Vector2i(480, 270), "窗口拖成21:9 → 内部仍 480×270（黑边兼容）: " + str(_cs()))
 			root.size = Vector2i(1920, 1080)
 			_step = 28
 		28:
@@ -178,7 +178,7 @@ func _process(delta) -> bool:
 			var cfg2 := ConfigFile.new()
 			cfg2.load("user://settings.cfg")
 			_check(not cfg2.has_section_key("display", "resolution_idx"), "cfg 不再写 resolution_idx")
-			_check(not cfg2.has_section_key("display", "aspect_idx"), "cfg 不再写 aspect_idx（内部比例自动匹配）")
+			_check(not cfg2.has_section_key("display", "aspect_idx"), "cfg 不再写 aspect_idx（内部画布固定 16:9）")
 			_check(not cfg2.has_section_key("display", "scale_mode"), "cfg 不再写 scale_mode")
 			# 还原进入前的 [display] 段（避免污染本机设置）
 			var cfg := ConfigFile.new()

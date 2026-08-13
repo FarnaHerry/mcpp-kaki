@@ -1301,21 +1301,10 @@ void GameMenu::_build_settings_page() {
 static const int SETTINGS_ROWS = 6;
 // 窗口模式 3 档：窗口 / 无边框全屏 / 独占全屏（Godot 4 WINDOW_MODE_FULLSCREEN 即无边框全屏）
 static const char *WMODE_NAMES[3] = { "窗口", "无边框全屏", "独占全屏" };
-// 渲染比例档（= content_scale_size 内部渲染分辨率，全窗口模式可调）：
-// **16:9（480×270）为基准核心**，其余比例从基准单边延伸——视野更宽（21:9）或更高（16:10/3:2/4:3）。
-// stretch aspect=keep：渲染比例与窗口比例不符时引擎居中黑边（Celeste/HK 式，像素游戏标准）。
-static const int ASPECT_PRESETS[][2] = {
-	{ 480, 270 }, // 16:9（基准）
-	{ 480, 300 }, // 16:10
-	{ 480, 320 }, // 3:2
-	{ 480, 360 }, // 4:3
-	{ 630, 270 }, // 21:9
-};
-static const char *ASPECT_NAMES[5] = { "16:9", "16:10", "3:2", "4:3", "21:9" };
-static const int ASPECT_COUNT = 5;
-// 分辨率档（原生分辨率，常规游戏语义：全屏下影响渲染精度）——
-// 独占全屏=显示模式（window size 即 mode）；无边框全屏=桌面（灰显）；窗口=自由拉伸（灰显）。
-// 内部渲染（content_scale_size）仍 480 基准比例档，按显示比例就近自动匹配（_sync_auto_aspect，无配置项）
+// 渲染比例固定 16:9（480×270）基准——stretch aspect=keep：非 16:9 比例（16:10/3:2/4:3/21:9）
+// 由引擎居中黑边（letterbox）兼容，像素游戏标准（Celeste/HK 式）。不自动匹配比例、不延伸视野。
+// 分辨率档（原生分辨率，常规游戏语义，全窗口模式可调）：
+// 窗口/无边框全屏=窗口尺寸、独占全屏=显示模式（影响渲染精度）。
 static const int FS_RES_PRESETS[][2] = {
 	{ 1280, 720 }, { 1600, 900 }, { 1920, 1080 }, { 2560, 1440 }, { 3120, 2080 }, { 3840, 2160 },
 };
@@ -1333,7 +1322,6 @@ void GameMenu::_refresh_settings_page() {
 	String wmode = LOC("窗口模式") + "  < " + LOC(WMODE_NAMES[_window_mode_opt]) + " >";
 	// 分辨率（原生分辨率，常规游戏语义，全窗口模式可调）：
 	// 窗口/无边框全屏=窗口尺寸、独占全屏=显示模式（影响渲染精度）。
-	// 内部渲染比例（480 基准）按显示比例自动匹配，无配置项
 	String res = LOC("分辨率") + LOC("  < ") +
 		String::num_int64(FS_RES_PRESETS[_fs_res_idx][0]) + LOC("×") + String::num_int64(FS_RES_PRESETS[_fs_res_idx][1]) + LOC(" >");
 	String names[SETTINGS_ROWS] = { vol, lang_label, wmode, res, LOC("保存游戏"), LOC("退出游戏") };
@@ -1482,48 +1470,17 @@ void GameMenu::_apply_display() {
 	}
 	Window *wnd = get_tree() ? get_tree()->get_root() : nullptr;
 	if (wnd) wnd->set_size(r);
-	// 游戏只管自己的分辨率；内部渲染比例按显示比例自动匹配（无配置项）
-	_sync_auto_aspect();
+	// 内部渲染比例固定 16:9（480×270），非 16:9 由 aspect=keep 居中黑边
 	_apply_render_scale();
 }
 
-// 渲染分辨率 = content_scale_size（16:9 基准 480×270，其余比例单边延伸视野）；
-// 缩放模式 = 引擎 content_scale_mode（integer 锐利黑边 / fractional 铺满）。
-// 与窗口大小完全解耦：窗口只决定显示区域，渲染比例决定视野与像素网格。
-// 内部渲染比例自动匹配显示比例（就近档+滞回防抖，无配置项）：
-// 独占全屏源=所选显示模式；其余源=当前窗口尺寸（无边框全屏=屏幕/窗口=用户自由拉伸）
-void GameMenu::_sync_auto_aspect() {
-	float a = 16.0f / 9.0f;
-	if (_window_mode_opt == 2) {
-		a = float(FS_RES_PRESETS[_fs_res_idx][0]) / float(FS_RES_PRESETS[_fs_res_idx][1]);
-	} else {
-		Window *wnd = get_tree() ? get_tree()->get_root() : nullptr;
-		if (!wnd) return;
-		Vector2i sz = wnd->get_size();
-		if (sz.x <= 0 || sz.y <= 0) return;
-		a = float(sz.x) / float(sz.y);
-	}
-	int best = _aspect_idx;
-	float best_d = 1e9f;
-	for (int i = 0; i < ASPECT_COUNT; i++) {
-		float pa = float(ASPECT_PRESETS[i][0]) / float(ASPECT_PRESETS[i][1]);
-		float d = Math::abs(a - pa);
-		if (d < best_d - 0.001f) {
-			best_d = d;
-			best = i;
-		}
-	}
-	if (best != _aspect_idx) {
-		_aspect_idx = best;
-		_apply_render_scale();
-	}
-}
-
+// 内部渲染分辨率固定 16:9（480×270）基准——与窗口大小完全解耦：
+// 窗口只决定显示区域与整数放大倍率；非 16:9 比例由 project.godot aspect=keep 居中黑边。
 void GameMenu::_apply_render_scale() {
 	Window *wnd = get_tree() ? get_tree()->get_root() : nullptr;
 	if (!wnd) return;
-	wnd->set_content_scale_size(Vector2i(ASPECT_PRESETS[_aspect_idx][0], ASPECT_PRESETS[_aspect_idx][1]));
-	// 缩放固定整数倍（像素锐利+黑边居中）——fractional 铺满类缩放属高级能力（FSR/DLSS 档），不做
+	wnd->set_content_scale_size(Vector2i(480, 270));
+	// 缩放固定整数倍（像素锐利）——非整数倍窗口/非 16:9 比例由 aspect=keep 居中黑边
 	wnd->set_content_scale_stretch(Window::CONTENT_SCALE_STRETCH_INTEGER);
 }
 
@@ -1574,10 +1531,6 @@ void GameMenu::_process(double p_delta) {
 	if (!_startup_applied) {
 		_startup_applied = true;
 		_apply_display();
-	}
-	// 窗口档/无边框全屏：窗口尺寸变化 → 内部渲染比例跟随（独占全屏由 _apply_display 触发）
-	if (_window_mode_opt != 2) {
-		_sync_auto_aspect();
 	}
 	if (!_open) {
 		if (input->is_action_just_pressed(LOC("menu"))) {

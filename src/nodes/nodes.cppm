@@ -476,12 +476,10 @@ export class GameMenu : public CanvasLayer {
 	float _volume = 0.8f;
 	float _saved_flash = 0.0f;
 	// 显示设置：窗口模式 3 档（0窗口/1无边框全屏/2独占全屏）+ 分辨率（原生分辨率档，
-	// 常规语义：独占全屏=显示模式影响渲染精度；无边框=桌面/窗口=自由拉伸 灰显）。
-	// 内部渲染比例（480 基准 ASPECT_PRESETS）按显示比例静默自动匹配，无配置项；
-	// 缩放固定整数倍（fractional=FSR/DLSS 类高级能力不做）
+	// 常规语义：窗口/无边框全屏=窗口尺寸、独占全屏=显示模式影响渲染精度）。
+	// 内部渲染比例固定 16:9（480×270），非 16:9 由 aspect=keep 居中黑边；缩放固定整数倍。
 	int _window_mode_opt = 0;
 	int _fs_res_idx = 2;    // FS_RES_PRESETS 下标（原生分辨率档），默认 1920×1080
-	int _aspect_idx = 0;    // ASPECT_PRESETS 下标（内部渲染比例，自动匹配态）
 	bool _startup_applied = false; // 启动窗口就绪后应用一次显示设置（_ready 时窗口未完全就绪）
 
 	void _open_menu(int p_page);
@@ -506,7 +504,6 @@ export class GameMenu : public CanvasLayer {
 	void _apply_volume();
 	void _apply_display();
 	void _apply_render_scale();
-	void _sync_auto_aspect(); // 内部渲染比例自动匹配显示比例（就近档+滞回，无配置项）
 	void _load_settings();
 	void _save_settings();
 	void _on_language_changed(const String &p_locale);
