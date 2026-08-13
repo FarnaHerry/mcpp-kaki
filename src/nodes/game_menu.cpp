@@ -1295,8 +1295,8 @@ void GameMenu::_build_settings_page() {
 	_refresh_settings_page();
 }
 
-// 设置页行序：0主音量 1语言 2窗口模式 3分辨率 4帧率 5保存 6退出
-static const int SETTINGS_ROWS = 7;
+// 设置页行序：0主音量 1语言 2窗口模式 3分辨率 4帧率 5垂直同步 6保存 7退出
+static const int SETTINGS_ROWS = 8;
 // 窗口模式 3 档：窗口 / 无边框全屏 / 独占全屏（Godot 4 WINDOW_MODE_FULLSCREEN 即无边框全屏）
 static const char *WMODE_NAMES[3] = { "窗口", "无边框全屏", "独占全屏" };
 // 渲染比例固定 16:9（480×270）基准——stretch aspect=keep：非 16:9 比例（16:10/3:2/4:3/21:9）
@@ -1307,9 +1307,10 @@ static const int FS_RES_PRESETS[][2] = {
 	{ 1280, 720 }, { 1600, 900 }, { 1920, 1080 }, { 2560, 1440 }, { 3120, 2080 }, { 3840, 2160 },
 };
 static const int FS_RES_COUNT = 6;
-// 帧率上限档（max_fps，0=无限不锁帧）
-static const int FPS_PRESETS[] = { 30, 60, 120, 144, 0 };
-static const int FPS_COUNT = 5;
+// 垂直同步 2 档：关/开（Godot 原生支持 window_set_vsync_mode）
+static const char *VSYNC_NAMES[2] = { "关", "开" };
+// 帧率上限档动态生成（_build_fps_options）：按系统最高刷新率（screen_get_refresh_rate）裁剪，
+// 常见档 + 系统上限 + 末尾 0（无限不锁帧）。无静态 FPS_PRESETS。
 
 void GameMenu::_refresh_settings_page() {
 	for (CanvasItem *n : _page_nodes) {
@@ -1325,9 +1326,9 @@ void GameMenu::_refresh_settings_page() {
 	// 窗口/无边框全屏=窗口尺寸、独占全屏=显示模式（影响渲染精度）。
 	String res = LOC("分辨率") + LOC("  < ") +
 		String::num_int64(FS_RES_PRESETS[_fs_res_idx][0]) + LOC("×") + String::num_int64(FS_RES_PRESETS[_fs_res_idx][1]) + LOC(" >");
-	int fpsv = FPS_PRESETS[_fps_idx];
-	String fps = LOC("帧率") + LOC("  < ") + (fpsv == 0 ? LOC("无限") : String::num_int64(int64_t(fpsv))) + LOC(" >");
-	String names[SETTINGS_ROWS] = { vol, lang_label, wmode, res, fps, LOC("保存游戏"), LOC("退出游戏") };
+	String fps = LOC("帧率") + LOC("  < ") + (_max_fps == 0 ? LOC("无限") : String::num_int64(int64_t(_max_fps))) + LOC(" >");
+	String vsync = LOC("垂直同步") + LOC("  < ") + LOC(VSYNC_NAMES[_vsync]) + LOC(" >");
+	String names[SETTINGS_ROWS] = { vol, lang_label, wmode, res, fps, vsync, LOC("保存游戏"), LOC("退出游戏") };
 
 	Label *title = memnew(Label);
 	title->set_text(LOC("—— 设置 ——"));
@@ -1339,7 +1340,7 @@ void GameMenu::_refresh_settings_page() {
 
 	for (int i = 0; i < SETTINGS_ROWS; i++) {
 		Label *l = memnew(Label);
-		if (_saved_flash > 0.0f && i == 5) {
+		if (_saved_flash > 0.0f && i == 6) {
 			l->set_text(LOC("   ") + LOC("已存档！"));
 		} else if (i == _settings_sel) {
 			l->set_text(LOC("▶ ") + names[i]);
@@ -1367,7 +1368,17 @@ void GameMenu::_refresh_settings_page() {
 	// 帧率行说明
 	if (_settings_sel == 4) {
 		Label *hint = memnew(Label);
-		hint->set_text(LOC("←/→ 选择帧率上限（无限=不锁帧）"));
+		hint->set_text(LOC("←/→ 选择帧率上限（按系统最高刷新率，无限=不锁帧）"));
+		hint->add_theme_font_size_override("font_size", 8);
+		hint->add_theme_color_override("font_color", Color(0.55f, 0.6f, 0.7f));
+		hint->set_position(Vector2(150, 66 + SETTINGS_ROWS * 24));
+		add_child(hint);
+		_page_nodes.push_back(hint);
+	}
+	// 垂直同步行说明
+	if (_settings_sel == 5) {
+		Label *hint = memnew(Label);
+		hint->set_text(LOC("←/→ 切换垂直同步（锁定显示器刷新率，消除画面撕裂）"));
 		hint->add_theme_font_size_override("font_size", 8);
 		hint->add_theme_color_override("font_color", Color(0.55f, 0.6f, 0.7f));
 		hint->set_position(Vector2(150, 66 + SETTINGS_ROWS * 24));
@@ -1430,12 +1441,27 @@ void GameMenu::_handle_settings_input() {
 		return;
 	}
 
-	// Row 4: 帧率上限（max_fps，0=无限）
+	// Row 4: 帧率上限（动态档：≤ 系统刷新率 + 无限）
 	if (_settings_sel == 4) {
 		if (input->is_action_just_pressed(LOC("left")) || input->is_action_just_pressed(LOC("right"))) {
 			int dir = input->is_action_just_pressed(LOC("left")) ? -1 : 1;
-			_fps_idx = (_fps_idx + dir + FPS_COUNT) % FPS_COUNT;
+			int n = (int)_fps_opts.size();
+			if (n > 0) {
+				int idx = 0;
+				for (int i = 0; i < n; i++) if (_fps_opts[i] == _max_fps) idx = i;
+				idx = (idx + dir + n) % n;
+				_max_fps = _fps_opts[idx];
+			}
 			_apply_fps(); _save_settings(); _refresh_settings_page();
+		}
+		return;
+	}
+
+	// Row 5: 垂直同步（关/开）
+	if (_settings_sel == 5) {
+		if (input->is_action_just_pressed(LOC("left")) || input->is_action_just_pressed(LOC("right"))) {
+			_vsync = (_vsync + 1) % 2;
+			_apply_vsync(); _save_settings(); _refresh_settings_page();
 		}
 		return;
 	}
@@ -1445,7 +1471,7 @@ void GameMenu::_handle_settings_input() {
 				_volume = CLAMP(_volume + 0.1f, 0.0f, 1.0f);
 				_apply_volume(); _save_settings(); _refresh_settings_page();
 				break;
-			case 5: {
+			case 6: {
 				Node *gm = get_tree()->get_current_scene()->get_node_or_null(NodePath("GameManager"));
 				if (gm) {
 					gm->call("save_game", String("auto"));
@@ -1454,7 +1480,7 @@ void GameMenu::_handle_settings_input() {
 				}
 				break;
 			}
-			case 6:
+			case 7:
 				get_tree()->quit();
 				break;
 		}
@@ -1471,7 +1497,34 @@ void GameMenu::_apply_volume() {
 }
 
 void GameMenu::_apply_fps() {
-	Engine::get_singleton()->set_max_fps(FPS_PRESETS[_fps_idx]);
+	Engine::get_singleton()->set_max_fps(_max_fps);
+}
+
+void GameMenu::_apply_vsync() {
+	DisplayServer *ds = DisplayServer::get_singleton();
+	if (!ds) return;
+	ds->window_set_vsync_mode(_vsync == 0 ? DisplayServer::VSYNC_DISABLED : DisplayServer::VSYNC_ENABLED);
+}
+
+// 帧率上限档按系统最高刷新率动态生成：常见档（≤ 刷新率）+ 系统上限 + 末尾 0（无限）。
+void GameMenu::_build_fps_options() {
+	_fps_opts.clear();
+	int R = 60;
+	DisplayServer *ds = DisplayServer::get_singleton();
+	if (ds) {
+		float rr = ds->screen_get_refresh_rate(0);
+		if (rr > 1.0f) R = int(Math::round(rr));
+	}
+	static const int LADDER[] = { 30, 60, 120, 144, 240, 360 };
+	for (int f : LADDER) if (f <= R) _fps_opts.push_back(f);
+	if (_fps_opts.empty() || _fps_opts.back() != R) _fps_opts.push_back(R);
+	_fps_opts.push_back(0); // 无限（不锁帧）
+	// 换显示器后旧上限可能不在档内 → 钳到系统上限
+	if (_max_fps > 0) {
+		bool found = false;
+		for (int f : _fps_opts) if (f == _max_fps) found = true;
+		if (!found) _max_fps = R;
+	}
 }
 
 void GameMenu::_apply_display() {
@@ -1522,8 +1575,9 @@ void GameMenu::_load_settings() {
 		int wm = int(cfg->get_value(LOC("display"), LOC("window_mode"), 0));
 		_window_mode_opt = wm <= 0 ? 0 : (wm >= 3 ? 2 : 1);
 		_fs_res_idx = CLAMP(int(cfg->get_value(LOC("display"), LOC("res_idx"), 2)), 0, FS_RES_COUNT - 1);
-		_fps_idx = CLAMP(int(cfg->get_value(LOC("display"), LOC("fps_idx"), 1)), 0, FPS_COUNT - 1);
-		// 旧档 resolution_idx/resolution_custom/custom_w/custom_h/scale_mode/aspect_idx
+		_max_fps = CLAMP(int(cfg->get_value(LOC("display"), LOC("max_fps"), 60)), 0, 1000);
+		_vsync = CLAMP(int(cfg->get_value(LOC("display"), LOC("vsync"), 1)), 0, 1);
+		// 旧档 resolution_idx/resolution_custom/custom_w/custom_h/scale_mode/aspect_idx/fps_idx
 		// 不再读取（存档重写时随新 ConfigFile 自动消失）
 	}
 }
@@ -1534,7 +1588,8 @@ void GameMenu::_save_settings() {
 	cfg->set_value("audio", "master_volume", _volume);
 	cfg->set_value("display", "window_mode", _window_mode_opt);
 	cfg->set_value("display", "res_idx", _fs_res_idx);
-	cfg->set_value("display", "fps_idx", _fps_idx);
+	cfg->set_value("display", "max_fps", _max_fps);
+	cfg->set_value("display", "vsync", _vsync);
 	cfg->save("user://settings.cfg");
 }
 
@@ -1560,8 +1615,10 @@ void GameMenu::_process(double p_delta) {
 	// window_set_size/mode 会被引擎初始化覆盖，导致启动时分辨率/窗口模式不生效
 	if (!_startup_applied) {
 		_startup_applied = true;
+		_build_fps_options();
 		_apply_display();
 		_apply_fps();
+		_apply_vsync();
 	}
 	if (!_open) {
 		if (input->is_action_just_pressed(LOC("menu"))) {
