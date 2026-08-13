@@ -165,6 +165,7 @@ private:
 	ColorRect *_law_bg = nullptr;
 	ColorRect *_law_fill = nullptr;
 	Label *_law_label = nullptr;
+	bool _law_shown = false; // 法则条显示态（化神解锁；切换时左列重排补位）
 
 	ColorRect *_wei_bg = nullptr;
 	Label *_wei_label = nullptr;
@@ -212,6 +213,7 @@ private:
 	void _sync_viewport();
 	void _relayout_hud();
 	void _layout_right_side();
+	void _layout_left_column(); // 左列动态堆叠（法则条显隐补位）
 	void _layout_skill_bar();
 	void _layout_consumable_bar();
 	void _update_skill_bar();
@@ -473,20 +475,12 @@ export class GameMenu : public CanvasLayer {
 	int _settings_sel = 0;
 	float _volume = 0.8f;
 	float _saved_flash = 0.0f;
-	// 显示设置：窗口模式 3 档（0窗口/1无边框全屏/2独占全屏）+ 窗口大小预设/自定义（与渲染解耦）
+	// 显示设置：窗口模式 3 档（0窗口/1无边框全屏/2独占全屏）+ 分辨率（游戏内部分辨率
+	// content_scale_size，和普通游戏一样——游戏只管自己的分辨率，窗口尺寸用户自管一概不碰）；
+	// 缩放固定整数倍（fractional=FSR/DLSS 类高级能力不做）
 	int _window_mode_opt = 0;
-	int _resolution_idx = 2; // RES_PRESETS 下标，默认 1920×1080（×4）
-	bool _resolution_custom = false;
-	bool _res_editing = false; // 自定义窗口大小微调子态（←/→ 宽 ↑/↓ 高）
-	// 渲染比例（content_scale_size，全模式可调）+ 缩放模式（0整数倍/1铺满）
-	int _aspect_idx = 0;    // ASPECT_PRESETS 下标，默认 16:9 480×270
-	int _scale_mode_opt = 0;
+	int _aspect_idx = 0;    // ASPECT_PRESETS 下标（分辨率档位），默认 16:9 480×270
 	bool _startup_applied = false; // 启动窗口就绪后应用一次显示设置（_ready 时窗口未完全就绪）
-	bool _pending_geometry = false; // 待纠偏：窗口档对齐窗口尺寸（WM 异步）；全屏档缩放引擎托管（keep+integer）无需纠偏
-	int _geom_target_w = 1920; // clamp 后的目标窗口尺寸（纠偏比较用，防超屏值永不等）
-	int _geom_target_h = 1080;
-	int _custom_w = 1920;
-	int _custom_h = 1080;
 
 	void _open_menu(int p_page);
 	void _close_menu();
@@ -509,9 +503,7 @@ export class GameMenu : public CanvasLayer {
 	void _handle_settings_input();
 	void _apply_volume();
 	void _apply_display();
-	void _apply_window_geometry();
 	void _apply_render_scale();
-	String _resolution_label() const;
 	void _load_settings();
 	void _save_settings();
 	void _on_language_changed(const String &p_locale);

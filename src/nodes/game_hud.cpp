@@ -47,12 +47,15 @@ static String _lifespan_txt(int p_lifespan) {
 static constexpr float BAR_WIDTH = 140.0f;
 static constexpr float BAR_HEIGHT = 16.0f; // tall enough to hold the value text inside
 static constexpr float BAR_X = 8.0f;
+// 左列动态堆叠（_layout_left_column）：生命→灵力→[法则·化神起显示]→修为→饱食→境界→寿元
 static constexpr float HEALTH_BAR_Y = 6.0f;
 static constexpr float ENERGY_BAR_Y = 24.0f; // 灵力（法力）
-static constexpr float XP_BAR_Y = 42.0f;     // 修为经验（百分比）
-static constexpr float FULLNESS_BAR_Y = 60.0f;   // 饱食度条（修为条下方；辟谷后隐藏）
+static constexpr float LAW_BAR_Y = 42.0f;    // 法则（化神解锁后显示；隐藏时下方元素上移补位）
+static constexpr float XP_BAR_Y = 42.0f;     // 修为经验（百分比，法则隐藏时紧贴灵力）
+static constexpr float FULLNESS_BAR_Y = 60.0f;
 static constexpr float REALM_LABEL_Y = 78.0f;
-static constexpr float LIFESPAN_LABEL_Y = 96.0f; // 境界下方：寿元（簿上/实际）
+static constexpr float LIFESPAN_LABEL_Y = 96.0f;
+static constexpr float ROW_STEP = 18.0f;     // 条高16+间距2
 static constexpr int FONT_SIZE_XS = 9;
 static constexpr int FONT_SIZE_MD = 14;
 static constexpr int FONT_SIZE_LG = 20;
@@ -116,7 +119,7 @@ void GameHUD::_ready() {
     // Buff 行（生命条下方小行）
     _buff_label = memnew(Label);
     _buff_label->set_name("BuffLabel");
-    _buff_label->set_position(Vector2(8.0f, XP_BAR_Y + BAR_HEIGHT + 2.0f));
+    _buff_label->set_position(Vector2(8.0f, XP_BAR_Y + BAR_HEIGHT + 2.0f)); // y 由 _layout_left_column 接管
     _buff_label->add_theme_font_size_override("font_size", 8);
     _buff_label->add_theme_color_override("font_color", Color(0.7f, 0.9f, 1.0f, 1.0f));
     _buff_label->set_visible(false);
@@ -430,6 +433,7 @@ void GameHUD::_sync_viewport() {
 
 void GameHUD::_relayout_hud() {
     _layout_right_side();
+    _layout_left_column();
     _layout_skill_bar();
     _layout_consumable_bar();
     // 全宽居中标签/全屏遮罩
@@ -444,22 +448,56 @@ void GameHUD::_relayout_hud() {
     _relayout_boss_bars();
 }
 
-// 右上：法则条 + 威压/灵压指示器（同一右缘）
+// 右上：威压/灵压指示器（法则条已移左列生命/灵力之下）
 void GameHUD::_layout_right_side() {
     const float rx = _vw - BAR_WIDTH - 8.0f;
-    if (_law_bg) {
-        _law_bg->set_position(Vector2(rx, 6.0f));
-        _law_fill->set_position(Vector2(rx, 6.0f));
-        _law_label->set_position(Vector2(rx + 2, 5.0f));
-    }
     if (_wei_bg) {
-        _wei_bg->set_position(Vector2(rx, 20.0f));
-        _wei_label->set_position(Vector2(rx + 2, 19.0f));
+        _wei_bg->set_position(Vector2(rx, 6.0f));
+        _wei_label->set_position(Vector2(rx + 2, 5.0f));
     }
     if (_lin_bg) {
-        _lin_bg->set_position(Vector2(rx + 70.0f, 20.0f));
-        _lin_label->set_position(Vector2(rx + 72.0f, 19.0f));
+        _lin_bg->set_position(Vector2(rx + 70.0f, 6.0f));
+        _lin_label->set_position(Vector2(rx + 72.0f, 5.0f));
     }
+}
+
+// 左列动态堆叠：生命→灵力→[法则]→修为→饱食→境界→寿元→buff行。
+// 法则条化神解锁才显示——隐藏时下方元素上移补位，不留空槽
+void GameHUD::_layout_left_column() {
+    if (_health_bg) {
+        _health_bg->set_position(Vector2(BAR_X, HEALTH_BAR_Y));
+        _health_fill->set_position(Vector2(BAR_X, HEALTH_BAR_Y));
+        _health_label->set_position(Vector2(BAR_X, HEALTH_BAR_Y - 2.0f));
+    }
+    if (_energy_bg) {
+        _energy_bg->set_position(Vector2(BAR_X, ENERGY_BAR_Y));
+        _energy_fill->set_position(Vector2(BAR_X, ENERGY_BAR_Y));
+        _energy_label->set_position(Vector2(BAR_X, ENERGY_BAR_Y - 2.0f));
+    }
+    float y = ENERGY_BAR_Y + ROW_STEP;
+    if (_law_shown && _law_bg) {
+        _law_bg->set_position(Vector2(BAR_X, y));
+        _law_fill->set_position(Vector2(BAR_X, y));
+        _law_label->set_position(Vector2(BAR_X, y - 2.0f));
+        y += ROW_STEP;
+    }
+    if (_xp_bg) {
+        _xp_bg->set_position(Vector2(BAR_X, y));
+        _xp_fill->set_position(Vector2(BAR_X, y));
+        _xp_label->set_position(Vector2(BAR_X, y - 2.0f));
+    }
+    if (_buff_label) _buff_label->set_position(Vector2(BAR_X, y + BAR_HEIGHT + 2.0f));
+    y += ROW_STEP;
+    if (_fullness_bg) {
+        _fullness_bg->set_position(Vector2(BAR_X, y));
+        _fullness_fill->set_position(Vector2(BAR_X, y));
+        _fullness_label->set_position(Vector2(BAR_X, y - 2.0f));
+    }
+    y += ROW_STEP;
+    if (_realm_label) _realm_label->set_position(Vector2(BAR_X, y));
+    if (_jiyuan_label) _jiyuan_label->set_position(Vector2(BAR_X + 170.0f, y + 4.0f));
+    y += ROW_STEP;
+    if (_lifespan_label) _lifespan_label->set_position(Vector2(BAR_X, y));
 }
 
 // 底部居中：12 技能槽两排（节点顺序 = 创建顺序，4 节点/槽：slot/key/name/cd）
@@ -629,30 +667,16 @@ void GameHUD::_update_buff_label(double p_delta) {
 // ============================================================
 
 void GameHUD::_create_law_bar() {
-    const float x = 0.0f, y = 6.0f, h = 10.0f; // x 由 _layout_right_side() 锚定（右边自适应）
-    _law_bg = memnew(ColorRect);
-    _law_bg->set_position(Vector2(x, y));
-    _law_bg->set_size(Vector2(BAR_WIDTH, h));
-    _law_bg->set_color(Color(0.12f, 0.08f, 0.18f, 0.85f));
-    add_child(_law_bg);
-
-    _law_fill = memnew(ColorRect);
-    _law_fill->set_position(Vector2(x, y));
-    _law_fill->set_size(Vector2(0, h));
-    _law_fill->set_color(Color(0.65f, 0.40f, 0.95f, 1.0f));
-    add_child(_law_fill);
-
-    _law_label = memnew(Label);
-    _law_label->set_text(LOC("法则"));
-    _law_label->add_theme_font_size_override("font_size", FONT_SIZE_XS);
-    _law_label->add_theme_color_override("font_color", Color(0.85f, 0.70f, 1.0f, 0.95f));
-    _law_label->set_position(Vector2(x + 2, y - 1));
-    add_child(_law_label);
-
+    // 法则之力：化神解锁后显示在左列（生命/灵力之下，与修为/饱食同列动态堆叠）
+    _build_bar(this, LAW_BAR_Y, Color(0.55f, 0.35f, 0.9f, 1.0f),
+               _law_bg, _law_fill, _law_label, LOC("法则 0/100"));
+    _law_bg->set_name("LawBg");
+    _law_fill->set_name("LawFill");
+    _law_label->set_name("LawLabel");
+    _law_fill->set_size(Vector2(0, BAR_HEIGHT));
     _law_bg->set_visible(false);
     _law_fill->set_visible(false);
     _law_label->set_visible(false);
-    _layout_right_side();
 }
 
 void GameHUD::_update_law_bar() {
@@ -665,13 +689,17 @@ void GameHUD::_update_law_bar() {
         return;
     double max_law = cult->get_law_power_max();
     bool show = max_law > 0.0 && _hud_visible;
-    _law_bg->set_visible(show);
-    _law_fill->set_visible(show);
-    _law_label->set_visible(show);
+    if (show != _law_shown) {
+        _law_shown = show;
+        _law_bg->set_visible(show);
+        _law_fill->set_visible(show);
+        _law_label->set_visible(show);
+        _layout_left_column(); // 显隐切换 → 左列重排补位
+    }
     if (!show)
         return;
     double cur = cult->get_law_power();
-    _law_fill->set_size(Vector2(BAR_WIDTH * float(cur / max_law), 10.0f));
+    _law_fill->set_size(Vector2(BAR_WIDTH * float(cur / max_law), BAR_HEIGHT));
     _law_label->set_text(LOC("法则 ") + String::num_int64(int64_t(cur)) + LOC("/") + String::num_int64(int64_t(max_law)));
 }
 
