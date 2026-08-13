@@ -1331,15 +1331,11 @@ void GameMenu::_refresh_settings_page() {
 	String lang_label = LOC("语言") + ": < " + LOC(is_en ? "English" : "中文") + " >";
 	String vol = LOC("主音量") + "  < " + String::num_int64(int64_t(Math::round(_volume * 100.0f))) + "% >";
 	String wmode = LOC("窗口模式") + "  < " + LOC(WMODE_NAMES[_window_mode_opt]) + " >";
-	// 分辨率（原生分辨率，常规语义：独占全屏=显示模式影响渲染精度；
-	// 无边框全屏=桌面 / 窗口=自由拉伸 灰显。内部渲染比例按显示比例自动匹配，无配置项）
+	// 分辨率（原生分辨率，常规游戏语义，全窗口模式可调）：
+	// 窗口/无边框全屏=窗口尺寸、独占全屏=显示模式（影响渲染精度）。
+	// 内部渲染比例（480 基准）按显示比例自动匹配，无配置项
 	String res = LOC("分辨率") + LOC("  < ") +
 		String::num_int64(FS_RES_PRESETS[_fs_res_idx][0]) + LOC("×") + String::num_int64(FS_RES_PRESETS[_fs_res_idx][1]) + LOC(" >");
-	if (_window_mode_opt == 0) {
-		res = LOC("分辨率") + LOC("  （窗口自由拉伸）");
-	} else if (_window_mode_opt == 1) {
-		res = LOC("分辨率") + LOC("  （无边框全屏=桌面）");
-	}
 	String names[SETTINGS_ROWS] = { vol, lang_label, wmode, res, LOC("保存游戏"), LOC("退出游戏") };
 
 	Label *title = memnew(Label);
@@ -1361,17 +1357,16 @@ void GameMenu::_refresh_settings_page() {
 		}
 		l->add_theme_font_size_override("font_size", 9);
 		Color c = i == _settings_sel ? Color(1.0f, 0.95f, 0.6f) : Color(0.85f, 0.85f, 0.85f);
-		if (i == 3 && _window_mode_opt != 2) c = Color(0.45f, 0.45f, 0.45f); // 分辨率行仅独占全屏可选
 		l->add_theme_color_override("font_color", c);
 		l->set_position(Vector2(150, 66 + i * 24));
 		add_child(l);
 		_page_nodes.push_back(l);
 	}
 
-	// 分辨率行说明（独占全屏显示模式，影响渲染精度）
-	if (_settings_sel == 3 && _window_mode_opt == 2) {
+	// 分辨率行说明（全窗口模式可调）
+	if (_settings_sel == 3) {
 		Label *hint = memnew(Label);
-		hint->set_text(LOC("←/→ 选择分辨率（独占全屏显示模式，影响渲染精度）"));
+		hint->set_text(LOC("←/→ 选择分辨率（独占全屏=显示模式；窗口/无边框全屏=窗口尺寸）"));
 		hint->add_theme_font_size_override("font_size", 8);
 		hint->add_theme_color_override("font_color", Color(0.55f, 0.6f, 0.7f));
 		hint->set_position(Vector2(150, 66 + SETTINGS_ROWS * 24));
@@ -1424,14 +1419,12 @@ void GameMenu::_handle_settings_input() {
 		return;
 	}
 
-	// Row 3: 分辨率（独占全屏显示模式/渲染精度；无边框=桌面、窗口=自由拉伸 不响应）
+	// Row 3: 分辨率（原生分辨率，全窗口模式可调）
 	if (_settings_sel == 3) {
-		if (_window_mode_opt == 2) {
-			if (input->is_action_just_pressed(LOC("left")) || input->is_action_just_pressed(LOC("right"))) {
-				int dir = input->is_action_just_pressed(LOC("left")) ? -1 : 1;
-				_fs_res_idx = (_fs_res_idx + dir + FS_RES_COUNT) % FS_RES_COUNT;
-				_apply_display(); _save_settings(); _refresh_settings_page();
-			}
+		if (input->is_action_just_pressed(LOC("left")) || input->is_action_just_pressed(LOC("right"))) {
+			int dir = input->is_action_just_pressed(LOC("left")) ? -1 : 1;
+			_fs_res_idx = (_fs_res_idx + dir + FS_RES_COUNT) % FS_RES_COUNT;
+			_apply_display(); _save_settings(); _refresh_settings_page();
 		}
 		return;
 	}
@@ -1469,23 +1462,26 @@ void GameMenu::_apply_volume() {
 void GameMenu::_apply_display() {
 	DisplayServer *ds = DisplayServer::get_singleton();
 	if (!ds) return;
+	// 原生分辨率档全窗口模式生效：窗口/无边框全屏=窗口尺寸（用户此后仍可自由拉伸）、
+	// 独占全屏=显示模式（影响渲染精度）
+	Vector2i r(FS_RES_PRESETS[_fs_res_idx][0], FS_RES_PRESETS[_fs_res_idx][1]);
 	switch (_window_mode_opt) {
 		case 0: // 窗口
 			ds->window_set_mode(DisplayServer::WINDOW_MODE_WINDOWED);
 			ds->window_set_flag(DisplayServer::WINDOW_FLAG_BORDERLESS, false);
+			ds->window_set_size(r);
 			break;
 		case 1: // 无边框全屏（Godot 4 FULLSCREEN 即无边框全屏）
 			ds->window_set_mode(DisplayServer::WINDOW_MODE_FULLSCREEN);
-			break;
-		case 2: { // 独占全屏：window size = 显示模式（原生分辨率，影响渲染精度）
-			ds->window_set_mode(DisplayServer::WINDOW_MODE_EXCLUSIVE_FULLSCREEN);
-			Vector2i r(FS_RES_PRESETS[_fs_res_idx][0], FS_RES_PRESETS[_fs_res_idx][1]);
 			ds->window_set_size(r);
-			Window *wnd = get_tree() ? get_tree()->get_root() : nullptr;
-			if (wnd) wnd->set_size(r);
 			break;
-		}
+		case 2: // 独占全屏：window size = 显示模式（原生分辨率，影响渲染精度）
+			ds->window_set_mode(DisplayServer::WINDOW_MODE_EXCLUSIVE_FULLSCREEN);
+			ds->window_set_size(r);
+			break;
 	}
+	Window *wnd = get_tree() ? get_tree()->get_root() : nullptr;
+	if (wnd) wnd->set_size(r);
 	// 游戏只管自己的分辨率；内部渲染比例按显示比例自动匹配（无配置项）
 	_sync_auto_aspect();
 	_apply_render_scale();
