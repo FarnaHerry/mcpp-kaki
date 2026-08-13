@@ -119,15 +119,15 @@ func _process(delta) -> bool:
 		19:
 			_check(bool(_cfg_display("resolution_custom", false)), "X 后进入自定义（cfg resolution_custom=true）")
 			_check(_has_label("自定义"), "分辨率行显示自定义")
-			# 全局 stretch 配置：expand+integer 保证任意窗口尺寸整数倍渲染 + 视口扩展（不花屏）
+			# 全局 stretch 配置：keep+integer = 引擎托管整数倍缩放+居中黑边（视口恒定 480×270）
 			var r: Window = root
-			_check(r.content_scale_aspect == Window.CONTENT_SCALE_ASPECT_EXPAND, "stretch aspect=expand（多余屏幕扩展视口）")
+			_check(r.content_scale_aspect == Window.CONTENT_SCALE_ASPECT_KEEP, "stretch aspect=keep（整数倍缩放居中黑边）")
 			_check(r.content_scale_stretch == Window.CONTENT_SCALE_STRETCH_INTEGER, "stretch scale_mode=integer（整数倍渲染）")
 			_press("right") # 整数倍 +1（N+1）
 			_step = 20
 		20:
 			var cw = int(_cfg_display("custom_w", 0))
-			_check(cw > 0 and cw % 480 == 0, "自定义宽=480 整数倍（无黑边吃满，custom_w=" + str(cw) + "）")
+			_check(cw > 0 and cw % 480 == 0, "自定义宽=480 整数倍（整数倍尺寸零黑边，custom_w=" + str(cw) + "）")
 			_press("up") # 再 +1 倍
 			_step = 21
 		21:

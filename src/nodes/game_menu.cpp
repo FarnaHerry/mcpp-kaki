@@ -1271,10 +1271,9 @@ void GameMenu::_build_settings_page() {
 static const int SETTINGS_ROWS = 6;
 // 窗口模式 3 档：窗口 / 无边框全屏 / 独占全屏（Godot 4 WINDOW_MODE_FULLSCREEN 即无边框全屏）
 static const char *WMODE_NAMES[3] = { "窗口", "无边框全屏", "独占全屏" };
-// 分辨率预设档（内部 480×270 canvas_items stretch）。**stretch aspect=expand + scale_mode=integer**
-// 已保证整数倍渲染（不花屏）；但 integer 会把 screen_size clamp 到 viewport×整数scale，
-// 非整数倍窗口（如 1280×720=2.67×）多余区域走黑边（window.cpp _update_viewport_size）。
-// 因此预设/自定义都限定 **480×270 整数倍**（无黑边无花屏吃满），expand 兜底全屏超宽。
+// 分辨率预设档（内部 480×270 canvas_items stretch）。**stretch aspect=keep + scale_mode=integer**：
+// 引擎托管整数倍缩放+居中黑边（Celeste/空洞骑士式像素风标准方案），视口恒定 480×270，
+// HUD 绝对坐标/相机房界不被窗口尺寸影响。预设/自定义都取 **480×270 整数倍**——这些尺寸下零黑边。
 static const int RES_PRESETS[][2] = {
 	{ 960, 540 }, { 1440, 810 }, { 1920, 1080 }, { 2400, 1350 }, { 2880, 1620 }, { 3840, 2160 },
 };
@@ -1482,16 +1481,11 @@ void GameMenu::_apply_display() {
 	}
 	if (_window_mode_opt == 0) {
 		// 窗口档：立即应用几何，并置 pending 由 _process 持续纠偏——
-		// 全屏→窗口时 WM 异步处理全屏退出，立即 set_size 无效（窗口停留全屏尺寸，
-		// expand 视口被拉成非 16:9 → 内容只占一小块）
+		// 全屏→窗口时 WM 异步处理全屏退出，立即 set_size 无效（窗口停留全屏尺寸）
 		_apply_window_geometry();
 		_pending_geometry = true;
-	} else {
-		// 全屏档：窗口=屏幕（异步），_process 对齐 content_scale 到屏幕尺寸——
-		// 屏幕非 16:9 时视口需扩展吃满（16 和 9 同时超出整数倍）
-		_pending_geometry = true;
-		_last_geom = Vector2i();
 	}
+	// 全屏档：窗口=屏幕（异步），缩放/居中黑边由引擎托管（keep+integer），无需纠偏
 }
 
 void GameMenu::_apply_window_geometry() {
@@ -1513,8 +1507,7 @@ void GameMenu::_apply_window_geometry() {
 		ds->window_set_position(Vector2i(MAX(0, (ss.x - w) / 2), MAX(0, (ss.y - h) / 2)));
 	}
 	// 走 Window::set_size 而非 DisplayServer.window_set_size：后者只改 OS 窗口，
-	// 全屏退出后 Godot 内部 Window::size 不跟随（停留全屏尺寸），viewport 按旧 size
-	// 计算 → rect 卡在全屏扩展值（480×320），16:9 窗口配 3:2 视口 → 黑边。
+	// 全屏退出后 Godot 内部 Window::size 不跟随（停留全屏尺寸），viewport 按旧 size 计算。
 	// Window::set_size 同步内部 size + 触发 _update_viewport_size 重算。
 	Window *wnd = get_tree() ? get_tree()->get_root() : nullptr;
 	if (wnd) {
@@ -1522,32 +1515,9 @@ void GameMenu::_apply_window_geometry() {
 	} else {
 		ds->window_set_size(Vector2i(w, h));
 	}
-	// 视口跟随窗口比例：16:9 整数倍窗口 → viewport=480×270（不变）；
-	// 非 16:9 窗口（全屏超宽等）→ viewport 按窗口/整数scale 扩展，双轴吃满无黑边
-	_apply_content_scale(w, h);
+	// 视口恒定 480×270（keep+integer 引擎托管），窗口档只负责窗口尺寸/位置纠偏
 	_geom_target_w = w;
 	_geom_target_h = h;
-}
-
-// 整数最大公约数（viewport 整除用）
-static int _igcd(int a, int b) {
-	while (b) { int t = a % b; a = b; b = t; }
-	return a;
-}
-
-void GameMenu::_apply_content_scale(int p_w, int p_h) {
-	Window *wnd = get_tree() ? get_tree()->get_root() : nullptr;
-	if (!wnd) return;
-	// 视口跟随窗口比例且**精确整除**：N = 最接近理想整数倍(≤min(宽/480,高/270))的 gcd 因子。
-	// 保证 floor(宽/vw)==floor(高/vh)==N → Godot integer scale 恰好 = N → viewport×N == 窗口，
-	// 任意窗口/全屏（含 16 和 9 同时超出整数倍）双轴精确吃满无黑边。
-	// 视口比例 = 窗口比例（非裁剪 16:9），480×270 内容完整显示，多余部分延伸显示更多世界。
-	int g = _igcd(p_w, p_h);
-	int n = MAX(1, MIN(p_w / 480, p_h / 270));
-	while (n > 1 && (g % n) != 0) n--;
-	int vw = MAX(1, p_w / n);
-	int vh = MAX(1, p_h / n);
-	wnd->set_content_scale_size(Vector2i(vw, vh));
 }
 
 void GameMenu::_load_settings() {
@@ -1604,25 +1574,16 @@ void GameMenu::_process(double p_delta) {
 		_startup_applied = true;
 		_apply_display();
 	}
-	// 几何持续纠偏：窗口档对齐窗口尺寸到目标（WM 异步）；全屏档对齐 content_scale 到
-	// 屏幕尺寸（异步生效）。检测 root.size（而非 OS 窗口——后者同步了 viewport 仍按旧 size 算）
+	// 窗口档几何持续纠偏：对齐窗口尺寸到目标（WM 异步；检测 root.size——OS 窗口同步了
+	// 内部 size 仍可能滞后）。全屏档缩放由引擎托管（keep+integer），无需纠偏
 	if (_pending_geometry) {
 		Window *wnd = get_tree() ? get_tree()->get_root() : nullptr;
 		if (!wnd) {
 			_pending_geometry = false;
-		} else if (_window_mode_opt == 0) {
+		} else {
 			Vector2i cur = wnd->get_size();
 			if (cur.x != _geom_target_w || cur.y != _geom_target_h) {
 				_apply_window_geometry();
-			} else {
-				_pending_geometry = false;
-			}
-		} else {
-			// 全屏档：窗口=屏幕，视口跟随屏幕比例；尺寸连续帧稳定才停
-			Vector2i cur = wnd->get_size();
-			if (cur != _last_geom) {
-				_last_geom = cur;
-				_apply_content_scale(cur.x, cur.y);
 			} else {
 				_pending_geometry = false;
 			}
