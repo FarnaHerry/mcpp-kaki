@@ -681,6 +681,7 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("get_gravity"), &Player::get_gravity);
 		ClassDB::bind_method(D_METHOD("take_damage", "amount", "source"), &Player::take_damage);
 		ClassDB::bind_method(D_METHOD("get_current_health"), &Player::get_current_health);
+		ClassDB::bind_method(D_METHOD("is_input_inverted"), &Player::is_input_inverted);
 		ClassDB::bind_method(D_METHOD("get_max_health"), &Player::get_max_health);
 		ClassDB::bind_method(D_METHOD("set_current_health", "v"), &Player::set_current_health);
 		ClassDB::bind_method(D_METHOD("set_last_damage_source", "v"), &Player::set_last_damage_source);
@@ -1118,6 +1119,10 @@ namespace godot {
 		if (_gongfa) {
 			_gongfa->feed(GongfaSystem::SCHOOL_BODY, actual_damage);
 		}
+		// 元婴分叉：受击养肉身（硬抗道）
+		if (_cultivation) {
+			_cultivation->feed_path(0, 1.0f);
+		}
 
 		// Broadcast through global signal bus
 		SignalBus *bus = SignalBus::get_singleton();
@@ -1297,6 +1302,14 @@ namespace godot {
 		// 炼体行为：近战击杀喂养（主系 100%/副系 20%，GongfaSystem 内部处理）
 		if (p_killer == this && _gongfa) {
 			_gongfa->feed(GongfaSystem::SCHOOL_BODY, 15.0f);
+		}
+		// 元婴分叉：近战击杀养肉身，投射物（法术/飞剑）击杀养元神
+		if (_cultivation) {
+			if (p_killer == this) {
+				_cultivation->feed_path(0, 4.0f);
+			} else if (Object::cast_to<Projectile>(p_killer)) {
+				_cultivation->feed_path(1, 4.0f);
+			}
 		}
 		// 战斗推进法宝温养（本命 + 装备中的次要）
 		if (p_killer == this && _artifacts) {
@@ -1485,7 +1498,8 @@ namespace godot {
 	void Player::exec_skill_projectile(float p_power, DamageCategory p_cat, Element p_elem,
 	                                   float p_speed, const Color &p_color) {
 		// 法术强度：攻击面板 × 功法法强乘区 × 技能倍率
-		float spell_mult = _gongfa ? _gongfa->get_spell_mult() : 1.0f;
+		float spell_mult = (_gongfa ? _gongfa->get_spell_mult() : 1.0f)
+			* (_cultivation ? _cultivation->get_path_spell_mult() : 1.0f); // 元神分叉法强
 		Projectile *proj = memnew(Projectile);
 		proj->set_position(get_global_position() + Vector2((float)facing_direction * 14.0f, -4.0f));
 		proj->direction = Vector2((float)facing_direction, 0.0f);
@@ -1571,7 +1585,8 @@ namespace godot {
 		// 御剑术：3 发扇形（±15°）
 		float base = (facing_direction > 0) ? 0.0f : (float)Math_PI;
 		static const float OFF[3] = { -0.26f, 0.0f, 0.26f };
-		float spell_mult = _gongfa ? _gongfa->get_spell_mult() : 1.0f;
+		float spell_mult = (_gongfa ? _gongfa->get_spell_mult() : 1.0f)
+			* (_cultivation ? _cultivation->get_path_spell_mult() : 1.0f); // 元神分叉法强
 		for (int i = 0; i < 3; i++) {
 			Projectile *proj = memnew(Projectile);
 			proj->set_position(get_global_position() + Vector2((float)facing_direction * 14.0f, -4.0f));
@@ -1678,6 +1693,7 @@ namespace godot {
 		}
 		if (_skills) {
 			atk *= _skills->get_passive_atk_mult(); // 被动（剑心通明）乘区
+			atk *= _cultivation ? _cultivation->get_path_atk_mult() : 1.0f; // 肉身分叉物攻
 		}
 		if (_sect) {
 			atk *= _sect->get_atk_mult(); // 宗门（蜀山/魔罗）乘区

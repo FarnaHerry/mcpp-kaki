@@ -441,6 +441,9 @@ Dictionary GameManager::collect_save_data() const {
 			cd["origin"] = (int)_player->get_cultivation()->get_origin();
 			cd["buddhist_rank"] = (int)_player->get_cultivation()->get_buddhist_rank();
 			cd["focus"] = (int)_player->get_cultivation()->get_focus();
+			cd["path_body"] = _player->get_cultivation()->get_path_body_exp(); // 元婴分叉
+			cd["path_spirit"] = _player->get_cultivation()->get_path_spirit_exp();
+			cd["path_merged"] = _player->get_cultivation()->is_path_merged();
 			cd["hunyuan"] = _player->get_cultivation()->is_hunyuan();
 			data["cultivation"] = cd;
 
@@ -601,6 +604,9 @@ void GameManager::_apply_save_dict(const Dictionary &data) {
 			int(cd.get("buddhist_rank", 0)));
 		_player->get_cultivation()->set_focus(
 			int(cd.get("focus", 0)));
+		_player->get_cultivation()->set_path_exp(0, float(cd.get("path_body", 0.0))); // 元婴分叉
+		_player->get_cultivation()->set_path_exp(1, float(cd.get("path_spirit", 0.0)));
+		_player->get_cultivation()->set_path_merged(bool(cd.get("path_merged", false)));
 		_player->get_cultivation()->set_hunyuan(
 			bool(cd.get("hunyuan", false)));
 	}

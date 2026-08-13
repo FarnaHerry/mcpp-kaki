@@ -119,6 +119,19 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("get_focus"), &CultivationSystem::get_focus);
 		ClassDB::bind_method(D_METHOD("get_focus_name"), &CultivationSystem::get_focus_name);
 		ClassDB::bind_method(D_METHOD("choose_focus", "focus"), &CultivationSystem::choose_focus);
+		// 元婴分叉（肉身/元神双轨）
+		ClassDB::bind_method(D_METHOD("feed_path", "path", "amount"), &CultivationSystem::feed_path);
+		ClassDB::bind_method(D_METHOD("get_path_body_level"), &CultivationSystem::get_path_body_level);
+		ClassDB::bind_method(D_METHOD("get_path_spirit_level"), &CultivationSystem::get_path_spirit_level);
+		ClassDB::bind_method(D_METHOD("get_path_body_exp"), &CultivationSystem::get_path_body_exp);
+		ClassDB::bind_method(D_METHOD("get_path_spirit_exp"), &CultivationSystem::get_path_spirit_exp);
+		ClassDB::bind_method(D_METHOD("set_path_exp", "path", "exp"), &CultivationSystem::set_path_exp);
+		ClassDB::bind_method(D_METHOD("is_path_merged"), &CultivationSystem::is_path_merged);
+		ClassDB::bind_method(D_METHOD("set_path_merged", "merged"), &CultivationSystem::set_path_merged);
+		ClassDB::bind_method(D_METHOD("get_path_atk_mult"), &CultivationSystem::get_path_atk_mult);
+		ClassDB::bind_method(D_METHOD("get_path_spell_mult"), &CultivationSystem::get_path_spell_mult);
+		ClassDB::bind_method(D_METHOD("get_path_law_mult"), &CultivationSystem::get_path_law_mult);
+		ClassDB::bind_method(D_METHOD("get_path_tribulation_resist"), &CultivationSystem::get_path_tribulation_resist);
 		ClassDB::bind_method(D_METHOD("set_focus", "focus"), &CultivationSystem::set_focus);
 
 		ADD_SIGNAL(MethodInfo("realm_changed",
@@ -291,7 +304,7 @@ namespace godot {
 			case TIAN_ZUN:        base = 9999.0; break;
 			default:              base = double((int)_current_realm) * 50.0; break;
 		}
-		return base * _mana_max_mult; // 功法（练气）乘区
+		return base * _mana_max_mult * get_path_spell_mult(); // 功法（练气）×元神分叉 乘区
 	}
 
 	void CultivationSystem::_emit_law_changed() {
@@ -326,7 +339,7 @@ namespace godot {
 	void CultivationSystem::tick_law_regen(double p_delta) {
 		if (get_law_power_max() <= 0.0) return;
 		if (_law_power >= LAW_POWER_MAX) return;
-		_law_power = Math::min(_law_power + LAW_REGEN_PER_SEC * _law_regen_mult * p_delta, LAW_POWER_MAX);
+		_law_power = Math::min(_law_power + LAW_REGEN_PER_SEC * _law_regen_mult * get_path_law_mult() * p_delta, LAW_POWER_MAX);
 		_emit_law_changed();
 	}
 
@@ -418,6 +431,17 @@ namespace godot {
 
 		Realm old = _current_realm;
 		_current_realm = p_realm;
+
+		// 合体「形神合一」：分叉弱侧补 80% 差值汇合，此后双轨同步
+		if (old < HE_TI && _current_realm >= HE_TI && !_path_merged) {
+			if (_path_body_exp != _path_spirit_exp) {
+				float hi = MAX(_path_body_exp, _path_spirit_exp);
+				float &lo = (_path_body_exp < _path_spirit_exp) ? _path_body_exp : _path_spirit_exp;
+				lo += (hi - lo) * 0.8f;
+			}
+			_path_merged = true;
+			_update_focus_from_paths();
+		}
 
 		// 渡劫成仙：灵力转仙元（九九归一——凡尘修为清零、仙元从零重起数），五仙身份重置待选择
 		if (old < TRUE_IMMORTAL && _current_realm >= TRUE_IMMORTAL) {
@@ -586,6 +610,52 @@ namespace godot {
 		_focus = static_cast<CultivationFocus>(p_focus);
 	}
 
+	// ---- 元婴分叉：肉身成圣 / 元神修炼 ----
+
+	void CultivationSystem::feed_path(int p_path, float p_amount) {
+		if (p_amount <= 0.0f)
+			return;
+		// 元婴期开始分叉；合体已汇合后双轨同步喂养（形神合一，不再偏科）
+		if (_current_realm < NASCENT_SOUL)
+			return;
+		float *exp = (p_path == 0) ? &_path_body_exp : &_path_spirit_exp;
+		*exp += p_amount;
+		if (_path_merged) {
+			float *other = (p_path == 0) ? &_path_spirit_exp : &_path_body_exp;
+			*other += p_amount;
+		}
+		float cap = PATH_EXP_PER_LEVEL * PATH_MAX_LEVEL;
+		_path_body_exp = MIN(_path_body_exp, cap);
+		_path_spirit_exp = MIN(_path_spirit_exp, cap);
+		_update_focus_from_paths();
+	}
+
+	void CultivationSystem::set_path_exp(int p_path, float p_exp) {
+		float cap = PATH_EXP_PER_LEVEL * PATH_MAX_LEVEL;
+		float v = Math::clamp(p_exp, 0.0f, cap);
+		if (p_path == 0) {
+			_path_body_exp = v;
+		} else {
+			_path_spirit_exp = v;
+		}
+		_update_focus_from_paths();
+	}
+
+	void CultivationSystem::_update_focus_from_paths() {
+		// 分叉等级自动驱动 focus 称号轴（高侧为道；持平/皆空不动手动选择）
+		int bl = get_path_body_level();
+		int sl = get_path_spirit_level();
+		if (bl == 0 && sl == 0)
+			return;
+		if (bl != sl) {
+			CultivationFocus f = (bl > sl) ? FOCUS_BODY : FOCUS_SPIRIT;
+			if (f != _focus) {
+				_focus = f;
+				_notify_name_changed();
+			}
+		}
+	}
+
 	float CultivationSystem::get_damage_multiplier() const {
 		if (_hunyuan)
 			return HUNYUAN_DMG;
@@ -595,7 +665,7 @@ namespace godot {
 	float CultivationSystem::get_defense_multiplier() const {
 		if (_hunyuan)
 			return HUNYUAN_DEF;
-		return REALM_STATS[_current_realm].def * STAGE_FACTOR[get_stage()];
+		return REALM_STATS[_current_realm].def * STAGE_FACTOR[get_stage()] * (1.0f + 0.03f * get_path_body_level());
 	}
 
 	float CultivationSystem::get_speed_multiplier() const {

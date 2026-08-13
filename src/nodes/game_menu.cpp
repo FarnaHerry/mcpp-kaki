@@ -435,6 +435,36 @@ void GameMenu::_build_gongfa_page() {
 
 	add_line(LOC("最多同修一门炼体 + 一门练气；炼体行为（受击/近战击杀）主养炼体，"), 70.0f, 196.0f, 8, dim_c);
 	add_line(LOC("练气行为（耗灵/施法）主养练气，副系亦得两成熟练。切换保留熟练。"), 70.0f, 210.0f, 8, dim_c);
+
+	// ---- 元婴分叉：肉身成圣 / 元神修炼（合体「形神合一」汇合）----
+	CultivationSystem *cs = _player ? _player->get_cultivation() : nullptr;
+	if (cs && cs->get_realm_index() >= CultivationSystem::NASCENT_SOUL) {
+		int bl = cs->get_path_body_level();
+		int sl = cs->get_path_spirit_level();
+		auto path_line = [&](const String &name, int lvl, float exp) -> String {
+			if (lvl >= CultivationSystem::PATH_MAX_LEVEL) {
+				return name + LOC(" 第") + String::num_int64(lvl) + LOC("/5 级  圆满");
+			}
+			float pct = exp / CultivationSystem::PATH_EXP_PER_LEVEL * 100.0f;
+			// exp 含已升整级部分，取级内进度
+			pct = Math::fmod(exp, CultivationSystem::PATH_EXP_PER_LEVEL) / CultivationSystem::PATH_EXP_PER_LEVEL * 100.0f;
+			return name + LOC(" 第") + String::num_int64(lvl) + LOC("/5 级  ") + String::num(pct, 0) + LOC("%");
+		};
+		String head = cs->is_path_merged()
+			? LOC("— 形神合一（分叉已汇合，双修同步）—")
+			: LOC("— 元婴分叉 —");
+		add_line(head, 70.0f, 226.0f, 10, head_c);
+		add_line(path_line(LOC("肉身成圣"), bl, cs->get_path_body_exp()) +
+		         LOC("  物攻/防御/生命 +") + String::num(bl * 3, 0) + LOC("%"),
+		         70.0f, 240.0f, 9, body_c);
+		add_line(path_line(LOC("元神修炼"), sl, cs->get_path_spirit_exp()) +
+		         LOC("  法强/灵力 +") + String::num(sl * 3, 0) +
+		         LOC("%  法则回复 +") + String::num(sl * 5, 0) + LOC("%"),
+		         280.0f, 240.0f, 9, body_c);
+		add_line(LOC("近战/受击养肉身（渡劫硬抗减伤 ") + String::num(bl * 8, 0) +
+		         LOC("%），施法养元神（雷预警+风稳心）。合体弱侧补 80% 汇合。"),
+		         70.0f, 254.0f, 8, dim_c);
+	}
 }
 
 // ============================================================

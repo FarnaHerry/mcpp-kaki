@@ -1,9 +1,12 @@
 module;
 #include "../nodes/player.h"
+#include "../nodes/enemy.h"
 
 #include "../utils/text.h"
 
 #include <godot_cpp/classes/canvas_layer.hpp>
+#include <godot_cpp/classes/capsule_shape2d.hpp>
+#include <godot_cpp/classes/collision_shape2d.hpp>
 #include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/polygon2d.hpp>
 #include <godot_cpp/core/class_db.hpp>
@@ -16,14 +19,22 @@ namespace godot {
 	}
 
 	void TribulationController::_bind_methods() {
+		ClassDB::bind_method(D_METHOD("is_boss_alive"), &TribulationController::is_boss_alive);
 		ADD_SIGNAL(MethodInfo("tribulation_finished", PropertyInfo(Variant::BOOL, "success")));
 	}
 
-	void TribulationController::start_tribulation(Player *p_player, const Rect2 &p_arena) {
+	void TribulationController::start_tribulation(Player *p_player, const Rect2 &p_arena, Node *p_arena_node) {
 		_player = p_player;
 		_arena = p_arena;
+		_arena_node = p_arena_node;
 		_create_ui();
-		_begin_phase(PHASE_THUNDER);
+		_update_title();
+		_spawn_boss();
+		// 三灾齐至：开场即并发——阴火灼体、罡风骤起、天雷即落
+		if (_player) {
+			_player->input_inverted = true; // 赑风：神魂颠倒（按阵风周期重掷）
+			_player->set_modulate(Color(0.75f, 0.8f, 1.0f)); // 风扰蓝 tint
+		}
 		set_process(true);
 	}
 
@@ -31,106 +42,111 @@ namespace godot {
 		_aborted = true;
 		_restore_player_effects();
 		_clear_bolts();
+		if (_boss) {
+			_boss->queue_free();
+			_boss = nullptr;
+		}
 		if (_ui) {
 			_ui->queue_free();
 			_ui = nullptr;
-			_phase_label = nullptr;
+			_title_label = nullptr;
 		}
 		set_process(false);
 	}
 
 	// ============================================================
-	// 阶段流程
+	// 天罚使：劫云化身，代天行罚（斩之即渡劫成）
 	// ============================================================
 
-	void TribulationController::_begin_phase(Phase p_phase) {
-		_restore_player_effects(); // 离开上一阶段时还原
-		_phase = p_phase;
-		_phase_elapsed = 0.0;
+	void TribulationController::_spawn_boss() {
+		_boss = memnew(Enemy);
+		_boss->set_name("TribulationBoss");
 
-		switch (_phase) {
-			case PHASE_THUNDER:
-				_strikes_spawned = 0;
-				_next_strike_at = 1.0; // 入场 1 秒后第一雷
-				break;
-			case PHASE_FIRE:
-				_dot_accum = 0.0;
-				if (_player)
-					_player->set_modulate(Color(1.0f, 0.55f, 0.55f)); // 五脏如焚
-				break;
-			case PHASE_WIND:
-				_gust_timer = 0.0;
-				_gust_dir = Vector2(1, 0);
-				_erode_accum = 0.0;
-				if (_player) {
-					_player->input_inverted = true; // 神魂受扰，左右颠倒
-					_player->set_modulate(Color(0.7f, 0.85f, 1.0f));
-				}
-				break;
-			case PHASE_DONE:
-				_finish();
-				break;
+		CollisionShape2D *shape = memnew(CollisionShape2D);
+		Ref<CapsuleShape2D> cap;
+		cap.instantiate();
+		cap->set_radius(10.0f);
+		cap->set_height(24.0f);
+		shape->set_shape(cap);
+		_boss->add_child(shape);
+
+		Polygon2D *vis = memnew(Polygon2D);
+		vis->set_color(Color(0.55f, 0.35f, 0.85f, 1.0f)); // 劫云紫
+		PackedVector2Array poly;
+		poly.push_back(Vector2(-10, -14));
+		poly.push_back(Vector2(10, -14));
+		poly.push_back(Vector2(10, 12));
+		poly.push_back(Vector2(-10, 12));
+		vis->set_polygon(poly);
+		vis->set_scale(Vector2(1.6f, 1.6f));
+		_boss->add_child(vis);
+
+		_boss->set_position(Vector2(_arena.position.x + _arena.size.x * 0.5f, 180.0f));
+		if (_arena_node) {
+			_arena_node->add_child(_boss);
+		} else {
+			add_child(_boss);
 		}
-		_update_phase_label();
+
+		// 配置（add_child 后 set——Boss ×5 血量幂等补偿由 set_is_boss 处理，显式血量后设为准）
+		_boss->set("is_boss", true);
+		_boss->set("display_name", TXT("天罚使"));
+		_boss->set("no_drops", true);
+		_boss->set("realm", _player && _player->get_cultivation()
+		                        ? _player->get_cultivation()->get_realm_index() : 9);
+		_boss->set("is_ranged", true);      // 雷法远程，保持距离开道
+		_boss->set("attack_range", 260.0f);
+		_boss->set("move_speed", 70.0f);
+		_boss->set("max_health", BOSS_HP);
+		_boss->set("current_health", BOSS_HP);
+		_boss->connect("boss_died", callable_mp(this, &TribulationController::_on_boss_died));
 	}
 
-	String TribulationController::_phase_title() const {
-		switch (_phase) {
-			case PHASE_THUNDER: return LOC("第一灾 · 天雷 —— 明心见性，预先躲避");
-			case PHASE_FIRE:    return LOC("第二灾 · 阴火 —— 自涌泉烧起，直透泥垣");
-			case PHASE_WIND:    return LOC("第三灾 · 赑风 —— 神魂颠倒，稳住道心");
-			default:            return LOC("");
-		}
-	}
-
-	void TribulationController::_update_phase_label() {
-		if (!_phase_label)
+	void TribulationController::_on_boss_died() {
+		if (_aborted)
 			return;
-		String txt = _phase_title();
-		if (_phase == PHASE_FIRE) {
-			txt += LOC("（剩余 ") + String::num_int64((int64_t)(FIRE_DURATION - _phase_elapsed) + 1) + LOC("s）");
-		} else if (_phase == PHASE_WIND) {
-			txt += LOC("（剩余 ") + String::num_int64((int64_t)(WIND_DURATION - _phase_elapsed) + 1) + LOC("s）");
-		} else if (_phase == PHASE_THUNDER) {
-			txt += LOC("（") + String::num_int64(_strikes_spawned) + "/" + String::num_int64(THUNDER_COUNT) + LOC("）");
-		}
-		_phase_label->set_text(txt);
+		_boss = nullptr; // 死亡态自处理节点释放
+		_finish();
 	}
+
+	// ============================================================
+	// 三灾齐至：全程并发
+	// ============================================================
 
 	void TribulationController::_process(double p_delta) {
-		if (_aborted || !_player || _phase == PHASE_DONE)
+		if (_aborted || !_player)
 			return;
 
 		_time += p_delta;
-		_phase_elapsed += p_delta;
 
-		switch (_phase) {
-			case PHASE_THUNDER: _update_thunder(p_delta); break;
-			case PHASE_FIRE:    _update_fire(p_delta);    break;
-			case PHASE_WIND:    _update_wind(p_delta);    break;
-			default: break;
+		// 天罚使半血 → 三灾加剧
+		if (!_enraged && _boss) {
+			float cur = _boss->get("current_health");
+			float mx = _boss->get("max_health");
+			if (mx > 0.0f && cur <= mx * 0.5f) {
+				_enraged = true;
+				_update_title();
+			}
 		}
-		_update_phase_label();
+
+		// 落雷生成（间隔随激怒缩短）
+		double interval = _enraged ? THUNDER_INTERVAL_ENRAGED : THUNDER_INTERVAL;
+		if (_time >= _next_strike_at) {
+			_spawn_bolt();
+			_next_strike_at = _time + interval;
+		}
+		_update_bolts(p_delta);
+		_update_fire(p_delta);
+		_update_wind(p_delta);
 	}
 
-	// ============================================================
-	// 雷灾：定点天雷，预警后落雷
-	// ============================================================
+	// ---- 雷灾：定点天雷，预警后落雷（元神等级延长预警 = 躲避道）----
 
-	void TribulationController::_update_thunder(double p_delta) {
-		// 生成新雷
-		if (_strikes_spawned < THUNDER_COUNT && _time >= _next_strike_at) {
-			_spawn_bolt();
-			_strikes_spawned++;
-			_next_strike_at = _time + THUNDER_INTERVAL;
-		}
-
-		// 推进已有雷
-		float dmg = _player->max_health * THUNDER_DMG_FRAC;
+	void TribulationController::_update_bolts(double p_delta) {
+		float dmg = _player->max_health * THUNDER_DMG_FRAC * (1.0f - _body_resist());
 		for (auto it = _bolts.begin(); it != _bolts.end();) {
 			LightningBolt &bolt = *it;
 			if (!bolt.struck) {
-				// 预警闪烁
 				if (bolt.visual) {
 					double remain = bolt.strike_at - _time;
 					bolt.visual->set_modulate(Color(1, 1, 1, (Math::fmod(_time, 0.2) < 0.1) ? 1.0 : 0.35));
@@ -139,8 +155,7 @@ namespace godot {
 				}
 				if (_time >= bolt.strike_at) {
 					bolt.struck = true;
-					// 命中判定：玩家 x 在雷柱半宽内（竞技场内全高度）
-					// 雷灾 = 雷元素结算：元素抗性可减免，物理防御不可（渡劫非堆防硬抗）
+					// 命中判定：玩家 x 在雷柱半宽内；雷元素结算（防御无效，抗性/肉身减免）
 					if (Math::abs(_player->get_global_position().x - bolt.x) <= THUNDER_HIT_HALF_W) {
 						_player->take_damage_typed(dmg, int(DMG_ELEMENTAL), int(ELEM_LEI), this);
 					}
@@ -160,17 +175,12 @@ namespace godot {
 				++it;
 			}
 		}
-
-		// 全部落完且场上无雷 → 下一灾
-		if (_strikes_spawned >= THUNDER_COUNT && _bolts.empty()) {
-			_begin_phase(PHASE_FIRE);
-		}
 	}
 
 	void TribulationController::_spawn_bolt() {
-		// 落点：玩家附近 ±80（逼迫走位但可预判）
+		// 落点：玩家附近 ±90（逼迫走位但可预判）
 		float px = _player->get_global_position().x;
-		float x = px + UtilityFunctions::randf_range(-80.0f, 80.0f);
+		float x = px + UtilityFunctions::randf_range(-90.0f, 90.0f);
 		x = Math::clamp(x, _arena.position.x + 20.0f, _arena.position.x + _arena.size.x - 20.0f);
 
 		Polygon2D *visual = memnew(Polygon2D);
@@ -184,58 +194,82 @@ namespace godot {
 		poly.push_back(Vector2(hw, bottom));
 		poly.push_back(Vector2(-hw, bottom));
 		visual->set_polygon(poly);
-		// polygon 用全局坐标，节点放原点即可（父节点是 Manager，非 arena）
+		// polygon 用全局坐标，节点放原点即可
 		visual->set_position(Vector2(x, 0));
 		add_child(visual);
 
 		LightningBolt bolt;
 		bolt.visual = visual;
 		bolt.x = x;
-		bolt.strike_at = _time + THUNDER_WARN;
+		bolt.strike_at = _time + _thunder_warn();
 		bolt.remove_at = bolt.strike_at + 0.25;
 		_bolts.push_back(bolt);
 	}
 
-	// ============================================================
-	// 阴火：体内持续灼烧（生存考验，可用丹药硬扛）
-	// ============================================================
+	// ---- 阴火：体内持续灼烧（全程常压，肉身主减免/元神辅减免）----
 
 	void TribulationController::_update_fire(double p_delta) {
 		_dot_accum += p_delta;
-		while (_dot_accum >= FIRE_TICK) {
-			_dot_accum -= FIRE_TICK;
-			// 阴火 = 火元素结算（比例抗性减免，防御无效）
-			_player->take_damage_typed(_player->max_health * FIRE_DMG_FRAC, int(DMG_ELEMENTAL), int(ELEM_HUO), this);
+		double tick = _enraged ? FIRE_TICK * 0.7 : FIRE_TICK;
+		while (_dot_accum >= tick) {
+			_dot_accum -= tick;
+			_player->take_damage_typed(_player->max_health * FIRE_DMG_FRAC * (1.0f - _fire_resist()),
+			                           int(DMG_ELEMENTAL), int(ELEM_HUO), this);
 		}
-		if (_phase_elapsed >= FIRE_DURATION) {
-			_begin_phase(PHASE_WIND);
+	}
+
+	// ---- 赑风：罡风推移 + 风蚀 + 控制反转（按阵风周期重掷；元神减免反转概率）----
+
+	void TribulationController::_update_wind(double p_delta) {
+		_gust_timer += p_delta;
+		double interval = _enraged ? GUST_INTERVAL_ENRAGED : GUST_INTERVAL;
+		if (_gust_timer >= interval) {
+			_gust_timer = 0.0;
+			_gust_dir = Vector2(UtilityFunctions::randf() < 0.5 ? -1.0f : 1.0f,
+			                    UtilityFunctions::randf_range(-0.3f, 0.3f)).normalized();
+			// 控制反转按阵风重掷（元神等级降低中扰概率）
+			CultivationSystem *cs = _player->get_cultivation();
+			int sl = cs ? cs->get_path_spirit_level() : 0;
+			float invert_chance = Math::max(1.0f - 0.18f * sl, 0.1f);
+			bool inverted = UtilityFunctions::randf() < invert_chance;
+			if (inverted != _player->input_inverted) {
+				_player->input_inverted = inverted;
+				_player->set_modulate(inverted ? Color(0.75f, 0.8f, 1.0f) : Color(1, 1, 1, 1));
+			}
+		}
+		_player->set_velocity(_player->get_velocity() + _gust_dir * GUST_FORCE * (float)p_delta);
+
+		// 风蚀骨肉（肉身减免）
+		_erode_accum += p_delta;
+		while (_erode_accum >= WIND_ERODE_TICK) {
+			_erode_accum -= WIND_ERODE_TICK;
+			_player->take_damage_typed(_player->max_health * WIND_ERODE_FRAC * (1.0f - _body_resist()),
+			                           int(DMG_ELEMENTAL), int(ELEM_FENG), this);
 		}
 	}
 
 	// ============================================================
-	// 赑风：控制反转 + 风力推移 + 缓慢侵蚀
+	// 双过法挂钩（元婴分叉联动）
 	// ============================================================
 
-	void TribulationController::_update_wind(double p_delta) {
-		// 定向罡风，定时换向
-		_gust_timer += p_delta;
-		if (_gust_timer >= GUST_INTERVAL) {
-			_gust_timer = 0.0;
-			_gust_dir = Vector2(UtilityFunctions::randf() < 0.5 ? -1.0f : 1.0f,
-			                    UtilityFunctions::randf_range(-0.3f, 0.3f)).normalized();
-		}
-		_player->set_velocity(_player->get_velocity() + _gust_dir * GUST_FORCE * (float)p_delta);
+	float TribulationController::_body_resist() const {
+		CultivationSystem *cs = _player ? _player->get_cultivation() : nullptr;
+		return cs ? cs->get_path_tribulation_resist() : 0.0f;
+	}
 
-		// 风蚀骨肉（赑风 = 风元素结算）
-		_erode_accum += p_delta;
-		while (_erode_accum >= 0.5) {
-			_erode_accum -= 0.5;
-			_player->take_damage_typed(_player->max_health * WIND_ERODE_FRAC, int(DMG_ELEMENTAL), int(ELEM_FENG), this);
-		}
+	float TribulationController::_fire_resist() const {
+		CultivationSystem *cs = _player ? _player->get_cultivation() : nullptr;
+		if (!cs)
+			return 0.0f;
+		// 阴火：肉身主减免（8%/级）+ 元神辅减免（6%/级），cap 80%
+		float r = cs->get_path_tribulation_resist() + 0.06f * cs->get_path_spirit_level();
+		return Math::min(r, 0.8f);
+	}
 
-		if (_phase_elapsed >= WIND_DURATION) {
-			_begin_phase(PHASE_DONE);
-		}
+	double TribulationController::_thunder_warn() const {
+		CultivationSystem *cs = _player ? _player->get_cultivation() : nullptr;
+		int sl = cs ? cs->get_path_spirit_level() : 0;
+		return THUNDER_WARN * (1.0 + 0.15 * sl); // 元神每级 +15% 预警 = 躲避道
 	}
 
 	// ============================================================
@@ -263,7 +297,7 @@ namespace godot {
 		if (_ui) {
 			_ui->queue_free();
 			_ui = nullptr;
-			_phase_label = nullptr;
+			_title_label = nullptr;
 		}
 		set_process(false);
 		emit_signal("tribulation_finished", true);
@@ -274,13 +308,21 @@ namespace godot {
 		_ui->set_layer(118);
 		add_child(_ui);
 
-		_phase_label = memnew(Label);
-		_phase_label->set_position(Vector2(60, 8));
-		_phase_label->set_size(Vector2(360, 20));
-		_phase_label->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
-		_phase_label->add_theme_font_size_override("font_size", 9);
-		_phase_label->add_theme_color_override("font_color", Color(1.0f, 0.9f, 0.5f, 1));
-		_ui->add_child(_phase_label);
+		_title_label = memnew(Label);
+		_title_label->set_position(Vector2(40, 8));
+		_title_label->set_size(Vector2(400, 20));
+		_title_label->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
+		_title_label->add_theme_font_size_override("font_size", 9);
+		_title_label->add_theme_color_override("font_color", Color(1.0f, 0.9f, 0.5f, 1));
+		_ui->add_child(_title_label);
+	}
+
+	void TribulationController::_update_title() {
+		if (!_title_label)
+			return;
+		_title_label->set_text(_enraged
+			? LOC("渡劫 · 天罚使暴怒——三灾加剧，斩之可成")
+			: LOC("渡劫 · 三灾齐至——斩天罚使以成仙"));
 	}
 
 } // namespace godot

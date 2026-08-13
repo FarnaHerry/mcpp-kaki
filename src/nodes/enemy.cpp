@@ -668,6 +668,9 @@ namespace godot {
 				state_machine->transition_to(EnemyStates::Death);
 			}
 			emit_signal("enemy_died");
+			if (is_boss) {
+				emit_signal("boss_died"); // 自身信号（SignalBus boss_died 之外，供定点 connect——渡劫天罚使/天界巨灵神）
+			}
 			return;
 		}
 

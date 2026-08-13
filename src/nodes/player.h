@@ -75,6 +75,7 @@ class Player : public CharacterBody2D {
 
 		// 赑风（三灾之一）：神魂受扰，水平输入反转（由 TribulationController 设置）
 		bool input_inverted = false;
+		bool is_input_inverted() const { return input_inverted; } // 测试/脚本探针
 
 		void take_damage(float p_amount, Node *p_source);
 		void take_damage_typed(float p_amount, int p_cat, int p_elem, Node *p_source); // 投射物用

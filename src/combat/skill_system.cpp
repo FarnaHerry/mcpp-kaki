@@ -250,6 +250,10 @@ bool SkillSystem::cast_slot(int p_slot) {
 			gf->feed(GongfaSystem::SCHOOL_QI, def->mana_cost);
 		}
 	}
+	// 元婴分叉喂养（武技→肉身，法术/神通/仙法→元神；元婴起生效）
+	if (cult) {
+		cult->feed_path(def->type == TYPE_MARTIAL ? 0 : 1, 2.0f);
+	}
 
 	emit_signal("skill_cast", id);
 	return true;

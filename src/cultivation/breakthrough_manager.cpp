@@ -154,8 +154,8 @@ namespace godot {
 			case CS::DA_CHENG:
 				def.kind = EventKind::TRIBULATION;
 				def.name = LOC("三灾利害");
-				def.intro_lines = { LOC("大乘圆满，天道感应。"), LOC("渡劫之地——不在三界内，不在五行中。"), LOC("雷、火、风三灾连考，过则成仙，死则身殒。") };
-				def.outro_lines = { LOC("三灾尽过，天地认可。"), LOC("飞升成功——真仙！自此免疫凡间雷火风。") };
+				def.intro_lines = { LOC("大乘圆满，天道感应。"), LOC("渡劫之地——不在三界内，不在五行中。"), LOC("雷、火、风三灾齐至，天罚使代天行罚。"), LOC("斩天罚使则飞升成仙，身殒则退回大乘。") };
+				def.outro_lines = { LOC("天罚使已斩，三灾尽散，天地认可。"), LOC("飞升成功——真仙！自此免疫凡间雷火风。") };
 				break;
 			case CS::TRUE_IMMORTAL:
 				def.kind = EventKind::NARRATIVE;
@@ -576,7 +576,7 @@ namespace godot {
 		_tribulation->set_name("TribulationController");
 		add_child(_tribulation);
 		_tribulation->connect("tribulation_finished", callable_mp(this, &BreakthroughManager::_on_tribulation_finished));
-		_tribulation->start_tribulation(_player(), _arena_bounds);
+		_tribulation->start_tribulation(_player(), _arena_bounds, _arena);
 	}
 
 	void BreakthroughManager::_on_tribulation_finished(bool p_success) {

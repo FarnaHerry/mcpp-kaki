@@ -15,6 +15,7 @@ import mcpp_kaki.combat;
 
 namespace godot {
 class Player; // external (nodes header) — global fragment, no module linkage
+class Enemy;  // external (nodes header)
 }
 
 export module mcpp_kaki.cultivation;
@@ -173,6 +174,24 @@ public:
 	bool choose_focus(int p_focus);
 	void set_focus(int p_focus);
 
+	// ---- 元婴分叉：肉身成圣 / 元神修炼（design/cultivation-realms.md 元婴分叉）----
+	// 行为喂养双轨（近战系→肉身，法术系→元神），100 经验 1 级共 5 级；
+	// 合体「形神合一」弱侧补 80% 差值汇合；focus 称号轴自动跟随高侧。
+	static constexpr float PATH_EXP_PER_LEVEL = 100.0f;
+	static constexpr int PATH_MAX_LEVEL = 5;
+	void feed_path(int p_path, float p_amount); // 0=肉身 1=元神（元婴起）
+	int get_path_body_level() const { return MIN(int(_path_body_exp / PATH_EXP_PER_LEVEL), PATH_MAX_LEVEL); }
+	int get_path_spirit_level() const { return MIN(int(_path_spirit_exp / PATH_EXP_PER_LEVEL), PATH_MAX_LEVEL); }
+	float get_path_body_exp() const { return _path_body_exp; }
+	float get_path_spirit_exp() const { return _path_spirit_exp; }
+	void set_path_exp(int p_path, float p_exp); // 读档
+	bool is_path_merged() const { return _path_merged; }
+	void set_path_merged(bool p_merged) { _path_merged = p_merged; }
+	float get_path_atk_mult() const { return 1.0f + 0.03f * get_path_body_level(); }    // 肉身：物攻
+	float get_path_spell_mult() const { return 1.0f + 0.03f * get_path_spirit_level(); } // 元神：法强
+	float get_path_law_mult() const { return 1.0f + 0.05f * get_path_spirit_level(); }   // 元神：法则回复
+	float get_path_tribulation_resist() const { return 0.08f * get_path_body_level(); }  // 三灾硬抗减伤（L5=40%）
+
 	float get_damage_multiplier() const;
 	float get_defense_multiplier() const;
 	float get_speed_multiplier() const;
@@ -202,10 +221,15 @@ private:
 	Origin _origin = ORIGIN_MORTAL;
 	BuddhistRank _buddhist_rank = RANK_NONE;
 	CultivationFocus _focus = FOCUS_NONE;
+	// 元婴分叉（肉身/元神双轨经验 + 合体已汇合标记）
+	float _path_body_exp = 0.0f;
+	float _path_spirit_exp = 0.0f;
+	bool _path_merged = false;
 	bool _hunyuan = false;
 	bool _free_breakthrough = true;
 
 	void _set_realm_internal(Realm p_realm);
+	void _update_focus_from_paths(); // 分叉等级 → focus 称号轴自动跟随
 	void _emit_energy_changed();
 	void _emit_mana_changed();
 	void _emit_law_changed();
@@ -587,20 +611,21 @@ private:
 export class TribulationController : public Node {
 	GDCLASS(TribulationController, Node);
 
-public:
-	enum Phase {
-		PHASE_THUNDER = 0,
-		PHASE_FIRE = 1,
-		PHASE_WIND = 2,
-		PHASE_DONE = 3
-	};
+	// 渡劫 v2（session 019）：三灾齐至——雷/火/风全程并发，不再分阶段连考；
+	// 天罚使（劫云化身 Boss）代天行罚，斩之即渡劫成（boss_died → tribulation_finished）。
+	// 双过法（元婴分叉联动）：肉身等级→三灾伤害减免（硬抗道）；
+	// 元神等级→雷预警延长 + 风反转概率减免 + 阴火减免（躲避道）。
 
+public:
 	TribulationController();
 
-	void start_tribulation(Player *p_player, const Rect2 &p_arena);
+	void start_tribulation(Player *p_player, const Rect2 &p_arena, Node *p_arena_node);
 	void abort();
 
 	void _process(double p_delta) override;
+
+	// 测试探针
+	bool is_boss_alive() const { return _boss != nullptr && !_aborted; }
 
 protected:
 	static void _bind_methods();
@@ -614,50 +639,52 @@ private:
 		bool struck = false;
 	};
 
-	static constexpr int THUNDER_COUNT = 10;
-	static constexpr double THUNDER_INTERVAL = 1.3;
-	static constexpr double THUNDER_WARN = 0.85;
+	static constexpr double THUNDER_INTERVAL = 2.2;          // 落雷间隔
+	static constexpr double THUNDER_INTERVAL_ENRAGED = 1.4;  // 天罚使半血后
+	static constexpr double THUNDER_WARN = 1.0;              // 预警（元神每级 +15%）
 	static constexpr float THUNDER_HIT_HALF_W = 14.0f;
-	static constexpr float THUNDER_DMG_FRAC = 0.15f;
-	static constexpr double FIRE_DURATION = 10.0;
-	static constexpr double FIRE_TICK = 0.5;
-	static constexpr float FIRE_DMG_FRAC = 0.02f;
-	static constexpr double WIND_DURATION = 12.0;
-	static constexpr double GUST_INTERVAL = 1.8;
-	static constexpr float GUST_FORCE = 140.0f;
-	static constexpr float WIND_ERODE_FRAC = 0.005f;
+	static constexpr float THUNDER_DMG_FRAC = 0.12f;         // 最大生命比例（肉身可减免）
+	static constexpr double FIRE_TICK = 1.0;
+	static constexpr float FIRE_DMG_FRAC = 0.015f;
+	static constexpr double GUST_INTERVAL = 2.5;
+	static constexpr double GUST_INTERVAL_ENRAGED = 1.8;
+	static constexpr float GUST_FORCE = 130.0f;
+	static constexpr float WIND_ERODE_FRAC = 0.006f;
+	static constexpr double WIND_ERODE_TICK = 0.5;
+	static constexpr float BOSS_HP = 2500.0f;
 
 	Player *_player = nullptr;
+	Node *_arena_node = nullptr;
+	Enemy *_boss = nullptr; // 天罚使
 	Rect2 _arena;
-	Phase _phase = PHASE_THUNDER;
 	double _time = 0.0;
-	double _phase_elapsed = 0.0;
 	bool _aborted = false;
+	bool _enraged = false; // Boss 半血：三灾加剧
 
-	int _strikes_spawned = 0;
-	double _next_strike_at = 0.0;
+	double _next_strike_at = 1.0;
 	std::vector<LightningBolt> _bolts;
-
 	double _dot_accum = 0.0;
-
 	double _gust_timer = 0.0;
-	Vector2 _gust_dir;
+	Vector2 _gust_dir = Vector2(1, 0);
 	double _erode_accum = 0.0;
 
 	CanvasLayer *_ui = nullptr;
-	Label *_phase_label = nullptr;
+	Label *_title_label = nullptr;
 
-	void _begin_phase(Phase p_phase);
-	void _update_thunder(double p_delta);
+	void _spawn_boss();
+	void _on_boss_died();
+	void _spawn_bolt();
+	void _update_bolts(double p_delta);
 	void _update_fire(double p_delta);
 	void _update_wind(double p_delta);
-	void _spawn_bolt();
-	void _update_phase_label();
+	float _body_resist() const;   // 肉身减伤（硬抗过法）
+	double _thunder_warn() const; // 元神预警延长（躲避道）
+	float _fire_resist() const;   // 阴火减免（肉身主、元神辅）
+	void _update_title();
 	void _create_ui();
 	void _clear_bolts();
 	void _restore_player_effects();
 	void _finish();
-	String _phase_title() const;
 };
 
 } // namespace godot
