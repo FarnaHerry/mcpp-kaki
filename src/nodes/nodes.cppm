@@ -480,7 +480,7 @@ export class GameMenu : public CanvasLayer {
 	// 内部渲染比例固定 16:9（480×270），非 16:9 由 aspect=keep 居中黑边；缩放固定整数倍。
 	int _window_mode_opt = 0;
 	int _fs_res_idx = 2;    // FS_RES_PRESETS 下标（原生分辨率档），默认 1920×1080
-	int _max_fps = 60;      // 帧率上限值（0=无限不锁帧），默认 60
+	int _max_fps = -1;      // 帧率上限值（-1=未设置→默认系统最高刷新率；0=无限不锁帧）
 	int _vsync = 1;         // 垂直同步 0关/1开，默认开
 	std::vector<int> _fps_opts; // 帧率上限档（启动按系统最高刷新率动态生成，末尾 0=无限）
 	bool _startup_applied = false; // 启动窗口就绪后应用一次显示设置（_ready 时窗口未完全就绪）

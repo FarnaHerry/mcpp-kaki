@@ -1506,7 +1506,7 @@ void GameMenu::_apply_vsync() {
 	ds->window_set_vsync_mode(_vsync == 0 ? DisplayServer::VSYNC_DISABLED : DisplayServer::VSYNC_ENABLED);
 }
 
-// 帧率上限档按系统最高刷新率动态生成：常见档（≤ 刷新率）+ 系统上限 + 末尾 0（无限）。
+// 帧率上限档按系统最高刷新率动态生成：常见档（60 起，≤ 刷新率）+ 系统上限 + 末尾 0（无限）。
 void GameMenu::_build_fps_options() {
 	_fps_opts.clear();
 	int R = 60;
@@ -1515,7 +1515,9 @@ void GameMenu::_build_fps_options() {
 		float rr = ds->screen_get_refresh_rate(0);
 		if (rr > 1.0f) R = int(Math::round(rr));
 	}
-	static const int LADDER[] = { 30, 60, 120, 144, 240, 360 };
+	// 默认 = 系统最高刷新率（未设置时）
+	if (_max_fps < 0) _max_fps = R;
+	static const int LADDER[] = { 60, 120, 144, 240, 360 };
 	for (int f : LADDER) if (f <= R) _fps_opts.push_back(f);
 	if (_fps_opts.empty() || _fps_opts.back() != R) _fps_opts.push_back(R);
 	_fps_opts.push_back(0); // 无限（不锁帧）
@@ -1575,7 +1577,7 @@ void GameMenu::_load_settings() {
 		int wm = int(cfg->get_value(LOC("display"), LOC("window_mode"), 0));
 		_window_mode_opt = wm <= 0 ? 0 : (wm >= 3 ? 2 : 1);
 		_fs_res_idx = CLAMP(int(cfg->get_value(LOC("display"), LOC("res_idx"), 2)), 0, FS_RES_COUNT - 1);
-		_max_fps = CLAMP(int(cfg->get_value(LOC("display"), LOC("max_fps"), 60)), 0, 1000);
+		_max_fps = CLAMP(int(cfg->get_value(LOC("display"), LOC("max_fps"), -1)), -1, 1000);
 		_vsync = CLAMP(int(cfg->get_value(LOC("display"), LOC("vsync"), 1)), 0, 1);
 		// 旧档 resolution_idx/resolution_custom/custom_w/custom_h/scale_mode/aspect_idx/fps_idx
 		// 不再读取（存档重写时随新 ConfigFile 自动消失）

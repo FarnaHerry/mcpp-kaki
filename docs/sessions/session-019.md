@@ -88,9 +88,11 @@
    内部画布固定 480×270（16:9），非 16:9 由 `aspect="keep"` 居中黑边兼容（Hollow Knight/Dead Cells 式）。
 9. **v5**：「全屏好了，小窗口黑边不对——小窗口改分辨率应外部一致、不该有黑边」→ 缩放改**分数倍**；
    同轮追加「增加帧率设置」→ 设置页加「帧率」行（30/60/120/144/无限，`Engine.set_max_fps`，cfg fps_idx）。
-10. **v6（本轮）**：「帧率获取系统最高上限做限制；垂直同步 Godot 原生支持就加」→ 帧率档改**动态生成**
+10. **v6**：「帧率获取系统最高上限做限制；垂直同步 Godot 原生支持就加」→ 帧率档改**动态生成**
     （`screen_get_refresh_rate` 取系统刷新率裁剪 + 系统上限 + 无限，cfg `max_fps` 值）；加**垂直同步**行
     （关/开，`window_set_vsync_mode`，cfg `vsync`）。
+11. **v7（本轮）**：「30 太低没意义，最低 60；默认就设系统最高帧率」→ 档位去掉 30（60 起），
+    默认 `_max_fps` 改 -1 哨兵 → 启动时 `_build_fps_options` 设为系统最高刷新率。
 
 ## 终案 v6（16:9 固定基准 + 分数倍缩放 + 动态帧率 + 垂直同步）
 
@@ -106,7 +108,8 @@
 - 缩放固定**分数倍**（fractional）：窗口/全屏填满无黑边（窗口尺寸=所选分辨率外部一致）；
   非 16:9 比例仍由 aspect=keep 居中黑边。
 - **帧率行**：上限档**动态生成**——`screen_get_refresh_rate(0)` 取系统最高刷新率，常见档
-  （30/60/120/144/240/360）裁剪到 ≤ 刷新率 + 补系统上限 + 末尾 0（无限）；`Engine.set_max_fps`，cfg `max_fps` 值。
+  （60/120/144/240/360）裁剪到 ≤ 刷新率 + 补系统上限 + 末尾 0（无限）；**默认=系统最高刷新率**
+  （cfg 无 `max_fps` 时 -1 哨兵→启动设为系统上限）；`Engine.set_max_fps`，cfg `max_fps` 值。
 - **垂直同步行**：关/开 2 档（Godot 原生 `window_set_vsync_mode`，VSYNC_DISABLED/ENABLED），cfg `vsync`。
 - cfg [display] = window_mode + res_idx（旧键 resolution_idx/custom_w/custom_h/aspect_idx/scale_mode
   不再读取，存档重写自动消失）。

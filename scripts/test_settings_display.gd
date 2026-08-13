@@ -3,7 +3,7 @@
 # 分辨率行=原生分辨率（1920×1080 等，常规游戏语义），全窗口模式可调；
 # 缩放固定分数倍（fractional，窗口/全屏填满无黑边）。帧率行=上限档（按系统最高刷新率动态生成+无限）；
 # 垂直同步行=关/开（Godot 原生 window_set_vsync_mode）。
-# headless 下刷新率≈60（screen_get_refresh_rate≤1→默认 60），档位=[30,60,0]；断言落点 = 行标签 + cfg + content_scale + Engine.max_fps
+# headless 下刷新率≈60（screen_get_refresh_rate≤1→默认 60），档位=[60,0]；断言落点 = 行标签 + cfg + content_scale + Engine.max_fps
 extends SceneTree
 
 var _t := 0.0
@@ -186,20 +186,20 @@ func _process(delta) -> bool:
 			_step = 30
 		30:
 			_check(_has_label("▶ 帧率"), "选中帧率行")
-			_check(_has_label("60"), "帧率默认 60")
+			_check(_has_label("60"), "帧率默认=系统上限 60")
 			_check(int(Engine.max_fps) == 60, "Engine.max_fps=60（默认）")
-			_press("right") # → 无限（headless 档位 [30,60,0]）
+			_press("right") # → 无限（headless 档位 [60,0]）
 			_step = 31
 		31:
 			_check(int(_cfg_display("max_fps", -1)) == 0, "帧率 cfg max_fps=0（无限）")
 			_check(_has_label("无限"), "帧率→无限（不锁帧）")
 			_check(int(Engine.max_fps) == 0, "Engine.max_fps=0（不锁帧）")
-			_press("right") # → 30
+			_press("right") # → 回 60（档位 [60,0] 回卷）
 			_step = 32
 		32:
-			_check(int(_cfg_display("max_fps", -1)) == 30, "帧率 cfg max_fps=30")
-			_check(_has_label("30"), "帧率→30")
-			_check(int(Engine.max_fps) == 30, "Engine.max_fps=30")
+			_check(int(_cfg_display("max_fps", -1)) == 60, "帧率 cfg max_fps=60（回卷）")
+			_check(_has_label("60"), "帧率回卷→60")
+			_check(int(Engine.max_fps) == 60, "Engine.max_fps=60")
 			_press("down") # → sel5 垂直同步
 			_step = 33
 		33:
