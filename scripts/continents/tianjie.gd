@@ -135,4 +135,15 @@ func _setup():
 	WC.spawn_item_pickup(self, Vector2(3440, 228), "pan_tao", 1)
 	WC.spawn_item_pickup(self, Vector2(3460, 232), "spirit_stone_peak", 1)
 
+	# ===== 凌霄宝殿入口（巨灵神身后条件门：需 boss_dead:巨灵神）=====
+	var lxgate = load("res://scripts/gates/cond_portal.gd").new()
+	lxgate.name = "LingXiaoGate"
+	lxgate.position = Vector2(3480, 210)
+	lxgate.set("flag", "boss_dead:巨灵神")
+	lxgate.set("prompt", "[↑] 入凌霄宝殿")
+	lxgate.set("refuse_text", "巨灵神镇守于此——先伏此神，凌霄宝殿方开")
+	lxgate.set("target_scene", "res://scenes/rooms/lingxiao_dian.tscn")
+	add_child(lxgate)
+	lxgate.setup(player, camera)
+
 	print("天界 · 南天门外/天庭街市/兜率宫蟠桃园")

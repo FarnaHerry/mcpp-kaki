@@ -54,6 +54,11 @@ void GameManager::_ready() {
 		_has_travel_target = true;
 		_s_has_travel_spawn = false;
 	}
+
+	// Boss 死亡按名落 flag（boss_dead:<名字>）——凌霄宝殿门控等通用持久化标记
+	if (_signal_bus) {
+		_signal_bus->connect("boss_fight_ended", callable_mp(this, &GameManager::_on_boss_fight_ended));
+	}
 	set_process(true);
 }
 
@@ -113,11 +118,19 @@ void GameManager::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_kill_count"), &GameManager::get_kill_count);
 	ClassDB::bind_method(D_METHOD("increment_kill_count"), &GameManager::increment_kill_count);
 
+	// 持久化标记 + 飞升结局
+	ClassDB::bind_method(D_METHOD("set_flag", "key", "value"), &GameManager::set_flag, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("get_flag", "key", "default"), &GameManager::get_flag, DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("has_flag", "key"), &GameManager::has_flag);
+	ClassDB::bind_method(D_METHOD("check_hunyuan_ready"), &GameManager::check_hunyuan_ready);
+	ClassDB::bind_method(D_METHOD("complete_ascension_ending"), &GameManager::complete_ascension_ending);
+
 	// Save / Load
 	ClassDB::bind_method(D_METHOD("save_game", "slot_name"), &GameManager::save_game, DEFVAL("auto"));
 	ClassDB::bind_method(D_METHOD("load_game", "slot_name"), &GameManager::load_game, DEFVAL("auto"));
 	ClassDB::bind_method(D_METHOD("has_save", "slot_name"), &GameManager::has_save, DEFVAL("auto"));
 	ClassDB::bind_method(D_METHOD("has_pending_bridge"), &GameManager::has_pending_bridge);
+	ClassDB::bind_method(D_METHOD("collect_save_data"), &GameManager::collect_save_data);
 
 	ADD_SIGNAL(MethodInfo("respawn_triggered",
 	                      PropertyInfo(Variant::VECTOR2, "position")));
@@ -492,6 +505,9 @@ Dictionary GameManager::collect_save_data() const {
 		data["currency"] = CurrencySystem::get_singleton()->save_to_dict();
 	}
 
+	// ---- 持久化标记（Boss 击杀/一次性事件/结局）----
+	data["flags"] = _flags;
+
 	return data;
 }
 
@@ -538,6 +554,9 @@ void GameManager::load_game(const String &p_slot_name) {
 }
 
 void GameManager::_apply_save_dict(const Dictionary &data) {
+	// ---- 持久化标记（先恢复，后续境界/法宝等恢复逻辑可能依赖 flag）----
+	_flags = data.get("flags", Dictionary());
+
 	// ---- Restore checkpoint ----
 	Dictionary cp = data.get("checkpoint", Dictionary());
 	if (!cp.is_empty()) {
@@ -704,6 +723,59 @@ bool GameManager::has_save(const String &p_slot_name) const {
 
 void GameManager::increment_kill_count() {
 	_kill_count++;
+}
+
+// ============================================================
+// 持久化标记（flags）+ 飞升结局
+// ============================================================
+
+void GameManager::set_flag(const String &p_key, const Variant &p_value) {
+	_flags[p_key] = p_value;
+}
+
+Variant GameManager::get_flag(const String &p_key, const Variant &p_default) const {
+	return _flags.get(p_key, p_default);
+}
+
+bool GameManager::has_flag(const String &p_key) const {
+	return _flags.has(p_key) && bool(_flags[p_key]);
+}
+
+void GameManager::_on_boss_fight_ended(const String &p_name) {
+	// Boss 死亡按名落持久化标记（黑白无常等 no_drops 勾魂使不记——它们不是守关 Boss）
+	if (!p_name.is_empty()) {
+		set_flag(TXT("boss_dead:") + p_name, true);
+	}
+}
+
+String GameManager::check_hunyuan_ready() {
+	if (!_player || !_player->get_cultivation())
+		return LOC("机缘未至。");
+	CultivationSystem *cs = _player->get_cultivation();
+	if (cs->is_hunyuan())
+		return LOC("混元已成，无需再行大礼。");
+	if (cs->get_realm_index() < CultivationSystem::GOLDEN_IMMORTAL)
+		return LOC("修为未至金仙，混元之门未开。");
+	if (cs->get_stage() != CultivationSystem::STAGE_DA_YUANMAN)
+		return LOC("金仙未臻大圆满，精气神尚未混一。");
+	if (!has_flag(TXT("boss_dead:巨灵神")))
+		return LOC("巨灵神未伏，天庭试炼未过。");
+	return String();
+}
+
+void GameManager::complete_ascension_ending() {
+	if (!_player || !_player->get_cultivation())
+		return;
+	CultivationSystem *cs = _player->get_cultivation();
+	if (!cs->attain_hunyuan())
+		return; // 前置校验没过（正常不会走到——NarrativeNode 已 precheck）
+	set_flag(TXT("ending_seen"), true);
+	// 结局全恢复（庆典）
+	_player->current_health = _player->max_health;
+	if (_signal_bus) {
+		_signal_bus->emit_signal("player_health_changed", _player->current_health, _player->max_health);
+		_signal_bus->emit_signal("interaction_prompt", LOC("混元一气成就——混元金仙！飞升之路已至绝巅。"), true);
+	}
 }
 
 } // namespace godot

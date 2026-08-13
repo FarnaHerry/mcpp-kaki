@@ -105,6 +105,15 @@ public:
 	int get_kill_count() const { return _kill_count; }
 	void increment_kill_count();
 
+	// ---- 持久化标记（Boss 击杀/一次性事件/结局等通用 flag，随档保存）----
+	void set_flag(const String &p_key, const Variant &p_value = true);
+	Variant get_flag(const String &p_key, const Variant &p_default = false) const;
+	bool has_flag(const String &p_key) const;
+
+	// ---- 飞升结局（凌霄宝殿混元仪式，NarrativeNode 回调）----
+	String check_hunyuan_ready();   // 前置校验："" = 可行礼，否则为拒绝原因（单行叙事展示）
+	void complete_ascension_ending(); // 混元一气成就 + 结局标记 + 全恢复
+
 	void _ready() override;
 	void _process(double p_delta) override;
 
@@ -145,6 +154,10 @@ private:
 	// Config
 	float _respawn_delay = 1.5f;
 	int _kill_count = 0;
+
+	// 持久化标记（data["flags"] 段随档保存；boss_dead:<名字> 由 boss_fight_ended 自动记录）
+	Dictionary _flags;
+	void _on_boss_fight_ended(const String &p_name);
 };
 
 } // namespace godot

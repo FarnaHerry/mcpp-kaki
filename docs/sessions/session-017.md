@@ -47,3 +47,18 @@ project.godot `aspect="keep"` + `scale_mode="integer"`：引擎自动整数倍�
   真机像素验证（整数倍、居中黑边、全屏切换）待主线合并后进行。
 - worktree 复跑提醒：新 worktree 缺 `.godot/` 缓存时扩展不加载（session 014 已记），
   先 `godot --headless --import` 一次再跑测试。
+
+## 追加：凌霄宝殿主线叙事 + 飞升结局（主线 agent 亲做，与分辨率重构并行）
+
+roadmap 最后一项大内容。设计依据 design/cultivation-realms.md（混元一气=金仙大圆满+特殊事件解锁，非经验堆出）+ world-map.md（凌霄殿为飞升终点）。
+
+- **持久化 flags（GameManager）**：`set_flag/get_flag/has_flag`，`_flags` Dictionary 存档 `data["flags"]` 段（旅行桥 collect/apply 自动携带）；`boss_fight_ended(name)` 自动落 `boss_dead:<名字>` flag——Boss 守关门控从此有通用持久化依据（此前没有任何 Boss 击杀持久化）。
+- **NarrativeNode**（通用叙事交互节点，C++）：Area2D + X 轮询模板；overlay 暂停世界逐行推进；precheck_method（条件不足单行拒绝）/gm_method（首轮走完回调 GameManager）/once_flag/after_lines（完成后改播后日谈）。PROCESS_MODE_ALWAYS + 树暂停守卫（菜单暂停期不响应 X）。
+- **CondPortal**（条件房间门 GDScript）：flag 满足 ↑ 手动 trigger 内部 Portal（monitoring 关闭不自触发），否则拒绝提示 2.5s。
+- **凌霄宝殿**：rooms/lingxiao_dian.tscn + scripts/rooms/lingxiao_dian.gd（金柱/玉阶/御座视觉）；入口在天界巨灵神身后（x=3480）。太白金星引见（once）→ 玉帝混元仪式：precheck 金仙大圆满+巨灵神已伏 → 7 行仪式 → attain_hunyuan + ending_seen + 全恢复 = **飞升结局**；结局后可自由云游（after_lines 后日谈）。
+- **测试**：test_lingxiao.gd 34 步端到端全绿（真杀巨灵神走完整死亡链验证 flag）；回归 test_tianjie/bossbar/multi_bossbar/difu/settings_display/menu 全绿。
+- 顺带：`collect_save_data` 补 bind_method（测试/脚本可调）。
+
+### 并行说明
+分辨率重构在 worktree 由后台 agent 完成（见上文），主线同做飞升结局，两边文件零重叠
+（agent：game_menu.cpp/nodes.cppm/project.godot/test_settings_display；主线：game_manager.*/narrative_node.*/gates/rooms/tianjie.gd），合并无冲突。

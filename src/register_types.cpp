@@ -19,6 +19,7 @@ import mcpp_kaki.core;
 #include "nodes/farm_plot.h"
 #include "nodes/storage_chest.h"
 #include "nodes/underworld_interact.h"
+#include "nodes/narrative_node.h"
 #include "nodes/shop_keeper.h"
 #include "nodes/item_pickup.h"
 #include "nodes/herb_node.h"
@@ -45,6 +46,7 @@ void initialize_mcpp_kaki_module(ModuleInitializationLevel p_level) {
 	GDREGISTER_CLASS(FarmPlot);
 	GDREGISTER_CLASS(StorageChest);
 	GDREGISTER_CLASS(UnderworldInteractNode);
+	GDREGISTER_CLASS(NarrativeNode);
 	GDREGISTER_CLASS(ShopKeeper);
 	GDREGISTER_CLASS(HitBox);
 	GDREGISTER_CLASS(HurtBox);
