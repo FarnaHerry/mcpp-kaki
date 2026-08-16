@@ -64,9 +64,9 @@ public:
 	// 打坐倍率加成（Player::get_dongtian_meditate_mult 叠加）
 	double get_jlz_bonus() const { return 0.5 * _jlz_level; }
 
-	// ---- 设施补全：灵植采集点×2（现实时间刷新，状态自持于 Manager）----
-	// 与灵田不同：采集点草药固定（聚灵草/千年灵芝），采后枯萎，刷新时长到点复生。
-	static constexpr int HERB_SPOTS = 2;
+	// ---- 设施补全：灵植采集点×4（现实时间刷新，状态自持于 Manager）----
+	// 与灵田不同：采集点草药固定（聚灵草/千年灵芝/冰心莲/赤焰花），采后枯萎，刷新时长到点复生。
+	static constexpr int HERB_SPOTS = 4;
 
 	// 采集点状态：{herb, herb_name, qty, refresh, available, remaining}
 	Dictionary get_herb_spot(int p_index) const;
@@ -77,6 +77,18 @@ public:
 
 	Dictionary save_to_dict() const;
 	void load_from_dict(const Dictionary &p_data);
+
+	// ---- 灵兽闯阵（随机入侵事件，一次性，不持久化）----
+	// 每次进入洞天 30% 概率触发：刷 1~2 只入侵灵兽（窃灵鼠/贪灵蜂，
+	// 由洞天场景脚本 spawn_invasion 装配，realm = 玩家-1 最低 1），
+	// 全灭后提示「洞天重归安宁」；出洞天/读档清场。
+	// 无头（headless）测试环境禁用随机roll——老测试用例稳定性，测试走 debug 接口。
+	bool is_invasion_active() const { return _invasion_active; }
+	int get_invaders_left() const { return _invaders_left; }
+	// 测试接口：下次进入强制触发；已在洞天内则立即触发
+	void debug_force_invasion();
+	// 测试接口：下次进入强制不触发
+	void debug_suppress_invasion();
 
 	// ---- 仓库（v2 储物箱，与纳戒互补）----
 	// 槽位同样自持于 Manager 并随档持久化。
@@ -136,11 +148,22 @@ private:
 	};
 	HerbSpot _herb_spots[HERB_SPOTS];
 
+	// 灵兽闯阵状态（不持久化）
+	static constexpr float INVASION_CHANCE = 0.30f;
+	bool _invasion_active = false;
+	int _invaders_left = 0;
+	bool _invasion_forced = false;     // debug：下次进入强制触发
+	bool _invasion_suppressed = false; // debug：下次进入强制不触发
+	bool _bus_connected = false;       // enemy_killed 惰性连接
+
 	void _try_enter();
 	void _enter();
 	void _exit(bool p_restore_pos);
 	void _show_reason(const String &p_text);
 	bool _in_combat() const;
+	void _roll_invasion();
+	void _start_invasion();
+	void _on_invader_killed(Object *p_enemy, Object *p_killer);
 };
 
 } // namespace godot

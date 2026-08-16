@@ -1245,5 +1245,51 @@
       38
     ],
     "drops": "huang_gu_bing_mu"
+  },
+  "qie_ling_shu": {
+    "name": "窃灵鼠",
+    "hp": 15,
+    "atk": 8,
+    "speed": 135,
+    "detection": 280,
+    "attack_range": 30,
+    "attack_cooldown": 0.7,
+    "realm": 0,
+    "flags": [],
+    "color": [
+      0.6,
+      0.5,
+      0.35,
+      1.0
+    ],
+    "size": [
+      16,
+      14
+    ],
+    "drops": "qie_ling_shu"
+  },
+  "tan_ling_feng": {
+    "name": "贪灵蜂",
+    "hp": 10,
+    "atk": 10,
+    "speed": 120,
+    "detection": 340,
+    "attack_range": 35,
+    "attack_cooldown": 0.8,
+    "realm": 0,
+    "flags": [
+      "flying"
+    ],
+    "color": [
+      0.95,
+      0.8,
+      0.2,
+      1.0
+    ],
+    "size": [
+      16,
+      14
+    ],
+    "drops": "tan_ling_feng"
   }
 }

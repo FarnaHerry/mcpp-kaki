@@ -14,6 +14,11 @@ const JlzEye := preload("res://scripts/spots/jlz_eye.gd")
 const MeditateSpot := preload("res://scripts/spots/meditate_spot.gd")
 const PillLab := preload("res://scripts/spots/pill_lab.gd")
 const DongtianHerbSpot := preload("res://scripts/spots/dongtian_herb_spot.gd")
+const WC := preload("res://scripts/world_common.gd")
+
+# 灵兽闯阵：入侵灵兽种类与出生点（Manager 触发后回调 spawn_invasion 装配）
+const INVASION_KINDS := ["qie_ling_shu", "tan_ling_feng"]
+const INVASION_SPOTS := [Vector2(100, 190), Vector2(380, 190)]
 
 func _mgr():
 	return get_tree().current_scene.find_child("DongtianManager", true, false)
@@ -61,6 +66,24 @@ func _ready():
 	# 聚灵草台：仓库/丹房上空（x=296）；千年灵芝台：灵泉上空（x=420）
 	_make_herb_ledge("HerbLedge0", Vector2(296, 176), 0)
 	_make_herb_ledge("HerbLedge1", Vector2(420, 168), 1)
+
+	# 采集点扩充：冰心莲台（灵田左端上空 x=84）/赤焰花台（灵田右端上空 x=176）
+	_make_herb_ledge("HerbLedge2", Vector2(84, 168), 2)
+	_make_herb_ledge("HerbLedge3", Vector2(176, 156), 3)
+
+# 灵兽闯阵：Manager 判定触发后回调（realm 已按玩家-1 算好）。返回实际生成数。
+func spawn_invasion(realm: int) -> int:
+	var count: int = 1 + randi() % 2
+	var spawned := 0
+	for i in count:
+		var id: String = INVASION_KINDS[randi() % INVASION_KINDS.size()]
+		var e = WC.spawn_enemy_by_id(self, INVASION_SPOTS[i], id)
+		if e == null:
+			continue
+		e.set("realm", max(1, realm))
+		e.add_to_group("dongtian_invaders")
+		spawned += 1
+	return spawned
 
 # 浮空苗圃：单向高台（可跳上/从下方穿过）+ 土壤视觉 + 灵植采集点
 func _make_herb_ledge(ledge_name: String, pos: Vector2, spot_index: int):
