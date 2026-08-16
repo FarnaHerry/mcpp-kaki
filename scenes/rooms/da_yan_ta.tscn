@@ -1,0 +1,118 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/rooms/da_yan_ta.gd" id="1"]
+
+[sub_resource type="RectangleShape2D" id="ground_shape"]
+size = Vector2(480, 24)
+
+[sub_resource type="RectangleShape2D" id="wall_shape"]
+size = Vector2(16, 140)
+
+[sub_resource type="RectangleShape2D" id="platform_shape"]
+size = Vector2(100, 10)
+
+[node name="DaYanTa" type="Node2D"]
+script = ExtResource("1")
+
+; Background（地宫幽暗塔砖）
+[node name="Background" type="Polygon2D" parent="."]
+color = Color(0.06, 0.05, 0.1, 1)
+polygon = PackedVector2Array(0, 0, 480, 0, 480, 270, 0, 270)
+
+; 塔砖横带（砖缝层线，营造塔内壁）
+[node name="BrickBand1" type="Polygon2D" parent="."]
+color = Color(0.1, 0.08, 0.14, 1)
+polygon = PackedVector2Array(0, 58, 480, 58, 480, 62, 0, 62)
+
+[node name="BrickBand2" type="Polygon2D" parent="."]
+color = Color(0.1, 0.08, 0.14, 1)
+polygon = PackedVector2Array(0, 128, 480, 128, 480, 132, 0, 132)
+
+[node name="BrickBand3" type="Polygon2D" parent="."]
+color = Color(0.1, 0.08, 0.14, 1)
+polygon = PackedVector2Array(0, 198, 480, 198, 480, 202, 0, 202)
+
+; 佛灯·左（烛幽灵悬于灯旁；灯柱 + 烛焰 + 光晕）
+[node name="LampPostL" type="Polygon2D" parent="."]
+color = Color(0.2, 0.16, 0.12, 1)
+polygon = PackedVector2Array(98, 124, 102, 124, 102, 238, 98, 238)
+
+[node name="LampGlowL" type="Polygon2D" parent="."]
+color = Color(1.0, 0.75, 0.3, 0.12)
+polygon = PackedVector2Array(100, 96, 122, 120, 100, 144, 78, 120)
+
+[node name="LampFlameL" type="Polygon2D" parent="."]
+color = Color(1.0, 0.85, 0.4, 0.95)
+polygon = PackedVector2Array(100, 112, 104, 120, 100, 126, 96, 120)
+
+; 佛灯·右
+[node name="LampPostR" type="Polygon2D" parent="."]
+color = Color(0.2, 0.16, 0.12, 1)
+polygon = PackedVector2Array(278, 104, 282, 104, 282, 238, 278, 238)
+
+[node name="LampGlowR" type="Polygon2D" parent="."]
+color = Color(1.0, 0.75, 0.3, 0.12)
+polygon = PackedVector2Array(280, 76, 302, 100, 280, 124, 258, 100)
+
+[node name="LampFlameR" type="Polygon2D" parent="."]
+color = Color(1.0, 0.85, 0.4, 0.95)
+polygon = PackedVector2Array(280, 92, 284, 100, 280, 106, 276, 100)
+
+; 塔心佛光（守塔金刚金身巨像背光）
+[node name="TowerHeartGlow" type="Polygon2D" parent="."]
+color = Color(1.0, 0.8, 0.35, 0.08)
+polygon = PackedVector2Array(400, 60, 456, 150, 400, 238, 344, 150)
+
+; Ground
+[node name="Ground" type="StaticBody2D" parent="."]
+position = Vector2(240, 238)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
+shape = SubResource("ground_shape")
+
+[node name="GroundVisual" type="Polygon2D" parent="Ground"]
+color = Color(0.16, 0.12, 0.14, 1)
+polygon = PackedVector2Array(-240, -5, 240, -5, 240, 12, -240, 12)
+
+; Walls
+[node name="WallL" type="StaticBody2D" parent="."]
+position = Vector2(0, 150)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallL"]
+shape = SubResource("wall_shape")
+
+[node name="WallVisualL" type="Polygon2D" parent="WallL"]
+color = Color(0.12, 0.09, 0.12, 1)
+polygon = PackedVector2Array(-8, -70, 8, -70, 8, 70, -8, 70)
+
+[node name="WallR" type="StaticBody2D" parent="."]
+position = Vector2(480, 150)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallR"]
+shape = SubResource("wall_shape")
+
+[node name="WallVisualR" type="Polygon2D" parent="WallR"]
+color = Color(0.12, 0.09, 0.12, 1)
+polygon = PackedVector2Array(-8, -70, 8, -70, 8, 70, -8, 70)
+
+; 二层佛堂平台（精英塔妖守佛龛）
+[node name="FoTangPlatform" type="StaticBody2D" parent="."]
+position = Vector2(170, 160)
+
+[node name="PlatformShape" type="CollisionShape2D" parent="FoTangPlatform"]
+shape = SubResource("platform_shape")
+
+[node name="PlatformVisual" type="Polygon2D" parent="FoTangPlatform"]
+color = Color(0.3, 0.22, 0.16, 1)
+polygon = PackedVector2Array(-50, -4, 50, -4, 50, 6, -50, 6)
+
+; 佛龛（平台正中供奉，金漆小龛）
+[node name="FoKan" type="Polygon2D" parent="."]
+color = Color(0.85, 0.7, 0.3, 1)
+polygon = PackedVector2Array(164, 138, 170, 130, 176, 138, 176, 150, 164, 150)
+
+[node name="SpawnEntrance" type="Marker2D" parent="."]
+position = Vector2(50, 200)
+
+[node name="SpawnExit" type="Marker2D" parent="."]
+position = Vector2(200, 200)
