@@ -37,7 +37,8 @@
   "zhu_yao": {
     "name": "竹妖", "hp": 4, "atk": 10, "speed": 70, "detection": 220,
     "attack_range": 35, "attack_cooldown": 0.8, "realm": 0,
-    "flags": [], "color": [0.3, 0.7, 0.3, 1.0], "size": [20, 28], "drops": ""
+    "flags": [], "color": [0.3, 0.7, 0.3, 1.0], "size": [20, 28], "drops": "",
+    "elite_chance": 0.08
   },
   "cui_zhu_yao": {
     "name": "翠竹妖", "hp": 5, "atk": 10, "speed": 75, "detection": 240,
@@ -132,7 +133,8 @@
   "sha_guai": {
     "name": "沙怪", "hp": 30, "atk": 10, "speed": 85, "detection": 280,
     "attack_range": 35, "attack_cooldown": 0.8, "realm": 4,
-    "flags": [], "color": [0.7, 0.55, 0.3, 1.0], "size": [20, 28], "drops": ""
+    "flags": [], "color": [0.7, 0.55, 0.3, 1.0], "size": [20, 28], "drops": "",
+    "elite_chance": 0.10
   },
   "shou_dong_yao": {
     "name": "守洞妖", "hp": 25, "atk": 10, "speed": 80, "detection": 280,
@@ -172,7 +174,8 @@
   "bing_jia_yuan": {
     "name": "冰甲巨猿", "hp": 320, "atk": 70, "speed": 80, "detection": 280,
     "attack_range": 35, "attack_cooldown": 0.8, "realm": 9,
-    "flags": [], "color": [0.65, 0.8, 0.95, 1.0], "size": [20, 28], "drops": ""
+    "flags": [], "color": [0.65, 0.8, 0.95, 1.0], "size": [20, 28], "drops": "",
+    "elite_chance": 0.12
   },
   "jing_ying_bing_jia": {
     "name": "精英冰甲猿", "hp": 420, "atk": 75, "speed": 90, "detection": 300,

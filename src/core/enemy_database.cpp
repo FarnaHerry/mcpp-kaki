@@ -17,7 +17,7 @@ bool EnemyDatabase::s_loaded = false;
 static EnemyDef _mk(const char *p_id, const char *p_name, float p_hp, float p_atk,
 		float p_speed, float p_det, float p_range, float p_cd, float p_pref, int p_realm,
 		bool p_ranged, bool p_flying, bool p_boss,
-		float p_r, float p_g, float p_b, const char *p_drops) {
+		float p_r, float p_g, float p_b, const char *p_drops, float p_elite_chance = 0.0f) {
 	EnemyDef d;
 	d.id = String(p_id); // id 全 ASCII
 	d.name = TXT(p_name);
@@ -35,6 +35,7 @@ static EnemyDef _mk(const char *p_id, const char *p_name, float p_hp, float p_at
 	d.color = Color(p_r, p_g, p_b, 1.0f);
 	d.size = Vector2(20, 28);
 	d.drops = String(p_drops);
+	d.elite_chance = p_elite_chance;
 	return d;
 }
 
@@ -49,7 +50,7 @@ void EnemyDatabase::_load_hardcoded() {
 	s_defs.push_back(_mk("zi_fu", "紫蝠", 1, 12, 100, 300, 50, 0.8f, 0, 1, false, true, false, 0.7f, 0.3f, 1.0f, ""));
 	s_defs.push_back(_mk("chi_tong_mo_lang", "赤瞳魔狼", 30, 20, 40, 500, 35, 1.2f, 0, 2, false, false, true, 1.0f, 0.1f, 0.1f, ""));
 	// 青竹林/断崖绝壁/幽谷/谷深处
-	s_defs.push_back(_mk("zhu_yao", "竹妖", 4, 10, 70, 220, 35, 0.8f, 0, 0, false, false, false, 0.3f, 0.7f, 0.3f, ""));
+	s_defs.push_back(_mk("zhu_yao", "竹妖", 4, 10, 70, 220, 35, 0.8f, 0, 0, false, false, false, 0.3f, 0.7f, 0.3f, "", 0.08f));
 	s_defs.push_back(_mk("cui_zhu_yao", "翠竹妖", 5, 10, 75, 240, 35, 0.8f, 0, 0, false, false, false, 0.35f, 0.75f, 0.35f, ""));
 	s_defs.push_back(_mk("ya_xiao", "崖枭", 3, 10, 110, 320, 35, 0.8f, 0, 1, false, true, false, 0.6f, 0.5f, 0.9f, ""));
 	s_defs.push_back(_mk("ya_gong", "崖弓", 1, 10, 60, 350, 280, 0.8f, 180, 1, true, false, false, 0.5f, 0.5f, 0.2f, ""));
@@ -73,7 +74,7 @@ void EnemyDatabase::_load_hardcoded() {
 	s_defs.push_back(_mk("huo_ya", "火鸦", 12, 10, 110, 320, 35, 0.8f, 0, 3, false, true, false, 0.9f, 0.4f, 0.1f, ""));
 	s_defs.push_back(_mk("huo_niu", "火牛", 30, 10, 80, 260, 35, 0.8f, 0, 3, false, false, false, 0.7f, 0.2f, 0.1f, ""));
 	s_defs.push_back(_mk("fang_cun_yao", "方寸妖", 20, 10, 75, 240, 35, 0.8f, 0, 3, false, false, false, 0.5f, 0.5f, 0.4f, ""));
-	s_defs.push_back(_mk("sha_guai", "沙怪", 30, 10, 85, 280, 35, 0.8f, 0, 4, false, false, false, 0.7f, 0.55f, 0.3f, ""));
+	s_defs.push_back(_mk("sha_guai", "沙怪", 30, 10, 85, 280, 35, 0.8f, 0, 4, false, false, false, 0.7f, 0.55f, 0.3f, "", 0.10f));
 	// ===== 斜月三星洞秘境 =====
 	s_defs.push_back(_mk("shou_dong_yao", "守洞妖", 25, 10, 80, 280, 35, 0.8f, 0, 4, false, false, false, 0.5f, 0.45f, 0.3f, ""));
 	s_defs.push_back(_mk("jing_ying_shou_dong", "精英守洞妖", 45, 10, 90, 300, 35, 0.8f, 0, 4, false, false, false, 0.85f, 0.7f, 0.3f, ""));
@@ -84,7 +85,7 @@ void EnemyDatabase::_load_hardcoded() {
 	// ===== 北俱芦洲 =====
 	s_defs.push_back(_mk("xue_xiao", "雪魈", 250, 60, 75, 260, 35, 0.8f, 0, 8, false, false, false, 0.7f, 0.8f, 0.9f, ""));
 	s_defs.push_back(_mk("bing_luan", "冰鸾", 150, 60, 120, 340, 35, 0.8f, 0, 8, false, true, false, 0.5f, 0.7f, 1.0f, ""));
-	s_defs.push_back(_mk("bing_jia_yuan", "冰甲巨猿", 320, 70, 80, 280, 35, 0.8f, 0, 9, false, false, false, 0.65f, 0.8f, 0.95f, ""));
+	s_defs.push_back(_mk("bing_jia_yuan", "冰甲巨猿", 320, 70, 80, 280, 35, 0.8f, 0, 9, false, false, false, 0.65f, 0.8f, 0.95f, "", 0.12f));
 	s_defs.push_back(_mk("jing_ying_bing_jia", "精英冰甲猿", 420, 75, 90, 300, 35, 0.8f, 0, 9, false, false, false, 0.85f, 0.9f, 1.0f, ""));
 	s_defs.push_back(_mk("xuan_ming", "上古巨兽·玄冥", 600, 100, 45, 450, 35, 1.0f, 0, 10, false, false, true, 0.35f, 0.5f, 0.7f, "xuan_ming"));
 	s_defs.push_back(_mk("tian_bing_shou_jiang", "天兵守将", 380, 80, 80, 300, 35, 0.8f, 0, 9, false, false, false, 0.9f, 0.85f, 0.6f, ""));
@@ -159,6 +160,7 @@ void EnemyDatabase::_apply_json() {
 				def->size = Vector2(float(s[0]), float(s[1]));
 		}
 		if (d.has("drops")) def->drops = String(d["drops"]);
+		if (d.has("elite_chance")) def->elite_chance = float(d["elite_chance"]);
 	}
 }
 
@@ -173,6 +175,106 @@ void EnemyDatabase::ensure_loaded() {
 const EnemyDef *EnemyDatabase::get_def(const String &p_id) {
 	ensure_loaded();
 	return _find_def(s_defs, p_id);
+}
+
+// ============================================================
+// AffixDatabase — 精英词缀表（affixes.json 优先 + 硬编码兜底）
+// ============================================================
+
+std::vector<AffixDef> AffixDatabase::s_affixes;
+bool AffixDatabase::s_loaded = false;
+
+static AffixDef _mka(const char *p_id, const char *p_name, float p_hp, float p_atk,
+		float p_speed, float p_detect, float p_def_add,
+		float p_r, float p_g, float p_b) {
+	AffixDef a;
+	a.id = String(p_id); // id 全 ASCII
+	a.name = TXT(p_name);
+	a.hp_mult = p_hp;
+	a.atk_mult = p_atk;
+	a.speed_mult = p_speed;
+	a.detect_mult = p_detect;
+	a.def_add = p_def_add;
+	a.tint = Color(p_r, p_g, p_b, 1.0f);
+	return a;
+}
+
+void AffixDatabase::_load_hardcoded() {
+	s_affixes.reserve(8); // reserve 防重分配悬垂
+	// 狂暴：血攻速（橙红）
+	s_affixes.push_back(_mka("kuang_bao", "狂暴", 1.5f, 1.3f, 1.15f, 1.0f, 0.0f, 1.0f, 0.5f, 0.3f));
+	// 厚甲：血防（铁灰蓝）
+	s_affixes.push_back(_mka("hou_jia", "厚甲", 2.0f, 1.0f, 0.9f, 1.0f, 5.0f, 0.6f, 0.6f, 0.75f));
+	// 迅捷：速度+侦测（冰蓝）
+	s_affixes.push_back(_mka("xun_jie", "迅捷", 1.2f, 1.1f, 1.4f, 1.3f, 0.0f, 0.5f, 0.9f, 1.0f));
+	// 噬灵：攻血（幽紫）
+	s_affixes.push_back(_mka("shi_ling", "噬灵", 1.3f, 1.4f, 1.0f, 1.0f, 0.0f, 0.75f, 0.3f, 0.95f));
+}
+
+static AffixDef *_find_affix(std::vector<AffixDef> &p_affixes, const String &p_id) {
+	for (AffixDef &a : p_affixes) {
+		if (a.id == p_id)
+			return &a;
+	}
+	return nullptr;
+}
+
+void AffixDatabase::_apply_json() {
+	const String path = "res://data/affixes.json";
+	if (!FileAccess::file_exists(path))
+		return;
+	String raw = FileAccess::get_file_as_string(path);
+	Variant parsed = JSON::parse_string(raw);
+	if (parsed.get_type() != Variant::DICTIONARY) {
+		UtilityFunctions::printerr(TXT("AffixDatabase: affixes.json 顶层须为对象"));
+		return;
+	}
+	Dictionary root = parsed;
+	Array keys = root.keys();
+	for (int i = 0; i < keys.size(); i++) {
+		String id = keys[i];
+		Variant v = root[id];
+		if (v.get_type() != Variant::DICTIONARY)
+			continue;
+		Dictionary d = v;
+		AffixDef *af = _find_affix(s_affixes, id);
+		if (!af) {
+			s_affixes.push_back(AffixDef());
+			af = &s_affixes.back();
+			af->id = id;
+		}
+		if (d.has("name")) af->name = d["name"];
+		if (d.has("hp_mult")) af->hp_mult = float(d["hp_mult"]);
+		if (d.has("atk_mult")) af->atk_mult = float(d["atk_mult"]);
+		if (d.has("speed_mult")) af->speed_mult = float(d["speed_mult"]);
+		if (d.has("detect_mult")) af->detect_mult = float(d["detect_mult"]);
+		if (d.has("def_add")) af->def_add = float(d["def_add"]);
+		if (d.has("tint")) {
+			Array c = d["tint"];
+			if (c.size() >= 4)
+				af->tint = Color(float(c[0]), float(c[1]), float(c[2]), float(c[3]));
+		}
+	}
+}
+
+void AffixDatabase::ensure_loaded() {
+	if (s_loaded)
+		return;
+	s_loaded = true;
+	_load_hardcoded(); // 兜底全表
+	_apply_json();     // JSON 优先（同 id 覆盖，新 id 追加）
+}
+
+const AffixDef *AffixDatabase::get_affix(const String &p_id) {
+	ensure_loaded();
+	return _find_affix(s_affixes, p_id);
+}
+
+const AffixDef *AffixDatabase::random_affix() {
+	ensure_loaded();
+	if (s_affixes.empty())
+		return nullptr;
+	return &s_affixes[UtilityFunctions::randi_range(0, int64_t(s_affixes.size()) - 1)];
 }
 
 } // namespace godot

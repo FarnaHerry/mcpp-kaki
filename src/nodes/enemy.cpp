@@ -1,6 +1,7 @@
 #include "enemy.h"
 
 #include "../core/enemy_database.h"
+#include "../utils/text.h"
 
 
 #include <cmath>
@@ -8,6 +9,7 @@
 
 #include <godot_cpp/classes/collision_shape2d.hpp>
 #include <godot_cpp/classes/color_rect.hpp>
+#include <godot_cpp/classes/node2d.hpp>
 #include <godot_cpp/classes/polygon2d.hpp>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
@@ -422,6 +424,14 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("get_show_hp_bar"), &Enemy::get_show_hp_bar);
 		ClassDB::bind_method(D_METHOD("get_is_soul_reaper"), &Enemy::get_is_soul_reaper);
 		ClassDB::bind_method(D_METHOD("get_preferred_distance"), &Enemy::get_preferred_distance);
+		ClassDB::bind_method(D_METHOD("set_elite_tier", "v"), &Enemy::set_elite_tier);
+		ClassDB::bind_method(D_METHOD("get_elite_tier"), &Enemy::get_elite_tier);
+		ClassDB::bind_method(D_METHOD("set_affix_id", "v"), &Enemy::set_affix_id);
+		ClassDB::bind_method(D_METHOD("get_affix_id"), &Enemy::get_affix_id);
+		ClassDB::bind_method(D_METHOD("make_elite", "tier", "affix"), &Enemy::make_elite);
+		ClassDB::bind_method(D_METHOD("make_elite_random", "tier"), &Enemy::make_elite_random);
+		ClassDB::bind_method(D_METHOD("get_elite_chance"), &Enemy::get_elite_chance);
+		ClassDB::bind_method(D_METHOD("get_defense"), &Enemy::get_defense);
 		ClassDB::bind_method(D_METHOD("set_realm", "v"), &Enemy::set_realm);
 		ClassDB::bind_method(D_METHOD("get_realm"), &Enemy::get_realm);
 		ClassDB::bind_method(D_METHOD("suppress", "t"), &Enemy::suppress);
@@ -444,6 +454,8 @@ namespace godot {
 		ADD_PROPERTY(PropertyInfo(Variant::STRING, "enemy_id"), "set_enemy_id", "get_enemy_id");
 		ADD_PROPERTY(PropertyInfo(Variant::STRING, "drop_table"), "set_drop_table", "get_drop_table");
 		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "preferred_distance"), "set_preferred_distance", "get_preferred_distance");
+		ADD_PROPERTY(PropertyInfo(Variant::INT, "elite_tier"), "set_elite_tier", "get_elite_tier");
+		ADD_PROPERTY(PropertyInfo(Variant::STRING, "affix_id"), "set_affix_id", "get_affix_id");
 
 		ADD_SIGNAL(MethodInfo("enemy_died"));
 		ADD_SIGNAL(MethodInfo("boss_died"));
@@ -492,6 +504,58 @@ namespace godot {
 		if (def->boss) {
 			set_is_boss(true);
 		}
+	}
+
+	void Enemy::make_elite(int p_tier, const String &p_affix) {
+		if (_elite_applied)
+			return; // 幂等：重复调用不叠加
+		if (p_tier <= 0 || is_boss)
+			return; // 普通化无效；Boss 拒绝精英化
+		_elite_applied = true;
+		elite_tier = p_tier > 2 ? 2 : p_tier;
+
+		const AffixDef *af = AffixDatabase::get_affix(p_affix);
+		affix_id = af ? p_affix : String();
+
+		// tier 基础倍率（首领更硬）× 词缀倍率
+		const float tier_hp = (elite_tier >= 2) ? 2.5f : 1.5f;
+		const float tier_atk = (elite_tier >= 2) ? 1.5f : 1.2f;
+		max_health *= tier_hp * (af ? af->hp_mult : 1.0f);
+		current_health *= tier_hp * (af ? af->hp_mult : 1.0f);
+		attack_damage *= tier_atk * (af ? af->atk_mult : 1.0f);
+		if (af) {
+			move_speed *= af->speed_mult;
+			detection_radius *= af->detect_mult;
+			defense += af->def_add;
+		}
+
+		// display_name 前缀：「精英·/首领·」+ 词缀名
+		String base = display_name.is_empty() ? String(get_name()) : display_name;
+		String prefix = (elite_tier >= 2) ? TXT("首领·") : TXT("精英·");
+		display_name = af ? (prefix + af->name + TXT(" ") + base) : (prefix + base);
+
+		// 视觉：本体染词缀色 + 放大（优先 sprite 子节点，无则自身 scale）
+		_elite_tint = af ? af->tint : Color(1.0f, 1.0f, 1.0f, 1.0f);
+		set_modulate(_elite_tint);
+		const float sc = (elite_tier >= 2) ? 1.3f : 1.15f;
+		Node2D *sprite = Object::cast_to<Node2D>(get_node_or_null("Polygon2D"));
+		if (sprite) {
+			sprite->set_scale(sprite->get_scale() * sc);
+		} else {
+			set_scale(get_scale() * sc);
+		}
+	}
+
+	void Enemy::make_elite_random(int p_tier) {
+		const AffixDef *af = AffixDatabase::random_affix();
+		make_elite(p_tier, af ? af->id : String());
+	}
+
+	float Enemy::get_elite_chance() const {
+		if (enemy_id.is_empty())
+			return 0.0f;
+		const EnemyDef *def = EnemyDatabase::get_def(enemy_id);
+		return def ? def->elite_chance : 0.0f;
 	}
 
 	void Enemy::_ready() {
@@ -555,7 +619,7 @@ namespace godot {
 			_suppress_t -= p_delta;
 			if (_suppress_t <= 0.0) {
 				_suppress_t = 0.0;
-				set_modulate(Color(1.0f, 1.0f, 1.0f, 1.0f)); // 复原
+				set_modulate(_elite_applied ? _elite_tint : Color(1.0f, 1.0f, 1.0f, 1.0f)); // 复原（精英回词缀色）
 			}
 			return; // 慑服期间不跑状态机 process（_physics_process 也跳过）
 		}
@@ -699,6 +763,10 @@ namespace godot {
 				bus->emit_signal("enemy_killed", this, p_source);
 				if (is_boss) {
 					bus->emit_signal("boss_died");
+				}
+				// 精英追加奖励掉落（幻境之敌 no_drops 不 emit）
+				if (elite_tier > 0 && !no_drops) {
+					bus->emit_signal("elite_killed", get_global_position(), elite_tier, realm);
 				}
 			}
 

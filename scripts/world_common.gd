@@ -290,7 +290,8 @@ static func spawn_enemy(root: Node, pos: Vector2, color: Color, speed: float, de
 
 # 按定义 id 生成（data/enemies.json + EnemyDatabase）：属性/颜色/尺寸/realm/掉落表全由定义接管。
 # 特殊标志（no_drops/show_hp_bar/is_soul_reaper）与 boss_died 连接、精灵缩放仍由调用点负责。
-static func spawn_enemy_by_id(root: Node, pos: Vector2, enemy_id: String, ename := "") -> Node:
+# elite_tier/affix：显式精英化（0=普通）；未显式时按定义 elite_chance 自动掷词缀精英。
+static func spawn_enemy_by_id(root: Node, pos: Vector2, enemy_id: String, ename := "", elite_tier := 0, affix := "") -> Node:
 	var enemy = ClassDB.instantiate("Enemy")
 	if not enemy: return null
 	if ename != "":
@@ -305,6 +306,13 @@ static func spawn_enemy_by_id(root: Node, pos: Vector2, enemy_id: String, ename 
 	make_sprite(enemy, enemy.call("get_def_color"), enemy.call("get_def_size"))
 	enemy.connect("enemy_died", Callable(_wc(), "_on_enemy_died"))
 	root.add_child(enemy)
+	# 精英化在入树后（sprite/HitBox 齐备，make_elite 视觉缩放找得到 Polygon2D）
+	if elite_tier > 0:
+		enemy.call("make_elite", elite_tier, affix)
+	else:
+		var chance := float(enemy.call("get_elite_chance"))
+		if chance > 0.0 and randf() < chance:
+			enemy.call("make_elite_random", 1)
 	return enemy
 
 static func _on_enemy_died() -> void:
