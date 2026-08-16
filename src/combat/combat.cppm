@@ -238,6 +238,17 @@ public:
 		float passive_value;
 	};
 
+	// 连招派生定义（数据驱动，data/skills.json 技能条目 combo_* 字段）：
+	// 施放 after_id 后 window 秒内施放 skill_id → 该次施放伤害 ×mult（只乘 power 出口，
+	// 武技=物理/法术=元素都走既有结算入口）。一个技能多个前置 = 多条记录。
+	struct ComboDef {
+		const char *skill_id; // 被强化的技能（本次施放）
+		const char *after_id; // 前置技能
+		float window;         // 连招窗口（秒，默认 3.0）
+		float mult;           // 伤害倍率
+		const char *text;     // 触发提示语（nullptr = 默认话术）
+	};
+
 	float get_passive_atk_mult() const { return 1.0f + _passive_sum(PAS_ATK); }
 	float get_passive_spd_mult() const { return 1.0f + _passive_sum(PAS_SPD); }
 	float get_passive_def_mult() const { return 1.0f + _passive_sum(PAS_DEF); }
@@ -277,6 +288,10 @@ public:
 	Dictionary get_slot_info(int p_slot) const;
 	Array get_known_list() const;
 
+	// 连招派生查询（测试/调试/UI）
+	Array get_combo_list() const;                                 // 全连招表（Dictionary 数组）
+	float get_last_combo_mult() const { return _last_combo_mult; } // 上次施放实际应用的连招倍率（1.0=未触发）
+
 	Dictionary save_to_dict() const;
 	void load_from_dict(const Dictionary &p_data);
 
@@ -290,9 +305,18 @@ private:
 	StringName _slots[SLOT_COUNT];
 	HashMap<StringName, double> _cooldown_until;
 
+	// 连招派生运行时状态：上次成功施放的主动技 + 时间戳
+	StringName _last_cast_id;
+	double _last_cast_time = -1e9;
+	float _last_combo_mult = 1.0f;
+
 	double _now() const;
-	void _execute(const Def *p_def);
+	void _execute(const Def *p_def, float p_power_mult);
+	const ComboDef *_match_combo(const StringName &p_id, double p_now) const;
+	void _show_combo_hint(const char *p_text);
+	void _on_combo_hint_timeout();
 	static std::vector<Def> s_defs;
+	static std::vector<ComboDef> s_combos;
 	static bool s_defs_loaded;
 };
 
