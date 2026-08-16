@@ -10,6 +10,7 @@ module;
 #include <godot_cpp/classes/capsule_shape2d.hpp>
 #include <godot_cpp/classes/collision_shape2d.hpp>
 #include <godot_cpp/classes/color_rect.hpp>
+#include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/input.hpp>
 #include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/marker2d.hpp>
@@ -99,6 +100,32 @@ namespace godot {
 
 	BreakthroughManager::EventDef BreakthroughManager::_event_for_realm(int p_realm) const {
 		using CS = CultivationSystem;
+		// JSON 优先：data/events.json 经 DataLoader 启动缓存（realm → kind/name/waves/intro/outro，
+		// kind 0=叙事 1=战斗秘境（心魔劫/三尸劫） 2=三灾渡劫）；缺失再走下方硬编码兜底。
+		{
+			SceneTree *st = Object::cast_to<SceneTree>(Engine::get_singleton()->get_main_loop());
+			Node *scene = st ? st->get_current_scene() : nullptr;
+			DataLoader *dl = scene ? Object::cast_to<DataLoader>(scene->find_child("DataLoader", true, false)) : nullptr;
+			Dictionary d = dl ? dl->get_event(p_realm) : Dictionary();
+			if (!d.is_empty()) {
+				EventDef def;
+				switch (int(d.get("kind", 0))) {
+					case 1: def.kind = EventKind::COMBAT; break;
+					case 2: def.kind = EventKind::TRIBULATION; break;
+					default: def.kind = EventKind::NARRATIVE; break;
+				}
+				def.name = d.get("name", String());
+				def.waves = int(d.get("waves", 0));
+				Array intro = d.get("intro", Array());
+				for (int i = 0; i < intro.size(); i++)
+					def.intro_lines.push_back(String(intro[i]));
+				Array outro = d.get("outro", Array());
+				for (int i = 0; i < outro.size(); i++)
+					def.outro_lines.push_back(String(outro[i]));
+				return def;
+			}
+		}
+		// ---- 硬编码兜底（JSON 不可用时，与 events.json 同映射）----
 		EventDef def;
 		switch (p_realm) {
 			case CS::MORTAL:
@@ -373,6 +400,11 @@ namespace godot {
 				cs->set_realm(CultivationSystem::DA_CHENG);
 		}
 
+		// 战斗秘境（心魔劫/三尸劫）战败惩罚：道心不稳——攻-5% 防-5% 300s
+		// （叙事事件与三灾失败不罚；境界不变、经验保持封顶照旧）
+		if (_def.kind == EventKind::COMBAT && p && p->get_buffs())
+			p->get_buffs()->apply(StringName("buff_dao_xin_bu_wen"));
+
 		// 世界暂停归 GameManager 重生流程所有，此处不解除
 		_hide_overlay(false);
 		_restore_player_from_arena(false); // 位置交由重生设置
@@ -487,6 +519,17 @@ namespace godot {
 		e->set_name(ename);
 		e->no_drops = true; // 心魔幻境之物，不入掉落
 		e->show_hp_bar = true; // 头顶血条
+
+		// 心魔镜像：显示名 = 心魔·<玩家当前称号>（取不到称号退「心魔」）；
+		// 本体颜色取玩家角色视觉颜色（找不到保持默认剪影色）。
+		// 节点名保留 心魔/恶念/执念/贪欲（测试检索与波次识别用），显示名走 display_name。
+		{
+			String title = cs->get_full_title();
+			e->set_display_name(title.is_empty() ? LOC("心魔") : (LOC("心魔·") + title));
+			Polygon2D *pvis = Object::cast_to<Polygon2D>(p->get_node_or_null("Polygon2D"));
+			if (pvis)
+				tint = pvis->get_color();
+		}
 
 		// 属性随玩家境界缩放：敌即己身
 		float hp_factor = 1.0f + 0.15f * p_wave_idx;
