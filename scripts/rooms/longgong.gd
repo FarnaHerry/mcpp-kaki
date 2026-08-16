@@ -19,21 +19,14 @@ func _ready():
 
 	# 虾兵×2（左右近战）
 	for i in range(2):
-		var xia = WC.spawn_enemy(self, Vector2(185 + i * 55, 210), Color(0.4, 0.7, 0.95, 1), 90.0, 320.0, "XiaBing%d" % i)
-		xia.set("max_health", 200.0); xia.set("current_health", 200.0)
-		xia.set("attack_damage", 50.0); xia.set("attack_cooldown", 1.1); xia.set("realm", 5)
+		WC.spawn_enemy_by_id(self, Vector2(185 + i * 55, 210), "xia_bing", "XiaBing%d" % i)
 
 	# 蟹将精英（血厚攻高慢速）
-	var xie = WC.spawn_enemy(self, Vector2(285, 205), Color(0.9, 0.55, 0.35, 1), 45.0, 420.0, "XieJiang")
-	xie.set("max_health", 450.0); xie.set("current_health", 450.0)
-	xie.set("attack_damage", 65.0); xie.set("attack_cooldown", 1.8); xie.set("realm", 6)
+	var xie = WC.spawn_enemy_by_id(self, Vector2(285, 205), "xie_jiang", "XieJiang")
 	xie.get_node("Polygon2D").scale = Vector2(1.3, 1.3)
 
-	# 镇守将（Boss 守关：秘藏台前；显式 HP 覆盖 ×5 补偿，beijulu 同款写法）
-	var boss = WC.spawn_enemy(self, Vector2(345, 200), Color(0.15, 0.5, 0.75, 1), 60.0, 480.0, "LongGongZhenShou")
-	boss.set("is_boss", true)
-	boss.set("max_health", 800.0); boss.set("current_health", 800.0)
-	boss.set("attack_damage", 75.0); boss.set("attack_cooldown", 1.2); boss.set("realm", 7)
+	# 镇守将（Boss 守关：秘藏台前；def 基础 160 ×5 = 800）
+	var boss = WC.spawn_enemy_by_id(self, Vector2(345, 200), "zhen_shou_jiang", "LongGongZhenShou")
 	boss.get_node("Polygon2D").scale = Vector2(1.5, 1.5)
 
 	# 秘藏（镇守将之后）：避水珠 + 千年珍珠 + 高阶灵石

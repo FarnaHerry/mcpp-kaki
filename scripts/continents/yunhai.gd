@@ -71,10 +71,7 @@ func _setup():
 
 	# 雷鸟（飞行巡曳；平衡：HP 5→15，金丹玩家 2 击）
 	for i in range(3):
-		var bird = WC.spawn_enemy(self, Vector2(800 + i * 600, 110 + i * 10), Color(0.6, 0.6, 0.95, 1), 115.0, 320.0, "LeiNiao%d" % i)
-		bird.set("is_flying", true)
-		bird.set("max_health", 15.0); bird.set("current_health", 15.0); bird.set("realm", 3)
-		bird.set("attack_damage", 12.0)
+		WC.spawn_enemy_by_id(self, Vector2(800 + i * 600, 110 + i * 10), "lei_niao", "LeiNiao%d" % i)
 
 	# 登岸区
 	var arrive = Area2D.new()

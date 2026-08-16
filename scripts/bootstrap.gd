@@ -26,41 +26,15 @@ func _setup_game():
 	WC.spawn_item_pickup(self, Vector2(470, 232), "dry_ration", 2)
 	WC.create_portal(self, 1000, "res://scenes/rooms/cave.tscn", "[↑] Enter Cave", player, camera, hint)
 
-	# ---- Enemies (variety: melee, archer, flyer, boss) ----
-	WC.spawn_enemy(self, Vector2(350, 200), Color(0.9, 0.2, 0.2, 1), 60.0, 200.0).set("realm", 0)
-	var e2 = WC.spawn_enemy(self, Vector2(500, 200), Color(0.9, 0.3, 0.1, 1), 55.0, 200.0)
-	e2.set("max_health", 2.0); e2.set("current_health", 2.0); e2.set("realm", 0)
-	var archer = WC.spawn_enemy(self, Vector2(750, 200), Color(0.2, 0.8, 0.2, 1), 80.0, 380.0)
-	archer.set("is_ranged", true)
-	archer.set("attack_range", 300.0)
-	archer.set("preferred_distance", 200.0)
-	archer.set("attack_damage", 8.0)
-	archer.set("attack_cooldown", 1.5)
-	archer.set("realm", 1)
-	var flyer = WC.spawn_enemy(self, Vector2(650, 150), Color(0.7, 0.3, 1.0, 1), 100.0, 300.0)
-	flyer.set("is_flying", true)
-	flyer.set("attack_range", 50.0)
-	flyer.set("attack_damage", 12.0)
-	flyer.set("realm", 1)
-	WC.spawn_enemy(self, Vector2(950, 200), Color(0.9, 0.2, 0.2, 1), 65.0, 200.0).set("realm", 0)
-	var archer2 = WC.spawn_enemy(self, Vector2(1050, 200), Color(0.2, 0.8, 0.2, 1), 70.0, 350.0)
-	archer2.set("is_ranged", true)
-	archer2.set("attack_range", 280.0)
-	archer2.set("preferred_distance", 180.0)
-	archer2.set("attack_damage", 10.0)
-	archer2.set("attack_cooldown", 1.3)
-	archer2.set("realm", 1)
-	# BOSS — 赤瞳魔狼（落霞村外围守关）
-	var boss = WC.spawn_enemy(self, Vector2(1200, 195), Color(1.0, 0.1, 0.1, 1), 40.0, 500.0)
-	boss.set("is_boss", true)
-	boss.set("display_name", "赤瞳魔狼")
-	boss.set("realm", 2)
-	# 属性注册后才真正生效；_ready 的 ×5 已过（add_child 时 is_boss 还是 false），
-	# 这里直接给最终值。平衡（session 011）：15→150，凡人攻10 → ~15击 20~30s 守关战
-	boss.set("max_health", 150.0); boss.set("current_health", 150.0)
-	boss.set("attack_damage", 20.0)
-	boss.set("attack_cooldown", 1.2)
-	boss.set("detection_radius", 500.0)
+	# ---- Enemies (variety: melee, archer, flyer, boss)——定义见 data/enemies.json ----
+	WC.spawn_enemy_by_id(self, Vector2(350, 200), "shan_xiao")
+	WC.spawn_enemy_by_id(self, Vector2(500, 200), "huo_xiao")
+	WC.spawn_enemy_by_id(self, Vector2(750, 200), "qing_yi_gong_shou")
+	WC.spawn_enemy_by_id(self, Vector2(650, 150), "zi_fu")
+	WC.spawn_enemy_by_id(self, Vector2(950, 200), "chi_xiao")
+	WC.spawn_enemy_by_id(self, Vector2(1050, 200), "lu_lin_gong_shou")
+	# BOSS — 赤瞳魔狼（落霞村外围守关；平衡 session 011：15→150 血，凡人攻10 → ~15击 20~30s）
+	var boss = WC.spawn_enemy_by_id(self, Vector2(1200, 195), "chi_tong_mo_lang")
 	boss.get_node("Polygon2D").scale = Vector2(1.5, 1.5)
 	boss.connect("boss_died", Callable(WC, "on_boss_died"))
 
@@ -96,15 +70,10 @@ func _setup_game():
 	WC.make_platform(self, 2300, 104, 90)
 	WC.spawn_herb(self, Vector2(1700, 108), "bing_xin_lian", 1)
 	WC.spawn_herb(self, Vector2(2300, 98), "bing_xin_lian", 1)
-	var z1 = WC.spawn_enemy(self, Vector2(1500, 210), Color(0.3, 0.7, 0.3, 1), 70.0, 220.0, "ZhuYao1")
-	z1.set("max_health", 4.0); z1.set("current_health", 4.0); z1.set("realm", 0)
-	var z2 = WC.spawn_enemy(self, Vector2(1850, 210), Color(0.3, 0.7, 0.3, 1), 70.0, 220.0, "ZhuYao2")
-	z2.set("max_health", 4.0); z2.set("current_health", 4.0); z2.set("realm", 0)
-	var z3 = WC.spawn_enemy(self, Vector2(2200, 210), Color(0.35, 0.75, 0.35, 1), 75.0, 240.0, "ZhuYao3")
-	z3.set("max_health", 5.0); z3.set("current_health", 5.0); z3.set("realm", 0)
-	var owl1 = WC.spawn_enemy(self, Vector2(1650, 100), Color(0.6, 0.5, 0.9, 1), 110.0, 320.0, "YaXiao1")
-	owl1.set("is_flying", true)
-	owl1.set("max_health", 3.0); owl1.set("current_health", 3.0); owl1.set("realm", 1)
+	WC.spawn_enemy_by_id(self, Vector2(1500, 210), "zhu_yao", "ZhuYao1")
+	WC.spawn_enemy_by_id(self, Vector2(1850, 210), "zhu_yao", "ZhuYao2")
+	WC.spawn_enemy_by_id(self, Vector2(2200, 210), "cui_zhu_yao", "ZhuYao3")
+	WC.spawn_enemy_by_id(self, Vector2(1650, 100), "ya_xiao", "YaXiao1")
 	WC.create_checkpoint(self, 1320)
 
 	# ---- 断崖绝壁 (2600~3900)：墙跳门控（交错高墙+墙顶落脚台）----
@@ -116,16 +85,10 @@ func _setup_game():
 	WC.make_platform(self, 3200, 150, 70)
 	WC.spawn_herb(self, Vector2(2650, 118), "jin_gang_teng", 1)
 	WC.spawn_herb(self, Vector2(2750, 78), "jin_gang_teng", 1)
-	var ya1 = WC.spawn_enemy(self, Vector2(2900, 172), Color(0.5, 0.5, 0.2, 1), 60.0, 350.0, "YaGong1")
-	ya1.set("is_ranged", true); ya1.set("attack_range", 280.0); ya1.set("preferred_distance", 180.0)
-	ya1.set("attack_damage", 10.0); ya1.set("realm", 1)
-	var ya2 = WC.spawn_enemy(self, Vector2(3200, 142), Color(0.5, 0.5, 0.2, 1), 60.0, 350.0, "YaGong2")
-	ya2.set("is_ranged", true); ya2.set("attack_range", 280.0); ya2.set("preferred_distance", 180.0)
-	ya2.set("attack_damage", 10.0); ya2.set("realm", 1)
-	var r1 = WC.spawn_enemy(self, Vector2(3000, 210), Color(0.6, 0.3, 0.2, 1), 80.0, 240.0, "YanGui1")
-	r1.set("max_health", 5.0); r1.set("current_health", 5.0); r1.set("realm", 1)
-	var r2 = WC.spawn_enemy(self, Vector2(3400, 210), Color(0.6, 0.3, 0.2, 1), 80.0, 240.0, "YanGui2")
-	r2.set("max_health", 5.0); r2.set("current_health", 5.0); r2.set("realm", 1)
+	WC.spawn_enemy_by_id(self, Vector2(2900, 172), "ya_gong", "YaGong1")
+	WC.spawn_enemy_by_id(self, Vector2(3200, 142), "ya_gong", "YaGong2")
+	WC.spawn_enemy_by_id(self, Vector2(3000, 210), "yan_gui", "YanGui1")
+	WC.spawn_enemy_by_id(self, Vector2(3400, 210), "yan_gui", "YanGui2")
 	WC.create_checkpoint(self, 2820)
 
 	# ---- 幽谷 (3900~5200)：飞行门控大沟壑（3900~4400，谷底 y=420）----
@@ -139,30 +102,18 @@ func _setup_game():
 	WC.spawn_herb(self, Vector2(4050, 414), "chi_yan_hua", 2)
 	WC.spawn_herb(self, Vector2(4300, 414), "chi_yan_hua", 1)
 	for i in range(3):
-		var fy = WC.spawn_enemy(self, Vector2(4020 + i * 160, 150 + i * 20), Color(0.6, 0.5, 0.9, 1), 110.0, 340.0, "GuXiao%d" % i)
-		fy.set("is_flying", true)
-		fy.set("max_health", 3.0); fy.set("current_health", 3.0); fy.set("realm", 1)
+		WC.spawn_enemy_by_id(self, Vector2(4020 + i * 160, 150 + i * 20), "gu_xiao", "GuXiao%d" % i)
 	WC.make_ground(self, 4400, 9000, 238)
 	WC.make_wall(self, 9000, 40, 270) # 世界尽头（东海尽头；扩展时后移）
-	var lei = WC.spawn_enemy(self, Vector2(4600, 210), Color(0.7, 0.4, 0.9, 1), 90.0, 380.0, "LeiShou")
-	lei.set("is_ranged", true); lei.set("attack_range", 280.0); lei.set("preferred_distance", 180.0)
-	lei.set("attack_damage", 14.0); lei.set("attack_cooldown", 1.2)
-	lei.set("max_health", 8.0); lei.set("current_health", 8.0); lei.set("realm", 2)
-	var g1 = WC.spawn_enemy(self, Vector2(4800, 210), Color(0.5, 0.3, 0.3, 1), 85.0, 240.0, "GuTu1")
-	g1.set("max_health", 6.0); g1.set("current_health", 6.0); g1.set("realm", 1)
+	WC.spawn_enemy_by_id(self, Vector2(4600, 210), "lei_shou", "LeiShou")
+	WC.spawn_enemy_by_id(self, Vector2(4800, 210), "gu_tu", "GuTu1")
 	WC.create_checkpoint(self, 4450)
 	WC.spawn_herb(self, Vector2(5000, 232), "ju_ling_cao", 2)
 
 	# ---- 谷深处 (5200~6000)：BOSS 幽谷螭龙 + 悟道崖（飞行高台）----
 	WC.create_checkpoint(self, 5250)
-	var chi = WC.spawn_enemy(self, Vector2(5500, 195), Color(0.2, 0.6, 0.6, 1), 45.0, 450.0, "Boss_ChiLong")
-	chi.set("is_boss", true)
-	chi.set("display_name", "幽谷螭龙")
-	chi.set("realm", 4)
-	# 平衡（session 011）：30→300，筑基攻17 → ~18击 25~40s
-	chi.set("max_health", 300.0); chi.set("current_health", 300.0)
-	chi.set("attack_damage", 24.0)
-	chi.set("attack_cooldown", 1.1)
+	# 平衡（session 011）：30→300 血（def 基础 60 ×5），筑基攻17 → ~18击 25~40s
+	var chi = WC.spawn_enemy_by_id(self, Vector2(5500, 195), "you_gu_chi_long", "Boss_ChiLong")
 	chi.get_node("Polygon2D").scale = Vector2(1.8, 1.8)
 	chi.connect("boss_died", Callable(WC, "on_boss_died"))
 	# 悟道崖：y=90 高台（跳跃/墙跳不可达，飞行门控）
@@ -189,9 +140,7 @@ func _setup_game():
 	WC.spawn_herb(self, Vector2(7200, 164), "wu_dao_cha", 1)
 	# 猿怪：桃林泼猴（近战，轻捷；平衡：HP 5→25，筑基+玩家 2 击）
 	for i in range(3):
-		var yuan = WC.spawn_enemy(self, Vector2(6400 + i * 500, 210), Color(0.75, 0.55, 0.35, 1), 95.0, 260.0, "YuanGuai%d" % i)
-		yuan.set("max_health", 25.0); yuan.set("current_health", 25.0)
-		yuan.set("attack_damage", 12.0); yuan.set("realm", 1)
+		WC.spawn_enemy_by_id(self, Vector2(6400 + i * 500, 210), "yuan_guai", "YuanGuai%d" % i)
 	# 水帘洞秘境入口（复用 Portal 房间模式；洞内另有乾坤）
 	WC.create_portal(self, 7000, "res://scenes/rooms/shuilian_dong.tscn", "[↑] 入水帘洞", player, camera, hint)
 
@@ -204,10 +153,7 @@ func _setup_game():
 	WC.make_platform(self, 8750, 100, 90, false) # 神针礁石：非单向，跳台尽头
 	# 巡海夜叉（精英：远程钢叉，厚血；平衡：HP 14→40，金丹玩家 2 击）
 	for i in range(2):
-		var yecha = WC.spawn_enemy(self, Vector2(8300 + i * 350, 210), Color(0.2, 0.45, 0.7, 1), 80.0, 380.0, "XunHaiYeCha%d" % i)
-		yecha.set("is_ranged", true); yecha.set("attack_range", 300.0); yecha.set("preferred_distance", 190.0)
-		yecha.set("attack_damage", 16.0); yecha.set("attack_cooldown", 1.4); yecha.set("realm", 3)
-		yecha.set("max_health", 40.0); yecha.set("current_health", 40.0)
+		WC.spawn_enemy_by_id(self, Vector2(8300 + i * 350, 210), "xun_hai_ye_cha", "XunHaiYeCha%d" % i)
 	# 定海神针铁：沉于礁石之上，静待有缘
 	WC.spawn_item_pickup(self, Vector2(8750, 94), "ding_hai_shen_zhen", 1)
 	WC.spawn_herb(self, Vector2(8550, 129), "bing_xin_lian", 1)
