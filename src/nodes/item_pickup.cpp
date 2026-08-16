@@ -3,6 +3,7 @@
 
 
 #include <godot_cpp/classes/collision_shape2d.hpp>
+#include <godot_cpp/classes/control.hpp>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/polygon2d.hpp>
@@ -22,6 +23,13 @@ static constexpr float MAGNET_MAX_SPEED_BASE = 150.0f;
 
 static float _magnet_mult(int p_realm) {
 	return 1.0f + float(p_realm) * 0.3f; // 炼气 1.3x → 天尊 4.6x
+}
+
+void ItemPickup::set_item_id(const StringName &p_id) {
+	_item_id = p_id;
+	// 若节点已就绪（add_child 后再改 item_id），幂等重建视觉件
+	if (is_node_ready() && !Engine::get_singleton()->is_editor_hint())
+		_create_visual();
 }
 
 void ItemPickup::_bind_methods() {
@@ -110,6 +118,15 @@ void ItemPickup::_physics_process(double p_delta) {
 
 void ItemPickup::_create_visual() {
 	const Item *def = ItemDatabase::get_singleton()->get_item(_item_id);
+	const int grade = def ? def->grade : 0;
+
+	// 幂等重建：清掉旧视觉件（item_id 变更时）
+	for (const char *n : { "PickupVisual", "GradeBeam" }) {
+		if (Node *old = find_child(n, false, false)) {
+			remove_child(old);
+			memdelete(old);
+		}
+	}
 
 	// Color by item type
 	Color pick_color;
@@ -136,6 +153,22 @@ void ItemPickup::_create_visual() {
 	diamond.append(Vector2(-6, 0));
 	visual->set_polygon(diamond);
 	add_child(visual);
+
+	// 品级视觉（grade>0）：本体染品级色 + 细光柱（底部对齐拾取物）；凡品保持干净
+	if (grade > 0) {
+		const Color gc = grade_color(grade);
+		visual->set_modulate(gc);
+
+		ColorRect *beam = memnew(ColorRect);
+		beam->set_name("GradeBeam");
+		beam->set_position(Vector2(-1.5f, -24.0f));
+		beam->set_size(Vector2(3.0f, 32.0f)); // 底缘 y=+8，对齐菱形下端
+		Color bc = gc;
+		bc.a = 0.55f;
+		beam->set_color(bc);
+		beam->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);
+		add_child(beam);
+	}
 }
 
 void ItemPickup::_on_body_entered(Node2D *p_body) {

@@ -144,17 +144,10 @@ void InventoryPanel::refresh(const String &p_item_id, int p_qty) {
 			txt += " ×" + String::num_int64(qty);
 		cell["text"] = txt;
 
-		// 类型色（与 ItemPickup 视觉同口径）：消耗品红/材料蓝/装备青/关键物品金
-		Color c = Color(0.85f, 0.85f, 0.85f, 1.0f);
-		if (def) {
-			switch (def->type) {
-				case Item::CONSUMABLE: c = Color(1.0f, 0.55f, 0.5f, 1.0f); break;
-				case Item::MATERIAL:   c = Color(0.5f, 0.75f, 1.0f, 1.0f); break;
-				case Item::EQUIPMENT:  c = Color(0.55f, 0.95f, 0.85f, 1.0f); break;
-				case Item::KEY_ITEM:   c = Color(1.0f, 0.85f, 0.4f, 1.0f); break;
-			}
-		}
-		cell["color"] = c;
+		// 品级色（0凡白/1灵蓝/2地紫/3天金/4仙青，与 ItemPickup 光柱同口径 grade_color）
+		// 名字染品级色 + 格子底色品级淡染（凡品透明=保持默认底）
+		cell["color"] = grade_color(def ? def->grade : 0);
+		cell["bg_color"] = grade_bg_color(def ? def->grade : 0);
 		items.push_back(cell);
 		_slot_map.push_back(slot_idx);
 		displayed++;

@@ -173,11 +173,13 @@ void GridList::refresh() {
 		Dictionary d = _items[idx];
 		String text = d.get("text", String());
 		Color color = d.get("color", Color(0.85f, 0.85f, 0.85f, 1.0f));
+		Color bg_custom = d.get("bg_color", Color(0.0f, 0.0f, 0.0f, 0.0f)); // alpha=0 = 无自定义底色
 		bool dim = bool(d.get("dim", false));
 
 		bool selected = _active && idx == _selected;
 		c.frame->set_color(selected ? FRAME_SEL : FRAME_IDLE);
-		c.bg->set_color(selected ? BG_SEL : BG_IDLE);
+		// 选中高亮优先（金框+选中底）；未选中有自定义底色（如品级淡染）则用之，否则默认底
+		c.bg->set_color(selected ? BG_SEL : (bg_custom.a > 0.0f ? bg_custom : BG_IDLE));
 		c.label->set_text(text);
 		if (dim)
 			c.label->add_theme_color_override("font_color", TEXT_DIM);

@@ -167,6 +167,8 @@ void StoragePanel::_refresh() {
 				if (qty > 1)
 					txt += " ×" + String::num_int64(qty);
 				cell["text"] = txt;
+				cell["color"] = grade_color(def ? def->grade : 0);
+				cell["bg_color"] = grade_bg_color(def ? def->grade : 0);
 			} else {
 				Dictionary s = mgr->get_storage_slot(_slots[1][li]);
 				String txt = LOC(String(s.get("name", "")));
@@ -174,6 +176,9 @@ void StoragePanel::_refresh() {
 				if (qty > 1)
 					txt += " ×" + String::num_int64(qty);
 				cell["text"] = txt;
+				const Item *sdef = db ? db->get_item(StringName(s.get("id", StringName()))) : nullptr;
+				cell["color"] = grade_color(sdef ? sdef->grade : 0);
+				cell["bg_color"] = grade_bg_color(sdef ? sdef->grade : 0);
 			}
 			items.push_back(cell);
 		}

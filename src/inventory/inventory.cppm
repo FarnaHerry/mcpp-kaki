@@ -6,12 +6,32 @@ module;
 #include <godot-cpp-m/macros.h>
 #include <godot_cpp/templates/hash_map.hpp> // HashMap 不被模块重导出，保持文本包含
 #include <godot_cpp/templates/vector.hpp>
+#include <godot_cpp/variant/color.hpp>
 
 export module mcpp_kaki.inventory;
 
 import godot_cpp;
 
 namespace godot {
+
+// 品级色（全项目统一约定）：0凡=白 1灵=蓝 2地=紫 3天=金 4仙=仙青
+// ItemPickup 光柱/本体染色、背包/仓库/商店格子染色共用此一口径
+export inline Color grade_color(int p_grade) {
+	switch (p_grade) {
+		case 1:  return Color(0.35f, 0.65f, 1.00f); // 灵·蓝
+		case 2:  return Color(0.75f, 0.40f, 0.95f); // 地·紫
+		case 3:  return Color(1.00f, 0.80f, 0.25f); // 天·金
+		case 4:  return Color(0.55f, 1.00f, 0.80f); // 仙·仙青
+		default: return Color(0.85f, 0.85f, 0.85f); // 凡·白
+	}
+}
+
+// 品级格子底色（GridList 条目 bg_color 用：淡染 alpha=0.30 保证名字可读；凡品透明=保持默认底）
+export inline Color grade_bg_color(int p_grade) {
+	Color c = grade_color(p_grade);
+	c.a = (p_grade > 0) ? 0.30f : 0.0f;
+	return c;
+}
 
 // Data-only item definition. Items are registered in ItemDatabase.
 // This is a plain struct, not a Godot class — no _bind_methods needed.
@@ -47,7 +67,7 @@ export struct Item {
 	StringName learn_skill;     // 使用后习得技能（SkillSystem def id，秘籍/残卷类）
 	StringName learn_artifact;  // 使用后获得法宝（ArtifactSystem id，法宝残篇类）
 	int currency_tier = -1;     // 灵石档位：-1=普通物；0下品 1中品 2上品 3极品（拾取直入钱包不进背包）
-	int grade = 0;              // 品级：0凡 1灵 2地 3天
+	int grade = 0;              // 品级：0凡 1灵 2地 3天 4仙
 	int buy_price = 0;          // 商店买价（玩家付灵石；0=商店不售）
 	int sell_price = 0;         // 商店卖价（玩家得灵石；0=不可卖）
 	float breakthrough_bonus = 0.0f; // 机缘突破事件的加成（事件系统实现后生效）
