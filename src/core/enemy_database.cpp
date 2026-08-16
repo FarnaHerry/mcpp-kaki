@@ -40,7 +40,7 @@ static EnemyDef _mk(const char *p_id, const char *p_name, float p_hp, float p_at
 }
 
 void EnemyDatabase::_load_hardcoded() {
-	s_defs.reserve(48);
+	s_defs.reserve(64);
 	// ===== 东胜神洲·落霞山地（bootstrap.gd）=====
 	s_defs.push_back(_mk("shan_xiao", "山魈", 1, 10, 60, 200, 35, 0.8f, 0, 0, false, false, false, 0.9f, 0.2f, 0.2f, ""));
 	s_defs.push_back(_mk("huo_xiao", "火魈", 2, 10, 55, 200, 35, 0.8f, 0, 0, false, false, false, 0.9f, 0.3f, 0.1f, ""));
@@ -112,6 +112,10 @@ void EnemyDatabase::_load_hardcoded() {
 	s_defs.push_back(_mk("bing_shi", "冰尸", 280, 40, 55, 240, 35, 0.9f, 0, 8, false, false, false, 0.5f, 0.65f, 0.7f, ""));
 	s_defs.push_back(_mk("han_chi", "寒螭", 240, 36, 100, 330, 35, 0.8f, 0, 8, false, true, false, 0.55f, 0.8f, 0.9f, ""));
 	s_defs.push_back(_mk("wan_nian_bing_po", "万年冰魄", 400, 55, 60, 450, 42, 0.9f, 0, 9, false, false, true, 0.75f, 0.9f, 1.0f, "huang_gu_bing_mu"));
+
+	// ===== 洞天「灵兽闯阵」入侵怪（realm 生成时按玩家-1 覆盖；掉落走命名表）=====
+	s_defs.push_back(_mk("qie_ling_shu", "窃灵鼠", 15, 8, 135, 280, 30, 0.7f, 0, 0, false, false, false, 0.6f, 0.5f, 0.35f, "qie_ling_shu"));
+	s_defs.push_back(_mk("tan_ling_feng", "贪灵蜂", 10, 10, 120, 340, 35, 0.8f, 0, 0, false, true, false, 0.95f, 0.8f, 0.2f, "tan_ling_feng"));
 }
 
 static EnemyDef *_find_def(std::vector<EnemyDef> &p_defs, const String &p_id) {

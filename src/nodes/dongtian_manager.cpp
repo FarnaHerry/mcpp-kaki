@@ -4,6 +4,7 @@
 #include "player.h"
 #include "../core/currency_system.h"
 
+#include <godot_cpp/classes/display_server.hpp>
 #include <godot_cpp/classes/input.hpp>
 #include <godot_cpp/classes/marker2d.hpp>
 #include <godot_cpp/classes/packed_scene.hpp>
@@ -13,6 +14,7 @@
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/core/math.hpp>
 #include <godot_cpp/variant/array.hpp>
+#include <godot_cpp/variant/utility_functions.hpp>
 
 import mcpp_kaki.cultivation; // BreakthroughManager / AbilityManager / GongfaSystem
 import mcpp_kaki.inventory;   // ItemDatabase / Inventory
@@ -29,6 +31,8 @@ namespace godot {
     static const HerbSpotDef HERB_SPOT_DEFS[DongtianManager::HERB_SPOTS] = {
         { "ju_ling_cao", 2, 120 },        // 聚灵草（灵品，2 分钟复生）
         { "qian_nian_ling_zhi", 1, 600 }, // 千年灵芝（地品，10 分钟复生）
+        { "bing_xin_lian", 1, 300 },      // 冰心莲（地品，5 分钟复生）
+        { "chi_yan_hua", 1, 300 },        // 赤焰花（地品，5 分钟复生）
     };
 
     DongtianManager::DongtianManager() {
@@ -62,9 +66,23 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("get_herb_spot", "index"), &DongtianManager::get_herb_spot);
         ClassDB::bind_method(D_METHOD("gather_herb_spot", "index"), &DongtianManager::gather_herb_spot);
         ClassDB::bind_method(D_METHOD("debug_age_herb_spot", "index", "seconds"), &DongtianManager::debug_age_herb_spot);
+        ClassDB::bind_method(D_METHOD("is_invasion_active"), &DongtianManager::is_invasion_active);
+        ClassDB::bind_method(D_METHOD("get_invaders_left"), &DongtianManager::get_invaders_left);
+        ClassDB::bind_method(D_METHOD("debug_force_invasion"), &DongtianManager::debug_force_invasion);
+        ClassDB::bind_method(D_METHOD("debug_suppress_invasion"), &DongtianManager::debug_suppress_invasion);
+        ClassDB::bind_method(D_METHOD("_on_invader_killed", "enemy", "killer"), &DongtianManager::_on_invader_killed);
     }
 
     void DongtianManager::_process(double p_delta) {
+        // enemy_killed 惰性连接（构造时 SignalBus 未必就绪；连接过一次即止）
+        if (!_bus_connected) {
+            SignalBus *bus = SignalBus::get_singleton();
+            if (bus) {
+                bus->connect("enemy_killed", Callable(this, "_on_invader_killed"));
+                _bus_connected = true;
+            }
+        }
+
         // 原因提示自动消隐
         if (_hint_t > 0.0f) {
             _hint_t -= float(p_delta);
@@ -184,6 +202,8 @@ namespace godot {
         _inside = true;
         SignalBus *bus = SignalBus::get_singleton();
         if (bus) bus->emit_signal("dongtian_entered");
+
+        _roll_invasion();
     }
 
     void DongtianManager::_exit(bool p_restore_pos) {
@@ -203,6 +223,12 @@ namespace godot {
         _loaded_scene->queue_free();
         _loaded_scene = nullptr;
 
+        // 闯阵是一次性事件：出洞天即清场（场景卸载带走入侵者），状态不持久化
+        _invasion_active = false;
+        _invaders_left = 0;
+        _invasion_forced = false;
+        _invasion_suppressed = false;
+
         if (_camera) _camera->exit_room();
 
         _inside = false;
@@ -221,6 +247,70 @@ namespace godot {
             return;
         bus->emit_signal("interaction_prompt", p_text, true);
         _hint_t = 2.5f;
+    }
+
+    // ============================================================
+    // 灵兽闯阵（随机入侵事件；不持久化，出洞天/读档清场）
+    // ============================================================
+
+    void DongtianManager::_roll_invasion() {
+        bool forced = _invasion_forced;
+        bool suppressed = _invasion_suppressed;
+        _invasion_forced = false;
+        _invasion_suppressed = false;
+        if (suppressed || _invasion_active)
+            return;
+        bool trigger = forced;
+        if (!trigger) {
+            // 无头测试环境禁随机 roll（老洞天测试用例稳定性；测试走 debug_force_invasion）
+            DisplayServer *ds = DisplayServer::get_singleton();
+            bool headless = ds && ds->get_name() == String("headless");
+            if (!headless)
+                trigger = UtilityFunctions::randf() < INVASION_CHANCE;
+        }
+        if (trigger)
+            _start_invasion();
+    }
+
+    void DongtianManager::_start_invasion() {
+        if (!_loaded_scene || _invasion_active)
+            return;
+        // 难度随玩家境界缩放：realm = 玩家-1，最低 1
+        int realm = 1;
+        if (_player && _player->get_cultivation())
+            realm = MAX(1, _player->get_cultivation()->get_realm_index() - 1);
+        int spawned = 0;
+        if (_loaded_scene->has_method("spawn_invasion"))
+            spawned = int(_loaded_scene->call("spawn_invasion", realm));
+        if (spawned <= 0)
+            return;
+        _invasion_active = true;
+        _invaders_left = spawned;
+        _show_reason(LOC("有灵兽闯入洞天！"));
+    }
+
+    void DongtianManager::_on_invader_killed(Object *p_enemy, Object *p_killer) {
+        if (!_invasion_active)
+            return;
+        Node *n = Object::cast_to<Node>(p_enemy);
+        if (!n || !n->is_in_group(StringName("dongtian_invaders")))
+            return;
+        _invaders_left--;
+        if (_invaders_left <= 0) {
+            _invasion_active = false;
+            _invaders_left = 0;
+            _show_reason(LOC("灵兽已伏诛，洞天重归安宁"));
+        }
+    }
+
+    void DongtianManager::debug_force_invasion() {
+        _invasion_forced = true;
+        if (_inside && !_invasion_active)
+            _start_invasion();
+    }
+
+    void DongtianManager::debug_suppress_invasion() {
+        _invasion_suppressed = true;
     }
 
     // ============================================================
