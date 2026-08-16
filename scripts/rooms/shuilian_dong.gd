@@ -9,14 +9,11 @@ func _ready():
 	WC.make_landmark(self, 120, 60, "水帘洞洞天", Color(0.5, 0.85, 1.0, 1))
 
 	# 白猿老祖（守洞精英：近战厚血高伤；平衡：HP 18→80，秘境守关 3~4 击）
-	var elder = WC.spawn_enemy(self, Vector2(260, 205), Color(0.9, 0.9, 0.85, 1), 60.0, 400.0, "BaiYuanLaoZu")
-	elder.set("max_health", 80.0); elder.set("current_health", 80.0)
-	elder.set("attack_damage", 18.0); elder.set("attack_cooldown", 1.3); elder.set("realm", 3)
+	var elder = WC.spawn_enemy_by_id(self, Vector2(260, 205), "bai_yuan_lao_zu", "BaiYuanLaoZu")
 	elder.get_node("Polygon2D").scale = Vector2(1.4, 1.4)
 	# 小猿×2（左右策应；平衡：HP 4→20）
 	for i in range(2):
-		var cub = WC.spawn_enemy(self, Vector2(150 + i * 140, 210), Color(0.75, 0.55, 0.35, 1), 90.0, 300.0, "XiaoYuan%d" % i)
-		cub.set("max_health", 20.0); cub.set("current_health", 20.0); cub.set("realm", 1)
+		WC.spawn_enemy_by_id(self, Vector2(150 + i * 140, 210), "xiao_yuan", "XiaoYuan%d" % i)
 
 	# 秘藏：身外化身残卷（石台之上）+ 仙桃 + 灵石
 	WC.spawn_item_pickup(self, Vector2(330, 182), "shen_wai_can_juan", 1)

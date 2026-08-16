@@ -73,11 +73,8 @@ func _setup():
 
 	# 火鸦（飞行）+ 火牛（近战）
 	for i in range(3):
-		var hy = WC.spawn_enemy(self, Vector2(600 + i * 300, 120 + i * 15), Color(0.9, 0.4, 0.1, 1), 110.0, 320.0, "HuoYa%d" % i)
-		hy.set("is_flying", true)
-		hy.set("max_health", 12.0); hy.set("current_health", 12.0); hy.set("realm", 3)
-	var niu = WC.spawn_enemy(self, Vector2(1000, 210), Color(0.7, 0.2, 0.1, 1), 80.0, 260.0, "HuoNiu")
-	niu.set("max_health", 30.0); niu.set("current_health", 30.0); niu.set("realm", 3)
+		WC.spawn_enemy_by_id(self, Vector2(600 + i * 300, 120 + i * 15), "huo_ya", "HuoYa%d" % i)
+	WC.spawn_enemy_by_id(self, Vector2(1000, 210), "huo_niu", "HuoNiu")
 
 	WC.spawn_herb(self, Vector2(700, 124), "chi_yan_hua", 2)
 	WC.spawn_herb(self, Vector2(1500, 154), "chi_yan_hua", 1)
@@ -94,8 +91,7 @@ func _setup():
 	WC.create_portal(self, 1950, "res://scenes/rooms/xieyue_sanxing_dong.tscn", "[↑] 入三星洞", player, camera, hint)
 	# 方寸山守山小妖（平衡：原默认 HP1 一击秒，realm3 抬到 2 击量级）
 	for i in range(2):
-		var fy = WC.spawn_enemy(self, Vector2(2050 + i * 120, 210), Color(0.5, 0.5, 0.4, 1), 75.0, 240.0, "FangCunYao%d" % i)
-		fy.set("max_health", 20.0); fy.set("current_health", 20.0); fy.set("realm", 3)
+		WC.spawn_enemy_by_id(self, Vector2(2050 + i * 120, 210), "fang_cun_yao", "FangCunYao%d" % i)
 
 	# ===== 流沙河（2550~3500）：弱水禁飞 + 石墩过河 + 沙怪 =====
 	WC.make_landmark(self, 2700, 60, "流沙河 · 弱水", Color(0.3, 0.5, 0.7, 1))
@@ -107,8 +103,7 @@ func _setup():
 	_make_weak_water(2700, 160, 300, 180)
 	# 沙怪（近战，realm 4 元婴级——流沙河守河妖；平衡：HP 8→30 两击）
 	for i in range(2):
-		var sha = WC.spawn_enemy(self, Vector2(3000 + i * 220, 210), Color(0.7, 0.55, 0.3, 1), 85.0, 280.0, "ShaGuai%d" % i)
-		sha.set("max_health", 30.0); sha.set("current_health", 30.0); sha.set("realm", 4)
+		WC.spawn_enemy_by_id(self, Vector2(3000 + i * 220, 210), "sha_guai", "ShaGuai%d" % i)
 	WC.spawn_herb(self, Vector2(3000, 214), "zhi_xue_cao", 2)
 	WC.spawn_item_pickup(self, Vector2(3200, 232), "spirit_stone", 20)
 

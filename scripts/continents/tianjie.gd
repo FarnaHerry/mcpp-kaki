@@ -63,15 +63,9 @@ func _setup():
 	WC.make_platform(self, 1080, 150, 90)
 	# 天兵×2（南天门守军，真仙级；沿用北俱芦洲南天门天兵配置 HP380 atk80）
 	for i in range(2):
-		var tb = WC.spawn_enemy(self, Vector2(650 + i * 380, 210), Color(0.9, 0.85, 0.6, 1), 80.0, 300.0, "TianBing%d" % i)
-		tb.set("max_health", 380.0); tb.set("current_health", 380.0); tb.set("realm", 10)
-		tb.set("attack_damage", 80.0)
+		WC.spawn_enemy_by_id(self, Vector2(650 + i * 380, 210), "tian_bing", "TianBing%d" % i)
 	# 增长天将（精英远程 Projectile，HP600 atk90 realm10）
-	var zzj = WC.spawn_enemy(self, Vector2(1130, 210), Color(0.75, 0.85, 0.5, 1), 70.0, 360.0, "ZengZhangTianJiang")
-	zzj.set("is_ranged", true); zzj.set("attack_range", 280.0); zzj.set("preferred_distance", 180.0)
-	zzj.set("attack_cooldown", 1.5)
-	zzj.set("max_health", 600.0); zzj.set("current_health", 600.0); zzj.set("realm", 10)
-	zzj.set("attack_damage", 90.0)
+	WC.spawn_enemy_by_id(self, Vector2(1130, 210), "zeng_zhang_tian_jiang", "ZengZhangTianJiang")
 	WC.create_checkpoint(self, 200)
 
 	# ===== 天庭街市 / 凌霄殿外（1200~2400）：琼楼高台 + 天将 + 隐藏秘藏 =====
@@ -89,9 +83,7 @@ func _setup():
 	_make_cloud(2050, 245, 120)
 	# 天将×2（街市巡守，比天兵略强）
 	for i in range(2):
-		var tj = WC.spawn_enemy(self, Vector2(1600 + i * 500, 210), Color(0.85, 0.8, 0.55, 1), 85.0, 320.0, "TianJiang%d" % i)
-		tj.set("max_health", 420.0); tj.set("current_health", 420.0); tj.set("realm", 10)
-		tj.set("attack_damage", 85.0)
+		WC.spawn_enemy_by_id(self, Vector2(1600 + i * 500, 210), "tian_jiang", "TianJiang%d" % i)
 	# 隐藏高台秘藏（凌霄殿飞檐之上：上品灵石×2）
 	WC.make_platform(self, 2350, 60, 100, false)
 	WC.spawn_item_pickup(self, Vector2(2350, 52), "spirit_stone_high", 2)
@@ -122,13 +114,7 @@ func _setup():
 	WC.spawn_item_pickup(self, Vector2(2980, 222), "pan_tao", 1)
 	WC.spawn_item_pickup(self, Vector2(3140, 222), "pan_tao", 1)
 	# 巨灵神（守关 Boss，realm 11 金仙级——真仙登天后的试炼）
-	var jl = WC.spawn_enemy(self, Vector2(3350, 195), Color(0.8, 0.75, 0.4, 1), 50.0, 460.0, "Boss_JuLingShen")
-	jl.set("is_boss", true)
-	jl.set("display_name", "巨灵神")
-	jl.set("realm", 11)
-	jl.set("max_health", 4000.0); jl.set("current_health", 4000.0)
-	jl.set("attack_damage", 110.0)
-	jl.set("attack_cooldown", 1.0)
+	var jl = WC.spawn_enemy_by_id(self, Vector2(3350, 195), "ju_ling_shen", "Boss_JuLingShen")
 	jl.get_node("Polygon2D").scale = Vector2(2.4, 2.4)
 	jl.connect("boss_died", Callable(WC, "on_boss_died"))
 	# Boss 身后赏格（守关奖励）

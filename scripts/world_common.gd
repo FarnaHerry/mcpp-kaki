@@ -288,6 +288,25 @@ static func spawn_enemy(root: Node, pos: Vector2, color: Color, speed: float, de
 	root.add_child(enemy)
 	return enemy
 
+# 按定义 id 生成（data/enemies.json + EnemyDatabase）：属性/颜色/尺寸/realm/掉落表全由定义接管。
+# 特殊标志（no_drops/show_hp_bar/is_soul_reaper）与 boss_died 连接、精灵缩放仍由调用点负责。
+static func spawn_enemy_by_id(root: Node, pos: Vector2, enemy_id: String, ename := "") -> Node:
+	var enemy = ClassDB.instantiate("Enemy")
+	if not enemy: return null
+	if ename != "":
+		enemy.name = ename
+	enemy.position = pos
+	enemy.set("enemy_id", enemy_id)
+	var eshape = CollisionShape2D.new()
+	var ecap = CapsuleShape2D.new()
+	ecap.radius = 10.0; ecap.height = 20.0
+	eshape.shape = ecap
+	enemy.add_child(eshape)
+	make_sprite(enemy, enemy.call("get_def_color"), enemy.call("get_def_size"))
+	enemy.connect("enemy_died", Callable(_wc(), "_on_enemy_died"))
+	root.add_child(enemy)
+	return enemy
+
 static func _on_enemy_died() -> void:
 	print("Enemy killed!")
 

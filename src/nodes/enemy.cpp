@@ -1,5 +1,7 @@
 #include "enemy.h"
 
+#include "../core/enemy_database.h"
+
 
 #include <cmath>
 #include <cstdlib>
@@ -401,6 +403,12 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("set_is_soul_reaper", "v"), &Enemy::set_is_soul_reaper);
 		ClassDB::bind_method(D_METHOD("set_display_name", "v"), &Enemy::set_display_name);
 		ClassDB::bind_method(D_METHOD("get_display_name"), &Enemy::get_display_name);
+		ClassDB::bind_method(D_METHOD("set_enemy_id", "v"), &Enemy::set_enemy_id);
+		ClassDB::bind_method(D_METHOD("get_enemy_id"), &Enemy::get_enemy_id);
+		ClassDB::bind_method(D_METHOD("set_drop_table", "v"), &Enemy::set_drop_table);
+		ClassDB::bind_method(D_METHOD("get_drop_table"), &Enemy::get_drop_table);
+		ClassDB::bind_method(D_METHOD("get_def_color"), &Enemy::get_def_color);
+		ClassDB::bind_method(D_METHOD("get_def_size"), &Enemy::get_def_size);
 		ClassDB::bind_method(D_METHOD("set_preferred_distance", "v"), &Enemy::set_preferred_distance);
 		ClassDB::bind_method(D_METHOD("get_move_speed"), &Enemy::get_move_speed);
 		ClassDB::bind_method(D_METHOD("get_detection_radius"), &Enemy::get_detection_radius);
@@ -433,6 +441,8 @@ namespace godot {
 		ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_hp_bar"), "set_show_hp_bar", "get_show_hp_bar");
 		ADD_PROPERTY(PropertyInfo(Variant::BOOL, "is_soul_reaper"), "set_is_soul_reaper", "get_is_soul_reaper");
 		ADD_PROPERTY(PropertyInfo(Variant::STRING, "display_name"), "set_display_name", "get_display_name");
+		ADD_PROPERTY(PropertyInfo(Variant::STRING, "enemy_id"), "set_enemy_id", "get_enemy_id");
+		ADD_PROPERTY(PropertyInfo(Variant::STRING, "drop_table"), "set_drop_table", "get_drop_table");
 		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "preferred_distance"), "set_preferred_distance", "get_preferred_distance");
 
 		ADD_SIGNAL(MethodInfo("enemy_died"));
@@ -453,6 +463,34 @@ namespace godot {
 		// 在此补偿 ×5 血量；之后脚本再显式 set max_health 的以显式值为准（bootstrap/beijulu 现状）
 		if (v && is_inside_tree() && !is_queued_for_deletion()) {
 			_apply_boss_hp_scale();
+		}
+	}
+
+	void Enemy::set_enemy_id(const String &v) {
+		enemy_id = v;
+		const EnemyDef *def = EnemyDatabase::get_def(v);
+		if (!def)
+			return; // 未知 id：保持类默认值
+		_def_color = def->color;
+		_def_size = def->size;
+		// 先应用普通属性（def.hp 是基础血，未 ×5）……
+		max_health = def->hp;
+		current_health = def->hp;
+		move_speed = def->speed;
+		detection_radius = def->detection;
+		attack_range = def->attack_range;
+		attack_cooldown = def->attack_cooldown;
+		attack_damage = def->atk;
+		preferred_distance = def->preferred;
+		realm = def->realm;
+		is_ranged = def->ranged;
+		is_flying = def->flying;
+		display_name = def->name;
+		drop_table = def->drops;
+		// ……最后才置 Boss（其 _apply_boss_hp_scale 幂等补偿把血量 ×5，
+		// 与调用顺序无关：未入树时由 _ready 补偿，已入树时由 setter 补偿）
+		if (def->boss) {
+			set_is_boss(true);
 		}
 	}
 

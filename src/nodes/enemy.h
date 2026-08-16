@@ -2,6 +2,8 @@
 #define CPP_KAKI_ENEMY_H
 
 #include <godot_cpp/classes/character_body2d.hpp>
+#include <godot_cpp/variant/color.hpp>
+#include <godot_cpp/variant/vector2.hpp>
 
 import mcpp_kaki.combat;
 #include "../utils/state_machine.h"
@@ -39,6 +41,8 @@ class Enemy : public CharacterBody2D {
 		bool show_hp_bar = false;     // true = Boss 血条上 HUD（秘境劫敌用；is_boss 同效）
 		bool is_soul_reaper = false;  // true = 勾魂使者（黑白无常）：死亡入地府/反杀奖励判定
 		String display_name;          // Boss 血条标题（空则回退节点名）
+		String enemy_id;              // 敌人定义 id（EnemyDatabase；set_enemy_id 应用定义）
+		String drop_table;            // 命名掉落表（空串=类别兜底；DropSystem 经 get("drop_table") 读）
 		float preferred_distance = 0.0f; // ideal combat range (0 = melee)
 
 		// Boss
@@ -102,6 +106,12 @@ class Enemy : public CharacterBody2D {
 		void set_is_soul_reaper(bool v) { is_soul_reaper = v; }
 		void set_display_name(const String &v) { display_name = v; }
 		String get_display_name() const { return display_name; }
+		void set_enemy_id(const String &v); // 见 enemy.cpp：从 EnemyDatabase 应用定义（Boss 血量 ×5 顺序安全）
+		String get_enemy_id() const { return enemy_id; }
+		void set_drop_table(const String &v) { drop_table = v; }
+		String get_drop_table() const { return drop_table; }
+		Color get_def_color() const { return _def_color; }  // 定义颜色（无定义=白）
+		Vector2 get_def_size() const { return _def_size; }  // 定义尺寸（无定义=20×28）
 		void set_preferred_distance(float v) { preferred_distance = v; }
 		float get_move_speed() const { return move_speed; }
 		float get_detection_radius() const { return detection_radius; }
@@ -136,6 +146,8 @@ class Enemy : public CharacterBody2D {
 	private:
 		double _time = 0.0;
 		double _suppress_t = 0.0; // 威压慑服倒计时（>0=慑服中，_process 倒数）
+		Color _def_color = Color(1.0f, 1.0f, 1.0f, 1.0f); // EnemyDatabase 定义颜色（spawn 视觉用）
+		Vector2 _def_size = Vector2(20, 28);              // EnemyDatabase 定义尺寸
 		HitBox *_hitbox = nullptr;
 		HurtBox *_hurtbox = nullptr;
 		void _setup_collision();
