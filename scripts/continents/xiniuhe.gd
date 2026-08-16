@@ -82,6 +82,13 @@ func _setup():
 	WC.make_landmark(self, 1300, 80, "芭蕉扇（铁扇公主）", Color(0.6, 0.9, 0.6, 1))
 	WC.spawn_item_pickup(self, Vector2(1350, 114), "ba_jiao_shan", 1)
 
+	# 地心火窟入口（火焰山下战斗秘境，Portal 房间模式；x=800 岩浆池间空地）
+	WC.make_landmark(self, 800, 84, "地心火窟", Color(1.0, 0.5, 0.2, 1))
+	WC.create_portal(self, 800, "res://scenes/rooms/di_xin_huo_ku.tscn", "[↑] 进入地心火窟", player, camera, hint)
+	for c in get_children():
+		if c.get_class() == "Portal" and abs(c.position.x - 800.0) < 1.0:
+			c.set("room_bounds", Rect2(0, 0, 720, 270))
+
 	# ===== 灵台方寸山（1500~2500）：高台 + 斜月三星洞秘境 =====
 	WC.make_landmark(self, 1900, 60, "灵台方寸山", Color(0.6, 0.85, 0.5, 1))
 	WC.make_platform(self, 1800, 170, 90)
