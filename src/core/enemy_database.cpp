@@ -94,6 +94,24 @@ void EnemyDatabase::_load_hardcoded() {
 	s_defs.push_back(_mk("zeng_zhang_tian_jiang", "增长天将", 600, 90, 70, 360, 280, 1.5f, 180, 10, true, false, false, 0.75f, 0.85f, 0.5f, ""));
 	s_defs.push_back(_mk("tian_jiang", "天将", 420, 85, 85, 320, 35, 0.8f, 0, 10, false, false, false, 0.85f, 0.8f, 0.55f, ""));
 	s_defs.push_back(_mk("ju_ling_shen", "巨灵神", 800, 110, 50, 460, 35, 1.0f, 0, 11, false, false, true, 0.8f, 0.75f, 0.4f, "ju_ling_shen"));
+
+	// ===== Wave3 秘境（古剑冢/大雁塔地宫/地心火窟/荒古冰墓，与 enemies.json 同值）=====
+	// 古剑冢（东胜神洲·断崖绝壁）
+	s_defs.push_back(_mk("jian_ling", "剑灵", 40, 10, 110, 320, 35, 0.8f, 0, 2, false, true, false, 0.7f, 0.85f, 0.95f, ""));
+	s_defs.push_back(_mk("xiu_jian_kui_lei", "锈剑傀儡", 70, 12, 50, 220, 35, 0.9f, 0, 1, false, false, false, 0.55f, 0.4f, 0.3f, ""));
+	s_defs.push_back(_mk("jian_zhong_shou_ling", "剑冢守灵", 100, 18, 65, 400, 40, 0.8f, 0, 3, false, false, true, 0.8f, 0.85f, 0.9f, "gu_jian_zhong"));
+	// 大雁塔地宫（南赡部洲·长安）
+	s_defs.push_back(_mk("ta_yao", "塔妖", 150, 25, 70, 240, 35, 0.8f, 0, 6, false, false, false, 0.6f, 0.5f, 0.25f, ""));
+	s_defs.push_back(_mk("zhu_you_ling", "烛幽灵", 120, 22, 95, 320, 35, 0.8f, 0, 6, false, true, false, 0.95f, 0.6f, 0.25f, ""));
+	s_defs.push_back(_mk("shou_ta_jin_gang", "守塔金刚", 180, 35, 60, 420, 42, 0.9f, 0, 7, false, false, true, 0.9f, 0.75f, 0.3f, "da_yan_ta"));
+	// 地心火窟（西牛贺洲·火焰山）
+	s_defs.push_back(_mk("huo_sui_shou", "火髓兽", 90, 18, 75, 240, 35, 0.8f, 0, 4, false, false, false, 0.85f, 0.3f, 0.15f, ""));
+	s_defs.push_back(_mk("rong_yan_kui_lei", "熔岩傀儡", 160, 24, 45, 230, 38, 1.0f, 0, 5, false, false, false, 0.7f, 0.25f, 0.1f, ""));
+	s_defs.push_back(_mk("di_xin_huo_lin", "地心火麟", 140, 30, 80, 420, 40, 0.8f, 0, 5, false, false, true, 1.0f, 0.45f, 0.15f, "di_xin_huo_ku"));
+	// 荒古冰墓（北俱芦洲·玄冰高原）
+	s_defs.push_back(_mk("bing_shi", "冰尸", 280, 40, 55, 240, 35, 0.9f, 0, 8, false, false, false, 0.5f, 0.65f, 0.7f, ""));
+	s_defs.push_back(_mk("han_chi", "寒螭", 240, 36, 100, 330, 35, 0.8f, 0, 8, false, true, false, 0.55f, 0.8f, 0.9f, ""));
+	s_defs.push_back(_mk("wan_nian_bing_po", "万年冰魄", 400, 55, 60, 450, 42, 0.9f, 0, 9, false, false, true, 0.75f, 0.9f, 1.0f, "huang_gu_bing_mu"));
 }
 
 static EnemyDef *_find_def(std::vector<EnemyDef> &p_defs, const String &p_id) {

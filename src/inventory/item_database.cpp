@@ -317,6 +317,54 @@ void ItemDatabase::_register_items() {
 		pearl.mana_amount = 999999.0f;
 		_items[pearl.id] = pearl;
 	}
+	// ---- Wave3 秘境秘藏（古剑冢/大雁塔地宫/地心火窟/荒古冰墓，与 items.json 同值）----
+	{
+		Item it;
+		it.id = "qing_feng_gu_jian";
+		it.name = LOC("青锋古剑");
+		it.description = LOC("古剑冢守灵的佩剑，千年剑气未散。装备：攻击+15。");
+		it.type = Item::EQUIPMENT;
+		it.equip_slot = Item::SLOT_WEAPON;
+		it.max_stack = 1;
+		it.grade = 2;
+		it.attack_bonus = 15.0f;
+		_items[it.id] = it;
+	}
+	{
+		Item it;
+		it.id = "she_li_zi";
+		it.name = LOC("舍利子");
+		it.description = LOC("大雁塔地宫供奉的佛骨舍利，佛光护体。装备：防御+10。");
+		it.type = Item::EQUIPMENT;
+		it.equip_slot = Item::SLOT_ACCESSORY;
+		it.max_stack = 1;
+		it.grade = 2;
+		it.defense_bonus = 10.0f;
+		_items[it.id] = it;
+	}
+	{
+		Item it;
+		it.id = "li_huo_zhu";
+		it.name = LOC("离火珠");
+		it.description = LOC("地心火窟火麟内丹所化，离火不侵。装备：火元素抗性+20%。");
+		it.type = Item::EQUIPMENT;
+		it.equip_slot = Item::SLOT_ACCESSORY;
+		it.max_stack = 1;
+		it.grade = 2;
+		it.elem_resist[4] = 0.2f; // ELEM_HUO
+		_items[it.id] = it;
+	}
+	{
+		Item it;
+		it.id = "xuan_bing_sui";
+		it.name = LOC("玄冰髓");
+		it.description = LOC("荒古冰墓万年玄冰的髓心，至阴至寒的天品灵材，可炼高阶丹药或售予坊市。");
+		it.type = Item::MATERIAL;
+		it.max_stack = 99;
+		it.grade = 3;
+		it.sell_price = 500;
+		_items[it.id] = it;
+	}
 
 	// ---- 草药（MATERIAL，design/alchemy.md 第二节）----
 
