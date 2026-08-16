@@ -29,6 +29,8 @@ namespace godot {
 		// ---- 北俱芦洲（极北莽荒，design/world-map.md v5）：炼体圣地 + 玄龙丹 ----
 		{ "buff_lianti",    "炼体", 600.0f, 0.0f,  0.20f, ELEM_NONE,  0.0f  }, // 炼体圣地：防御+20%（极寒淬体，圣地交互）
 		{ "buff_xuan_long", "玄龙", 900.0f, 0.20f, 0.20f, ELEM_NONE,  0.0f  }, // 玄龙丹：攻击+20% 防御+20%（渡劫灵丹，强于人参果）
+		// ---- 机缘突破战败惩罚 ----
+		{ "buff_dao_xin_bu_wen", "道心不稳", 300.0f, -0.05f, -0.05f, ELEM_NONE, 0.0f }, // 心魔劫/三尸劫战败：攻击-5% 防御-5%
 	};
 
 	const BuffSystem::Def *BuffSystem::find_def(const StringName &p_id) {
