@@ -131,6 +131,7 @@ void ItemDatabase::_register_items() {
 		pill.description = LOC("恢复 30 点生命值。基础疗伤丹药。");
 		pill.type = Item::CONSUMABLE;
 		pill.max_stack = 20;
+		pill.grade = 1;
 		pill.heal_amount = 30.0f;
 		_items[pill.id] = pill;
 	}
@@ -143,6 +144,7 @@ void ItemDatabase::_register_items() {
 		pill.description = LOC("吸收后恢复 50 点灵力。修炼者日常必备。");
 		pill.type = Item::CONSUMABLE;
 		pill.max_stack = 30;
+		pill.grade = 1;
 		pill.mana_amount = 50.0f;
 		_items[pill.id] = pill;
 	}
@@ -155,6 +157,7 @@ void ItemDatabase::_register_items() {
 		pill.description = LOC("突破时提升 20% 成功率。筑基期以下有效。");
 		pill.type = Item::CONSUMABLE;
 		pill.max_stack = 5;
+		pill.grade = 2;
 		pill.breakthrough_bonus = 0.2f;
 		_items[pill.id] = pill;
 	}
@@ -179,6 +182,7 @@ void ItemDatabase::_register_items() {
 		stone.description = LOC("灵韵更纯的灵石，1 中品 = 10 下品。");
 		stone.type = Item::MATERIAL;
 		stone.max_stack = 999;
+		stone.grade = 1;
 		stone.currency_tier = 1;
 		_items[stone.id] = stone;
 	}
@@ -189,6 +193,7 @@ void ItemDatabase::_register_items() {
 		stone.description = LOC("高阶修士流通的灵石，1 上品 = 10 中品。");
 		stone.type = Item::MATERIAL;
 		stone.max_stack = 999;
+		stone.grade = 2;
 		stone.currency_tier = 2;
 		_items[stone.id] = stone;
 	}
@@ -199,6 +204,7 @@ void ItemDatabase::_register_items() {
 		stone.description = LOC("万中无一的灵石，1 极品 = 10 上品。");
 		stone.type = Item::MATERIAL;
 		stone.max_stack = 999;
+		stone.grade = 3;
 		stone.currency_tier = 3;
 		_items[stone.id] = stone;
 	}
@@ -211,6 +217,7 @@ void ItemDatabase::_register_items() {
 		sword.description = LOC("低阶飞行法器。筑基期御之可短暂凌空飞行，持续消耗灵力；金丹之后肉身自飞，此物仅作代步。");
 		sword.type = Item::KEY_ITEM;
 		sword.max_stack = 1;
+		sword.grade = 1;
 		_items[sword.id] = sword;
 	}
 
@@ -250,7 +257,7 @@ void ItemDatabase::_register_items() {
 		peach.description = LOC("花果山桃林所结灵果，三千年一熟。食之气血充盈，修为精进。");
 		peach.type = Item::CONSUMABLE;
 		peach.max_stack = 10;
-		peach.grade = 1;
+		peach.grade = 3;
 		peach.heal_pct = 0.5f;
 		peach.energy_amount = 300.0f;
 		_items[peach.id] = peach;
@@ -264,7 +271,7 @@ void ItemDatabase::_register_items() {
 		scroll.description = LOC("水帘洞石壁暗格所藏残卷，记载齐天大圣成名神通。参悟可习得「身外化身」。");
 		scroll.type = Item::CONSUMABLE;
 		scroll.max_stack = 1;
-		scroll.grade = 2;
+		scroll.grade = 3;
 		scroll.learn_skill = StringName("shen_wai_hua_shen");
 		_items[scroll.id] = scroll;
 	}
@@ -305,7 +312,7 @@ void ItemDatabase::_register_items() {
 		pearl.description = LOC("蚌中孕珠，千年养灵。服之修为+2000，灵力回满。");
 		pearl.type = Item::CONSUMABLE;
 		pearl.max_stack = 3;
-		pearl.grade = 2;
+		pearl.grade = 3;
 		pearl.energy_amount = 2000.0f;
 		pearl.mana_amount = 999999.0f;
 		_items[pearl.id] = pearl;
@@ -313,7 +320,7 @@ void ItemDatabase::_register_items() {
 
 	// ---- 草药（MATERIAL，design/alchemy.md 第二节）----
 
-	auto herb = [&](const char *id, const char *name, const char *desc, int grade) {
+	auto herb = [&](const char *id, const char *name, const char *desc, int grade, int grow_s) {
 		Item h;
 		h.id = id;
 		h.name = LOC(name);
@@ -321,18 +328,18 @@ void ItemDatabase::_register_items() {
 		h.type = Item::MATERIAL;
 		h.max_stack = 99;
 		h.grade = grade;
-		// 全部可种植；成熟时间按品级：凡 60s / 灵 180s / 地 600s
+		// 全部可种植；成熟时间与品级解耦显式给出（凡 60s / 灵 180s / 地 600s 为惯例）
 		h.plantable = true;
-		h.grow_seconds = grade >= 2 ? 600 : (grade == 1 ? 180 : 60);
+		h.grow_seconds = grow_s;
 		_items[h.id] = h;
 	};
-	herb("zhi_xue_cao", "止血草", "最常见的药草，捣汁可止血生肌。回春丹主材。", 0);
-	herb("ju_ling_cao", "聚灵草", "叶脉含灵气脉络，凝聚天地灵气。聚气丹主材。", 0);
-	herb("bing_xin_lian", "冰心莲", "生于高寒之地的雪莲，触手生凉。冰心丹主材。", 1);
-	herb("chi_yan_hua", "赤焰花", "洞穴深处吞吐地火的红花。赤焰丹主材。", 1);
-	herb("jin_gang_teng", "金刚藤", "攀于绝壁的铁色藤蔓，坚逾精钢。金刚丹主材。", 1);
-	herb("wu_dao_cha", "悟道茶", "传说古修坐化处生出的茶树，一叶一悟。悟道丹主材。", 2);
-	herb("qian_nian_ling_zhi", "千年灵芝", "千年灵木根际所生紫芝，药力浑厚。大还丹主材。", 2);
+	herb("zhi_xue_cao", "止血草", "最常见的药草，捣汁可止血生肌。回春丹主材。", 0, 60);
+	herb("ju_ling_cao", "聚灵草", "叶脉含灵气脉络，凝聚天地灵气。聚气丹主材。", 0, 60);
+	herb("bing_xin_lian", "冰心莲", "生于高寒之地的雪莲，触手生凉。冰心丹主材。", 2, 180);
+	herb("chi_yan_hua", "赤焰花", "洞穴深处吞吐地火的红花。赤焰丹主材。", 2, 180);
+	herb("jin_gang_teng", "金刚藤", "攀于绝壁的铁色藤蔓，坚逾精钢。金刚丹主材。", 2, 180);
+	herb("wu_dao_cha", "悟道茶", "传说古修坐化处生出的茶树，一叶一悟。悟道丹主材。", 2, 600);
+	herb("qian_nian_ling_zhi", "千年灵芝", "千年灵木根际所生紫芝，药力浑厚。大还丹主材。", 2, 600);
 
 	// ---- 新丹药（CONSUMABLE，design/alchemy.md 第三节配方产物）----
 
@@ -450,7 +457,7 @@ void ItemDatabase::_register_items() {
 		fruit.description = LOC("五庄观镇观灵果，三千年一熟。食之气满神足，修为大涨。");
 		fruit.type = Item::CONSUMABLE;
 		fruit.max_stack = 9;
-		fruit.grade = 2;
+		fruit.grade = 3;
 		fruit.heal_pct = 0.8f;
 		fruit.energy_amount = 800.0f;
 		fruit.fullness_amount = 100.0f;
@@ -466,7 +473,7 @@ void ItemDatabase::_register_items() {
 		fan.description = LOC("铁扇公主之物，一扇风起火灭。使用得法宝（风刃+扇灭环境火）。");
 		fan.type = Item::CONSUMABLE;
 		fan.max_stack = 1;
-		fan.grade = 1;
+		fan.grade = 2;
 		fan.learn_artifact = StringName("ba_jiao_shan");
 		_items[fan.id] = fan;
 	}

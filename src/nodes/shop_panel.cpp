@@ -155,7 +155,7 @@ void ShopPanel::_refresh() {
 		String txt = (def ? LOC(def->name) : String(s.get("name", ""))) +
 			LOC(" ×") + String::num_int64(int(s.get("price", 0)));
 		cell["text"] = txt;
-		cell["color"] = Color(0.8f, 0.9f, 0.6f, 1.0f);
+		cell["color"] = grade_color(def ? def->grade : 0); // 品级色
 		stock.push_back(cell);
 	}
 	_grids[0]->set_items(stock);
@@ -180,7 +180,7 @@ void ShopPanel::_refresh() {
 			if (qty > 1)
 				txt += " ×" + String::num_int64(qty);
 			cell["text"] = txt;
-			cell["color"] = Color(0.8f, 0.8f, 0.85f, 1.0f);
+			cell["color"] = grade_color(def->grade); // 品级色（def 已非空）
 			inv_items.push_back(cell);
 			_slots[0].push_back(i);
 		}

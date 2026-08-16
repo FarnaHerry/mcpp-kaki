@@ -27,7 +27,7 @@ class ItemPickup : public Area2D {
 	GDCLASS(ItemPickup, Area2D);
 
 public:
-	void set_item_id(const StringName &p_id) { _item_id = p_id; }
+	void set_item_id(const StringName &p_id);
 	StringName get_item_id() const { return _item_id; }
 
 	void set_quantity(int p_qty) { _quantity = p_qty; }

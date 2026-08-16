@@ -6,12 +6,24 @@ module;
 #include <godot-cpp-m/macros.h>
 #include <godot_cpp/templates/hash_map.hpp> // HashMap 不被模块重导出，保持文本包含
 #include <godot_cpp/templates/vector.hpp>
+#include <godot_cpp/variant/color.hpp>
 
 export module mcpp_kaki.inventory;
 
 import godot_cpp;
 
 namespace godot {
+
+// 品级色（全项目统一约定）：0凡=白 1灵=蓝 2地=紫 3天=金
+// ItemPickup 光柱/本体染色、背包/仓库/商店格子染色共用此一口径
+export inline Color grade_color(int p_grade) {
+	switch (p_grade) {
+		case 1:  return Color(0.35f, 0.65f, 1.00f); // 灵·蓝
+		case 2:  return Color(0.75f, 0.40f, 0.95f); // 地·紫
+		case 3:  return Color(1.00f, 0.80f, 0.25f); // 天·金
+		default: return Color(0.85f, 0.85f, 0.85f); // 凡·白
+	}
+}
 
 // Data-only item definition. Items are registered in ItemDatabase.
 // This is a plain struct, not a Godot class — no _bind_methods needed.
