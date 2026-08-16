@@ -178,6 +178,12 @@ namespace godot {
 		return TitleComposer::compose(*this);
 	}
 
+	String CultivationSystem::realm_name_of(int p_realm) {
+		if (p_realm < 0 || p_realm >= REALM_COUNT)
+			return String();
+		return LOC(REALM_STATS[p_realm].name);
+	}
+
 	// 当前境界的经验区间 [lo, hi)：hi <= 0 表示无经验条（渡劫/天尊）
 	static void _realm_xp_band(CultivationSystem::Realm p_realm, int64_t &r_lo, int64_t &r_hi) {
 		r_hi = REALM_CAPS[p_realm];

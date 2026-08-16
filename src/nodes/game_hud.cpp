@@ -1,6 +1,7 @@
 module;
 #include "../utils/text.h"
 #include "../nodes/player.h"
+#include "../nodes/enemy.h"
 #include <godot_cpp/classes/collision_shape2d.hpp>
 #include <godot_cpp/classes/color_rect.hpp>
 #include <godot_cpp/classes/control.hpp>
@@ -966,17 +967,39 @@ void GameHUD::on_boss_fight_update(const String &p_name, double p_current, doubl
     if (!bar) {
         bar = _create_boss_bar_item();
         bar->name = p_name;
+        bar->realm_tag = _boss_realm_tag(p_name); // 建条时解析一次缓存（Boss realm 战内不变）
         _relayout_boss_bars();
     }
     float frac = Math::clamp(float(p_current / p_max), 0.0f, 1.0f);
     bar->fill->set_size(Vector2(240.0f * frac, 16.0f));
-    bar->name_label->set_text(LOC(p_name));
+    // 名字后附修为境界名（压迫感）：「幽谷螭龙 · 大乘」；无 realm 标注的老怪只显名字
+    String disp = LOC(p_name);
+    if (!bar->realm_tag.is_empty())
+        disp += TXT(" · ") + bar->realm_tag;
+    bar->name_label->set_text(disp);
     bar->alive = p_current > 0.0;
     bool show = _hud_visible && bar->alive;
     bar->bg->set_visible(show);
     bar->fill->set_visible(show);
     bar->name_label->set_visible(show);
     _relayout_boss_bars(); // 名字按最新文本宽度重定位居中
+}
+
+String GameHUD::_boss_realm_tag(const String &p_name) const {
+    SceneTree *st = get_tree();
+    if (!st)
+        return String();
+    TypedArray<Node> enemies = st->get_nodes_in_group("enemies");
+    for (int i = 0; i < enemies.size(); i++) {
+        Enemy *e = Object::cast_to<Enemy>(enemies[i]);
+        if (!e)
+            continue;
+        String nm = e->get_display_name().is_empty() ? String(e->get_name()) : e->get_display_name();
+        if (nm == p_name && e->get_realm() > 0) { // realm 0 = 未标注，不显「凡人」
+            return CultivationSystem::realm_name_of(e->get_realm());
+        }
+    }
+    return String();
 }
 
 void GameHUD::on_boss_fight_ended(const String &p_name) {

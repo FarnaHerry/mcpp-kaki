@@ -103,6 +103,7 @@ public:
 
 	Realm get_current_realm() const { return _current_realm; }
 	String get_realm_name() const;
+	static String realm_name_of(int p_realm); // 任意境界序号 → 境界名（Boss 血条等用；越界返空）
 	String get_full_title() const;
 	int get_realm_index() const { return (int)_current_realm; }
 	bool is_immortal() const { return _current_realm >= TRUE_IMMORTAL; }
