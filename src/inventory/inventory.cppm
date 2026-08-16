@@ -26,6 +26,13 @@ export inline Color grade_color(int p_grade) {
 	}
 }
 
+// 品级格子底色（GridList 条目 bg_color 用：淡染 alpha=0.30 保证名字可读；凡品透明=保持默认底）
+export inline Color grade_bg_color(int p_grade) {
+	Color c = grade_color(p_grade);
+	c.a = (p_grade > 0) ? 0.30f : 0.0f;
+	return c;
+}
+
 // Data-only item definition. Items are registered in ItemDatabase.
 // This is a plain struct, not a Godot class — no _bind_methods needed.
 export struct Item {

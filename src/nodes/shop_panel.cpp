@@ -156,6 +156,7 @@ void ShopPanel::_refresh() {
 			LOC(" ×") + String::num_int64(int(s.get("price", 0)));
 		cell["text"] = txt;
 		cell["color"] = grade_color(def ? def->grade : 0); // 品级色
+		cell["bg_color"] = grade_bg_color(def ? def->grade : 0); // 品级淡染底
 		stock.push_back(cell);
 	}
 	_grids[0]->set_items(stock);
@@ -181,6 +182,7 @@ void ShopPanel::_refresh() {
 				txt += " ×" + String::num_int64(qty);
 			cell["text"] = txt;
 			cell["color"] = grade_color(def->grade); // 品级色（def 已非空）
+			cell["bg_color"] = grade_bg_color(def->grade); // 品级淡染底
 			inv_items.push_back(cell);
 			_slots[0].push_back(i);
 		}

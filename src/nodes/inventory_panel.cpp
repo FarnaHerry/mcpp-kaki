@@ -144,8 +144,10 @@ void InventoryPanel::refresh(const String &p_item_id, int p_qty) {
 			txt += " ×" + String::num_int64(qty);
 		cell["text"] = txt;
 
-		// 品级色（0凡白/1灵蓝/2地紫/3天金，与 ItemPickup 光柱同口径 grade_color）
+		// 品级色（0凡白/1灵蓝/2地紫/3天金/4仙青，与 ItemPickup 光柱同口径 grade_color）
+		// 名字染品级色 + 格子底色品级淡染（凡品透明=保持默认底）
 		cell["color"] = grade_color(def ? def->grade : 0);
+		cell["bg_color"] = grade_bg_color(def ? def->grade : 0);
 		items.push_back(cell);
 		_slot_map.push_back(slot_idx);
 		displayed++;

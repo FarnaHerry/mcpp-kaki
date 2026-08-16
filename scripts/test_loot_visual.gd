@@ -42,21 +42,30 @@ const GRADE_COLORS := [
 	Color(0.55, 1.00, 0.80), # 4仙=仙青
 ]
 
-# 在 GridList 子树找可见 Label（文本含 sub），返回其 font_color；找不到返回 Color(-1,...)
-func _grid_label_color(grid_name: String, sub: String) -> Color:
+# 在 GridList 子树找可见 Label（文本含 sub），找不到返回 null
+func _grid_find_label(grid_name: String, sub: String) -> Label:
 	var grid = root.find_child(grid_name, true, false)
 	if grid == null:
-		return Color(-1, -1, -1)
-	return _scan_label_color(grid, sub)
+		return null
+	return _scan_label(grid, sub)
 
-func _scan_label_color(n: Node, sub: String) -> Color:
+func _scan_label(n: Node, sub: String) -> Label:
 	if n is Label and n.is_visible_in_tree() and String(n.text).contains(sub):
-		return n.get_theme_color("font_color")
+		return n
 	for c in n.get_children():
-		var r = _scan_label_color(c, sub)
-		if r.r >= 0.0:
+		var r = _scan_label(c, sub)
+		if r != null:
 			return r
-	return Color(-1, -1, -1)
+	return null
+
+func _grid_label_color(grid_name: String, sub: String) -> Color:
+	var l = _grid_find_label(grid_name, sub)
+	return l.get_theme_color("font_color") if l else Color(-1, -1, -1)
+
+# 格子底色（Label 的父节点 = GridList cell 的 bg ColorRect）
+func _grid_cell_bg(grid_name: String, sub: String) -> Color:
+	var l = _grid_find_label(grid_name, sub)
+	return l.get_parent().color if l else Color(-1, -1, -1, -1)
 
 func _process(delta) -> bool:
 	_t += delta
@@ -143,6 +152,15 @@ func _process(delta) -> bool:
 			_check(_color_eq(c_tian, GRADE_COLORS[4]), "背包蟠桃名字=仙品仙青")
 			var c_fan = _grid_label_color("ItemGrid", "糙米饭")
 			_check(c_fan.r >= 0.0 and _color_eq(c_fan, GRADE_COLORS[0]), "背包糙米饭名字=凡品白")
+			# ④ 格子底色品级淡染（选中格=BG_SEL 优先，蟠桃/糙米饭均非选中格——选中是槽0干粮）
+			var bg_tian = _grid_cell_bg("ItemGrid", "蟠桃")
+			var expect_xian_bg: Color = GRADE_COLORS[4]
+			expect_xian_bg.a = 0.30
+			_check(bg_tian.r >= 0.0 and _color_eq(bg_tian, expect_xian_bg) and absf(bg_tian.a - 0.30) < 0.02,
+					"背包蟠桃格子底=仙青淡染（alpha 0.30）")
+			var bg_fan = _grid_cell_bg("ItemGrid", "糙米饭")
+			_check(bg_fan.r >= 0.0 and _color_eq(bg_fan, Color(0.09, 0.10, 0.14)) and absf(bg_fan.a - 0.95) < 0.02,
+					"凡品格子底=默认底（不染）")
 			Input.action_press("menu") # 关闭菜单还原暂停
 		8:
 			Input.action_release("menu")
