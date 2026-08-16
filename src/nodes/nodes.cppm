@@ -174,6 +174,7 @@ private:
 	// bg/fill/名字直接挂 CanvasLayer，名字用 font 精确度量绝对定位居中于血条
 	struct BossBarUi {
 		String name;
+		String realm_tag; // 修为境界名（建条时按 enemies 组同名敌 realm 解析缓存，空=不显示）
 		ColorRect *bg = nullptr;
 		ColorRect *fill = nullptr;
 		Label *name_label = nullptr;
@@ -204,6 +205,7 @@ private:
 	BossBarUi *_find_boss_bar(const String &p_name);
 	BossBarUi *_create_boss_bar_item();
 	void _relayout_boss_bars();
+	String _boss_realm_tag(const String &p_name) const; // 按名找 enemies 组敌 → 境界名（realm<=0/找不到=空）
 	void _position_boss_name(BossBarUi *p_bar, float p_x, float p_y);
 	void _create_pressure_indicators();
 	void _update_pressure_indicators();
