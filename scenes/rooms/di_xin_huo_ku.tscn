@@ -1,0 +1,213 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://scripts/rooms/di_xin_huo_ku.gd" id="1"]
+
+[sub_resource type="RectangleShape2D" id="ground1_shape"]
+size = Vector2(180, 24)
+
+[sub_resource type="RectangleShape2D" id="ground2_shape"]
+size = Vector2(100, 24)
+
+[sub_resource type="RectangleShape2D" id="ground3_shape"]
+size = Vector2(160, 24)
+
+[sub_resource type="RectangleShape2D" id="ground4_shape"]
+size = Vector2(130, 24)
+
+[sub_resource type="RectangleShape2D" id="wall_shape"]
+size = Vector2(16, 270)
+
+[sub_resource type="RectangleShape2D" id="platform_shape"]
+size = Vector2(56, 10)
+
+[sub_resource type="RectangleShape2D" id="treasure_shape"]
+size = Vector2(48, 10)
+
+[sub_resource type="RectangleShape2D" id="pool_floor_shape"]
+size = Vector2(50, 16)
+
+[node name="DiXinHuoKu" type="Node2D"]
+script = ExtResource("1")
+
+; Background（地心赤黑）
+[node name="Background" type="Polygon2D" parent="."]
+color = Color(0.09, 0.03, 0.02, 1)
+polygon = PackedVector2Array(0, 0, 720, 0, 720, 270, 0, 270)
+
+; 地火辉光（岩浆缺口向上映出的橙红光柱，半透明）
+[node name="EmberGlow1" type="Polygon2D" parent="."]
+color = Color(1.0, 0.45, 0.1, 0.12)
+polygon = PackedVector2Array(186, 130, 224, 130, 218, 238, 192, 238)
+
+[node name="EmberGlow2" type="Polygon2D" parent="."]
+color = Color(1.0, 0.45, 0.1, 0.12)
+polygon = PackedVector2Array(336, 120, 374, 120, 368, 238, 342, 238)
+
+[node name="EmberGlow3" type="Polygon2D" parent="."]
+color = Color(1.0, 0.45, 0.1, 0.12)
+polygon = PackedVector2Array(546, 130, 584, 130, 578, 238, 552, 238)
+
+; 岩台火纹裂缝（装饰）
+[node name="LavaCrack1" type="Polygon2D" parent="."]
+color = Color(1.0, 0.4, 0.08, 0.55)
+polygon = PackedVector2Array(60, 232, 120, 232, 118, 235, 62, 235)
+
+[node name="LavaCrack2" type="Polygon2D" parent="."]
+color = Color(1.0, 0.4, 0.08, 0.55)
+polygon = PackedVector2Array(420, 232, 500, 232, 498, 235, 422, 235)
+
+[node name="LavaCrack3" type="Polygon2D" parent="."]
+color = Color(1.0, 0.4, 0.08, 0.55)
+polygon = PackedVector2Array(610, 232, 690, 232, 688, 235, 612, 235)
+
+; 火窟外廊（x 0~180）
+[node name="Ground1" type="StaticBody2D" parent="."]
+position = Vector2(90, 238)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground1"]
+shape = SubResource("ground1_shape")
+
+[node name="GroundVisual" type="Polygon2D" parent="Ground1"]
+color = Color(0.22, 0.08, 0.05, 1)
+polygon = PackedVector2Array(-90, -8, 90, -8, 90, 14, -90, 14)
+
+; 窄台（x 230~330，两池之间）
+[node name="Ground2" type="StaticBody2D" parent="."]
+position = Vector2(280, 238)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground2"]
+shape = SubResource("ground2_shape")
+
+[node name="GroundVisual" type="Polygon2D" parent="Ground2"]
+color = Color(0.22, 0.08, 0.05, 1)
+polygon = PackedVector2Array(-50, -8, 50, -8, 50, 14, -50, 14)
+
+; 傀儡熔厅（x 380~540）
+[node name="Ground3" type="StaticBody2D" parent="."]
+position = Vector2(460, 238)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground3"]
+shape = SubResource("ground3_shape")
+
+[node name="GroundVisual" type="Polygon2D" parent="Ground3"]
+color = Color(0.22, 0.08, 0.05, 1)
+polygon = PackedVector2Array(-80, -8, 80, -8, 80, 14, -80, 14)
+
+; 地心火池（x 590~720）
+[node name="Ground4" type="StaticBody2D" parent="."]
+position = Vector2(655, 238)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground4"]
+shape = SubResource("ground4_shape")
+
+[node name="GroundVisual" type="Polygon2D" parent="Ground4"]
+color = Color(0.22, 0.08, 0.05, 1)
+polygon = PackedVector2Array(-65, -8, 65, -8, 65, 14, -65, 14)
+
+; Walls
+[node name="WallL" type="StaticBody2D" parent="."]
+position = Vector2(0, 135)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallL"]
+shape = SubResource("wall_shape")
+
+[node name="WallVisualL" type="Polygon2D" parent="WallL"]
+color = Color(0.16, 0.06, 0.04, 1)
+polygon = PackedVector2Array(-8, -135, 8, -135, 8, 135, -8, 135)
+
+[node name="WallR" type="StaticBody2D" parent="."]
+position = Vector2(720, 135)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallR"]
+shape = SubResource("wall_shape")
+
+[node name="WallVisualR" type="Polygon2D" parent="WallR"]
+color = Color(0.16, 0.06, 0.04, 1)
+polygon = PackedVector2Array(-8, -135, 8, -135, 8, 135, -8, 135)
+
+; 跨池跳台（单向，岩浆池上方——跳跃节奏备选路线）
+[node name="Platform1" type="StaticBody2D" parent="."]
+position = Vector2(205, 172)
+collision_layer = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Platform1"]
+shape = SubResource("platform_shape")
+one_way_collision = true
+
+[node name="PlatformVisual" type="Polygon2D" parent="Platform1"]
+color = Color(0.3, 0.12, 0.06, 1)
+polygon = PackedVector2Array(-28, -4, 28, -4, 28, 6, -28, 6)
+
+[node name="Platform2" type="StaticBody2D" parent="."]
+position = Vector2(355, 168)
+collision_layer = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Platform2"]
+shape = SubResource("platform_shape")
+one_way_collision = true
+
+[node name="PlatformVisual" type="Polygon2D" parent="Platform2"]
+color = Color(0.3, 0.12, 0.06, 1)
+polygon = PackedVector2Array(-28, -4, 28, -4, 28, 6, -28, 6)
+
+[node name="Platform3" type="StaticBody2D" parent="."]
+position = Vector2(565, 172)
+collision_layer = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Platform3"]
+shape = SubResource("platform_shape")
+one_way_collision = true
+
+[node name="PlatformVisual" type="Polygon2D" parent="Platform3"]
+color = Color(0.3, 0.12, 0.06, 1)
+polygon = PackedVector2Array(-28, -4, 28, -4, 28, 6, -28, 6)
+
+; 秘藏台（Boss 身后）
+[node name="TreasurePlatform" type="StaticBody2D" parent="."]
+position = Vector2(685, 192)
+collision_layer = 2
+
+[node name="PlatformShape" type="CollisionShape2D" parent="TreasurePlatform"]
+shape = SubResource("treasure_shape")
+one_way_collision = true
+
+[node name="PlatformVisual" type="Polygon2D" parent="TreasurePlatform"]
+color = Color(0.35, 0.14, 0.07, 1)
+polygon = PackedVector2Array(-24, -4, 24, -4, 24, 6, -24, 6)
+
+; 岩浆池底（池盆——跌落池中踩底吃 dot，可跳出，不至坠出房间）
+[node name="PoolFloor0" type="StaticBody2D" parent="."]
+position = Vector2(205, 262)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PoolFloor0"]
+shape = SubResource("pool_floor_shape")
+
+[node name="PoolFloorVisual" type="Polygon2D" parent="PoolFloor0"]
+color = Color(0.14, 0.05, 0.03, 1)
+polygon = PackedVector2Array(-25, -8, 25, -8, 25, 8, -25, 8)
+
+[node name="PoolFloor1" type="StaticBody2D" parent="."]
+position = Vector2(355, 262)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PoolFloor1"]
+shape = SubResource("pool_floor_shape")
+
+[node name="PoolFloorVisual" type="Polygon2D" parent="PoolFloor1"]
+color = Color(0.14, 0.05, 0.03, 1)
+polygon = PackedVector2Array(-25, -8, 25, -8, 25, 8, -25, 8)
+
+[node name="PoolFloor2" type="StaticBody2D" parent="."]
+position = Vector2(565, 262)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PoolFloor2"]
+shape = SubResource("pool_floor_shape")
+
+[node name="PoolFloorVisual" type="Polygon2D" parent="PoolFloor2"]
+color = Color(0.14, 0.05, 0.03, 1)
+polygon = PackedVector2Array(-25, -8, 25, -8, 25, 8, -25, 8)
+
+[node name="SpawnEntrance" type="Marker2D" parent="."]
+position = Vector2(40, 200)
+
+[node name="SpawnExit" type="Marker2D" parent="."]
+position = Vector2(360, 200)
