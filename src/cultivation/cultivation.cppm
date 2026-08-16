@@ -241,7 +241,9 @@ export class GongfaSystem : public Object {
 
 public:
 	enum School { SCHOOL_BODY = 0, SCHOOL_QI = 1, SCHOOL_COUNT };
-	enum Grade { GRADE_HUANG = 0, GRADE_XUAN, GRADE_DI, GRADE_TIAN };
+	// 品级四阶：黄/玄/地/天 + 仙（GRADE_XIAN=先天仙品，天生仙品无需飞升晋升，
+	// 如孙悟空《大品天仙诀》；后天仙化 = 飞升真仙后 _xian_promoted 全体晋升）
+	enum Grade { GRADE_HUANG = 0, GRADE_XUAN, GRADE_DI, GRADE_TIAN, GRADE_XIAN };
 
 	struct Def {
 		const char *id;
@@ -264,9 +266,20 @@ public:
 	static void ensure_defs_loaded();
 	static String grade_name(Grade p_g);
 
+	// 飞升仙化：玩家首达真仙（realm 10）时 _known/在修功法全体晋升仙品——
+	// 品级显示「仙」、名前缀「仙·」、每层效果 ×XIAN_LAYER_MULT（不加层数上限）。
+	// 先天仙品（GRADE_XIAN）数值本身即仙品档位，不再吃此晋升加成（防双重叠加）。
+	static constexpr float XIAN_LAYER_MULT = 1.5f;
+	// 天品功法境界自动领悟门槛：大乘（realm 8）
+	static constexpr int TIAN_GRANT_REALM = 8;
+
+	GongfaSystem();
+
 	bool equip_gongfa(const StringName &p_id);
 	void feed(School p_school, float p_base);
 	void grant(const StringName &p_id) { equip_gongfa(p_id); }
+
+	bool is_xian_promoted() const { return _xian_promoted; }
 
 	float get_hp_mult() const;
 	float get_def_mult() const;
@@ -278,6 +291,7 @@ public:
 
 	const SlotState &get_slot(School p_s) const { return _slots[p_s]; }
 	Dictionary get_slot_info(int p_school) const;
+	Dictionary get_def_info(const StringName &p_id) const; // 定义表查询（测试/UI 用）
 	float prof_threshold(int p_layer) const { return 100.0f * p_layer; }
 
 	Dictionary save_to_dict() const;
@@ -289,11 +303,18 @@ protected:
 private:
 	SlotState _slots[SCHOOL_COUNT];
 	HashMap<StringName, std::pair<int, float>> _known;
+	bool _xian_promoted = false; // 后天仙化标记（存档 pd["gongfa"].xian_promoted）
+	bool _bus_connected = false;
 	static std::vector<Def> s_defs;
 	static bool s_defs_loaded;
 
 	float _slot_mult(School p_s, float Def::*p_field) const;
 	void _feed_slot(School p_s, float p_amount);
+	void _ensure_bus_connected(); // 惰性连接 SignalBus realm_changed（GDCLASS Object 无 _ready）
+	void _on_realm_changed(int p_old, int p_new, const String &p_name);
+	void _maybe_grant_tian(int p_realm); // 大乘起自动领悟天品（入 _known 并换装）
+	void _promote_to_xian();             // 幂等
+	void _check_current_realm();         // 兜底：读档/老档 realm≥门槛但标记缺失时补触发
 };
 
 export class BuffSystem : public Object {

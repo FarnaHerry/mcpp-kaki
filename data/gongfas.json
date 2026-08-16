@@ -1,8 +1,11 @@
 [
   {"id":"mang_niu_jin","name":"莽牛劲","school":0,"grade":0,"max_layer":3,"hp":0.04,"def":0.03,"atk":0.02,"mana":0,"regen":0,"spell":0,"spd":0},
-  {"id":"tie_bu_shan","name":"铁布衫","school":0,"grade":1,"max_layer":5,"hp":0.06,"def":0.05,"atk":0.03,"mana":0,"regen":0,"spell":0,"spd":0},
-  {"id":"jin_gang_jue","name":"金刚诀","school":0,"grade":2,"max_layer":7,"hp":0.09,"def":0.08,"atk":0.05,"mana":0,"regen":0,"spell":0,"spd":0},
+  {"id":"tie_bu_shan","name":"铁布衫","school":0,"grade":1,"max_layer":4,"hp":0.06,"def":0.05,"atk":0.03,"mana":0,"regen":0,"spell":0,"spd":0},
+  {"id":"jin_gang_jue","name":"金刚诀","school":0,"grade":2,"max_layer":5,"hp":0.09,"def":0.08,"atk":0.05,"mana":0,"regen":0,"spell":0,"spd":0},
+  {"id":"long_xiang_gong","name":"龙象功","school":0,"grade":3,"max_layer":6,"hp":0.12,"def":0.10,"atk":0.07,"mana":0,"regen":0,"spell":0,"spd":0},
   {"id":"tu_na_jue","name":"吐纳诀","school":1,"grade":0,"max_layer":3,"hp":0,"def":0,"atk":0,"mana":0.05,"regen":0.04,"spell":0.03,"spd":0.01},
-  {"id":"zi_xia_gong","name":"紫霞功","school":1,"grade":1,"max_layer":5,"hp":0,"def":0,"atk":0,"mana":0.08,"regen":0.06,"spell":0.05,"spd":0.02},
-  {"id":"tai_xuan_jing","name":"太玄经","school":1,"grade":2,"max_layer":7,"hp":0,"def":0,"atk":0,"mana":0.12,"regen":0.09,"spell":0.08,"spd":0.03}
+  {"id":"zi_xia_gong","name":"紫霞功","school":1,"grade":1,"max_layer":4,"hp":0,"def":0,"atk":0,"mana":0.08,"regen":0.06,"spell":0.05,"spd":0.02},
+  {"id":"tai_xuan_jing","name":"太玄经","school":1,"grade":2,"max_layer":5,"hp":0,"def":0,"atk":0,"mana":0.12,"regen":0.09,"spell":0.08,"spd":0.03},
+  {"id":"tai_qing_jing","name":"太清经","school":1,"grade":3,"max_layer":6,"hp":0,"def":0,"atk":0,"mana":0.15,"regen":0.12,"spell":0.10,"spd":0.04},
+  {"id":"da_pin_tian_xian_jue","name":"大品天仙诀","school":1,"grade":4,"max_layer":6,"hp":0,"def":0,"atk":0,"mana":0.18,"regen":0.15,"spell":0.12,"spd":0.05}
 ]

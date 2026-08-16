@@ -412,6 +412,18 @@ void GameMenu::_build_ability_page() {
 // 功法页（炼体/练气双槽 + 熟练进度 + 加成总览）
 // ============================================================
 
+// 功法品级五色（全项目统一 grade_color 在 inventory.cppm 由并行任务接入中，
+// 合并时统一换用；口径：0黄白/1玄蓝/2地紫/3天金/4仙青）
+static Color _gongfa_grade_color(int p_grade) {
+	switch (p_grade) {
+		case 0:  return Color(0.88f, 0.88f, 0.88f); // 黄·白
+		case 1:  return Color(0.40f, 0.70f, 1.00f); // 玄·蓝
+		case 2:  return Color(0.75f, 0.45f, 1.00f); // 地·紫
+		case 3:  return Color(1.00f, 0.85f, 0.30f); // 天·金
+		default: return Color(0.55f, 1.00f, 0.80f); // 仙·青
+	}
+}
+
 void GameMenu::_build_gongfa_page() {
 	Label *title = memnew(Label);
 	title->set_text(LOC("—— 功法 ——"));
@@ -423,7 +435,7 @@ void GameMenu::_build_gongfa_page() {
 
 	GongfaSystem *gf = _player ? _player->get_gongfa() : nullptr;
 
-	auto slot_text = [&](GongfaSystem::School school) -> PackedStringArray {
+	auto slot_text = [&](GongfaSystem::School school, Color &r_line1_color) -> PackedStringArray {
 		PackedStringArray out;
 		const GongfaSystem::SlotState &slot = gf ? gf->get_slot(school) : GongfaSystem::SlotState();
 		if (!gf || slot.empty()) {
@@ -435,7 +447,12 @@ void GameMenu::_build_gongfa_page() {
 			out.append(LOC("（空）"));
 			return out;
 		}
-		String line1 = LOC(def->name) + LOC("  ") + GongfaSystem::grade_name(def->grade) +
+		// 仙品显示：先天仙品（grade==GRADE_XIAN）或后天仙化（飞升晋升），名前缀「仙·」
+		const bool xian = (def->grade == GongfaSystem::GRADE_XIAN) || gf->is_xian_promoted();
+		String disp_name = (xian ? String(LOC("仙·")) : String()) + LOC(def->name);
+		String gname = xian ? LOC("仙品") : GongfaSystem::grade_name(def->grade);
+		r_line1_color = _gongfa_grade_color(xian ? 4 : (int)def->grade);
+		String line1 = disp_name + LOC("  ") + gname +
 			LOC("  第") + String::num_int64(slot.layer) + LOC("/") + String::num_int64(def->max_layer) + LOC("层");
 		out.append(line1);
 		if (slot.layer >= def->max_layer) {
@@ -462,14 +479,16 @@ void GameMenu::_build_gongfa_page() {
 	Color dim_c(0.55f, 0.55f, 0.55f);
 
 	add_line(LOC("— 炼体 —"), 70.0f, 60.0f, 10, head_c);
-	PackedStringArray body_lines = slot_text(GongfaSystem::SCHOOL_BODY);
+	Color body_line1_c = body_c;
+	PackedStringArray body_lines = slot_text(GongfaSystem::SCHOOL_BODY, body_line1_c);
 	for (int i = 0; i < body_lines.size(); i++) {
-		add_line(body_lines[i], 70.0f, 76.0f + i * 14, 9, body_c);
+		add_line(body_lines[i], 70.0f, 76.0f + i * 14, 9, i == 0 ? body_line1_c : body_c);
 	}
 	add_line(LOC("— 练气 —"), 280.0f, 60.0f, 10, head_c);
-	PackedStringArray qi_lines = slot_text(GongfaSystem::SCHOOL_QI);
+	Color qi_line1_c = body_c;
+	PackedStringArray qi_lines = slot_text(GongfaSystem::SCHOOL_QI, qi_line1_c);
 	for (int i = 0; i < qi_lines.size(); i++) {
-		add_line(qi_lines[i], 280.0f, 76.0f + i * 14, 9, body_c);
+		add_line(qi_lines[i], 280.0f, 76.0f + i * 14, 9, i == 0 ? qi_line1_c : body_c);
 	}
 
 	// 加成总览
