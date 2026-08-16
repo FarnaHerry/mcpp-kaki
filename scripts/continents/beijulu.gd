@@ -98,6 +98,9 @@ func _setup():
 	WC.make_platform(self, 2000, 130, 90)
 	# 玄冰窟入口（Portal 秘境：上古巨兽巢穴遗迹，进洞避寒）
 	WC.create_portal(self, 1950, "res://scenes/rooms/xuanbing_ku.tscn", "[↑] 入玄冰窟", player, camera, hint)
+	# 荒古冰墓入口（玄冰高原深处，后期战斗秘境：冰面/极寒 + 万年冰魄 Boss + 玄冰髓秘藏）
+	WC.make_landmark(self, 2215, 120, "荒古冰墓", Color(0.7, 0.9, 1.0, 1))
+	WC.create_portal(self, 2280, "res://scenes/rooms/huang_gu_bing_mu.tscn", "[↑] 进入荒古冰墓", player, camera, hint)
 	# 冰甲巨猿（realm 9 渡劫级精英，极寒区两侧；平衡：HP 14→320 攻 70）
 	for i in range(2):
 		WC.spawn_enemy_by_id(self, Vector2(1450 + i * 900, 210), "bing_jia_yuan", "BingJiaYuan%d" % i)

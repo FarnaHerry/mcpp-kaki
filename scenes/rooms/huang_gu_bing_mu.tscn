@@ -1,0 +1,120 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/rooms/huang_gu_bing_mu.gd" id="1"]
+
+[sub_resource type="RectangleShape2D" id="ground_shape"]
+size = Vector2(400, 24)
+
+[sub_resource type="RectangleShape2D" id="wall_shape"]
+size = Vector2(16, 270)
+
+[sub_resource type="RectangleShape2D" id="plat1_shape"]
+size = Vector2(70, 6)
+
+[sub_resource type="RectangleShape2D" id="plat2_shape"]
+size = Vector2(60, 6)
+
+[node name="HuangGuBingMu" type="Node2D"]
+script = ExtResource("1")
+
+; 背景（荒古冰墓内，幽蓝深邃）
+[node name="Background" type="Polygon2D" parent="."]
+color = Color(0.06, 0.1, 0.22, 1)
+polygon = PackedVector2Array(0, 0, 400, 0, 400, 270, 0, 270)
+
+; 墓顶冰棱
+[node name="IceShard1" type="Polygon2D" parent="."]
+color = Color(0.65, 0.85, 1.0, 1)
+polygon = PackedVector2Array(60, 52, 72, 20, 84, 52, 60, 52)
+
+[node name="IceShard2" type="Polygon2D" parent="."]
+color = Color(0.65, 0.85, 1.0, 1)
+polygon = PackedVector2Array(190, 48, 200, 14, 210, 48, 190, 48)
+
+[node name="IceShard3" type="Polygon2D" parent="."]
+color = Color(0.65, 0.85, 1.0, 1)
+polygon = PackedVector2Array(310, 52, 322, 18, 334, 52, 310, 52)
+
+; 墓道残碑（荒古墓碑石）
+[node name="TombStone1" type="Polygon2D" parent="."]
+position = Vector2(40, 220)
+color = Color(0.4, 0.5, 0.65, 1)
+polygon = PackedVector2Array(-6, 8, 6, 8, 6, -10, 0, -14, -6, -10, -6, 8)
+
+[node name="TombStone2" type="Polygon2D" parent="."]
+position = Vector2(150, 222)
+color = Color(0.4, 0.5, 0.65, 1)
+polygon = PackedVector2Array(-5, 6, 5, 6, 5, -8, 0, -12, -5, -8, -5, 6)
+
+; 冰穹厅冰柱（立地支撑）
+[node name="IcePillar1" type="Polygon2D" parent="."]
+position = Vector2(175, 140)
+color = Color(0.55, 0.78, 0.95, 0.85)
+polygon = PackedVector2Array(-6, -90, 6, -90, 4, 90, -4, 90, -6, -90)
+
+[node name="IcePillar2" type="Polygon2D" parent="."]
+position = Vector2(285, 140)
+color = Color(0.55, 0.78, 0.95, 0.85)
+polygon = PackedVector2Array(-6, -90, 6, -90, 4, 90, -4, 90, -6, -90)
+
+; 墓心棺椁（荒古冰棺 ×2）
+[node name="Coffin1" type="Polygon2D" parent="."]
+position = Vector2(330, 226)
+color = Color(0.6, 0.78, 0.92, 1)
+polygon = PackedVector2Array(-16, 8, 16, 8, 16, -6, 8, -14, -8, -14, -16, -6, -16, 8)
+
+[node name="Coffin2" type="Polygon2D" parent="."]
+position = Vector2(372, 224)
+color = Color(0.55, 0.72, 0.88, 1)
+polygon = PackedVector2Array(-13, 7, 13, 7, 13, -5, 6, -12, -6, -12, -13, -5, -13, 7)
+
+; 幽蓝冰台（单向台）
+[node name="IcePlat1" type="StaticBody2D" parent="."]
+position = Vector2(185, 160)
+collision_layer = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="IcePlat1"]
+shape = SubResource("plat1_shape")
+one_way_collision = true
+
+[node name="Visual" type="Polygon2D" parent="IcePlat1"]
+color = Color(0.55, 0.75, 0.95, 1)
+polygon = PackedVector2Array(-35, -3, 35, -3, 35, 3, -35, 3)
+
+[node name="IcePlat2" type="StaticBody2D" parent="."]
+position = Vector2(280, 132)
+collision_layer = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="IcePlat2"]
+shape = SubResource("plat2_shape")
+one_way_collision = true
+
+[node name="Visual" type="Polygon2D" parent="IcePlat2"]
+color = Color(0.55, 0.75, 0.95, 1)
+polygon = PackedVector2Array(-30, -3, 30, -3, 30, 3, -30, 3)
+
+; 入口（从玄冰高原进墓）
+[node name="SpawnEntrance" type="Marker2D" parent="."]
+position = Vector2(48, 200)
+
+[node name="Ground" type="StaticBody2D" parent="."]
+position = Vector2(200, 238)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
+shape = SubResource("ground_shape")
+
+[node name="GroundVisual" type="Polygon2D" parent="Ground"]
+color = Color(0.32, 0.45, 0.62, 1)
+polygon = PackedVector2Array(-200, -12, 200, -12, 170, 32, -170, 32)
+
+[node name="WallL" type="StaticBody2D" parent="."]
+position = Vector2(8, 135)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallL"]
+shape = SubResource("wall_shape")
+
+[node name="WallR" type="StaticBody2D" parent="."]
+position = Vector2(392, 135)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallR"]
+shape = SubResource("wall_shape")
