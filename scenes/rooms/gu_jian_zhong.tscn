@@ -1,0 +1,133 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/rooms/gu_jian_zhong.gd" id="1"]
+
+[sub_resource type="RectangleShape2D" id="ground_shape"]
+size = Vector2(450, 24)
+
+[sub_resource type="RectangleShape2D" id="wall_shape"]
+size = Vector2(16, 140)
+
+[sub_resource type="RectangleShape2D" id="platform_shape"]
+size = Vector2(100, 10)
+
+[node name="GuJianZhong" type="Node2D"]
+script = ExtResource("1")
+
+; Background（青灰冢林，幽光笼罩）
+[node name="Background" type="Polygon2D" parent="."]
+color = Color(0.09, 0.11, 0.13, 1)
+polygon = PackedVector2Array(0, 0, 450, 0, 450, 270, 0, 270)
+
+; 幽光（顶部斜射，剑气残辉，半透明青白）
+[node name="GhostLight1" type="Polygon2D" parent="."]
+color = Color(0.6, 0.85, 0.9, 0.07)
+polygon = PackedVector2Array(70, 0, 110, 0, 130, 240, 90, 240)
+
+[node name="GhostLight2" type="Polygon2D" parent="."]
+color = Color(0.6, 0.85, 0.9, 0.05)
+polygon = PackedVector2Array(280, 0, 305, 0, 320, 240, 295, 240)
+
+[node name="GhostLight3" type="Polygon2D" parent="."]
+color = Color(0.7, 0.9, 0.95, 0.06)
+polygon = PackedVector2Array(390, 0, 420, 0, 430, 240, 400, 240)
+
+; 断剑冢林（插地断剑装饰；刃+镡两件组合，倾角各异）
+[node name="BrokenSwordA" type="Polygon2D" parent="."]
+position = Vector2(115, 228)
+rotation = 0.14
+color = Color(0.5, 0.38, 0.28, 1)
+polygon = PackedVector2Array(-3, 2, 3, 2, 2, -30, 0, -40, -2, -30)
+
+[node name="GuardA" type="Polygon2D" parent="BrokenSwordA"]
+color = Color(0.35, 0.3, 0.26, 1)
+polygon = PackedVector2Array(-8, -4, 8, -4, 8, 0, -8, 0)
+
+[node name="BrokenSwordB" type="Polygon2D" parent="."]
+position = Vector2(200, 228)
+rotation = -0.2
+color = Color(0.55, 0.57, 0.6, 1)
+polygon = PackedVector2Array(-3, 2, 3, 2, 2, -18, 0, -26, -2, -18)
+
+[node name="GuardB" type="Polygon2D" parent="BrokenSwordB"]
+color = Color(0.35, 0.3, 0.26, 1)
+polygon = PackedVector2Array(-7, -3, 7, -3, 7, 0, -7, 0)
+
+[node name="BrokenSwordC" type="Polygon2D" parent="."]
+position = Vector2(258, 228)
+rotation = 0.28
+color = Color(0.5, 0.38, 0.28, 1)
+polygon = PackedVector2Array(-2, 2, 2, 2, 2, -24, 0, -32, -2, -24)
+
+[node name="BrokenSwordD" type="Polygon2D" parent="."]
+position = Vector2(352, 228)
+rotation = -0.1
+color = Color(0.55, 0.57, 0.6, 1)
+polygon = PackedVector2Array(-3, 2, 3, 2, 2, -22, 0, -30, -2, -22)
+
+[node name="GuardD" type="Polygon2D" parent="BrokenSwordD"]
+color = Color(0.35, 0.3, 0.26, 1)
+polygon = PackedVector2Array(-7, -3, 7, -3, 7, 0, -7, 0)
+
+; 祭剑巨刃（最深处冢碑：守灵佩剑所化）
+[node name="MonumentSword" type="Polygon2D" parent="."]
+position = Vector2(425, 228)
+color = Color(0.7, 0.75, 0.8, 1)
+polygon = PackedVector2Array(-5, 2, 5, 2, 4, -55, 0, -72, -4, -55)
+
+[node name="MonumentGuard" type="Polygon2D" parent="MonumentSword"]
+color = Color(0.45, 0.42, 0.38, 1)
+polygon = PackedVector2Array(-12, -9, 12, -9, 12, -2, -12, -2)
+
+[node name="MonumentGlow" type="Polygon2D" parent="."]
+color = Color(0.6, 0.85, 0.9, 0.1)
+polygon = PackedVector2Array(405, 150, 445, 150, 445, 236, 405, 236)
+
+; Ground
+[node name="Ground" type="StaticBody2D" parent="."]
+position = Vector2(225, 238)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
+shape = SubResource("ground_shape")
+
+[node name="GroundVisual" type="Polygon2D" parent="Ground"]
+color = Color(0.26, 0.29, 0.31, 1)
+polygon = PackedVector2Array(-225, -5, 225, -5, 225, 12, -225, 12)
+
+; Walls
+[node name="WallL" type="StaticBody2D" parent="."]
+position = Vector2(0, 150)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallL"]
+shape = SubResource("wall_shape")
+
+[node name="WallVisualL" type="Polygon2D" parent="WallL"]
+color = Color(0.2, 0.23, 0.25, 1)
+polygon = PackedVector2Array(-8, -70, 8, -70, 8, 70, -8, 70)
+
+[node name="WallR" type="StaticBody2D" parent="."]
+position = Vector2(450, 150)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallR"]
+shape = SubResource("wall_shape")
+
+[node name="WallVisualR" type="Polygon2D" parent="WallR"]
+color = Color(0.2, 0.23, 0.25, 1)
+polygon = PackedVector2Array(-8, -70, 8, -70, 8, 70, -8, 70)
+
+; 内冢高台（精英傀儡镇守）
+[node name="InnerPlatform" type="StaticBody2D" parent="."]
+position = Vector2(300, 172)
+
+[node name="PlatformShape" type="CollisionShape2D" parent="InnerPlatform"]
+shape = SubResource("platform_shape")
+
+[node name="PlatformVisual" type="Polygon2D" parent="InnerPlatform"]
+color = Color(0.34, 0.37, 0.4, 1)
+polygon = PackedVector2Array(-50, -4, 50, -4, 50, 6, -50, 6)
+
+[node name="SpawnEntrance" type="Marker2D" parent="."]
+position = Vector2(50, 200)
+
+[node name="SpawnExit" type="Marker2D" parent="."]
+position = Vector2(200, 200)

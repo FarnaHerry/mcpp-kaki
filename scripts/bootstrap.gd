@@ -90,6 +90,9 @@ func _setup_game():
 	WC.spawn_enemy_by_id(self, Vector2(3000, 210), "yan_gui", "YanGui1")
 	WC.spawn_enemy_by_id(self, Vector2(3400, 210), "yan_gui", "YanGui2")
 	WC.create_checkpoint(self, 2820)
+	# 古剑冢秘境入口（断崖绝壁深处，上古剑修坐化之地；早中期战斗秘境）
+	WC.make_landmark(self, 3590, 150, "古剑冢", Color(0.6, 0.85, 0.9, 1))
+	WC.create_portal(self, 3650, "res://scenes/rooms/gu_jian_zhong.tscn", "[↑] 进入古剑冢", player, camera, hint)
 
 	# ---- 幽谷 (3900~5200)：飞行门控大沟壑（3900~4400，谷底 y=420）----
 	WC.make_wall(self, 3894, 238, 420)
