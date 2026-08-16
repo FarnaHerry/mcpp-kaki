@@ -5,6 +5,7 @@ module;
 
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
+#include <godot_cpp/classes/scene_tree_timer.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
 #include <string>
@@ -14,6 +15,7 @@ module mcpp_kaki.combat;
 
 import mcpp_kaki.core;
 import mcpp_kaki.cultivation;
+import mcpp_kaki.utils; // SignalBus（连招提示走 interaction_prompt，不加新信号）
 namespace godot {
 
 // 技能定义表（v1 静态表；示例 武技×2 + 法术×2）
@@ -79,8 +81,17 @@ static const SkillSystem::Def SKILL_DEFS[] = {
 	  0.0f, 0.0f, 0.0f, 0.0f, SkillSystem::FX_MELEE_SWING, 3, 0.0f, Color(), 0.0f, nullptr, SkillSystem::PAS_ELEM_RESIST, 0.10f },
 };
 
+// 连招派生硬编码兜底表（与 data/skills.json 的 combo_* 字段同值；JSON 优先，此为 fallback）
+static const SkillSystem::ComboDef COMBO_DEFS[] = {
+	{ "tu_jin_zhan", "po_kong_zhan", 3.0f, 1.5f, "破空接突进——剑势暴涨！" },   // 破空斩→突进斩（武技连武技）
+	{ "lei_zhou_shu", "huo_dan_shu", 3.0f, 1.4f, "火雷激荡——雷咒增幅！" },       // 火弹→雷咒（法术连法术）
+	{ "sheng_long_ji", "xuan_feng_zhan", 3.0f, 1.5f, "旋风未尽——升龙破空！" },  // 旋风斩→升龙击
+	{ "yu_jian_shu", "bing_zhui_shu", 3.0f, 1.4f, "冰锋御剑——剑气凝霄！" },     // 冰锥→御剑术
+};
+
 // Runtime definition cache (populated from SKILL_DEFS at first use)
 std::vector<SkillSystem::Def> SkillSystem::s_defs;
+std::vector<SkillSystem::ComboDef> SkillSystem::s_combos;
 bool SkillSystem::s_defs_loaded = false;
 
 void SkillSystem::ensure_defs_loaded() {
@@ -98,7 +109,7 @@ void SkillSystem::ensure_defs_loaded() {
 	if (dl) {
 		Array all = dl->get_all_skills();
 		if (all.size() > 0) {
-			s_strings.reserve(all.size() * 3); // id + name + buff_id per skill
+			s_strings.reserve(all.size() * 8); // id + name + buff_id + combo_text + combo_after 若干 per skill（reserve 防 c_str 悬垂）
 			for (int i = 0; i < all.size(); i++) {
 				Dictionary d = all[i];
 				// Extract strings into persistent storage
@@ -127,6 +138,27 @@ void SkillSystem::ensure_defs_loaded() {
 				def.passive_stat = PassiveStat(int(d["passive_stat"]));
 				def.passive_value = float(d["passive_value"]);
 				s_defs.push_back(def);
+
+				// 连招派生字段（可选）：combo_after=前置技能 id（字符串或数组）、
+				// combo_window=窗口秒（默认 3.0）、combo_mult=伤害倍率、combo_text=触发提示
+				if (d.has("combo_after")) {
+					float cwindow = d.has("combo_window") ? float(d["combo_window"]) : 3.0f;
+					float cmult = d.has("combo_mult") ? float(d["combo_mult"]) : 1.0f;
+					String ctext = d.has("combo_text") ? String(d["combo_text"]) : String();
+					s_strings.push_back(ctext.utf8().get_data());
+					const char *text_ptr = s_strings.back().empty() ? nullptr : s_strings.back().c_str();
+					Variant after = d["combo_after"];
+					if (after.get_type() == Variant::ARRAY) {
+						Array arr = after;
+						for (int j = 0; j < arr.size(); j++) {
+							s_strings.push_back(String(arr[j]).utf8().get_data());
+							s_combos.push_back({ def.id, s_strings.back().c_str(), cwindow, cmult, text_ptr });
+						}
+					} else {
+						s_strings.push_back(String(after).utf8().get_data());
+						s_combos.push_back({ def.id, s_strings.back().c_str(), cwindow, cmult, text_ptr });
+					}
+				}
 			}
 			return;
 		}
@@ -135,6 +167,9 @@ void SkillSystem::ensure_defs_loaded() {
 	// Fallback: hardcoded static array
 	for (const Def &d : SKILL_DEFS) {
 		s_defs.push_back(d);
+	}
+	for (const ComboDef &c : COMBO_DEFS) {
+		s_combos.push_back(c);
 	}
 }
 
@@ -154,6 +189,9 @@ void SkillSystem::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_passive_elem_resist"), &SkillSystem::get_passive_elem_resist);
 	ClassDB::bind_method(D_METHOD("save_to_dict"), &SkillSystem::save_to_dict);
 	ClassDB::bind_method(D_METHOD("load_from_dict", "data"), &SkillSystem::load_from_dict);
+	ClassDB::bind_method(D_METHOD("get_combo_list"), &SkillSystem::get_combo_list);
+	ClassDB::bind_method(D_METHOD("get_last_combo_mult"), &SkillSystem::get_last_combo_mult);
+	ClassDB::bind_method(D_METHOD("_on_combo_hint_timeout"), &SkillSystem::_on_combo_hint_timeout);
 
 	ADD_SIGNAL(MethodInfo("skill_cast", PropertyInfo(Variant::STRING_NAME, "id")));
 	ADD_SIGNAL(MethodInfo("skills_changed"));
@@ -239,8 +277,19 @@ bool SkillSystem::cast_slot(int p_slot) {
 		if (!cult || !cult->consume_law_power(def->law_cost)) return false;
 	}
 
+	// 连招派生：上次成功施放的主动技匹配 combo_after 且在窗口内 → 本次伤害 ×combo_mult
+	_last_combo_mult = 1.0f;
+	float combo_mult = 1.0f;
+	if (const ComboDef *combo = _match_combo(id, now)) {
+		combo_mult = combo->mult;
+		_last_combo_mult = combo->mult;
+		_show_combo_hint(combo->text);
+	}
+
 	_cooldown_until[id] = now + double(def->cooldown);
-	_execute(def);
+	_execute(def, combo_mult);
+	_last_cast_id = id;
+	_last_cast_time = now;
 
 	// 行为喂养功法（design: 近战行为养炼体，耗灵行为养练气）
 	if (GongfaSystem *gf = _player->get_gongfa()) {
@@ -259,38 +308,85 @@ bool SkillSystem::cast_slot(int p_slot) {
 	return true;
 }
 
-void SkillSystem::_execute(const Def *p_def) {
+void SkillSystem::_execute(const Def *p_def, float p_power_mult) {
+	// 连招强化只乘 power 出口——武技=物理/法术=元素都经 Player exec_skill_* 既有结算
+	// （exec_skill_* 内部 damage = 有效攻击 × power，倍率随之线性生效），不改结算管线。
+	float pw = p_def->power * p_power_mult;
 	switch (p_def->effect) {
 		case FX_MELEE_SWING:
-			_player->exec_skill_melee(p_def->power, p_def->category, p_def->element);
+			_player->exec_skill_melee(pw, p_def->category, p_def->element);
 			break;
 		case FX_LUNGE:
-			_player->exec_skill_lunge(p_def->power, p_def->category, p_def->element);
+			_player->exec_skill_lunge(pw, p_def->category, p_def->element);
 			break;
 		case FX_PROJECTILE:
-			_player->exec_skill_projectile(p_def->power, p_def->category, p_def->element,
+			_player->exec_skill_projectile(pw, p_def->category, p_def->element,
 			                               p_def->proj_speed, p_def->proj_color);
 			break;
 		case FX_BLINK:
 			_player->exec_skill_blink(p_def->effect_param);
 			break;
 		case FX_AOE_SWING:
-			_player->exec_skill_aoe(p_def->power, p_def->category, p_def->element);
+			_player->exec_skill_aoe(pw, p_def->category, p_def->element);
 			break;
 		case FX_RISING:
-			_player->exec_skill_rising(p_def->power, p_def->category, p_def->element);
+			_player->exec_skill_rising(pw, p_def->category, p_def->element);
 			break;
 		case FX_SELF_BUFF:
 			_player->exec_skill_self_buff(StringName(p_def->buff_id));
 			break;
 		case FX_PROJ_FAN:
-			_player->exec_skill_proj_fan(p_def->power, p_def->category, p_def->element,
+			_player->exec_skill_proj_fan(pw, p_def->category, p_def->element,
 			                             p_def->proj_speed, p_def->proj_color);
 			break;
 		case FX_INVULN:
 			_player->exec_skill_invuln(p_def->effect_param);
 			break;
 	}
+}
+
+const SkillSystem::ComboDef *SkillSystem::_match_combo(const StringName &p_id, double p_now) const {
+	ensure_defs_loaded();
+	if (_last_cast_id == StringName()) return nullptr;
+	for (const ComboDef &c : s_combos) {
+		if (StringName(c.skill_id) != p_id) continue;
+		if (StringName(c.after_id) != _last_cast_id) continue;
+		if (p_now - _last_cast_time <= double(c.window)) return &c;
+	}
+	return nullptr;
+}
+
+void SkillSystem::_show_combo_hint(const char *p_text) {
+	SignalBus *bus = SignalBus::get_singleton();
+	if (!bus) return;
+	bus->emit_signal("interaction_prompt", p_text ? LOC(p_text) : LOC("连招强化！"), true);
+	// 1.8s 自消（SkillSystem 是 Object 无 _process，用 SceneTreeTimer 延迟发隐藏）
+	SceneTree *st = Object::cast_to<SceneTree>(Engine::get_singleton()->get_main_loop());
+	if (!st) return;
+	Ref<SceneTreeTimer> timer = st->create_timer(1.8);
+	if (timer.is_valid()) {
+		timer->connect("timeout", Callable(this, "_on_combo_hint_timeout"));
+	}
+}
+
+void SkillSystem::_on_combo_hint_timeout() {
+	SignalBus *bus = SignalBus::get_singleton();
+	if (bus) bus->emit_signal("interaction_prompt", "", false);
+}
+
+Array SkillSystem::get_combo_list() const {
+	Array out;
+	ensure_defs_loaded();
+	for (const ComboDef &c : s_combos) {
+		Dictionary d;
+		d["skill_id"] = String(c.skill_id);
+		d["after_id"] = String(c.after_id);
+		d["window"] = c.window;
+		d["mult"] = c.mult;
+		d["text"] = c.text ? LOC(c.text) : String();
+		out.append(d);
+	}
+	return out;
 }
 
 double SkillSystem::get_cooldown_remaining(const StringName &p_id) const {

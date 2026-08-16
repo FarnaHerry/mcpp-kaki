@@ -45,7 +45,11 @@
     "effect_param": 0,
     "buff_id": "",
     "passive_stat": 0,
-    "passive_value": 0
+    "passive_value": 0,
+    "combo_after": "po_kong_zhan",
+    "combo_window": 3.0,
+    "combo_mult": 1.5,
+    "combo_text": "破空接突进——剑势暴涨！"
   },
   {
     "id": "xuan_feng_zhan",
@@ -93,7 +97,11 @@
     "effect_param": 0,
     "buff_id": "",
     "passive_stat": 0,
-    "passive_value": 0
+    "passive_value": 0,
+    "combo_after": "xuan_feng_zhan",
+    "combo_window": 3.0,
+    "combo_mult": 1.5,
+    "combo_text": "旋风未尽——升龙破空！"
   },
   {
     "id": "huo_dan_shu",
@@ -165,7 +173,11 @@
     "effect_param": 0,
     "buff_id": "",
     "passive_stat": 0,
-    "passive_value": 0
+    "passive_value": 0,
+    "combo_after": "huo_dan_shu",
+    "combo_window": 3.0,
+    "combo_mult": 1.4,
+    "combo_text": "火雷激荡——雷咒增幅！"
   },
   {
     "id": "tu_dun_shu",
@@ -213,7 +225,11 @@
     "effect_param": 0,
     "buff_id": "",
     "passive_stat": 0,
-    "passive_value": 0
+    "passive_value": 0,
+    "combo_after": "bing_zhui_shu",
+    "combo_window": 3.0,
+    "combo_mult": 1.4,
+    "combo_text": "冰锋御剑——剑气凝霄！"
   },
   {
     "id": "suo_di_cheng_cun",
