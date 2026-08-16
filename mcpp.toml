@@ -5,12 +5,16 @@ description = "A xianxia Metroidvania action game (Godot GDExtension)"
 license     = "MIT"
 repo        = "https://github.com/farna/mcpp-kaki"
 
+[toolchain]
+default = "llvm@22.1.8"
+
 [language]
 standard   = "c++23"
 modules    = true
 import_std = false
 
 [build]
+bmi_schedule = "off"
 cflags = [
     "-DLINUX_ENABLED",
     "-DUNIX_ENABLED",

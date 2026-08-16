@@ -7,7 +7,7 @@
 #include <godot_cpp/variant/vector2.hpp>
 
 import mcpp_kaki.utils;
-import mcpp_kaki.core;
+import mcpp_kaki.core; // SaveSystem 等 core 模块类（成员指针）；clang/LLVM 工具链接受 GMF 自导入，gcc16 拒绝——本项目固定用 llvm 构建（mcpp.toml toolchain）
 
 namespace godot {
 
