@@ -14,13 +14,14 @@ import godot_cpp;
 
 namespace godot {
 
-// 品级色（全项目统一约定）：0凡=白 1灵=蓝 2地=紫 3天=金
+// 品级色（全项目统一约定）：0凡=白 1灵=蓝 2地=紫 3天=金 4仙=仙青
 // ItemPickup 光柱/本体染色、背包/仓库/商店格子染色共用此一口径
 export inline Color grade_color(int p_grade) {
 	switch (p_grade) {
 		case 1:  return Color(0.35f, 0.65f, 1.00f); // 灵·蓝
 		case 2:  return Color(0.75f, 0.40f, 0.95f); // 地·紫
 		case 3:  return Color(1.00f, 0.80f, 0.25f); // 天·金
+		case 4:  return Color(0.55f, 1.00f, 0.80f); // 仙·仙青
 		default: return Color(0.85f, 0.85f, 0.85f); // 凡·白
 	}
 }
@@ -59,7 +60,7 @@ export struct Item {
 	StringName learn_skill;     // 使用后习得技能（SkillSystem def id，秘籍/残卷类）
 	StringName learn_artifact;  // 使用后获得法宝（ArtifactSystem id，法宝残篇类）
 	int currency_tier = -1;     // 灵石档位：-1=普通物；0下品 1中品 2上品 3极品（拾取直入钱包不进背包）
-	int grade = 0;              // 品级：0凡 1灵 2地 3天
+	int grade = 0;              // 品级：0凡 1灵 2地 3天 4仙
 	int buy_price = 0;          // 商店买价（玩家付灵石；0=商店不售）
 	int sell_price = 0;         // 商店卖价（玩家得灵石；0=不可卖）
 	float breakthrough_bonus = 0.0f; // 机缘突破事件的加成（事件系统实现后生效）

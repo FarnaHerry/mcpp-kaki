@@ -457,7 +457,7 @@ void ItemDatabase::_register_items() {
 		fruit.description = LOC("五庄观镇观灵果，三千年一熟。食之气满神足，修为大涨。");
 		fruit.type = Item::CONSUMABLE;
 		fruit.max_stack = 9;
-		fruit.grade = 3;
+		fruit.grade = 4;
 		fruit.heal_pct = 0.8f;
 		fruit.energy_amount = 800.0f;
 		fruit.fullness_amount = 100.0f;

@@ -39,6 +39,7 @@ const GRADE_COLORS := [
 	Color(0.35, 0.65, 1.00), # 1灵=蓝
 	Color(0.75, 0.40, 0.95), # 2地=紫
 	Color(1.00, 0.80, 0.25), # 3天=金
+	Color(0.55, 1.00, 0.80), # 4仙=仙青
 ]
 
 # 在 GridList 子树找可见 Label（文本含 sub），返回其 font_color；找不到返回 Color(-1,...)
@@ -74,30 +75,30 @@ func _process(delta) -> bool:
 			_check(_grade("foundation_pill") == 2, "筑基丹 grade=2（地）")
 			_check(_grade("bi_shui_zhu") == 2, "避水珠 grade=2（地）")
 			_check(_grade("ding_hai_shen_zhen") == 2, "定海神针铁 grade=2（地）")
-			_check(_grade("pan_tao") == 3, "蟠桃 grade=3（天）")
-			_check(_grade("ren_shen_guo") == 3, "人参果 grade=3（天）")
-			_check(_grade("xian_tao") == 3, "仙桃 grade=3（天）")
+			_check(_grade("pan_tao") == 4, "蟠桃 grade=4（仙）")
+			_check(_grade("ren_shen_guo") == 4, "人参果 grade=4（仙）")
+			_check(_grade("xian_tao") == 3, "仙桃 grade=3（天，花果山灵桃不升仙）")
 			_check(_grade("shen_wai_can_juan") == 3, "身外化身残卷 grade=3（天）")
 			_check(_grade("spirit_stone_peak") == 3, "极品灵石 grade=3（天）")
 			_check(_grade("xuan_long_dan") == 3, "玄龙丹 grade=3（天）")
 			_check(_grade("qian_nian_zhen_zhu") == 3, "千年珍珠 grade=3（天）")
 		2:
-			# ---- ② ItemPickup 光柱：天品有柱且金色 ----
+			# ---- ② ItemPickup 光柱：仙品有柱且仙青（grade_color(4) 生效证据）----
 			var scene = current_scene
 			var pk = ClassDB.instantiate("ItemPickup")
 			pk.set("item_id", "pan_tao")
 			pk.position = Vector2(100, 100)
 			scene.add_child(pk)
-			pk.name = "TestPickupTian"
+			pk.name = "TestPickupXian"
 		3:
-			var pk = root.find_child("TestPickupTian", true, false)
+			var pk = root.find_child("TestPickupXian", true, false)
 			_check(pk != null, "蟠桃掉落物已生成")
 			var beam = pk.find_child("GradeBeam", false, false) if pk else null
-			_check(beam != null, "天品掉落物有光柱（GradeBeam）")
+			_check(beam != null, "仙品掉落物有光柱（GradeBeam）")
 			if beam:
-				_check(_color_eq(beam.color, GRADE_COLORS[3]), "光柱颜色=天品金")
+				_check(_color_eq(beam.color, GRADE_COLORS[4]), "光柱颜色=仙品仙青（grade_color(4)）")
 			var vis = pk.find_child("PickupVisual", false, false) if pk else null
-			_check(vis != null and _color_eq(vis.modulate, GRADE_COLORS[3]), "天品掉落物本体染色=金")
+			_check(vis != null and _color_eq(vis.modulate, GRADE_COLORS[4]), "仙品掉落物本体染色=仙青")
 			# 凡品对照：无光柱、本体不染
 			var pk0 = ClassDB.instantiate("ItemPickup")
 			pk0.set("item_id", "brown_rice")
@@ -120,20 +121,30 @@ func _process(delta) -> bool:
 			var pk1 = root.find_child("TestPickupDi", true, false)
 			var beam1 = pk1.find_child("GradeBeam", false, false) if pk1 else null
 			_check(beam1 != null and _color_eq(beam1.color, GRADE_COLORS[2]), "地品掉落物光柱=紫")
+			# 天品抽查（pan_tao 升仙后由仙桃承金）
+			var pk2 = ClassDB.instantiate("ItemPickup")
+			pk2.set("item_id", "xian_tao")
+			pk2.position = Vector2(160, 100)
+			current_scene.add_child(pk2)
+			pk2.name = "TestPickupTian"
+		6:
+			var pk2 = root.find_child("TestPickupTian", true, false)
+			var beam2 = pk2.find_child("GradeBeam", false, false) if pk2 else null
+			_check(beam2 != null and _color_eq(beam2.color, GRADE_COLORS[3]), "天品掉落物光柱=金")
 			# ---- ③ 背包格子品级染色 ----
 			var inv = _player().call("get_inventory")
 			inv.call("add_item", "pan_tao", 1)
 			inv.call("add_item", "brown_rice", 1)
 			Input.action_press("menu") # 打开 GameMenu（默认背包页）
-		6:
+		7:
 			Input.action_release("menu")
 			var c_tian = _grid_label_color("ItemGrid", "蟠桃")
 			_check(c_tian.r >= 0.0, "背包格可见蟠桃")
-			_check(_color_eq(c_tian, GRADE_COLORS[3]), "背包蟠桃名字=天品金")
+			_check(_color_eq(c_tian, GRADE_COLORS[4]), "背包蟠桃名字=仙品仙青")
 			var c_fan = _grid_label_color("ItemGrid", "糙米饭")
 			_check(c_fan.r >= 0.0 and _color_eq(c_fan, GRADE_COLORS[0]), "背包糙米饭名字=凡品白")
 			Input.action_press("menu") # 关闭菜单还原暂停
-		7:
+		8:
 			Input.action_release("menu")
 			if _fail == 0:
 				print("[TEST] ALL PASS")
