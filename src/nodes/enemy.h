@@ -45,6 +45,10 @@ class Enemy : public CharacterBody2D {
 		String drop_table;            // 命名掉落表（空串=类别兜底；DropSystem 经 get("drop_table") 读）
 		float preferred_distance = 0.0f; // ideal combat range (0 = melee)
 
+		// 精英词缀（design：elite_tier 0 普通 / 1 精英 / 2 首领；affix_id 空=无词缀）
+		int elite_tier = 0;
+		String affix_id;
+
 		// Boss
 		int boss_phase = 1;
 		float boss_phase2_threshold = 0.5f;
@@ -125,6 +129,15 @@ class Enemy : public CharacterBody2D {
 		bool get_show_hp_bar() const { return show_hp_bar; }
 		bool get_is_soul_reaper() const { return is_soul_reaper; }
 		float get_preferred_distance() const { return preferred_distance; }
+		// 精英词缀
+		void set_elite_tier(int v) { elite_tier = v; }
+		int get_elite_tier() const { return elite_tier; }
+		void set_affix_id(const String &v) { affix_id = v; }
+		String get_affix_id() const { return affix_id; }
+		void make_elite(int p_tier, const String &p_affix); // 精英化（幂等；Boss 拒绝）
+		void make_elite_random(int p_tier);                 // 随机词缀精英化
+		float get_elite_chance() const;                     // 定义 elite_chance（无定义=0）
+		float get_defense() const { return defense; }       // 物理防御（词缀 def_add 叠加后可读）
 		// 威压/灵压
 		int get_realm() const { return realm; }
 		void set_realm(int v) { realm = v; }
@@ -146,6 +159,8 @@ class Enemy : public CharacterBody2D {
 	private:
 		double _time = 0.0;
 		double _suppress_t = 0.0; // 威压慑服倒计时（>0=慑服中，_process 倒数）
+		bool _elite_applied = false;                       // 精英化已应用（幂等标记）
+		Color _elite_tint = Color(1.0f, 1.0f, 1.0f, 1.0f); // 词缀染色（慑服复原用）
 		Color _def_color = Color(1.0f, 1.0f, 1.0f, 1.0f); // EnemyDatabase 定义颜色（spawn 视觉用）
 		Vector2 _def_size = Vector2(20, 28);              // EnemyDatabase 定义尺寸
 		HitBox *_hitbox = nullptr;

@@ -31,6 +31,7 @@ struct EnemyDef {
 	Color color = Color(1.0f, 1.0f, 1.0f, 1.0f);
 	Vector2 size = Vector2(20, 28);
 	String drops;            // 命名掉落表（空串=走类别兜底掉落表）
+	float elite_chance = 0.0f; // 生成时自动精英化概率（0=不精英化；Boss 不配）
 };
 
 class EnemyDatabase {
@@ -44,6 +45,33 @@ private:
 
 	static void _load_hardcoded();
 	static void _apply_json(); // JSON 覆盖/新增（同 id 按字段覆盖）
+};
+
+// AffixDatabase — 精英词缀表（data/affixes.json 优先 + 硬编码兜底）。
+// 消费方：Enemy::make_elite / make_elite_random。
+struct AffixDef {
+	String id;
+	String name;                               // 中文词缀名（display_name 前缀用）
+	float hp_mult = 1.0f;
+	float atk_mult = 1.0f;
+	float speed_mult = 1.0f;
+	float detect_mult = 1.0f;                  // 侦测半径倍率（迅捷用）
+	float def_add = 0.0f;                      // 物理防御平加（厚甲用）
+	Color tint = Color(1.0f, 1.0f, 1.0f, 1.0f); // 本体染色
+};
+
+class AffixDatabase {
+public:
+	static void ensure_loaded();
+	static const AffixDef *get_affix(const String &p_id); // 未找到返回 nullptr
+	static const AffixDef *random_affix();                // 均匀随机（表空返回 nullptr）
+
+private:
+	static std::vector<AffixDef> s_affixes;
+	static bool s_loaded;
+
+	static void _load_hardcoded();
+	static void _apply_json();
 };
 
 } // namespace godot

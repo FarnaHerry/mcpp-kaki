@@ -183,7 +183,8 @@
       20,
       28
     ],
-    "drops": ""
+    "drops": "",
+    "elite_chance": 0.08
   },
   "cui_zhu_yao": {
     "name": "翠竹妖",
@@ -622,7 +623,8 @@
       20,
       28
     ],
-    "drops": ""
+    "drops": "",
+    "elite_chance": 0.1
   },
   "shou_dong_yao": {
     "name": "守洞妖",
@@ -802,7 +804,8 @@
       20,
       28
     ],
-    "drops": ""
+    "drops": "",
+    "elite_chance": 0.12
   },
   "jing_ying_bing_jia": {
     "name": "精英冰甲猿",
