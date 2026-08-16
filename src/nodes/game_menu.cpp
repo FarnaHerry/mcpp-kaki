@@ -412,17 +412,8 @@ void GameMenu::_build_ability_page() {
 // 功法页（炼体/练气双槽 + 熟练进度 + 加成总览）
 // ============================================================
 
-// 功法品级五色（全项目统一 grade_color 在 inventory.cppm 由并行任务接入中，
-// 合并时统一换用；口径：0黄白/1玄蓝/2地紫/3天金/4仙青）
-static Color _gongfa_grade_color(int p_grade) {
-	switch (p_grade) {
-		case 0:  return Color(0.88f, 0.88f, 0.88f); // 黄·白
-		case 1:  return Color(0.40f, 0.70f, 1.00f); // 玄·蓝
-		case 2:  return Color(0.75f, 0.45f, 1.00f); // 地·紫
-		case 3:  return Color(1.00f, 0.85f, 0.30f); // 天·金
-		default: return Color(0.55f, 1.00f, 0.80f); // 仙·青
-	}
-}
+// 功法品级五色直接用全项目统一 grade_color（inventory.cppm）：
+// 黄→0白 / 玄→1蓝 / 地→2紫 / 天→3金 / 仙→4青
 
 void GameMenu::_build_gongfa_page() {
 	Label *title = memnew(Label);
@@ -451,7 +442,7 @@ void GameMenu::_build_gongfa_page() {
 		const bool xian = (def->grade == GongfaSystem::GRADE_XIAN) || gf->is_xian_promoted();
 		String disp_name = (xian ? String(LOC("仙·")) : String()) + LOC(def->name);
 		String gname = xian ? LOC("仙品") : GongfaSystem::grade_name(def->grade);
-		r_line1_color = _gongfa_grade_color(xian ? 4 : (int)def->grade);
+		r_line1_color = grade_color(xian ? 4 : (int)def->grade);
 		String line1 = disp_name + LOC("  ") + gname +
 			LOC("  第") + String::num_int64(slot.layer) + LOC("/") + String::num_int64(def->max_layer) + LOC("层");
 		out.append(line1);

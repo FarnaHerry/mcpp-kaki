@@ -70,9 +70,9 @@ func _process(delta) -> bool:
 			_check(_count_item(inv, "zhi_xue_cao") > _qty0, "herb added to inventory")
 		4:
 			_next = _t + 0.3
-			# Boss 掉落千年灵芝保底：直接调 _do_spawn_drops(boss=true)
+			# Boss 掉落千年灵芝保底：直接调 _do_spawn_drops（v2 签名：pos, drop_table, is_boss, is_ranged, is_flying, realm）
 			var ds = root.find_child("DropSystem", true, false)
-			ds.call("_do_spawn_drops", Vector2(-200, 200), true, false, false)
+			ds.call("_do_spawn_drops", Vector2(-200, 200), "", true, false, false, 0)
 		5:
 			_next = _t + 0.3
 			var found = false
