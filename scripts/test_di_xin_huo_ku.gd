@@ -7,7 +7,7 @@ var _t := 0.0
 var _next := 1.0
 var _step := 0
 var _fail := 0
-var _drop: Node = null # 离火珠掉落实体（挂主场景根，跨房间拾取受父子同层限制——先出窟再拾）
+var _drop: Node = null # 离火珠掉落实体（DropSystem 修复后挂玩家当前父节点=房间内，宫内直接拾取）
 
 func _initialize():
 	var scene = load("res://scenes/main.tscn").instantiate()
@@ -134,36 +134,35 @@ func _process(delta) -> bool:
 		7:
 			var boss = current_scene.find_child("DiXinHuoLin", true, false)
 			_check(boss == null or float(boss.call("get_current_health")) <= 0, "地心火麟已被击杀")
-			# ⑥必掉离火珠：掉落实体存在（挂主场景根，房间坐标系与世界同原点）
-			for c in current_scene.find_children("*", "Node2D", true, false):
+			# ⑥必掉离火珠：DropSystem 已修——掉落挂玩家当前父节点（房间内），宫内可直接拾取
+			for c in _room().find_children("*", "Node2D", true, false):
 				if c.get_class() == "ItemPickup" and String(c.get("item_id")) == "li_huo_zhu":
 					_drop = c
-			_check(_drop != null, "离火珠掉落实体存在（Boss 必掉）")
+			_check(_drop != null, "离火珠掉落实体存在（Boss 必掉，挂房间内）")
+			if is_instance_valid(_drop):
+				_player().global_position = _drop.global_position
+			_next = _t + 0.8
+			_step = 8
+		8:
+			var inv = _player().call("get_inventory")
+			_check(int(inv.call("get_item_count", "li_huo_zhu")) >= 1, "宫内拾得离火珠（Boss 必掉）")
 			# ⑦出窟（出口 Portal 在房间中央底部 x=360）
 			_player().position = Vector2(360, 215)
 			_next = _t + 0.5
-			_step = 8
-		8:
-			Input.action_press("up")
-			_next = _t + 0.3
 			_step = 9
 		9:
-			Input.action_release("up")
-			_next = _t + 1.0
+			Input.action_press("up")
+			_next = _t + 0.3
 			_step = 10
 		10:
+			Input.action_release("up")
+			_next = _t + 1.0
+			_step = 11
+		11:
 			_check(_room() == null, "地心火窟已卸载")
 			_check(_player().get_parent() == current_scene, "玩家回到西牛贺洲")
 			var pos = _player().global_position
 			_check(abs(pos.x - 800.0) < 40.0, "出窟回到入口位置 (x=%.0f)" % pos.x)
-			# 贴身拾取离火珠（跨场景不拾取限制：需与掉落物同层）
-			if is_instance_valid(_drop):
-				_player().global_position = _drop.global_position
-			_next = _t + 0.8
-			_step = 11
-		11:
-			var inv = _player().call("get_inventory")
-			_check(int(inv.call("get_item_count", "li_huo_zhu")) >= 1, "拾得离火珠（Boss 必掉）")
 			if _fail == 0:
 				print("[TEST] ALL PASS")
 			else:

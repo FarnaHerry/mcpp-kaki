@@ -7,6 +7,8 @@ var _step := 0
 var _fail := 0
 var _hp_before := 0.0
 var _hp_after := 0.0
+var _hp_last := 0.0
+var _hp_dips := 0
 
 func _initialize():
 	var scene = load("res://scenes/main.tscn").instantiate()
@@ -88,13 +90,20 @@ func _process(delta) -> bool:
 			_check(_boss_bar_name() == "天罚使", "HUD Boss 血条=天罚使")
 			_check(_p().call("is_input_inverted") == true, "风灾并发：进场即控制反转")
 			_hp_before = float(_p().call("get_current_health"))
+			_hp_last = _hp_before
+			_hp_dips = 0
 			_step = 10
 		10, 11, 12, 13, 14, 15:
-			# 挂机 ~2s：阴火 DoT + 风蚀持续掉血（不动躲雷也可能中雷，只断言有环境伤害）
+			# 挂机：阴火 DoT + 风蚀持续掉血（不动躲雷也可能中雷，只断言有环境伤害）
+			# 逐帧采样掉血次数——受击养肉身途中升 1 级（+3% 上限并回填 ~60HP）会掩盖首尾净额对比
+			var hp_now = float(_p().call("get_current_health"))
+			if hp_now < _hp_last - 0.001:
+				_hp_dips += 1
+			_hp_last = hp_now
 			_step += 1
 		16:
 			_hp_after = float(_p().call("get_current_health"))
-			_check(_hp_after < _hp_before, "三灾并发：挂机持续掉血（" + str(_hp_before) + "→" + str(_hp_after) + "）")
+			_check(_hp_dips >= 1 or _hp_after < _hp_before, "三灾并发：挂机持续掉血（dips=" + str(_hp_dips) + ", " + str(_hp_before) + "→" + str(_hp_after) + "）")
 			# 落雷视觉在场（雷灾并发证据）
 			var tc = _tc()
 			var has_bolt := false

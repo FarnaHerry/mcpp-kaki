@@ -42,8 +42,15 @@ void DropSystem::spawn_drop(const StringName &p_item_id, int p_qty, const Vector
     pickup->set_item_id(p_item_id);
     pickup->set_quantity(p_qty);
     pickup->set_position(p_pos);
-    // 掉落物挂到场景根（与 bootstrap 的拾取物同级）
-    Node *parent = get_parent() ? get_parent() : this;
+    // 掉落物挂到玩家当前父节点（Portal 房间/洞天内击杀 → 挂进房间，否则跨父节点拾取被拒）；
+    // 找不到玩家时退回场景根（与 bootstrap 的拾取物同级）
+    Node *parent = nullptr;
+    Node *scene = get_tree() ? get_tree()->get_current_scene() : nullptr;
+    Node *player = scene ? scene->find_child("Player", true, false) : nullptr;
+    if (player && player->get_parent())
+        parent = player->get_parent();
+    if (!parent)
+        parent = get_parent() ? get_parent() : this;
     parent->add_child(pickup);
 }
 
