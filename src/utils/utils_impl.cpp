@@ -52,6 +52,11 @@ void SignalBus::_bind_methods() {
 	                      PropertyInfo(Variant::VECTOR2, "world_pos"),
 	                      PropertyInfo(Variant::FLOAT, "amount"),
 	                      PropertyInfo(Variant::BOOL, "is_player_victim")));
+	// 精英怪击杀（词缀系统 emit → DropSystem 追加精英奖励掉落）
+	ADD_SIGNAL(MethodInfo("elite_killed",
+	                      PropertyInfo(Variant::VECTOR2, "pos"),
+	                      PropertyInfo(Variant::INT, "tier"),
+	                      PropertyInfo(Variant::INT, "realm")));
 
 	// ---- Cultivation signals ----
 	ADD_SIGNAL(MethodInfo("spiritual_energy_changed",
