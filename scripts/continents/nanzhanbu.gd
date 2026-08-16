@@ -44,6 +44,10 @@ func _setup():
 	keeper.position = Vector2(1500, 205)
 	add_child(keeper)
 
+	# ===== 大雁塔：地宫秘境入口（长安战斗秘境，守塔金刚 Boss + 舍利子秘藏）=====
+	WC.make_landmark(self, 1615, 120, "大雁塔", Color(1.0, 0.85, 0.4, 1))
+	WC.create_portal(self, 1650, "res://scenes/rooms/da_yan_ta.tscn", "[↑] 进入大雁塔地宫", ctx.player, ctx.camera, ctx.hint)
+
 	# ===== 五庄观：人参果（镇观灵果）=====
 	WC.make_landmark(self, 1800, 120, "五庄观（人参果）", Color(0.6, 0.9, 0.5, 1))
 	WC.spawn_item_pickup(self, Vector2(1850, 232), "ren_shen_guo", 1)
