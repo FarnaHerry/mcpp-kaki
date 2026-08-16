@@ -1,75 +1,481 @@
 {
   "tables": {
     "normal": [
-      { "item": "spirit_stone", "min": 2, "max": 4, "chance": 0.6 },
-      { "item": "healing_pill", "min": 1, "max": 1, "chance": 0.25 },
-      { "item": "zhi_xue_cao", "min": 1, "max": 2, "chance": 0.15 },
-      { "item": "ju_ling_cao", "min": 1, "max": 2, "chance": 0.15 },
-      { "item": "brown_rice", "min": 1, "max": 2, "chance": 0.25 },
-      { "item": "dry_ration", "min": 1, "max": 1, "chance": 0.15 },
-      { "item": "spirit_stone_mid", "min": 1, "max": 1, "chance": 0.25, "min_realm": 4 },
-      { "item": "spirit_stone_high", "min": 1, "max": 1, "chance": 0.15, "min_realm": 7 }
+      {
+        "item": "spirit_stone",
+        "min": 2,
+        "max": 4,
+        "chance": 0.6
+      },
+      {
+        "item": "healing_pill",
+        "min": 1,
+        "max": 1,
+        "chance": 0.25
+      },
+      {
+        "item": "zhi_xue_cao",
+        "min": 1,
+        "max": 2,
+        "chance": 0.15
+      },
+      {
+        "item": "ju_ling_cao",
+        "min": 1,
+        "max": 2,
+        "chance": 0.15
+      },
+      {
+        "item": "brown_rice",
+        "min": 1,
+        "max": 2,
+        "chance": 0.25
+      },
+      {
+        "item": "dry_ration",
+        "min": 1,
+        "max": 1,
+        "chance": 0.15
+      },
+      {
+        "item": "spirit_stone_mid",
+        "min": 1,
+        "max": 1,
+        "chance": 0.25,
+        "min_realm": 4
+      },
+      {
+        "item": "spirit_stone_high",
+        "min": 1,
+        "max": 1,
+        "chance": 0.15,
+        "min_realm": 7
+      }
     ],
     "boss": [
-      { "item": "spirit_stone", "min": 5, "max": 10, "chance": 1.0 },
-      { "item": "healing_pill", "min": 2, "max": 3, "chance": 1.0 },
-      { "item": "foundation_pill", "min": 1, "max": 2, "chance": 0.8 },
-      { "item": "qi_pill", "min": 1, "max": 3, "chance": 0.6 },
-      { "item": "qian_nian_ling_zhi", "min": 1, "max": 1, "chance": 1.0 },
-      { "item": "spirit_stone_mid", "min": 1, "max": 2, "chance": 0.8 }
+      {
+        "item": "spirit_stone",
+        "min": 5,
+        "max": 10,
+        "chance": 1.0
+      },
+      {
+        "item": "healing_pill",
+        "min": 2,
+        "max": 3,
+        "chance": 1.0
+      },
+      {
+        "item": "foundation_pill",
+        "min": 1,
+        "max": 2,
+        "chance": 0.8
+      },
+      {
+        "item": "qi_pill",
+        "min": 1,
+        "max": 3,
+        "chance": 0.6
+      },
+      {
+        "item": "qian_nian_ling_zhi",
+        "min": 1,
+        "max": 1,
+        "chance": 1.0
+      },
+      {
+        "item": "spirit_stone_mid",
+        "min": 1,
+        "max": 2,
+        "chance": 0.8
+      }
     ],
     "normal_ranged": [
-      { "item": "qi_pill", "min": 1, "max": 2, "chance": 0.2 }
+      {
+        "item": "qi_pill",
+        "min": 1,
+        "max": 2,
+        "chance": 0.2
+      }
     ],
     "elite": [
-      { "item": "spirit_stone", "min": 2, "max": 4, "chance": 1.0 },
-      { "item": "healing_pill", "min": 1, "max": 2, "chance": 0.8 },
-      { "item": "qi_pill", "min": 1, "max": 2, "chance": 0.5 },
-      { "item": "spirit_stone_mid", "min": 1, "max": 2, "chance": 0.6, "min_realm": 4 },
-      { "item": "ju_ling_cao", "min": 1, "max": 2, "chance": 0.4 }
+      {
+        "item": "spirit_stone",
+        "min": 2,
+        "max": 4,
+        "chance": 1.0
+      },
+      {
+        "item": "healing_pill",
+        "min": 1,
+        "max": 2,
+        "chance": 0.8
+      },
+      {
+        "item": "qi_pill",
+        "min": 1,
+        "max": 2,
+        "chance": 0.5
+      },
+      {
+        "item": "spirit_stone_mid",
+        "min": 1,
+        "max": 2,
+        "chance": 0.6,
+        "min_realm": 4
+      },
+      {
+        "item": "ju_ling_cao",
+        "min": 1,
+        "max": 2,
+        "chance": 0.4
+      }
     ],
     "you_gu_chi_long": [
-      { "item": "spirit_stone", "min": 5, "max": 10, "chance": 1.0 },
-      { "item": "healing_pill", "min": 2, "max": 3, "chance": 1.0 },
-      { "item": "qian_nian_ling_zhi", "min": 1, "max": 1, "chance": 1.0 },
-      { "item": "foundation_pill", "min": 1, "max": 2, "chance": 0.8 },
-      { "item": "qi_pill", "min": 1, "max": 3, "chance": 0.6 },
-      { "item": "spirit_stone_mid", "min": 1, "max": 2, "chance": 0.8, "min_realm": 4 },
-      { "item": "long_gu", "min": 1, "max": 2, "chance": 0.6 },
-      { "item": "wu_dao_cha", "min": 1, "max": 1, "chance": 0.5 }
+      {
+        "item": "spirit_stone",
+        "min": 5,
+        "max": 10,
+        "chance": 1.0
+      },
+      {
+        "item": "healing_pill",
+        "min": 2,
+        "max": 3,
+        "chance": 1.0
+      },
+      {
+        "item": "qian_nian_ling_zhi",
+        "min": 1,
+        "max": 1,
+        "chance": 1.0
+      },
+      {
+        "item": "foundation_pill",
+        "min": 1,
+        "max": 2,
+        "chance": 0.8
+      },
+      {
+        "item": "qi_pill",
+        "min": 1,
+        "max": 3,
+        "chance": 0.6
+      },
+      {
+        "item": "spirit_stone_mid",
+        "min": 1,
+        "max": 2,
+        "chance": 0.8,
+        "min_realm": 4
+      },
+      {
+        "item": "long_gu",
+        "min": 1,
+        "max": 2,
+        "chance": 0.6
+      },
+      {
+        "item": "wu_dao_cha",
+        "min": 1,
+        "max": 1,
+        "chance": 0.5
+      }
     ],
     "bai_yuan_lao_zu": [
-      { "item": "xian_tao", "min": 1, "max": 2, "chance": 1.0 },
-      { "item": "spirit_stone", "min": 4, "max": 8, "chance": 1.0 },
-      { "item": "healing_pill", "min": 1, "max": 2, "chance": 0.8 },
-      { "item": "ju_ling_cao", "min": 1, "max": 3, "chance": 0.6 },
-      { "item": "spirit_stone_mid", "min": 1, "max": 2, "chance": 0.5, "min_realm": 4 },
-      { "item": "dry_ration", "min": 1, "max": 2, "chance": 0.4 }
+      {
+        "item": "xian_tao",
+        "min": 1,
+        "max": 2,
+        "chance": 1.0
+      },
+      {
+        "item": "spirit_stone",
+        "min": 4,
+        "max": 8,
+        "chance": 1.0
+      },
+      {
+        "item": "healing_pill",
+        "min": 1,
+        "max": 2,
+        "chance": 0.8
+      },
+      {
+        "item": "ju_ling_cao",
+        "min": 1,
+        "max": 3,
+        "chance": 0.6
+      },
+      {
+        "item": "spirit_stone_mid",
+        "min": 1,
+        "max": 2,
+        "chance": 0.5,
+        "min_realm": 4
+      },
+      {
+        "item": "dry_ration",
+        "min": 1,
+        "max": 2,
+        "chance": 0.4
+      }
     ],
     "zhen_shou_jiang": [
-      { "item": "spirit_stone", "min": 6, "max": 10, "chance": 1.0 },
-      { "item": "healing_pill", "min": 2, "max": 3, "chance": 1.0 },
-      { "item": "qian_nian_ling_zhi", "min": 1, "max": 1, "chance": 1.0 },
-      { "item": "qian_nian_zhen_zhu", "min": 1, "max": 1, "chance": 0.8 },
-      { "item": "foundation_pill", "min": 1, "max": 2, "chance": 0.8 },
-      { "item": "spirit_stone_mid", "min": 2, "max": 3, "chance": 0.8, "min_realm": 4 },
-      { "item": "bing_xin_lian", "min": 1, "max": 2, "chance": 0.5 }
+      {
+        "item": "spirit_stone",
+        "min": 6,
+        "max": 10,
+        "chance": 1.0
+      },
+      {
+        "item": "healing_pill",
+        "min": 2,
+        "max": 3,
+        "chance": 1.0
+      },
+      {
+        "item": "qian_nian_ling_zhi",
+        "min": 1,
+        "max": 1,
+        "chance": 1.0
+      },
+      {
+        "item": "qian_nian_zhen_zhu",
+        "min": 1,
+        "max": 1,
+        "chance": 0.8
+      },
+      {
+        "item": "foundation_pill",
+        "min": 1,
+        "max": 2,
+        "chance": 0.8
+      },
+      {
+        "item": "spirit_stone_mid",
+        "min": 2,
+        "max": 3,
+        "chance": 0.8,
+        "min_realm": 4
+      },
+      {
+        "item": "bing_xin_lian",
+        "min": 1,
+        "max": 2,
+        "chance": 0.5
+      }
     ],
     "ju_ling_shen": [
-      { "item": "pan_tao", "min": 1, "max": 2, "chance": 1.0 },
-      { "item": "spirit_stone_high", "min": 2, "max": 4, "chance": 1.0, "min_realm": 7 },
-      { "item": "spirit_stone_peak", "min": 1, "max": 2, "chance": 0.6, "min_realm": 10 },
-      { "item": "da_huan_dan", "min": 1, "max": 2, "chance": 0.8 },
-      { "item": "qian_nian_ling_zhi", "min": 1, "max": 2, "chance": 1.0 },
-      { "item": "wu_dao_dan", "min": 1, "max": 1, "chance": 0.5 }
+      {
+        "item": "pan_tao",
+        "min": 1,
+        "max": 2,
+        "chance": 1.0
+      },
+      {
+        "item": "spirit_stone_high",
+        "min": 2,
+        "max": 4,
+        "chance": 1.0,
+        "min_realm": 7
+      },
+      {
+        "item": "spirit_stone_peak",
+        "min": 1,
+        "max": 2,
+        "chance": 0.6,
+        "min_realm": 10
+      },
+      {
+        "item": "da_huan_dan",
+        "min": 1,
+        "max": 2,
+        "chance": 0.8
+      },
+      {
+        "item": "qian_nian_ling_zhi",
+        "min": 1,
+        "max": 2,
+        "chance": 1.0
+      },
+      {
+        "item": "wu_dao_dan",
+        "min": 1,
+        "max": 1,
+        "chance": 0.5
+      }
     ],
     "xuan_ming": [
-      { "item": "long_gu", "min": 2, "max": 3, "chance": 1.0 },
-      { "item": "spirit_stone_high", "min": 2, "max": 3, "chance": 1.0, "min_realm": 7 },
-      { "item": "qian_nian_ling_zhi", "min": 1, "max": 1, "chance": 1.0 },
-      { "item": "xuan_bing_shen", "min": 1, "max": 2, "chance": 0.8 },
-      { "item": "xuan_long_dan", "min": 1, "max": 1, "chance": 0.4 },
-      { "item": "healing_pill", "min": 2, "max": 3, "chance": 0.6 }
+      {
+        "item": "long_gu",
+        "min": 2,
+        "max": 3,
+        "chance": 1.0
+      },
+      {
+        "item": "spirit_stone_high",
+        "min": 2,
+        "max": 3,
+        "chance": 1.0,
+        "min_realm": 7
+      },
+      {
+        "item": "qian_nian_ling_zhi",
+        "min": 1,
+        "max": 1,
+        "chance": 1.0
+      },
+      {
+        "item": "xuan_bing_shen",
+        "min": 1,
+        "max": 2,
+        "chance": 0.8
+      },
+      {
+        "item": "xuan_long_dan",
+        "min": 1,
+        "max": 1,
+        "chance": 0.4
+      },
+      {
+        "item": "healing_pill",
+        "min": 2,
+        "max": 3,
+        "chance": 0.6
+      }
+    ],
+    "gu_jian_zhong": [
+      {
+        "item": "spirit_stone",
+        "min": 4,
+        "max": 8,
+        "chance": 1.0
+      },
+      {
+        "item": "healing_pill",
+        "min": 1,
+        "max": 2,
+        "chance": 1.0
+      },
+      {
+        "item": "foundation_pill",
+        "min": 1,
+        "max": 1,
+        "chance": 0.8
+      },
+      {
+        "item": "qi_pill",
+        "min": 1,
+        "max": 2,
+        "chance": 0.6
+      },
+      {
+        "item": "qing_feng_gu_jian",
+        "min": 1,
+        "max": 1,
+        "chance": 1.0
+      }
+    ],
+    "da_yan_ta": [
+      {
+        "item": "spirit_stone_mid",
+        "min": 2,
+        "max": 4,
+        "chance": 1.0,
+        "min_realm": 4
+      },
+      {
+        "item": "she_li_zi",
+        "min": 1,
+        "max": 1,
+        "chance": 1.0
+      },
+      {
+        "item": "da_huan_dan",
+        "min": 1,
+        "max": 1,
+        "chance": 0.5
+      },
+      {
+        "item": "qian_nian_ling_zhi",
+        "min": 1,
+        "max": 1,
+        "chance": 0.6
+      },
+      {
+        "item": "spirit_stone_high",
+        "min": 1,
+        "max": 1,
+        "chance": 0.5,
+        "min_realm": 7
+      }
+    ],
+    "di_xin_huo_ku": [
+      {
+        "item": "spirit_stone",
+        "min": 5,
+        "max": 8,
+        "chance": 1.0
+      },
+      {
+        "item": "spirit_stone_mid",
+        "min": 1,
+        "max": 2,
+        "chance": 0.8,
+        "min_realm": 4
+      },
+      {
+        "item": "li_huo_zhu",
+        "min": 1,
+        "max": 1,
+        "chance": 1.0
+      },
+      {
+        "item": "chi_yan_hua",
+        "min": 1,
+        "max": 2,
+        "chance": 0.8
+      },
+      {
+        "item": "chi_yan_dan",
+        "min": 1,
+        "max": 1,
+        "chance": 0.5
+      }
+    ],
+    "huang_gu_bing_mu": [
+      {
+        "item": "spirit_stone_high",
+        "min": 2,
+        "max": 3,
+        "chance": 1.0,
+        "min_realm": 7
+      },
+      {
+        "item": "xuan_bing_sui",
+        "min": 1,
+        "max": 1,
+        "chance": 1.0
+      },
+      {
+        "item": "xuan_bing_shen",
+        "min": 1,
+        "max": 2,
+        "chance": 0.8
+      },
+      {
+        "item": "bing_xin_dan",
+        "min": 1,
+        "max": 2,
+        "chance": 0.6
+      },
+      {
+        "item": "long_gu",
+        "min": 1,
+        "max": 1,
+        "chance": 0.5
+      }
     ]
   }
 }

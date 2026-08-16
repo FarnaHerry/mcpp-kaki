@@ -51,7 +51,7 @@ cp target/x86_64-linux-gnu/*/bin/libmcpp-kaki.so \
 
 ### Build requirements
 
-- **mcpp** must be installed and have a toolchain available (e.g. `mcpp toolchain install llvm`).
+- **mcpp** must be installed and have a toolchain available。项目固定 **llvm@22.1.8**（mcpp.toml `[toolchain] default`）——gcc 16 拒绝 GMF 头文件自导入本模块（player.h/game_manager.h 模式，`module already imported`），clang 接受；勿切回 gcc。
 - godot-cpp comes from mcpp packages: **`compat:godot-cpp@10.0.0-rc1`** (Godot 4.6 pre-generated bindings — no Python/SCons/submodule; header include path for plain .cpp) and **`godotengine:godot-cpp-m@10.0.0-rc1`** (C++23 module layer: the 6 `.cppm` interfaces use `import godot_cpp;` + `#include <godot-cpp-m/macros.h>` for GDCLASS etc.; HashMap/HashSet are NOT re-exported by the module — keep textual `#include <godot_cpp/templates/hash_*.hpp>`). Builds once into mcpp's global cache; clean rebuilds reuse it.
 - The default target is `template_debug` for development, matching Godot 4.6.
 - mcpp build artifacts live in `target/` and are ignored by git.
