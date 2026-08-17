@@ -496,8 +496,16 @@ public:
 
 	static const int MAX_SLOTS = 6;
 
+	// 温养来源常量（SignalBus 解耦，见 _on_* 回调）
+	static constexpr float NURTURE_PER_KILL_ELITE_TIER = 2.0f; // 精英击杀：全部已装备 +tier×2
+	static constexpr float NURTURE_PER_BOSS = 15.0f;           // Boss 击杀：全部已装备 +15
+	static constexpr float NURTURE_PER_PILL = 1.0f;            // 服丹（炼丹产物）：本命 +1/颗
+	static constexpr float NURTURE_PER_MEDITATE_TICK = 0.1f;   // 打坐修为：本命 +0.1/次
+
 	static const Def *find_def(const StringName &p_id);
 	static String kind_name(Kind p_k);
+
+	ArtifactSystem();
 
 	void set_player(Player *p) { _player = p; }
 
@@ -540,6 +548,14 @@ private:
 	HashMap<StringName, double> _cooldown_until;
 	bool _secondary_unlocked = false; // 飞升解锁次要槽 +3
 	bool _tribulation_mode = false;   // 渡劫中：只带本命法宝
+
+	bool _bus_connected = false;
+	void _ensure_bus_connected(); // 惰性连接 SignalBus（GDCLASS Object 无 _ready，参考 GongfaSystem）
+	// 温养来源回调（全部走 SignalBus 解耦）
+	void _on_elite_killed(const Vector2 &p_pos, int p_tier, int p_realm); // 精英：全装备 +tier×2
+	void _on_boss_died();                                                 // Boss：全装备 +15
+	void _on_item_used(const String &p_item_id, int p_quantity);          // 服丹：本命 +1/颗
+	void _on_energy_changed(int64_t p_current, int64_t p_max, double p_progress); // 打坐中：本命 +0.1/次
 
 	double _now() const;
 	static constexpr float NURTURE_STAGE1 = 300.0f;
