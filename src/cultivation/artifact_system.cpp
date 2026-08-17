@@ -5,6 +5,7 @@ module;
 #include "../utils/text.h"
 
 module mcpp_kaki.cultivation;
+import mcpp_kaki.utils;
 namespace godot {
 
 // 法宝定义表（v1 静态表；攻击型 = 祭出复用 Skill 管线，辅助型 = 常驻被动乘区）
@@ -53,6 +54,14 @@ void ArtifactSystem::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_owned_list"), &ArtifactSystem::get_owned_list);
 	ClassDB::bind_method(D_METHOD("save_to_dict"), &ArtifactSystem::save_to_dict);
 	ClassDB::bind_method(D_METHOD("load_from_dict", "data"), &ArtifactSystem::load_from_dict);
+	// 温养来源信号回调（Callable(this,"_on_*") 必须绑定，否则静默失效——CLAUDE.md 潜伏 bug 教训）
+	ClassDB::bind_method(D_METHOD("_on_elite_killed", "pos", "tier", "realm"),
+	                     &ArtifactSystem::_on_elite_killed);
+	ClassDB::bind_method(D_METHOD("_on_boss_died"), &ArtifactSystem::_on_boss_died);
+	ClassDB::bind_method(D_METHOD("_on_item_used", "item_id", "quantity"),
+	                     &ArtifactSystem::_on_item_used);
+	ClassDB::bind_method(D_METHOD("_on_energy_changed", "current", "max", "progress"),
+	                     &ArtifactSystem::_on_energy_changed);
 
 	ADD_SIGNAL(MethodInfo("artifact_activated", PropertyInfo(Variant::STRING_NAME, "id")));
 	ADD_SIGNAL(MethodInfo("artifacts_changed"));
@@ -71,6 +80,64 @@ String ArtifactSystem::kind_name(Kind p_k) {
 
 double ArtifactSystem::_now() const {
 	return _player ? _player->get_time() : 0.0;
+}
+
+ArtifactSystem::ArtifactSystem() {
+	// SignalBus 由场景装配（world_common）先于 Player 创建，此处通常已可连；
+	// 连不上也不碍——acquire/equip/nurture/load 里 _ensure_bus_connected 惰性补连
+	_ensure_bus_connected();
+}
+
+void ArtifactSystem::_ensure_bus_connected() {
+	if (_bus_connected) return;
+	SignalBus *bus = SignalBus::get_singleton();
+	if (!bus) return;
+	// 温养来源扩充：精英/Boss 击杀、服丹、打坐修为，全部走 SignalBus 解耦
+	Callable cb_elite(this, "_on_elite_killed");
+	if (!bus->is_connected("elite_killed", cb_elite)) {
+		bus->connect("elite_killed", cb_elite);
+	}
+	Callable cb_boss(this, "_on_boss_died");
+	if (!bus->is_connected("boss_died", cb_boss)) {
+		bus->connect("boss_died", cb_boss);
+	}
+	Callable cb_item(this, "_on_item_used");
+	if (!bus->is_connected("item_used", cb_item)) {
+		bus->connect("item_used", cb_item);
+	}
+	Callable cb_energy(this, "_on_energy_changed");
+	if (!bus->is_connected("spiritual_energy_changed", cb_energy)) {
+		bus->connect("spiritual_energy_changed", cb_energy);
+	}
+	_bus_connected = true;
+}
+
+// 精英击杀：词缀精英的修为更浑厚，全部已装备法宝温养 +tier×2
+void ArtifactSystem::_on_elite_killed(const Vector2 &p_pos, int p_tier, int p_realm) {
+	(void)p_pos; (void)p_realm;
+	if (p_tier <= 0) return;
+	nurture_equipped(NURTURE_PER_KILL_ELITE_TIER * float(p_tier));
+}
+
+// Boss 击杀：大额温养，全部已装备法宝 +15（SignalBus boss_died 无参数版，含渡劫天罚使）
+void ArtifactSystem::_on_boss_died() {
+	nurture_equipped(NURTURE_PER_BOSS);
+}
+
+// 服丹：丹药入腹药力淬炼本命法宝 +1/颗
+// 丹药判定 = 炼丹产物（AlchemySystem 配方 id 即产出物品 id，recipes.json 数据驱动）——
+// 仙桃/人参果/千年珍珠等天材地宝不算丹药
+void ArtifactSystem::_on_item_used(const String &p_item_id, int p_quantity) {
+	if (!_player || p_quantity <= 0) return;
+	if (!AlchemySystem::find_recipe(StringName(p_item_id))) return;
+	_player->nurture_benming(NURTURE_PER_PILL * float(p_quantity));
+}
+
+// 打坐修为：入定吐纳时灵力流转温养本命 +0.1/次（非打坐状态的修为获取不触发）
+void ArtifactSystem::_on_energy_changed(int64_t p_current, int64_t p_max, double p_progress) {
+	(void)p_current; (void)p_max; (void)p_progress;
+	if (!_player || !_player->is_meditating()) return;
+	_player->nurture_benming(NURTURE_PER_MEDITATE_TICK);
 }
 
 int ArtifactSystem::get_slot_limit() const {
@@ -92,6 +159,7 @@ void ArtifactSystem::set_tribulation_mode(bool p_on) {
 }
 
 bool ArtifactSystem::acquire(const StringName &p_id) {
+	_ensure_bus_connected();
 	const Def *def = find_def(p_id);
 	if (!def) return false;
 	if (_owned.has(p_id)) return true;
@@ -105,6 +173,7 @@ bool ArtifactSystem::is_owned(const StringName &p_id) const {
 }
 
 bool ArtifactSystem::equip(int p_slot, const StringName &p_id) {
+	_ensure_bus_connected();
 	if (p_slot < 0 || p_slot >= get_slot_limit()) return false;
 	if (!_owned.has(p_id) || !find_def(p_id)) return false;
 	if (p_slot == 0) {
@@ -275,6 +344,7 @@ bool ArtifactSystem::activate_slot(int p_slot) {
 }
 
 void ArtifactSystem::nurture_equipped(float p_amount) {
+	_ensure_bus_connected();
 	for (int i = 0; i < get_slot_limit(); i++) {
 		StringName id = get_slot_artifact(i);
 		if (id == StringName()) continue;
@@ -358,6 +428,7 @@ Dictionary ArtifactSystem::save_to_dict() const {
 }
 
 void ArtifactSystem::load_from_dict(const Dictionary &p_data) {
+	_ensure_bus_connected();
 	_owned.clear();
 	for (int i = 1; i < MAX_SLOTS; i++) _slots[i] = StringName();
 	_nurture.clear();
