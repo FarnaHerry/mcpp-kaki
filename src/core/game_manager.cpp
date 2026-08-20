@@ -124,6 +124,8 @@ void GameManager::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("has_flag", "key"), &GameManager::has_flag);
 	ClassDB::bind_method(D_METHOD("check_hunyuan_ready"), &GameManager::check_hunyuan_ready);
 	ClassDB::bind_method(D_METHOD("complete_ascension_ending"), &GameManager::complete_ascension_ending);
+	ClassDB::bind_method(D_METHOD("check_puti_acquisition"), &GameManager::check_puti_acquisition);
+	ClassDB::bind_method(D_METHOD("grant_da_pin_tian_xian_jue"), &GameManager::grant_da_pin_tian_xian_jue);
 
 	// Save / Load
 	ClassDB::bind_method(D_METHOD("save_game", "slot_name"), &GameManager::save_game, DEFVAL("auto"));
@@ -767,6 +769,28 @@ String GameManager::check_hunyuan_ready() {
 	if (!has_flag(TXT("boss_dead:巨灵神")))
 		return LOC("巨灵神未伏，天庭试炼未过。");
 	return String();
+}
+
+String GameManager::check_puti_acquisition() {
+	if (!_player || !_player->get_cultivation())
+		return LOC("机缘未至。");
+	// once_flag 已立则放行（NarrativeNode 会播 after_lines）
+	if (has_flag(TXT("da_pin_tian_xian_jue_learned")))
+		return String();
+	int realm = _player->get_cultivation()->get_realm_index();
+	if (realm < 11)
+		return LOC("你修为未至金仙，尚不足以承载此无上法门。");
+	return String();
+}
+
+void GameManager::grant_da_pin_tian_xian_jue() {
+	if (!_player || !_player->get_gongfa())
+		return;
+	_player->get_gongfa()->grant_gongfa(StringName("da_pin_tian_xian_jue"));
+	if (_signal_bus) {
+		_signal_bus->emit_signal("interaction_prompt",
+		                         LOC("菩提祖师传授《大品天仙诀》——躲三灾变化之根本法门！"), true);
+	}
 }
 
 void GameManager::complete_ascension_ending() {

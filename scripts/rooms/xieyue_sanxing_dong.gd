@@ -16,3 +16,26 @@ func _ready():
 	WC.spawn_item_pickup(self, Vector2(200, 182), "pu_ti_xin_fa_juan", 1)
 	WC.spawn_item_pickup(self, Vector2(180, 232), "qian_nian_ling_zhi", 1)
 	WC.spawn_item_pickup(self, Vector2(220, 232), "spirit_stone_mid", 5)
+
+	# ===== 菩提祖师（传法·大品天仙诀）=====
+	# 盘坐洞深处，金仙门槛方可授法（西游悟空学成即大闹天宫，寓意金仙级方堪承载）
+	var puti = ClassDB.instantiate("NarrativeNode")
+	puti.name = "PuTiZuShi"
+	puti.position = Vector2(60, 218)
+	puti.set("title", "菩提祖师")
+	puti.set("prompt", "[X] 菩提祖师")
+	puti.set("color", Color(0.95, 0.9, 0.75, 1))
+	puti.set("once_flag", "da_pin_tian_xian_jue_learned")
+	puti.set("precheck_method", "check_puti_acquisition")
+	puti.set("gm_method", "grant_da_pin_tian_xian_jue")
+	puti.set("lines", PackedStringArray([
+		"你一路行来，历红尘、斩妖魔、渡三灾、证真仙——根骨已备。",
+		"昔年悟空亦在此间，三更入室，我传他以大品天仙诀。",
+		"此诀乃躲三灾变化之根本，诸天仙法之宗源。",
+		"今日，我亦传你。",
+		"大品天仙诀——精气神合，万法归宗！",
+	]))
+	puti.set("after_lines", PackedStringArray([
+		"大品天仙诀已传你身，好自为之，莫堕了三星洞的声名。",
+	]))
+	add_child(puti)

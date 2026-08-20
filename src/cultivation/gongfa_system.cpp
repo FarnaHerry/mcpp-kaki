@@ -82,11 +82,16 @@ void GongfaSystem::ensure_defs_loaded() {
 
 void GongfaSystem::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("equip_gongfa", "id"), &GongfaSystem::equip_gongfa);
+	ClassDB::bind_method(D_METHOD("grant_gongfa", "id"), &GongfaSystem::grant_gongfa);
 	ClassDB::bind_method(D_METHOD("feed", "school", "base"), &GongfaSystem::feed);
 	ClassDB::bind_method(D_METHOD("is_xian_promoted"), &GongfaSystem::is_xian_promoted);
 	ClassDB::bind_method(D_METHOD("get_hp_mult"), &GongfaSystem::get_hp_mult);
 	ClassDB::bind_method(D_METHOD("get_atk_mult"), &GongfaSystem::get_atk_mult);
 	ClassDB::bind_method(D_METHOD("get_spell_mult"), &GongfaSystem::get_spell_mult);
+	ClassDB::bind_method(D_METHOD("get_mana_mult"), &GongfaSystem::get_mana_mult);
+	ClassDB::bind_method(D_METHOD("get_regen_mult"), &GongfaSystem::get_regen_mult);
+	ClassDB::bind_method(D_METHOD("get_speed_mult"), &GongfaSystem::get_speed_mult);
+	ClassDB::bind_method(D_METHOD("get_def_mult"), &GongfaSystem::get_def_mult);
 	ClassDB::bind_method(D_METHOD("get_slot_info", "school"), &GongfaSystem::get_slot_info);
 	ClassDB::bind_method(D_METHOD("get_def_info", "id"), &GongfaSystem::get_def_info);
 	ClassDB::bind_method(D_METHOD("save_to_dict"), &GongfaSystem::save_to_dict);
@@ -192,9 +197,9 @@ String GongfaSystem::grade_name(Grade p_g) {
 bool GongfaSystem::equip_gongfa(const StringName &p_id) {
 	const Def *def = find_def(p_id);
 	if (!def) return false;
-	// 先天仙品（大品天仙诀）暂无获得途径，常规装配/习得一律拒绝
-	// （将来斜月三星洞菩提祖师线开专用通道，见 GONGFA_DEFS 注释）
-	if (def->grade == GRADE_XIAN) return false;
+	// 先天仙品（大品天仙诀）：常规途径拒绝——但若已通过 grant 通道习得（在 _known 中），
+	// 允许重新装配（切换保留熟练）。grant_gongfa 是唯一获得途径。
+	if (def->grade == GRADE_XIAN && !_known.has(p_id)) return false;
 
 	_ensure_bus_connected();
 
@@ -215,6 +220,39 @@ bool GongfaSystem::equip_gongfa(const StringName &p_id) {
 		slot.id = p_id;
 		slot.layer = 1;
 		slot.prof = 0.0f;
+	}
+	emit_signal("gongfa_changed");
+	return true;
+}
+
+bool GongfaSystem::grant_gongfa(const StringName &p_id) {
+	// 先天仙品专用 grant 通道（斜月三星洞菩提祖师传法）。
+	// 不经 equip_gongfa 的拒装门槛，直接加入 _known 并装备到对应槽。
+	const Def *def = find_def(p_id);
+	if (!def) return false;
+	// 幂等：已习得则忽略
+	if (_known.has(p_id)) return false;
+	if (!_slots[def->school].empty() && _slots[def->school].id == p_id) return false;
+
+	_ensure_bus_connected();
+
+	// 旧功法入 _known
+	SlotState &slot = _slots[def->school];
+	if (!slot.empty()) {
+		_known[slot.id] = { slot.layer, slot.prof };
+	}
+
+	// 装备新功法，从 1 层起
+	slot.id = p_id;
+	slot.layer = 1;
+	slot.prof = 0.0f;
+	// 将先天仙品也记入 _known，以便 equip_gongfa 允许重新装配
+	_known[p_id] = { 1, 0.0f };
+	UtilityFunctions::print(TXT("[功法] 菩提传授——习得先天仙品《"), LOC(def->name), TXT("》"));
+	SignalBus *bus = SignalBus::get_singleton();
+	if (bus) {
+		bus->emit_signal("interaction_prompt",
+		                 String(LOC("菩提祖师传授《")) + LOC(def->name) + LOC("》！"), true);
 	}
 	emit_signal("gongfa_changed");
 	return true;

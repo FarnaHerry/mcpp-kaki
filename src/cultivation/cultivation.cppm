@@ -277,6 +277,7 @@ public:
 	GongfaSystem();
 
 	bool equip_gongfa(const StringName &p_id);
+	bool grant_gongfa(const StringName &p_id); // 先天仙品专用通道（斜月三星洞菩提祖师传法）
 	void feed(School p_school, float p_base);
 	void grant(const StringName &p_id) { equip_gongfa(p_id); }
 
