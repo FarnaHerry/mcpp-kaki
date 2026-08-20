@@ -25,4 +25,21 @@ func _ready():
 	boss.get_node("Polygon2D").scale = Vector2(1.4, 1.4)
 	boss.connect("boss_died", Callable(WC, "on_boss_died"))
 
+	# 秘境压制修为：大雁塔地宫压到 realm 7
+	call_deferred("_suppress_player", 7)
+	call_deferred("_link_exit_portal")
+
 	print("大雁塔地宫")
+
+func _suppress_player(realm: int):
+	var p = get_tree().current_scene.find_child("Player", true, false)
+	if p:
+		p.set("suppressed_realm", realm)
+
+func _link_exit_portal():
+	var ep = get_node_or_null("ExitPortal")
+	if ep and not ep.is_connected("body_entered", Callable(self, "_on_player_exit")):
+		ep.connect("body_entered", Callable(self, "_on_player_exit"))
+
+func _on_player_exit(_body: Node):
+	_suppress_player(-1)
