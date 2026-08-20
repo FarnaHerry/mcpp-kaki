@@ -175,6 +175,10 @@ class Player : public CharacterBody2D {
 		void exit_tribulation();
 		bool is_in_tribulation() const { return _in_tribulation; }
 
+		// 秘境压制修为（Portal 房间压制玩家属性至指定境界，高境界门控技能/法宝/神通仍可用）
+		void set_suppressed_realm(int v);
+		int get_suppressed_realm() const { return _suppressed_realm; }
+
 		// Inventory
 		Inventory *get_inventory() const { return _inventory; }
 		void pickup_item(const StringName &p_item_id, int p_qty = 1);
@@ -264,6 +268,8 @@ class Player : public CharacterBody2D {
 		float _benming_nurture = 0.0f;   // 温养进度（0~1000）
 		bool _benming_awakened = false;  // 渡劫成功觉醒（150%→200%）
 		bool _in_tribulation = false;    // 渡劫三灾中：次要法宝禁用 + 装备加成置空
+
+		int _suppressed_realm = -1;      // 秘境压制修为（-1=不压制，0~12=压制到该境界）
 
 		void _update_buffers();
 		void _update_facing();

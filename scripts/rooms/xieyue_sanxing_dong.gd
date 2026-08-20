@@ -17,7 +17,7 @@ func _ready():
 	WC.spawn_item_pickup(self, Vector2(180, 232), "qian_nian_ling_zhi", 1)
 	WC.spawn_item_pickup(self, Vector2(220, 232), "spirit_stone_mid", 5)
 
-	# ===== 菩提祖师（传法·大品天仙诀）=====
+# ===== 菩提祖师（传法·大品天仙诀）=====
 	# 盘坐洞深处，金仙门槛方可授法（西游悟空学成即大闹天宫，寓意金仙级方堪承载）
 	var puti = ClassDB.instantiate("NarrativeNode")
 	puti.name = "PuTiZuShi"
@@ -39,3 +39,20 @@ func _ready():
 		"大品天仙诀已传你身，好自为之，莫堕了三星洞的声名。",
 	]))
 	add_child(puti)
+
+	# 传法道场：不压制（-1），入口 & 出口都显式还原（防跨场景残留）
+	call_deferred("_suppress_player", -1)
+	call_deferred("_link_exit_portal")
+
+func _suppress_player(realm: int):
+	var p = get_tree().current_scene.find_child("Player", true, false)
+	if p:
+		p.set("suppressed_realm", realm)
+
+func _link_exit_portal():
+	var ep = get_node_or_null("ExitPortal")
+	if ep and not ep.is_connected("body_entered", Callable(self, "_on_player_exit")):
+		ep.connect("body_entered", Callable(self, "_on_player_exit"))
+
+func _on_player_exit(_body: Node):
+	_suppress_player(-1)

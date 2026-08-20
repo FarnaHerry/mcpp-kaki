@@ -128,6 +128,8 @@ public:
 	void tick_mana_regen(double p_delta);
 
 	void set_mana_max_mult(double p_m) { _mana_max_mult = p_m; _emit_mana_changed(); }
+	// 秘境压制修为：Player 通过此字段通知 CultivationSystem 按压制境界算法力上限
+	void set_suppressed_realm_for_mana(int v) { _suppressed_realm_for_mana = v; }
 	void set_mana_regen_mult(double p_m) { _mana_regen_mult = p_m; }
 	void set_law_regen_mult(double p_m) { _law_regen_mult = p_m; }
 
@@ -198,6 +200,13 @@ public:
 	float get_speed_multiplier() const;
 	double get_max_health() const { return 100.0 * get_defense_multiplier(); }
 
+	// 秘境压制修为：按指定境界的 REALM_STATS 底数计乘区（当前实例 STAGE_FACTOR/分叉乘区照旧）
+	float get_damage_multiplier_for_realm(int realm) const;
+	float get_defense_multiplier_for_realm(int realm) const;
+	float get_speed_multiplier_for_realm(int realm) const;
+	double get_max_health_for_realm(int realm) const; // 100 × get_defense_multiplier_for_realm
+	double get_max_mana_for_realm(int realm) const;   // 指定境界法力底数 × 现有乘区
+
 	int64_t energy_to_next_realm() const;
 	bool is_max_realm() const { return _current_realm >= GOLDEN_IMMORTAL; }
 
@@ -228,6 +237,7 @@ private:
 	bool _path_merged = false;
 	bool _hunyuan = false;
 	bool _free_breakthrough = true;
+	int _suppressed_realm_for_mana = -1; // 秘境压制修为：get_max_mana 按此境界计底数（-1=不压制）
 
 	void _set_realm_internal(Realm p_realm);
 	void _update_focus_from_paths(); // 分叉等级 → focus 称号轴自动跟随

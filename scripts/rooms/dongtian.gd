@@ -71,6 +71,9 @@ func _ready():
 	_make_herb_ledge("HerbLedge2", Vector2(84, 168), 2)
 	_make_herb_ledge("HerbLedge3", Vector2(176, 156), 3)
 
+	# 自家小世界：不压制（-1），显式还原防残留
+	call_deferred("_suppress_player", -1)
+
 # 灵兽闯阵：Manager 判定触发后回调（realm 已按玩家-1 算好）。返回实际生成数。
 func spawn_invasion(realm: int) -> int:
 	var count: int = 1 + randi() % 2

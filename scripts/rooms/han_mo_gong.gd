@@ -56,7 +56,24 @@ func _ready():
 	# ===== 隐藏秘藏（宫心高台寒光暗格）：极品灵石 ×1 =====
 	WC.spawn_item_pickup(self, Vector2(330, 100), "spirit_stone_peak", 1)
 
+	# 秘境压制修为：寒墨行宫压到 realm 9
+	call_deferred("_suppress_player", 9)
+	call_deferred("_link_exit_portal")
+
 	print("寒墨行宫")
+
+func _suppress_player(realm: int):
+	var p = get_tree().current_scene.find_child("Player", true, false)
+	if p:
+		p.set("suppressed_realm", realm)
+
+func _link_exit_portal():
+	var ep = get_node_or_null("ExitPortal")
+	if ep and not ep.is_connected("body_entered", Callable(self, "_on_player_exit")):
+		ep.connect("body_entered", Callable(self, "_on_player_exit"))
+
+func _on_player_exit(_body: Node):
+	_suppress_player(-1)
 
 # 宫底秘藏：Boss 必掉玄冥归元丹 + 玄冰髓（命名表 han_mo_gong 那份挂在玩家父节点，
 # 房间内直接可拾；此补发与 DropSystem 去重，仅作保险双保险）

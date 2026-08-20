@@ -755,6 +755,10 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("enter_tribulation"), &Player::enter_tribulation);
 		ClassDB::bind_method(D_METHOD("exit_tribulation"), &Player::exit_tribulation);
 		ClassDB::bind_method(D_METHOD("is_in_tribulation"), &Player::is_in_tribulation);
+		ClassDB::bind_method(D_METHOD("set_suppressed_realm", "v"), &Player::set_suppressed_realm);
+		ClassDB::bind_method(D_METHOD("get_suppressed_realm"), &Player::get_suppressed_realm);
+
+		ADD_PROPERTY(PropertyInfo(Variant::INT, "suppressed_realm"), "set_suppressed_realm", "get_suppressed_realm");
 
 		ADD_SIGNAL(MethodInfo("player_died"));
 		ADD_SIGNAL(MethodInfo("player_damaged", PropertyInfo(Variant::FLOAT, "amount")));
@@ -1256,7 +1260,11 @@ namespace godot {
 
 	void Player::_refresh_max_health(bool p_refill) {
 		float old_max = max_health;
-		max_health = float(_cultivation ? _cultivation->get_max_health() : 100.0);
+		if (_cultivation && _suppressed_realm >= 0) {
+			max_health = float(_cultivation->get_max_health_for_realm(_suppressed_realm));
+		} else {
+			max_health = float(_cultivation ? _cultivation->get_max_health() : 100.0);
+		}
 		if (_gongfa) {
 			max_health *= _gongfa->get_hp_mult();
 		}
@@ -1654,6 +1662,20 @@ namespace godot {
 		_update_move_speed(); // 装备速度加成置空
 	}
 
+	// 秘境压制修为（Portal 房间）：数值压到指定境界，技能/法宝/神通等门控内容不受影响
+	void Player::set_suppressed_realm(int v) {
+		if (v < -1 || v >= CultivationSystem::REALM_COUNT)
+			return; // -1=不压制，0~12=境界序号
+		if (_suppressed_realm == v)
+			return;
+		_suppressed_realm = v;
+		if (_cultivation) {
+			_cultivation->set_suppressed_realm_for_mana(v);
+		}
+		_update_move_speed();
+		_refresh_max_health(false);
+	}
+
 	void Player::exit_tribulation() {
 		if (!_in_tribulation) return;
 		_in_tribulation = false;
@@ -1664,7 +1686,11 @@ namespace godot {
 	void Player::_update_move_speed() {
 		move_speed = base_move_speed;
 		if (_cultivation) {
-			move_speed *= _cultivation->get_speed_multiplier();
+			if (_suppressed_realm >= 0) {
+				move_speed *= _cultivation->get_speed_multiplier_for_realm(_suppressed_realm);
+			} else {
+				move_speed *= _cultivation->get_speed_multiplier();
+			}
 		}
 		move_speed *= (1.0f + get_equip_bonus_speed());
 		if (_gongfa) {
@@ -1684,7 +1710,11 @@ namespace godot {
 		float atk = attack_damage;
 		atk += get_equip_bonus_attack();
 		if (_cultivation) {
-			atk *= _cultivation->get_damage_multiplier();
+			if (_suppressed_realm >= 0) {
+				atk *= _cultivation->get_damage_multiplier_for_realm(_suppressed_realm);
+			} else {
+				atk *= _cultivation->get_damage_multiplier();
+			}
 		}
 		if (_gongfa) {
 			atk *= _gongfa->get_atk_mult(); // 功法（炼体）乘区
@@ -1709,7 +1739,11 @@ namespace godot {
 	float Player::get_effective_defense() const {
 		float defense = get_equip_bonus_defense();
 		if (_cultivation) {
-			defense *= _cultivation->get_defense_multiplier();
+			if (_suppressed_realm >= 0) {
+				defense *= _cultivation->get_defense_multiplier_for_realm(_suppressed_realm);
+			} else {
+				defense *= _cultivation->get_defense_multiplier();
+			}
 		}
 		if (_gongfa) {
 			defense *= _gongfa->get_def_mult(); // 功法（炼体）乘区

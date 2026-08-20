@@ -302,13 +302,15 @@ namespace godot {
 
 	double CultivationSystem::get_max_mana() const {
 		// 凡人未引气入体，没有灵力；凡尘每境 +50；仙阶另起（草案数值）
+		// 秘境压制修为：_suppressed_realm_for_mana >= 0 时按压制境界计底数
+		int realm = _suppressed_realm_for_mana >= 0 ? _suppressed_realm_for_mana : (int)_current_realm;
 		double base = 0.0;
-		switch (_current_realm) {
+		switch (realm) {
 			case MORTAL:          base = 0.0; break;
 			case TRUE_IMMORTAL:   base = 1000.0; break;
 			case GOLDEN_IMMORTAL: base = 2000.0; break;
 			case TIAN_ZUN:        base = 9999.0; break;
-			default:              base = double((int)_current_realm) * 50.0; break;
+			default:              base = double(realm) * 50.0; break;
 		}
 		return base * _mana_max_mult * get_path_spell_mult(); // 功法（练气）×元神分叉 乘区
 	}
@@ -678,6 +680,51 @@ namespace godot {
 		if (_hunyuan)
 			return HUNYUAN_SPD;
 		return REALM_STATS[_current_realm].spd * STAGE_FACTOR[get_stage()];
+	}
+
+	// ---- 秘境压制修为（Portal 房间：按指定境界底数计乘区，高境界门控技能/法宝/神通仍可用）----
+
+	float CultivationSystem::get_damage_multiplier_for_realm(int realm) const {
+		if (_hunyuan)
+			return HUNYUAN_DMG; // 混元一气（玩家上限）：压制不再起作用
+		if (realm < 0 || realm >= REALM_COUNT)
+			realm = _current_realm;
+		return REALM_STATS[realm].dmg * STAGE_FACTOR[get_stage()];
+	}
+
+	float CultivationSystem::get_defense_multiplier_for_realm(int realm) const {
+		if (_hunyuan)
+			return HUNYUAN_DEF;
+		if (realm < 0 || realm >= REALM_COUNT)
+			realm = _current_realm;
+		return REALM_STATS[realm].def * STAGE_FACTOR[get_stage()] * (1.0f + 0.03f * get_path_body_level());
+	}
+
+	float CultivationSystem::get_speed_multiplier_for_realm(int realm) const {
+		if (_hunyuan)
+			return HUNYUAN_SPD;
+		if (realm < 0 || realm >= REALM_COUNT)
+			realm = _current_realm;
+		return REALM_STATS[realm].spd * STAGE_FACTOR[get_stage()];
+	}
+
+	double CultivationSystem::get_max_health_for_realm(int realm) const {
+		return 100.0 * get_defense_multiplier_for_realm(realm);
+	}
+
+	double CultivationSystem::get_max_mana_for_realm(int realm) const {
+		if (realm < 0 || realm >= REALM_COUNT)
+			realm = _current_realm;
+		// 凡人未引气入体，没有灵力；凡尘每境 +50；仙阶另起（与 get_max_mana 同底数逻辑）
+		double base = 0.0;
+		switch (realm) {
+			case CultivationSystem::MORTAL:          base = 0.0; break;
+			case CultivationSystem::TRUE_IMMORTAL:   base = 1000.0; break;
+			case CultivationSystem::GOLDEN_IMMORTAL: base = 2000.0; break;
+			case CultivationSystem::TIAN_ZUN:        base = 9999.0; break;
+			default:                                 base = double(realm) * 50.0; break;
+		}
+		return base * _mana_max_mult * get_path_spell_mult(); // 功法（练气）×元神分叉 乘区照旧
 	}
 
 	int64_t CultivationSystem::energy_to_next_realm() const {
