@@ -8,6 +8,7 @@ const ICE_ZONE = preload("res://scripts/zones/ice_zone.gd")
 const COLD_ZONE = preload("res://scripts/zones/cold_zone.gd")
 const REFINE_SPOT = preload("res://scripts/spots/refine_spot.gd")
 const TIANJIE_GATE = preload("res://scripts/gates/tianjie_gate.gd")
+const NO_FLY = preload("res://scripts/zones/no_fly_zone.gd")
 
 func _ready():
 	call_deferred("_setup")
@@ -60,11 +61,12 @@ func _setup():
 
 	WC.make_landmark(self, 120, 60, "北俱芦洲 · 极北冰原", Color(0.6, 0.85, 1.0, 1))
 
-	# 地：极北冰原（-50~2600）+ 上古荒原（2600~3850）
+	# 地：极北冰原（-50~2600）+ 上古荒原（2600~3850）+ 北方海域（3850~5100）
 	WC.make_ground(self, -50, 2600, 238)
 	WC.make_ground(self, 2600, 3850, 238)
+	WC.make_ground(self, 3850, 5100, 238)
 	WC.make_wall(self, -44, 40, 270, Color(0.5, 0.65, 0.8, 1))
-	WC.make_wall(self, 3844, 40, 270, Color(0.5, 0.65, 0.8, 1))
+	WC.make_wall(self, 5094, 40, 270, Color(0.5, 0.65, 0.8, 1))
 
 	# ===== 极北冰原（0~1300）：冰面打滑平台 + 冰柱墙跳 =====
 	# 冰面滑区（覆盖地面平跑段，滑行手感）
@@ -149,4 +151,38 @@ func _setup():
 	add_child(tj_gate)
 	WC.create_checkpoint(self, 3450)
 
-	print("北俱芦洲 · 极北冰原/玄冰高原/上古荒原")
+	# ===== 北方海域（4300~5000）：北海之滨——寒墨行宫旧魔宫入口（南天门之后，飞升往还地）=====
+	# 北海即《逍遥游》北冥：玄冥所掌极北之海。冰海浮冰岸线，魔罗残部沉宫于此。
+	# 冰海地面（含海面下浮冰视觉：撒白点模拟碎冰）
+	for i in range(8):
+		WC.make_platform(self, 4360 + i * 70, 150 + (i % 3) * 12, 40, false)
+	# 碎冰点（海面浮冰视觉）
+	for i in range(10):
+		var floe = Polygon2D.new()
+		floe.color = Color(0.7, 0.9, 1.0, 0.35)
+		var o = (i * 53) % 23
+		floe.polygon = PackedVector2Array([Vector2(-8, -3), Vector2(8, -3), Vector2(8, 3), Vector2(-8, 3)])
+		floe.position = Vector2(4320 + i * 72, 120 + o)
+		add_child(floe)
+	# 地标
+	WC.make_landmark(self, 4300, 60, "北方海域 · 北海", Color(0.5, 0.8, 1.0, 1))
+	WC.make_landmark(self, 4300, 78, "寒墨行宫（旧魔宫）", Color(0.45, 0.75, 1.0, 1))
+	# 寒冰界碑（宫门外立碑：行宫方向地标墙）
+	WC.make_wall(self, 4270, 60, 100, Color(0.45, 0.65, 0.9, 1))
+	WC.make_wall(self, 5080, 60, 100, Color(0.45, 0.65, 0.9, 1))
+	WC.make_platform(self, 4300, 60, 130, false)
+	# 行宫入口（上方高台，↑ 入旧魔宫；弱水礁台海底秘境，进前先收波札）
+	WC.spawn_enemy_by_id(self, Vector2(4750, 210), "bing_shi", "HaiBingShi0")
+	WC.spawn_enemy_by_id(self, Vector2(4650, 190), "bing_shi", "HaiBingShi1")
+	WC.make_platform(self, 4850, 150, 70)
+	WC.spawn_herb(self, Vector2(4850, 144), "bing_xin_lian", 2)
+	# 行宫入口（上方高台）
+	WC.make_landmark(self, 4960, 60, "寒墨行宫", Color(0.55, 0.85, 1.0, 1))
+	WC.create_portal(self, 4950, "res://scenes/rooms/han_mo_gong.tscn", "[↑] 进入寒墨行宫", player, camera, hint)
+	for c in get_children():
+		if c.get_class() == "Portal" and abs(c.position.x - 4950.0) < 1.0:
+			c.set("room_bounds", Rect2(0, 0, 480, 270))
+	# 寒墨行宫地貌：冰海平坦，可踏浮冰凌波（未放开，避免改变玄冥守关流程）
+	WC.create_checkpoint(self, 4500)
+
+	print("北俱芦洲 · 极北冰原/玄冰高原/上古荒原/北方海域")

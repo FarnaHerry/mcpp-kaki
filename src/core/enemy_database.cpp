@@ -116,6 +116,11 @@ void EnemyDatabase::_load_hardcoded() {
 	// ===== 洞天「灵兽闯阵」入侵怪（realm 生成时按玩家-1 覆盖；掉落走命名表）=====
 	s_defs.push_back(_mk("qie_ling_shu", "窃灵鼠", 15, 8, 135, 280, 30, 0.7f, 0, 0, false, false, false, 0.6f, 0.5f, 0.35f, "qie_ling_shu"));
 	s_defs.push_back(_mk("tan_ling_feng", "贪灵蜂", 10, 10, 120, 340, 35, 0.8f, 0, 0, false, true, false, 0.95f, 0.8f, 0.2f, "tan_ling_feng"));
+
+	// ===== 北俱芦洲·寒墨行宫（北方海域海底旧魔宫，realm 9 渡劫尾段）=====
+	s_defs.push_back(_mk("han_mo_jiao", "墨鲛", 200, 55, 90, 280, 35, 0.9f, 0, 9, false, false, false, 0.1f, 0.35f, 0.45f, "", 0.08f));
+	s_defs.push_back(_mk("han_yuan_gui", "寒渊龟", 350, 40, 35, 220, 35, 1.5f, 0, 9, false, false, false, 0.3f, 0.35f, 0.4f, "", 0.10f));
+	s_defs.push_back(_mk("han_yuan_jun", "寒渊君", 250, 70, 55, 420, 40, 1.0f, 0, 9, false, false, true, 0.25f, 0.15f, 0.35f, "han_mo_gong"));
 }
 
 static EnemyDef *_find_def(std::vector<EnemyDef> &p_defs, const String &p_id) {

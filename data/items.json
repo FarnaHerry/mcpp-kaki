@@ -526,5 +526,16 @@
     "grade": 3,
     "buy_price": 0,
     "sell_price": 500
+  },
+  {
+    "id": "xuan_ming_dan",
+    "name": "玄冥归元丹",
+    "desc": "寒渊君镇宫之宝，北海玄冥之气炼就的渡劫灵丹。攻防+25%，持续 900s。",
+    "type": 0,
+    "max_stack": 9,
+    "grade": 3,
+    "buff_id": "buff_xuan_ming",
+    "buy_price": 1500,
+    "sell_price": 300
   }
 ]

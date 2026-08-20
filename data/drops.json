@@ -536,6 +536,39 @@
         "chance": 0.25,
         "min_realm": 7
       }
+    ],
+    "han_mo_gong": [
+      {
+        "item": "xuan_ming_dan",
+        "min": 1,
+        "max": 1,
+        "chance": 1.0
+      },
+      {
+        "item": "xuan_bing_sui",
+        "min": 1,
+        "max": 1,
+        "chance": 1.0
+      },
+      {
+        "item": "spirit_stone_peak",
+        "min": 1,
+        "max": 1,
+        "chance": 0.6,
+        "min_realm": 10
+      },
+      {
+        "item": "da_huan_dan",
+        "min": 1,
+        "max": 1,
+        "chance": 0.5
+      },
+      {
+        "item": "healing_pill",
+        "min": 2,
+        "max": 3,
+        "chance": 0.8
+      }
     ]
   }
 }

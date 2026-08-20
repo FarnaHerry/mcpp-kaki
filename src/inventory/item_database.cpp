@@ -366,6 +366,21 @@ void ItemDatabase::_register_items() {
 		_items[it.id] = it;
 	}
 
+	// 玄冥归元丹 — 寒墨行宫 Boss「寒渊君」镇宫之宝（渡劫级丹，攻防+25% 900s 强于玄龙丹）
+	{
+		Item it;
+		it.id = "xuan_ming_dan";
+		it.name = LOC("玄冥归元丹");
+		it.description = LOC("寒渊君镇宫之宝，北海玄冥之气炼就的渡劫灵丹。攻防+25%，持续 900s。");
+		it.type = Item::CONSUMABLE;
+		it.max_stack = 9;
+		it.grade = 3;
+		it.buff_id = "buff_xuan_ming";
+		it.buy_price = 1500;
+		it.sell_price = 300;
+		_items[it.id] = it;
+	}
+
 	// ---- 草药（MATERIAL，design/alchemy.md 第二节）----
 
 	auto herb = [&](const char *id, const char *name, const char *desc, int grade, int grow_s) {
