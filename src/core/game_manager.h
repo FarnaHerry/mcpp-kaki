@@ -114,6 +114,10 @@ public:
 	String check_hunyuan_ready();   // 前置校验："" = 可行礼，否则为拒绝原因（单行叙事展示）
 	void complete_ascension_ending(); // 混元一气成就 + 结局标记 + 全恢复
 
+	// ---- 菩提祖师传法（斜月三星洞·大品天仙诀）----
+	String check_puti_acquisition();   // 前置校验："" = 可传法，否则为拒绝原因
+	void grant_da_pin_tian_xian_jue(); // 传法大品天仙诀
+
 	void _ready() override;
 	void _process(double p_delta) override;
 
