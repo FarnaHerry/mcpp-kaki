@@ -6,6 +6,8 @@ module;
 #include "../core/game_manager.h"
 #include "../utils/text.h"
 
+#include <cstdlib>
+
 #include <godot_cpp/classes/canvas_layer.hpp>
 #include <godot_cpp/classes/capsule_shape2d.hpp>
 #include <godot_cpp/classes/collision_shape2d.hpp>
@@ -18,6 +20,8 @@ module;
 #include <godot_cpp/classes/polygon2d.hpp>
 #include <godot_cpp/classes/resource_loader.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
+#include <godot_cpp/classes/scene_tree_timer.hpp>
+#include <godot_cpp/classes/timer.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
@@ -34,6 +38,9 @@ namespace godot {
 	}
 
 	void BreakthroughManager::_bind_methods() {
+		ClassDB::bind_method(D_METHOD("mirror_cast_diagnostics"), &BreakthroughManager::mirror_cast_diagnostics);
+		ClassDB::bind_method(D_METHOD("mirror_equipped_skill_ids"), &BreakthroughManager::mirror_equipped_skill_ids);
+		ClassDB::bind_method(D_METHOD("is_active"), &BreakthroughManager::is_active);
 	}
 
 	void BreakthroughManager::_ready() {
@@ -62,9 +69,282 @@ namespace godot {
 		return p ? p->get_cultivation() : nullptr;
 	}
 
+	// 当前波/秘境中正在活动的镜像 Enemy（劫敌；三尸各波各一只，此处取「当前」：
+	// 最近存活的劫敌——若敌人已死则返回 nullptr 使施法驱动静默跳过）
+	Enemy *BreakthroughManager::_mirror_enemy() const {
+		if (!_arena || _enemies_alive <= 0)
+			return nullptr;
+		Enemy *found = nullptr;
+		// 劫敌是 arena 直接子节点（EnemySpawn 是 marker）；直接遍历子节点取存活者
+		TypedArray<Node> children = _arena->get_children();
+		for (int i = 0; i < children.size(); i++) {
+			Enemy *e = Object::cast_to<Enemy>(children[i]);
+			if (e && !e->is_dead())
+				found = e; // 取最后一只存活的（三尸各波同场示意取最近生成的）
+		}
+		return found;
+	}
+
+	// 收集玩家当前装配的主动（非被动）技能 id 列表，按槽位升序，忽略冷却（冷却由施放冻结）。
+	// 没有装配任何主动技时返回空表——镜像退化为纯近战（既有行为）。
+	Array BreakthroughManager::mirror_equipped_skill_ids() const {
+		Array out;
+		Player *p = _player();
+		if (!p)
+			return out;
+		SkillSystem *sk = p->get_skills();
+		if (!sk)
+			return out;
+		const int N = SkillSystem::SLOT_COUNT;
+		for (int i = 0; i < N; i++) {
+			StringName id = sk->get_slot_skill(i);
+			if (id == StringName())
+				continue;
+			const SkillSystem::Def *def = SkillSystem::find_def(id);
+			if (!def || def->type == SkillSystem::TYPE_PASSIVE)
+				continue;
+			out.push_back(String(id));
+		}
+		return out;
+	}
+
+	// 测试探针：镜像模拟施法诊断（只读，无副作用；仅承上节注释所述字段）。
+	Dictionary BreakthroughManager::mirror_cast_diagnostics() const {
+		Dictionary d;
+		if (!_mirror)
+			return d;
+		d["has_cast"] = _mirror->last_skill_idx >= 0;
+		d["last_cast_id"] = _mirror->last_cast_id;
+		d["last_cast_gap"] = _mirror->last_cast_gap;
+		d["casting"] = _mirror->casting;
+		d["casting_id"] = _mirror->casting_id;
+		d["manual_cd"] = _mirror->manual_cd;
+		d["equipped_count"] = mirror_equipped_skill_ids().size();
+		d["player_time"] = _player() ? _player()->get_time() : 0.0;
+		d["player_health"] = _player() ? _player()->get_current_health() : 0.0;
+		if (_player())
+			d["player_max_health"] = _player()->get_max_health();
+		return d;
+	}
+
 	// ============================================================
-	// 受理与分发
+	// 镜像模拟施法（session W4-5：镜像战斗中使用玩家已装配主动技能）
+	// 读玩家 SkillSystem 装配表（含冷却状态），安抚节奏式施放：
+	//   · 每个技能独立冷却 = 玩家所装冷却（get_cooldown_remaining 冻结：镜像放过就冻结到玩家处冷却转好之前）
+	//   · 每 2.5~4s 随机挑一个可用技能，施法前摇 0.5s（标签警示 + 朝向锁定）
+	//   · 投射物（FX_PROJECTILE / FX_PROJ_FAN）直接 memnew Projectile（已注册类），伤害走其既有 take_damage_typed 管线
+	//   · 武技/无投射物技能走镜像近战 HitBox（物理/元素属性由技能定义给出，元素=0 则纯物理）
+	//   · 伤害 = 玩家有效攻击 × 技能 power × 镜像系数（投射物签 0.5，近战签 0.55）
+	//   · 可击杀性、波次节奏、事件判定完全不受影响（纯叠加在既有敌人上的行为）
 	// ============================================================
+
+	static constexpr double MIRROR_CAST_INTERVAL_MIN = 2.5;
+	static constexpr double MIRROR_CAST_INTERVAL_MAX = 4.0;
+	static constexpr double MIRROR_CAST_WINDUP = 0.5;   // 施法前摇：警示 + 朝向锁定
+	static constexpr double MIRROR_MANUAL_CD = 2.0;     // 无投射物技能的人工冷却兜底
+	static constexpr float MIRROR_PROJ_COEFF = 0.5f;    // 投射物伤害 = 玩家攻 × power × 0.5（镜像弱于本体）
+	static constexpr float MIRROR_MELEE_COEFF = 0.55f;  // 近战路径同系数策略（0.5 + 少量余量补偿 HitBox 单帧命中采样）
+
+	void BreakthroughManager::_tick_mirror_casting(double p_delta) {
+		if (!_mirror || !_active || _phase != Phase::ARENA)
+			return;
+		if (_def.kind != EventKind::COMBAT)
+			return;
+		Player *p = _player();
+		Enemy *e = _mirror_enemy();
+		if (!p || !e || e->is_dead())
+			return;
+
+		double now = p->get_time();
+		if (_mirror->casting) {
+			// 前摇进行中：时刻已到即落位（结算投射物/近战）
+			if (now >= _mirror->cast_until)
+				_deliver_mirror_cast();
+			return;
+		}
+		if (now < _mirror->cast_ready_at)
+			return; // 节奏冷却未到
+
+		// 收集可用技能：已装配主动技中冷却转好的（技能冷却 = 玩家所装冷却，尊重玩家节奏）
+		std::vector<const SkillSystem::Def *> ready;
+		SkillSystem *sk = p->get_skills();
+		if (!sk)
+			return;
+		const int N = SkillSystem::SLOT_COUNT;
+		for (int i = 0; i < N; i++) {
+			StringName id = sk->get_slot_skill(i);
+			if (id == StringName())
+				continue;
+			const SkillSystem::Def *def = SkillSystem::find_def(id);
+			if (!def || def->type == SkillSystem::TYPE_PASSIVE)
+				continue;
+			if (sk->get_cooldown_remaining(id) > 0.0)
+				continue; // 冷却中（玩家冷却冻结，镜像不可抢先）
+			if (_mirror->manual_cd && now < _mirror->manual_cd_until)
+				continue; // 人工冷却（无投射物技能防连发兜底）
+			ready.push_back(def);
+		}
+		if (ready.empty()) {
+			// 全在冷却：等最近一个技能冷却转好再重试
+			double earliest = 1e18;
+			for (int i = 0; i < N; i++) {
+				StringName id = sk->get_slot_skill(i);
+				if (id == StringName())
+					continue;
+				double rem = sk->get_cooldown_remaining(id);
+				if (rem > 0.0 && rem < earliest)
+					earliest = rem;
+			}
+			if (earliest > 1e17)
+				earliest = 2.0; // 异常兜底
+			_mirror->cast_ready_at = now + earliest + 0.1;
+			return;
+		}
+
+		// 随机选一个可用技能并进入前摇
+		int idx = std::rand() % (int)ready.size();
+		_mirror->last_skill_idx = idx;
+		e->update_facing_to_player();
+		_start_mirror_cast(ready[idx], idx, e->facing_direction > 0 ? 1.0f : -1.0f);
+	}
+
+	void BreakthroughManager::_start_mirror_cast(SkillSystem::Def const *p_def, int p_skill_idx, float p_facing) {
+		_mirror->casting = true;
+		_mirror->casting_id = p_def->id;
+		_mirror->cast_until = _player()->get_time() + MIRROR_CAST_WINDUP;
+		_mirror->facing = p_facing;
+		_mirror->last_skill_idx = p_skill_idx;
+		// 前摇警示：镜像顶上叠加警示标签（随身，秘境结束随 arena 清理）
+		Enemy *e = _mirror_enemy();
+		if (e && !e->get_node_or_null("MirrorCastWarn")) {
+			Label *warn = memnew(Label);
+			warn->set_name("MirrorCastWarn");
+			warn->set_position(Vector2(-14, -30));
+			warn->set_size(Vector2(28, 10));
+			warn->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
+			warn->add_theme_font_size_override("font_size", 8);
+			warn->add_theme_color_override("font_color", Color(1.0f, 0.85f, 0.4f, 1));
+			warn->set_text(String(LOC("·")));
+			e->add_child(warn);
+		}
+	}
+
+	void BreakthroughManager::_deliver_mirror_cast() {
+		if (!_mirror)
+			return;
+		Enemy *e = _mirror_enemy();
+		Player *p = _player();
+		_mirror->casting = false;
+		if (!p || !e)
+			return;
+
+		// 清理警示标签
+		if (Node *warn = e->get_node_or_null("MirrorCastWarn")) {
+			warn->queue_free();
+		}
+
+		const SkillSystem::Def *def = SkillSystem::find_def(StringName(_mirror->casting_id));
+		if (!def)
+			return;
+
+		double now = p->get_time();
+		if (_mirror->last_cast_at > -1.0e8)
+			_mirror->last_cast_gap = now - _mirror->last_cast_at;
+		_mirror->last_cast_at = now;
+		_mirror->last_cast_id = String(def->id);
+
+		// 技能冷却尊重玩家：镜像施放后，玩家技能冷却被冻结到玩家处冷却转好之前
+		// （get_cooldown_remaining 读玩家 _cooldown_until——镜像无法修改，靠「永不查空」保证
+		//  不连发：冷却转好前的整套节奏，由 cast_ready_at=now+def->cooldown 决定）
+		_mirror->cast_ready_at = now + double(def->cooldown);
+
+		// 人工冷却：无投射物技能防连发兜底（cooldown=0 的技能如金钟罩/土盾）
+		if (def->cooldown <= 0.0 && def->effect != SkillSystem::FX_PROJECTILE && def->effect != SkillSystem::FX_PROJ_FAN) {
+			_mirror->manual_cd = true;
+			_mirror->manual_cd_until = now + MIRROR_MANUAL_CD;
+		}
+
+		bool has_proj = def->effect == SkillSystem::FX_PROJECTILE || def->effect == SkillSystem::FX_PROJ_FAN;
+		if (has_proj) {
+			e->update_facing_to_player();
+			Vector2 from = e->get_global_position() + Vector2(_mirror->facing * 14.0f, -4.0f);
+			Vector2 dir(_mirror->facing, 0.0f);
+			if (def->effect == SkillSystem::FX_PROJ_FAN) {
+				// 御剑术类：3 发扇形
+				float base = (_mirror->facing > 0) ? 0.0f : (float)Math_PI;
+				static const float OFF[3] = { -0.26f, 0.0f, 0.26f };
+				for (int i = 0; i < 3; i++) {
+					Vector2 d(Math::cos(base + OFF[i]), Math::sin(base + OFF[i]));
+					_deliver_player_projectile(def, d, p->get_effective_attack() * def->power * MIRROR_PROJ_COEFF);
+				}
+			} else {
+				_deliver_player_projectile(def, dir, p->get_effective_attack() * def->power * MIRROR_PROJ_COEFF);
+			}
+			// 投射物自伤防护：源 = 敌人本体（_on_body_entered 跳过 source），
+			// 经 Projectile::_on_body_entered → take_damage_typed ——敌方投影物可被玩家元素抗性减免
+			return;
+		}
+
+		// 无投射物技能：近战 HitBox 路径（镜像本体短程挥击，物理/元素属性由技能定义给出）
+		_deliver_mirror_melee(def->category, def->element, p->get_effective_attack() * def->power * MIRROR_MELEE_COEFF);
+	}
+
+	void BreakthroughManager::_deliver_player_projectile(SkillSystem::Def const *p_def, const Vector2 &p_dir, float p_damage) {
+		Enemy *e = _mirror_enemy();
+		if (!e || !_arena)
+			return;
+		Projectile *proj = memnew(Projectile);
+		proj->set_name("MirrorCastProjectile");
+		proj->set_position(e->get_global_position() + Vector2(_mirror->facing * 14.0f, -4.0f));
+		proj->direction = p_dir;
+		proj->speed = p_def->proj_speed > 0.0f ? p_def->proj_speed : 250.0f;
+		proj->damage = p_damage;
+		proj->damage_category = p_def->category;
+		proj->element = p_def->element;
+		proj->visual_color = p_def->proj_color.a > 0.01f ? p_def->proj_color
+														 : Color(0.75f, 0.75f, 0.9f, 0.9f);
+		proj->set_source(e);                                            // 伤害源=镜像（死亡统计/地府路由用）
+		proj->set_collision_mask_value(3, true);                        // 打玩家 body
+		proj->set_collision_mask_value(1, true);                        // 撞墙消失
+		proj->connect("body_entered", callable_mp(this, &BreakthroughManager::_mirror_proj_hit_player).bind(proj));
+		// 伤害结算自伤防护：源=敌人本体（_on_body_entered 首个 if 跳过）+ meta 标记镜像技能
+		proj->set_meta("mirror_skill_id", String(p_def->id));
+		_arena->add_child(proj);
+	}
+
+	// 投射物命中玩家——记录测试探针时间（仅玩家命中，不记墙/地面）
+	void BreakthroughManager::_mirror_proj_hit_player(Node *p_proj, Node *p_body) {
+		if (!_mirror || !p_proj)
+			return;
+		if (p_body != _player())
+			return;
+		double now = _player() ? _player()->get_time() : 0.0;
+		_mirror->last_cast_against_time = now;
+	}
+
+	void BreakthroughManager::_deliver_mirror_melee(DamageCategory p_cat, Element p_elem, float p_raw_damage) {
+		Enemy *e = _mirror_enemy();
+		if (!e)
+			return;
+		HitBox *hb = Object::cast_to<HitBox>(e->get_node_or_null("HitBox"));
+		if (!hb)
+			return;
+		hb->damage = p_raw_damage;
+		hb->damage_category = p_cat;
+		hb->element = p_elem;
+		hb->set_scale(Vector2(e->facing_direction > 0 ? 1.0f : -1.0f, 1.0f));
+		hb->set_knockback_from_facing(e->facing_direction);
+		hb->set_active(true);
+		// 与玩家短距离挥击——主动停止减速到攻击距离附近（攻防节奏归 Enemy 状态机）
+		Vector2 v = e->get_velocity();
+		v.x = 0.0f;
+		e->set_velocity(v);
+	}
+
+	void BreakthroughManager::_clear_mirror() {
+		// memnew 的 Object：主节点析构时自动释放（Node 树子对象），显式置空防悬挂
+		_mirror = nullptr;
+	}
 
 	void BreakthroughManager::_on_breakthrough_requested() {
 		if (_active)
@@ -294,6 +574,9 @@ namespace godot {
 		} else if (_wave_check_pending) {
 			_wave_check_pending = false;
 			_wave_check();
+		} else if (_active && _phase == Phase::ARENA) {
+			// 心魔镜像模拟施法（战斗秘境中每帧轮询；秘境未加载/玩家不在场自动跳过）
+			_tick_mirror_casting(p_delta);
 		}
 
 		if (!_overlay || !_overlay->is_visible())
@@ -356,6 +639,15 @@ namespace godot {
 
 	void BreakthroughManager::_victory() {
 		// 先回原位，再突破，最后播尾声
+		if (_mirror) {
+			// 清镜像施法状态 + 已有警示/施放标签（Player 回归原位后 arena 即将释放）
+			Enemy *e = _mirror_enemy();
+			if (e) {
+				if (Node *warn = e->get_node_or_null("MirrorCastWarn"))
+					warn->queue_free();
+			}
+			_clear_mirror();
+		}
 		_restore_player_from_arena(true);
 		if (_tribulation) {
 			_tribulation->queue_free();
@@ -407,6 +699,14 @@ namespace godot {
 
 		// 世界暂停归 GameManager 重生流程所有，此处不解除
 		_hide_overlay(false);
+		if (_mirror) {
+			Enemy *e = _mirror_enemy();
+			if (e) {
+				if (Node *warn = e->get_node_or_null("MirrorCastWarn"))
+					warn->queue_free();
+			}
+			_clear_mirror();
+		}
 		_restore_player_from_arena(false); // 位置交由重生设置
 		_finish(false);
 	}
@@ -414,6 +714,9 @@ namespace godot {
 	void BreakthroughManager::_finish(bool p_success) {
 		_active = false;
 		_phase = Phase::IDLE;
+
+		if (_mirror && !p_success)
+			_clear_mirror();
 
 		SignalBus *bus = SignalBus::get_singleton();
 		if (bus)
@@ -579,6 +882,14 @@ namespace godot {
 		_arena->add_child(e);
 		e->connect("enemy_died", callable_mp(this, &BreakthroughManager::_on_event_enemy_died));
 		_enemies_alive++;
+
+		// 镜像模拟施法驱动：每波（实际每只劫敌）装配一个独立状态——多波三尸劫各波镜像各自施法
+		if (!_mirror)
+			_mirror = memnew(MirrorCastState);
+		_mirror->last_skill_idx = -1;
+		_mirror->casting = false;
+		_mirror->manual_cd = false;
+		_mirror->cast_ready_at = _player()->get_time() + 1.5; // 入场小延迟，避免开门即轰炸
 	}
 
 	void BreakthroughManager::_on_event_enemy_died() {

@@ -594,6 +594,29 @@ private:
 		int waves = 0;
 	};
 
+	// ---- 心魔镜像「模拟施法」驱动（session W4-5）：镜像战斗中使用玩家已装配主动技能 ——
+	// 所有字段由 BreakthroughManager 经各处 memnew 显式装配，绝不依赖代码内默认值一致。
+	struct MirrorCastState {
+		double last_cast_at = -1.0e9; // 上次实际施放时刻（可能为 null 的「无施放」状态）
+		int last_skill_idx = -1;      // 上次选中的技能在装配列表中的下标（-1=无）
+		double cast_ready_at = 0.0;   // 下次施放可用时刻（Player::get_time 时基）
+		String last_cast_id;          // 上次实际施放的技能 id（测试断言「尊重玩家冷却」用）
+		double last_cast_gap = 0.0;   // 上次实际施放之间的间隔（秒；测试断言 不连发）
+		double last_cast_against_time = -1.0e9; // 上次非自伤投射物实际命中玩家的时刻
+		bool casting = false;         // 施法前摇进行中（面板计时）
+		double cast_until = 0.0;      // 前摇结束时刻
+		String casting_id;            // 前摇中的技能 id
+		bool melee_cast = false;      // 前摇结束时改走近战 HitBox 路径（武技/无投射物）
+		float facing = -1.0f;         // 前摇锁定朝向（施放方向）
+		bool manual_cd = false;       // 人工冷却倒计时激活（无投射物技能防连发兜底）
+		double manual_cd_until = 0.0; // 人工冷却结束时刻
+	};
+
+	// ---- 测试探针：镜像模拟施法诊断（scripts/test_heart_demon_clone.gd 读取）----
+	Dictionary mirror_cast_diagnostics() const;
+	// 镜像已装配主动技能 id 列表（稳定顺序；测试断言尊重玩家装配）
+	Array mirror_equipped_skill_ids() const;
+
 	bool _active = false;
 	int _event_id = -1;
 	Phase _phase = Phase::IDLE;
@@ -601,6 +624,9 @@ private:
 
 	bool _wave_check_pending = false;
 	bool _fail_pending = false;
+
+	// 心魔镜像模拟施法（仅 COMBAT 秘境使用；Entry 无内建数据，各字段全在本文件 memnew 装配）
+	MirrorCastState *_mirror = nullptr;
 
 	CanvasLayer *_overlay = nullptr;
 	Label *_title_label = nullptr;
@@ -634,6 +660,14 @@ private:
 	void _spawn_wave(int p_wave_idx);
 	void _on_event_enemy_died();
 	void _wave_check();
+	void _tick_mirror_casting(double p_delta);
+	void _start_mirror_cast(SkillSystem::Def const *p_def, int p_skill_idx, float p_facing);
+	void _deliver_mirror_cast();
+	void _deliver_player_projectile(SkillSystem::Def const *p_def, const Vector2 &p_dir, float p_damage);
+	void _deliver_mirror_melee(DamageCategory p_cat, Element p_elem, float p_raw_damage);
+	void _mirror_proj_hit_player(Node *p_proj, Node *p_player);
+	void _clear_mirror();
+	Enemy *_mirror_enemy() const;
 	void _enter_tribulation();
 	void _on_tribulation_finished(bool p_success);
 
