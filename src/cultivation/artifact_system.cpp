@@ -52,6 +52,7 @@ void ArtifactSystem::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_slot_limit"), &ArtifactSystem::get_slot_limit);
 	ClassDB::bind_method(D_METHOD("get_slot_info", "slot"), &ArtifactSystem::get_slot_info);
 	ClassDB::bind_method(D_METHOD("get_owned_list"), &ArtifactSystem::get_owned_list);
+	ClassDB::bind_method(D_METHOD("get_nurture_progress", "id"), &ArtifactSystem::get_nurture_progress);
 	ClassDB::bind_method(D_METHOD("save_to_dict"), &ArtifactSystem::save_to_dict);
 	ClassDB::bind_method(D_METHOD("load_from_dict", "data"), &ArtifactSystem::load_from_dict);
 	// 温养来源信号回调（Callable(this,"_on_*") 必须绑定，否则静默失效——CLAUDE.md 潜伏 bug 教训）
@@ -388,6 +389,12 @@ Dictionary ArtifactSystem::get_slot_info(int p_slot) const {
 	d["nurture"] = p_slot == 0 ? (_player ? _player->get_benming_nurture() : 0.0f)
 	                           : (_nurture.has(id) ? _nurture[id] : 0.0f);
 	d["benming"] = p_slot == 0;
+	// 温养进度可视化（法宝页/测试）；本命与次要共用阶段语义
+	Dictionary prog = get_nurture_progress(id);
+	for (const Variant &k : prog.keys()) {
+		if (k != Variant("nurture") && k != Variant("is_benming") && k != Variant("awakened"))
+			d[k] = prog[k];
+	}
 	return d;
 }
 
@@ -404,6 +411,66 @@ Array ArtifactSystem::get_owned_list() const {
 		}
 	}
 	return out;
+}
+
+Dictionary ArtifactSystem::get_nurture_progress(const StringName &p_id) const {
+	Dictionary d;
+	bool is_benming = _player && _player->get_benming_artifact() == p_id;
+	float nurture = 0.0f;
+	if (is_benming) {
+		nurture = _player->get_benming_nurture();
+	} else if (_nurture.has(p_id)) {
+		nurture = _nurture[p_id];
+	}
+	d["nurture"] = nurture;
+	d["is_benming"] = is_benming;
+	d["awakened"] = is_benming && _player && _player->is_benming_awakened();
+
+	int stage = 0;
+	if (is_benming) {
+		// 本命：0 温养中(1.2→1.5) / 1 温养圆满待觉醒 / 2 已觉醒(×2.0 锁定)
+		if (_player && _player->is_benming_awakened()) {
+			stage = 2;
+		} else if (nurture >= NURTURE_STAGE2) {
+			stage = 1;
+		}
+	} else {
+		// 次要：0 →×1.2 / 1 →×1.5 / 2 已圆满
+		if (nurture >= NURTURE_STAGE2) stage = 2;
+		else if (nurture >= NURTURE_STAGE1) stage = 1;
+	}
+	d["stage"] = stage;
+
+	if (is_benming) {
+		d["coeff"] = _player ? _player->get_benming_coeff() : 1.0f;
+	} else {
+		// 次要系数按所在槽读（未装备/不存在 = 1.0）
+		d["coeff"] = 1.0f;
+		for (int i = 1; i < MAX_SLOTS; i++) {
+			if (get_slot_artifact(i) == p_id) {
+				d["coeff"] = get_slot_coeff(i);
+				break;
+			}
+		}
+	}
+
+	// ---- 距下一档进度/所需值（阶段语义见上） ----
+	switch (stage) {
+		case 2: // 已圆满/已觉醒：无下一档
+			d["progress"] = 1.0;
+			d["next_need"] = 0.0f;
+			break;
+		case 1: { // 次要 ×1.5 → 圆满（还需 STAGE2-nurture）；本命 150% → 渡劫觉醒（需觉醒，非温养）
+			d["progress"] = 1.0;
+			d["next_need"] = Math::max(0.0f, is_benming ? 0.0f : (NURTURE_STAGE2 - nurture));
+			break;
+		}
+		default: // stage 0：下一档 = STAGE1
+			d["progress"] = CLAMP(nurture / NURTURE_STAGE1, 0.0f, 1.0f);
+			d["next_need"] = Math::max(0.0f, NURTURE_STAGE1 - nurture);
+			break;
+	}
+	return d;
 }
 
 Dictionary ArtifactSystem::save_to_dict() const {

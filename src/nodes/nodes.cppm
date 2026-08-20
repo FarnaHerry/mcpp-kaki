@@ -23,6 +23,7 @@ import godot_cpp;
 import mcpp_kaki.utils;
 import mcpp_kaki.inventory;
 import mcpp_kaki.core;
+import mcpp_kaki.cultivation;
 
 namespace godot {
 
@@ -459,6 +460,8 @@ export class GameMenu : public CanvasLayer {
 	String _artifact_msg;
 	float _artifact_msg_t = 0.0f;
 	void _handle_artifact_input();
+	// 温养进度条（选中项 + 开关变化后刷新，幅面固定不抖动）——详见 game_menu.cpp 法宝页
+	String _artifact_nurture_line(ArtifactSystem *p_arts, const StringName &p_id);
 
 	int _sect_sel = 0;
 	String _sect_msg;

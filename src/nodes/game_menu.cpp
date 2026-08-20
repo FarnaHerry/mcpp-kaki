@@ -844,6 +844,13 @@ void GameMenu::_build_artifact_page() {
 		}
 		add_line(detail, 130.0f, 124.0f, 9, sel_c);
 
+		// 温养进度行（选中项）
+		{
+			String nurture_line = _artifact_nurture_line(arts, sel_id);
+			if (!nurture_line.is_empty())
+				add_line(nurture_line, 130.0f, 136.0f, 9, sel_c);
+		}
+
 		// 装配标记：本命=金「·本命」，次要槽=「·[S]」等
 		Array items;
 		for (int i = 0; i < owned.size(); i++) {
@@ -884,6 +891,33 @@ void GameMenu::_build_artifact_page() {
 	}
 	add_line(LOC("战斗中按 B 整页切换法宝页，A~H 即法宝快捷键；祭出复用技能管线，耗灵力。"), 40.0f, 232.0f, 8, dim_c);
 	add_line(LOC("本命温养 120%→150%，渡劫觉醒 200% 并锁定；次要 100%→120%→150%。"), 40.0f, 246.0f, 8, dim_c);
+}
+
+// 温养进度行文案：各族法宝显示温养% + 当前倍率 + 距下一档所需值（本命另显觉醒状态）。
+// 幅面固定（催熟/祭出等温养值变化只换文本不换行数，避免每帧重建抖动）。
+String GameMenu::_artifact_nurture_line(ArtifactSystem *p_arts, const StringName &p_id) {
+	if (!p_arts) return String();
+	Dictionary prog = p_arts->get_nurture_progress(p_id);
+	int stage = int(prog.get("stage", 0));
+	bool benming = bool(prog.get("is_benming", false));
+	bool awakened = bool(prog.get("awakened", false));
+	float nurture = float(prog.get("nurture", 0.0f));
+	float coeff = float(prog.get("coeff", 1.0f));
+	float next = float(prog.get("next_need", 0.0f));
+
+	String line = LOC("温养 ") + String::num(nurture, 0) + LOC(" ·×") + String::num(coeff, 2);
+	if (benming && awakened) {
+		line += LOC("  ｜ 已觉醒 ×2.00 锁定");
+	} else if (stage >= 2) {
+		line += LOC("  ｜ 已圆满");
+	} else if (stage == 1) {
+		line += benming
+			? LOC("  ｜ 圆满待渡劫觉醒 ×2.00")
+			: LOC("  ｜ 圆满 ×1.50");
+	} else {
+		line += LOC("  ｜ 距 ×1.20 还差 ") + String::num(next, 0);
+	}
+	return line;
 }
 
 void GameMenu::_handle_artifact_input() {

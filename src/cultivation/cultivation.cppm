@@ -516,6 +516,10 @@ public:
 	static const Def *find_def(const StringName &p_id);
 	static String kind_name(Kind p_k);
 
+	// 温养阶段阈值（次要法宝：100%→120%（STAGE1）→150%（STAGE2）→圆满；本命同档位语义）
+	static constexpr float NURTURE_STAGE1 = 300.0f;
+	static constexpr float NURTURE_STAGE2 = 600.0f;
+
 	ArtifactSystem();
 
 	void set_player(Player *p) { _player = p; }
@@ -545,6 +549,13 @@ public:
 	Dictionary get_slot_info(int p_slot) const;
 	Array get_owned_list() const;
 
+	// 温养进度可视化（法宝页/测试）：
+	// 返回 { nurture 当前温养值, stage 档位(0/1/2), progress 档内进度 0~1,
+	//        next_need 距下一档所需值(满档=0), is_benming, awakened(仅本命) }
+	// 本命：stage 0 温养中(120%→150%) / 1 温养圆满待渡劫觉醒 / 2 已觉醒(×2.0 锁定)；
+	// 次要：stage 0 →×1.2 / 1 →×1.5 / 2 已圆满。进度按当前档→下一档区间归一。
+	Dictionary get_nurture_progress(const StringName &p_id) const;
+
 	Dictionary save_to_dict() const;
 	void load_from_dict(const Dictionary &p_data);
 
@@ -569,8 +580,6 @@ private:
 	void _on_energy_changed(int64_t p_current, int64_t p_max, double p_progress); // 打坐中：本命 +0.1/次
 
 	double _now() const;
-	static constexpr float NURTURE_STAGE1 = 300.0f;
-	static constexpr float NURTURE_STAGE2 = 600.0f;
 };
 
 export class TitleComposer {
