@@ -1291,5 +1291,75 @@
       14
     ],
     "drops": "tan_ling_feng"
+  },
+  "han_mo_jiao": {
+    "name": "墨鲛",
+    "hp": 200,
+    "atk": 55,
+    "speed": 90,
+    "detection": 280,
+    "attack_range": 35,
+    "attack_cooldown": 0.9,
+    "realm": 9,
+    "flags": [],
+    "color": [
+      0.1,
+      0.35,
+      0.45,
+      1.0
+    ],
+    "size": [
+      20,
+      28
+    ],
+    "drops": "",
+    "elite_chance": 0.08
+  },
+  "han_yuan_gui": {
+    "name": "寒渊龟",
+    "hp": 350,
+    "atk": 40,
+    "speed": 35,
+    "detection": 220,
+    "attack_range": 35,
+    "attack_cooldown": 1.5,
+    "realm": 9,
+    "flags": [],
+    "color": [
+      0.3,
+      0.35,
+      0.4,
+      1.0
+    ],
+    "size": [
+      24,
+      28
+    ],
+    "drops": "",
+    "elite_chance": 0.1
+  },
+  "han_yuan_jun": {
+    "name": "寒渊君",
+    "hp": 250,
+    "atk": 70,
+    "speed": 55,
+    "detection": 420,
+    "attack_range": 40,
+    "attack_cooldown": 1.0,
+    "realm": 9,
+    "flags": [
+      "boss"
+    ],
+    "color": [
+      0.25,
+      0.15,
+      0.35,
+      1.0
+    ],
+    "size": [
+      26,
+      34
+    ],
+    "drops": "han_mo_gong"
   }
 }

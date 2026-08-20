@@ -1,0 +1,108 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/rooms/han_mo_gong.gd" id="1"]
+
+[sub_resource type="RectangleShape2D" id="ground_shape"]
+size = Vector2(480, 24)
+
+[sub_resource type="RectangleShape2D" id="wall_shape"]
+size = Vector2(16, 270)
+
+[sub_resource type="RectangleShape2D" id="platform_shape"]
+size = Vector2(84, 6)
+
+[node name="HanMoGong" type="Node2D"]
+script = ExtResource("1")
+
+; 背景（墨色海渊：深蓝近黑）
+[node name="Background" type="Polygon2D" parent="."]
+color = Color(0.03, 0.04, 0.09, 1)
+polygon = PackedVector2Array(0, 0, 480, 0, 480, 270, 0, 270)
+
+; 海渊流光影（斜向流动渐变带）
+[node name="FlowA" type="Polygon2D" parent="."]
+color = Color(0.05, 0.12, 0.2, 0.9)
+polygon = PackedVector2Array(0, 96, 480, 88, 480, 108, 0, 116)
+
+[node name="FlowB" type="Polygon2D" parent="."]
+color = Color(0.04, 0.1, 0.17, 0.9)
+polygon = PackedVector2Array(0, 188, 480, 182, 480, 200, 0, 206)
+
+; 幽蓝寒光（穹顶滴落幽光）
+[node name="ColdGlow" type="Polygon2D" parent="."]
+color = Color(0.15, 0.3, 0.5, 0.25)
+polygon = PackedVector2Array(240, 0, 330, 80, 240, 140, 150, 80)
+
+; 墨色石柱（宫廊立柱）
+[node name="StonePillar1" type="Polygon2D" parent="."]
+position = Vector2(150, 140)
+color = Color(0.1, 0.1, 0.16, 1)
+polygon = PackedVector2Array(-7, -86, 7, -86, 5, 92, -5, 92, -7, -86)
+
+[node name="StonePillar2" type="Polygon2D" parent="."]
+position = Vector2(315, 140)
+color = Color(0.12, 0.11, 0.18, 1)
+polygon = PackedVector2Array(-7, -86, 7, -86, 5, 92, -5, 92, -7, -86)
+
+; 珊瑚黑礁（宫外礁丛摆件）
+[node name="CoralReef1" type="Polygon2D" parent="."]
+position = Vector2(58, 226)
+color = Color(0.06, 0.16, 0.22, 1)
+polygon = PackedVector2Array(-16, 8, 16, 8, 12, -4, 4, -12, -4, -6, -12, 0, -16, 8)
+
+[node name="CoralReef2" type="Polygon2D" parent="."]
+position = Vector2(430, 226)
+color = Color(0.08, 0.18, 0.24, 1)
+polygon = PackedVector2Array(-14, 8, 14, 8, 10, -3, 3, -12, -3, -5, -11, 0, -14, 8)
+
+; 幽幽寒光石台（单向跳台）
+[node name="ColdPlat1" type="StaticBody2D" parent="."]
+position = Vector2(205, 150)
+collision_layer = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ColdPlat1"]
+shape = SubResource("platform_shape")
+one_way_collision = true
+
+[node name="Visual" type="Polygon2D" parent="ColdPlat1"]
+color = Color(0.2, 0.32, 0.45, 1)
+polygon = PackedVector2Array(-42, -3, 42, -3, 42, 3, -42, 3)
+
+[node name="ColdPlat2" type="StaticBody2D" parent="."]
+position = Vector2(330, 116)
+collision_layer = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ColdPlat2"]
+shape = SubResource("platform_shape")
+one_way_collision = true
+
+[node name="Visual" type="Polygon2D" parent="ColdPlat2"]
+color = Color(0.2, 0.32, 0.45, 1)
+polygon = PackedVector2Array(-42, -3, 42, -3, 42, 3, -42, 3)
+
+; 宫底（海底石地）
+[node name="Ground" type="StaticBody2D" parent="."]
+position = Vector2(240, 238)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
+shape = SubResource("ground_shape")
+
+[node name="GroundVisual" type="Polygon2D" parent="Ground"]
+color = Color(0.09, 0.09, 0.15, 1)
+polygon = PackedVector2Array(-240, -8, 240, -8, 240, 12, -240, 12)
+
+[node name="WallL" type="StaticBody2D" parent="."]
+position = Vector2(8, 135)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallL"]
+shape = SubResource("wall_shape")
+
+[node name="WallR" type="StaticBody2D" parent="."]
+position = Vector2(472, 135)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallR"]
+shape = SubResource("wall_shape")
+
+; 入口（从北方海域进宫）
+[node name="SpawnEntrance" type="Marker2D" parent="."]
+position = Vector2(48, 200)
