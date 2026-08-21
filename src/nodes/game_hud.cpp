@@ -45,20 +45,20 @@ static String _lifespan_txt(int p_lifespan) {
 }
 
 // Layout constants (480×270 viewport)
-static constexpr float BAR_WIDTH = 140.0f;
-static constexpr float BAR_HEIGHT = 16.0f; // tall enough to hold the value text inside
+static constexpr float BAR_WIDTH = 100.0f;
+static constexpr float BAR_HEIGHT = 12.0f; // slimmed for left-column compact layout
 static constexpr float BAR_X = 8.0f;
-// 底部居中竖排（_layout_left_column）：生命→灵力→[法则·化神起显示]→修为→饱食→境界（寿元移个人信息页）
+// 左下角竖排（_layout_left_column）：生命→灵力→[法则·化神起显示]→修为→饱食→境界（寿元移个人信息页）
 static constexpr float HEALTH_BAR_Y = 6.0f;
 static constexpr float ENERGY_BAR_Y = 24.0f; // 灵力（法力）
 static constexpr float LAW_BAR_Y = 42.0f;    // 法则（化神解锁后显示；隐藏时下方元素上移补位）
 static constexpr float XP_BAR_Y = 42.0f;     // 修为经验（百分比，法则隐藏时紧贴灵力）
 static constexpr float FULLNESS_BAR_Y = 60.0f;
 static constexpr float REALM_LABEL_Y = 78.0f;
-static constexpr float ROW_STEP = 18.0f;     // 条高16+间距2
-static constexpr int FONT_SIZE_XS = 9;
-static constexpr int FONT_SIZE_MD = 14;
-static constexpr int FONT_SIZE_LG = 20;
+static constexpr float ROW_STEP = 14.0f;     // 条高12+间距2
+static constexpr int FONT_SIZE_XS = 8;
+static constexpr int FONT_SIZE_MD = 12;
+static constexpr int FONT_SIZE_LG = 18;
 
 void GameHUD::_bind_methods() {
     ClassDB::bind_method(D_METHOD("on_player_health_changed", "current", "max"),
@@ -448,10 +448,10 @@ void GameHUD::_layout_right_side() {
     }
 }
 
-// 底部居中：数值条竖排（生命→灵力→[法则]→修为→饱食→境界），自下而上堆叠于技能栏上方。
+// 左下角：数值条竖排（生命→灵力→[法则]→修为→饱食→境界），自下而上堆叠于左下角。
 // 法则条化神解锁才显示——隐藏时下方元素上移补位，不留空槽。寿元已移入 ESC 个人信息页。
 void GameHUD::_layout_left_column() {
-    const float bx = (_vw - BAR_WIDTH) * 0.5f;
+    const float bx = BAR_X; // 贴左
     // 自下而上：境界 → 饱食 → buff → 修为 → [法则] → 灵力 → 生命
     float y = _vh - 48.0f - ROW_STEP; // 境界行（技能栏顶行上方一格）
     if (_realm_label) _realm_label->set_position(Vector2(bx, y));
