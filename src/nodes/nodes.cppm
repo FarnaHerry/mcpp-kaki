@@ -116,8 +116,8 @@ private:
 	String _mana_prefix = LOC("灵力");
 	Color _energy_color = Color(0.2f, 0.6f, 1.0f, 1.0f);
 
-	ColorRect *_xp_bg = nullptr;
-	ColorRect *_xp_fill = nullptr;
+	Node *_xp_bg = nullptr;      // 修为经验圆底（Polygon2D 圆形）
+	Node *_xp_fill = nullptr;    // 修为经验水位（Polygon2D 圆切片，进度=水位）
 	Label *_xp_label = nullptr;
 	float _xp_progress = 0.0f;
 	String _xp_prefix = LOC("修为");

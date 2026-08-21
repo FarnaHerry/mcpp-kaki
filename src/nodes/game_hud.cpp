@@ -233,30 +233,39 @@ void GameHUD::_create_energy_bar() {
 }
 
 void GameHUD::_create_xp_bar() {
-    // 修为经验：左下角圆形容器 + 注入水纹（圆形底 + 圆内填充 + 顶部水位线）
-    const float R = 16.0f;
-    const float S = R * 2.0f; // 容器边长 32
-    // 底（圆形，半透明）
-    _xp_bg = memnew(ColorRect);
-    _xp_bg->set_name("XpBg");
-    _xp_bg->set_position(Vector2(BAR_X, 0));
-    _xp_bg->set_size(Vector2(S, S));
-    _xp_bg->set_color(Color(0.15f, 0.15f, 0.15f, 0.85f));
-    add_child(_xp_bg);
+    // 修为经验：左下角圆形水纹注入（两个 Polygon2D：圆底 + 圆形水位片）
+    const float R = 16.0f; // 半径
+    PackedVector2Array circle_verts;
+    for (int i = 0; i < 64; i++) {
+        float a = 2.0f * Math_PI * (float)i / 64.0f;
+        circle_verts.append(Vector2(R + cos(a) * R, R + sin(a) * R));
+    }
 
-    // 填充（水注入：fill 从底部往上增长，模拟水位）
-    _xp_fill = memnew(ColorRect);
-    _xp_fill->set_name("XpFill");
-    _xp_fill->set_position(Vector2(BAR_X, S)); // 初始在底部之下（空）
-    _xp_fill->set_size(Vector2(S, 0));
-    _xp_fill->set_color(Color(0.9f, 0.75f, 0.2f, 0.9f));
-    add_child(_xp_fill);
+    // 圆底（半透明深色）
+    Polygon2D *bg = memnew(Polygon2D);
+    bg->set_name("XpBg");
+    bg->set_position(Vector2(BAR_X, 0));
+    bg->set_polygon(circle_verts);
+    bg->set_color(Color(0.15f, 0.15f, 0.15f, 0.85f));
+    add_child(bg);
+    _xp_bg = bg;
 
-    // 百分比文字（盖在中心）
+    // 水位（初始空：退化为单点零面积）
+    Polygon2D *fill = memnew(Polygon2D);
+    fill->set_name("XpFill");
+    fill->set_position(Vector2(BAR_X, 0));
+    fill->set_color(Color(0.9f, 0.75f, 0.2f, 0.95f));
+    PackedVector2Array empty;
+    empty.append(Vector2(R, R));
+    fill->set_polygon(empty);
+    add_child(fill);
+    _xp_fill = fill;
+
+    // 百分比文字（盖在中心，方形 ColorRect 底框仅作排版锚点）
     _xp_label = memnew(Label);
     _xp_label->set_name("XpLabel");
     _xp_label->set_position(Vector2(BAR_X + 2, 8.0f));
-    _xp_label->set_size(Vector2(S - 4, S - 4));
+    _xp_label->set_size(Vector2(28.0f, 16.0f));
     _xp_label->add_theme_font_size_override("font_size", FONT_SIZE_XS);
     _xp_label->add_theme_color_override("font_color", Color(1, 1, 1, 1));
     _xp_label->add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9f));
@@ -616,8 +625,10 @@ void GameHUD::_layout_left_column() {
     // 经验圆
     y -= RING_S + 4.0f;
     if (_xp_bg) {
-        _xp_bg->set_position(Vector2(bx, y));
-        _xp_fill->set_position(Vector2(bx, y + RING_S - _xp_fill->get_size().y));
+        Polygon2D *bg_poly = Object::cast_to<Polygon2D>(_xp_bg);
+        Polygon2D *fill_poly2 = Object::cast_to<Polygon2D>(_xp_fill);
+        if (bg_poly) bg_poly->set_position(Vector2(bx, y));
+        if (fill_poly2) fill_poly2->set_position(Vector2(bx, y));
         _xp_label->set_position(Vector2(bx + 2, y + 8.0f));
     }
 }
@@ -1183,8 +1194,8 @@ void GameHUD::_apply_hud_visibility() {
     if (_energy_bg)     _energy_bg->set_visible(_hud_visible);
     if (_energy_fill)   _energy_fill->set_visible(_hud_visible);
     if (_energy_label)  _energy_label->set_visible(false);
-    if (_xp_bg)         _xp_bg->set_visible(_hud_visible);
-    if (_xp_fill)       _xp_fill->set_visible(_hud_visible);
+    if (_xp_bg)         Object::cast_to<CanvasItem>(_xp_bg)->set_visible(_hud_visible);
+    if (_xp_fill)       Object::cast_to<CanvasItem>(_xp_fill)->set_visible(_hud_visible);
     if (_xp_label)      _xp_label->set_visible(false);
     if (_realm_label)   _realm_label->set_visible(_hud_visible);
     if (_jiyuan_label)  _jiyuan_label->set_visible(_hud_visible && _xp_progress >= 1.0f);
@@ -1274,18 +1285,46 @@ void GameHUD::_refresh_realm_label() {
 }
 
 void GameHUD::on_spiritual_energy_changed(int64_t p_current, int64_t p_max, float p_progress) {
-    // 修为经验圆：水位从底部注入（fill 高度 = 进度 × 圆直径）
+    // 修为经验圆：水位从底部注入（Polygon2D 圆切片）
     _xp_progress = p_progress;
-    if (_xp_fill && _xp_bg) {
-        const float RING_S = _xp_bg->get_size().y;
-        float h = RING_S * Math::clamp(p_progress, 0.0f, 1.0f);
-        Vector2 size = _xp_fill->get_size();
-        size.y = h;
-        _xp_fill->set_size(size);
-        Vector2 pos = _xp_bg->get_position();
-        _xp_fill->set_position(Vector2(pos.x, pos.y + RING_S - h));
+    if (_xp_fill) {
+        Polygon2D *fill = Object::cast_to<Polygon2D>(_xp_fill);
+        const float R = 16.0f;
+        if (p_progress <= 0.0f) {
+            PackedVector2Array empty;
+            empty.append(Vector2(R, R));
+            fill->set_polygon(empty);
+        } else if (p_progress >= 1.0f) {
+            PackedVector2Array full;
+            for (int i = 0; i < 64; i++) {
+                float a = 2.0f * Math_PI * (float)i / 64.0f;
+                full.append(Vector2(R + cos(a) * R, R + sin(a) * R));
+            }
+            fill->set_polygon(full);
+        } else {
+            // 水位 y = 2R(1-p)，从底部注入
+            float h = p_progress * 2.0f * R;
+            float water_y = 2.0f * R - h;
+            float alpha = Math::abs(1.0f - 2.0f * p_progress);
+            if (alpha > 1.0f) alpha = 1.0f;
+            float theta = acos(1.0f - 2.0f * p_progress);
+            int arc = 32;
+            PackedVector2Array verts;
+            // 左交点
+            float x_l = R - R * sin(theta);
+            verts.append(Vector2(x_l, water_y));
+            // 底部弧（从 θ 到 2π-θ）
+            for (int i = 0; i < arc; i++) {
+                float a = theta + (2.0f * Math_PI - 2.0f * theta) * (float)i / (float)(arc - 1);
+                verts.append(Vector2(R + R * cos(a), R + R * sin(a)));
+            }
+            // 右交点
+            float x_r = R + R * sin(theta);
+            verts.append(Vector2(x_r, water_y));
+            fill->set_polygon(verts);
+        }
     }
-    // 修为圆满 → 提示机缘已至（渡劫/天尊无经验条，恒满不提示）
+    // 修为圆满 → 提示机缘已至
     bool jiyuan = (p_max > 0) && p_progress >= 1.0f;
     if (_jiyuan_label)
         _jiyuan_label->set_visible(_hud_visible && jiyuan);
