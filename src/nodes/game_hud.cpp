@@ -1097,7 +1097,7 @@ void GameHUD::on_boss_fight_update(const String &p_name, double p_current, doubl
         _relayout_boss_bars();
     }
     float frac = Math::clamp(float(p_current / p_max), 0.0f, 1.0f);
-    bar->fill->set_size(Vector2(240.0f * frac, 16.0f));
+    bar->fill->set_size(Vector2(240.0f * frac, 11.0f));
     // 名字后附修为境界名（压迫感）：「幽谷螭龙 · 大乘」；无 realm 标注的老怪只显名字
     String disp = LOC(p_name);
     if (!bar->realm_tag.is_empty())
