@@ -413,30 +413,37 @@ void GameHUD::_create_skill_bar() {
 }
 
 // ============================================================
-// 拾取提示（右侧，2.5s 自消淡出）
+// 拾取提示（屏幕右侧中，最多 6 条，自上而下滚动；每条 2.5s 自消）
 // ============================================================
 
 void GameHUD::_create_pickup_notify() {
-    _pickup_notify_label = memnew(Label);
-    _pickup_notify_label->set_name("PickupNotify");
-    _pickup_notify_label->set_position(Vector2(_vw - 200.0f, 40.0f));
-    _pickup_notify_label->set_size(Vector2(190.0f, 16.0f));
-    _pickup_notify_label->add_theme_font_size_override("font_size", FONT_SIZE_MD);
-    _pickup_notify_label->add_theme_color_override("font_color", Color(1.0f, 0.92f, 0.55f, 1.0f));
-    _pickup_notify_label->add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9f));
-    _pickup_notify_label->add_theme_constant_override("outline_size", 3);
-    _pickup_notify_label->set_horizontal_alignment(HorizontalAlignment::HORIZONTAL_ALIGNMENT_RIGHT);
-    _pickup_notify_label->set_visible(false);
-    add_child(_pickup_notify_label);
+    _pickup_color = Color(1.0f, 0.92f, 0.55f, 1.0f);
+}
+
+Label *GameHUD::_spawn_pickup_label(const String &p_text) {
+    Label *l = memnew(Label);
+    l->set_position(Vector2(_vw - 200.0f, 100.0f));
+    l->set_size(Vector2(190.0f, 16.0f));
+    l->add_theme_font_size_override("font_size", FONT_SIZE_MD);
+    l->add_theme_color_override("font_color", _pickup_color);
+    l->add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9f));
+    l->add_theme_constant_override("outline_size", 3);
+    l->set_horizontal_alignment(HorizontalAlignment::HORIZONTAL_ALIGNMENT_RIGHT);
+    add_child(l);
+    _pickup_labels.push_back(l);
+    return l;
 }
 
 void GameHUD::_layout_pickup_notify() {
-    if (_pickup_notify_label)
-        _pickup_notify_label->set_position(Vector2(_vw - 200.0f, 40.0f));
+    // 右侧中间：x 右缘贴边，y 中心锚定；全部标签按顺序纵排
+    float x = _vw - 200.0f;
+    float base_y = _vh * 0.5f - 60.0f;
+    for (int i = 0; i < (int)_pickup_labels.size(); i++) {
+        _pickup_labels[i]->set_position(Vector2(x, base_y + (float)i * 18.0f - _pickup_scroll));
+    }
 }
 
 void GameHUD::_on_item_picked_up(const String &p_item_id, int p_qty) {
-    if (!_pickup_notify_label) return;
     String name = p_item_id;
     ItemDatabase *db = ItemDatabase::get_singleton();
     if (db) {
@@ -448,9 +455,41 @@ void GameHUD::_on_item_picked_up(const String &p_item_id, int p_qty) {
         text = LOC("获得 ") + name + " ×" + String::num_int64(p_qty);
     else
         text = LOC("获得 ") + name;
-    _pickup_notify_label->set_text(text);
-    _pickup_notify_label->set_visible(true);
-    _pickup_notify_t = 2.5f;
+    Label *l = _spawn_pickup_label(text);
+    l->set_visible(true);
+    // 新条目滑入（从下方 12px 进场）
+    l->set_position(Vector2(_vw - 200.0f, _vh * 0.5f - 60.0f + (float)(_pickup_labels.size() - 1) * 18.0f - _pickup_scroll + 12.0f));
+    // 最多保留 6 条，多了从顶部挤出
+    while ((int)_pickup_labels.size() > 6) {
+        Label *old = _pickup_labels.front();
+        old->queue_free();
+        _pickup_labels.erase(_pickup_labels.begin());
+    }
+    _layout_pickup_notify();
+}
+
+void GameHUD::_update_pickup(float p_delta) {
+    if (_pickup_labels.empty())
+        return;
+    // 自动滚动节拍：每 1.5s 上移 18px（滚动栏效果）
+    _pickup_scroll_t -= (float)p_delta;
+    if (_pickup_scroll_t <= 0.0f) {
+        _pickup_scroll_t = 1.5f;
+        _pickup_scroll += 18.0f;
+    }
+    // 超出可视区（太长）的底部条目淡出并移除
+    const float base_y = _vh * 0.5f - 60.0f;
+    while (!_pickup_labels.empty()) {
+        Label *l = _pickup_labels.back();
+        float y = base_y + (float)(_pickup_labels.size() - 1) * 18.0f - _pickup_scroll;
+        if (y < base_y - 6.0f) {
+            l->queue_free();
+            _pickup_labels.pop_back();
+        } else {
+            break;
+        }
+    }
+    _layout_pickup_notify();
 }
 
 // ============================================================
@@ -619,18 +658,8 @@ void GameHUD::_process(double p_delta) {
 	_update_pressure_indicators();
     _update_buff_label(p_delta);
 
-    // 拾取提示：2.5s 后淡出消失
-    if (_pickup_notify_t > 0.0f && _pickup_notify_label) {
-        _pickup_notify_t -= (float)p_delta;
-        if (_pickup_notify_t <= 0.0f) {
-            _pickup_notify_t = 0.0f;
-            _pickup_notify_label->set_visible(false);
-        } else if (_pickup_notify_t < 0.6f) {
-            Color c = _pickup_notify_label->get_theme_color("font_color");
-            c.a = _pickup_notify_t / 0.6f;
-            _pickup_notify_label->add_theme_color_override("font_color", c);
-        }
-    }
+    // 拾取提示：多条目滚动显示
+    _update_pickup(p_delta);
 
     // 洲名横幅：2.8s 展示，末 0.8s 淡出
     if (_continent_banner_t > 0.0f && _continent_label) {

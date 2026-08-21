@@ -153,12 +153,17 @@ private:
 
 	ColorRect *_death_overlay = nullptr;
 
-	// 拾取提示（右侧，2.5s 自消）
-	Label *_pickup_notify_label = nullptr;
-	float _pickup_notify_t = 0.0f;
+	// 拾取提示（屏幕右侧中，最多 6 条，自上而下滚动；每条 2.5s 自消）
+	std::vector<Label *> _pickup_labels;
+	float _pickup_scroll = 0.0f;   // 总滚动偏移（超出可视区向下平移）
+	float _pickup_scroll_t = 0.0f; // 自动滚动节拍
+	float _pickup_slide_t = 0.0f;  // 新条目滑入计时
+	Color _pickup_color = Color(1.0f, 0.92f, 0.55f, 1.0f);
 	void _create_pickup_notify();
 	void _on_item_picked_up(const String &p_item_id, int p_qty);
 	void _layout_pickup_notify();
+	Label *_spawn_pickup_label(const String &p_text);
+	void _update_pickup(float p_delta);
 
 	std::vector<CanvasItem *> _skill_bar_nodes;
 	std::vector<Label *> _skill_name_labels;
