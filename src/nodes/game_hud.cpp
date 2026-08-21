@@ -142,7 +142,7 @@ void GameHUD::_ready() {
     set_process_unhandled_input(true);
     set_process(true); // 技能栏冷却轮询
 
-    // 首帧立即布局（left_column 依赖 _vw/_vh，先设好再排；其余靠 _sync_viewport 首次触发）
+    // 首帧立即布局
     _vw = 480.0f;
     _vh = 270.0f;
     _layout_left_column();
@@ -539,15 +539,10 @@ void GameHUD::_layout_skill_bar() {
         return;
     const float SLOT_W = 20.0f, SLOT_GAP = 2.0f;
     const int COLS = 6;
-    const float x0 = BAR_X;
-    const float SLOT_H = 20.0f;
-    // 消耗品栏顶部
-    int rows = 7;
-    if (!_law_shown) rows = 6;
-    float consumable_top = _vh - 2.0f - BAR_HEIGHT - (float)rows * ROW_STEP - 6.0f - SLOT_H;
-    // 技能栏在消耗品栏上方 4px
-    const float y_top = consumable_top - SLOT_H - 4.0f;
-    const float y_bot = y_top + SLOT_H + SLOT_GAP;
+    const float row_w = COLS * SLOT_W + (COLS - 1) * SLOT_GAP; // 130
+    const float x0 = (_vw - row_w) * 0.5f;
+    const float y_top = _vh - 48.0f;
+    const float y_bot = _vh - 24.0f;
     for (int i = 0; i < 12; i++) {
         int row = i / COLS, col = i % COLS;
         float x = x0 + col * (SLOT_W + SLOT_GAP);
@@ -560,7 +555,7 @@ void GameHUD::_layout_skill_bar() {
         _skill_cd_labels[i]->set_position(Vector2(x + 10, y + 12));
     }
     if (_page_badge)
-        _page_badge->set_position(Vector2(x0 + 6 * (SLOT_W + SLOT_GAP) + 8.0f, y_bot + 6.0f));
+        _page_badge->set_position(Vector2(x0 + row_w + 8.0f, y_bot + 6.0f));
 }
 
 void GameHUD::_process(double p_delta) {
