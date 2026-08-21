@@ -153,6 +153,13 @@ private:
 
 	ColorRect *_death_overlay = nullptr;
 
+	// 拾取提示（右侧，2.5s 自消）
+	Label *_pickup_notify_label = nullptr;
+	float _pickup_notify_t = 0.0f;
+	void _create_pickup_notify();
+	void _on_item_picked_up(const String &p_item_id, int p_qty);
+	void _layout_pickup_notify();
+
 	std::vector<CanvasItem *> _skill_bar_nodes;
 	std::vector<Label *> _skill_name_labels;
 	std::vector<Label *> _skill_cd_labels;

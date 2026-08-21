@@ -70,6 +70,7 @@ void GameHUD::_bind_methods() {
     ClassDB::bind_method(D_METHOD("on_ledger_inspect", "data", "show"), &GameHUD::on_ledger_inspect);
     ClassDB::bind_method(D_METHOD("on_fullness_changed", "current", "max"), &GameHUD::on_fullness_changed);
     ClassDB::bind_method(D_METHOD("on_bigu_changed", "bigu"), &GameHUD::on_bigu_changed);
+    ClassDB::bind_method(D_METHOD("_on_item_picked_up", "item_id", "qty"), &GameHUD::_on_item_picked_up);
     ClassDB::bind_method(D_METHOD("on_spiritual_energy_changed", "current", "max", "progress"),
                          &GameHUD::on_spiritual_energy_changed);
     ClassDB::bind_method(D_METHOD("on_mana_changed", "current", "max"),
@@ -113,6 +114,7 @@ void GameHUD::_ready() {
 	_create_pressure_indicators();
 	_create_ledger_overlay();
 	_create_fullness_bar();
+	_create_pickup_notify();
 
     // Buff 行（生命条下方小行）
     _buff_label = memnew(Label);
@@ -159,6 +161,7 @@ void GameHUD::_ready() {
         bus->connect("combo_changed", Callable(this, "on_combo_changed"));
         bus->connect("combo_ended", Callable(this, "on_combo_ended"));
         bus->connect("interaction_prompt", Callable(this, "on_interaction_prompt"));
+        bus->connect("item_picked_up", Callable(this, "_on_item_picked_up"));
         bus->connect("player_died", Callable(this, "on_player_died"));
         bus->connect("boss_fight_update", Callable(this, "on_boss_fight_update"));
         bus->connect("boss_fight_ended", Callable(this, "on_boss_fight_ended"));
@@ -408,6 +411,47 @@ void GameHUD::_create_skill_bar() {
 }
 
 // ============================================================
+// 拾取提示（右侧，2.5s 自消淡出）
+// ============================================================
+
+void GameHUD::_create_pickup_notify() {
+    _pickup_notify_label = memnew(Label);
+    _pickup_notify_label->set_name("PickupNotify");
+    _pickup_notify_label->set_position(Vector2(_vw - 200.0f, 40.0f));
+    _pickup_notify_label->set_size(Vector2(190.0f, 16.0f));
+    _pickup_notify_label->add_theme_font_size_override("font_size", FONT_SIZE_MD);
+    _pickup_notify_label->add_theme_color_override("font_color", Color(1.0f, 0.92f, 0.55f, 1.0f));
+    _pickup_notify_label->add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9f));
+    _pickup_notify_label->add_theme_constant_override("outline_size", 3);
+    _pickup_notify_label->set_horizontal_alignment(HorizontalAlignment::HORIZONTAL_ALIGNMENT_RIGHT);
+    _pickup_notify_label->set_visible(false);
+    add_child(_pickup_notify_label);
+}
+
+void GameHUD::_layout_pickup_notify() {
+    if (_pickup_notify_label)
+        _pickup_notify_label->set_position(Vector2(_vw - 200.0f, 40.0f));
+}
+
+void GameHUD::_on_item_picked_up(const String &p_item_id, int p_qty) {
+    if (!_pickup_notify_label) return;
+    String name = p_item_id;
+    ItemDatabase *db = ItemDatabase::get_singleton();
+    if (db) {
+        const Item *def = db->get_item(p_item_id);
+        if (def) name = LOC(def->name);
+    }
+    String text;
+    if (p_qty > 1)
+        text = LOC("获得 ") + name + " ×" + String::num_int64(p_qty);
+    else
+        text = LOC("获得 ") + name;
+    _pickup_notify_label->set_text(text);
+    _pickup_notify_label->set_visible(true);
+    _pickup_notify_t = 2.5f;
+}
+
+// ============================================================
 // 技能栏刷新（轮询 Player->SkillSystem；冷却走 Player._time 时基）
 // ============================================================
 
@@ -442,6 +486,7 @@ void GameHUD::_relayout_hud() {
     if (_death_overlay) _death_overlay->set_size(Vector2(_vw, _vh));
     if (_ledger_overlay) _ledger_overlay->set_position(Vector2((_vw - 240.0f) * 0.5f, 58));
     if (_combo_label) _combo_label->set_position(Vector2(_vw - 100.0f, 130));
+    _layout_pickup_notify();
     _relayout_boss_bars();
 }
 
@@ -567,6 +612,19 @@ void GameHUD::_process(double p_delta) {
     _update_law_bar();
 	_update_pressure_indicators();
     _update_buff_label(p_delta);
+
+    // 拾取提示：2.5s 后淡出消失
+    if (_pickup_notify_t > 0.0f && _pickup_notify_label) {
+        _pickup_notify_t -= (float)p_delta;
+        if (_pickup_notify_t <= 0.0f) {
+            _pickup_notify_t = 0.0f;
+            _pickup_notify_label->set_visible(false);
+        } else if (_pickup_notify_t < 0.6f) {
+            Color c = _pickup_notify_label->get_theme_color("font_color");
+            c.a = _pickup_notify_t / 0.6f;
+            _pickup_notify_label->add_theme_color_override("font_color", c);
+        }
+    }
 
     // 洲名横幅：2.8s 展示，末 0.8s 淡出
     if (_continent_banner_t > 0.0f && _continent_label) {
