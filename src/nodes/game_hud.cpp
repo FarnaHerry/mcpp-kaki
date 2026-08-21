@@ -45,8 +45,8 @@ static String _lifespan_txt(int p_lifespan) {
 }
 
 // Layout constants (480×270 viewport)
-static constexpr float BAR_WIDTH = 140.0f;
-static constexpr float BAR_HEIGHT = 16.0f;
+static constexpr float BAR_WIDTH = 120.0f;
+static constexpr float BAR_HEIGHT = 11.0f;
 static constexpr float BAR_X = 8.0f;
 // 左下角竖排（_layout_left_column）：生命→灵力→[法则·化神起显示]→修为→饱食→境界（寿元移个人信息页）
 static constexpr float HEALTH_BAR_Y = 6.0f;
@@ -55,10 +55,10 @@ static constexpr float LAW_BAR_Y = 42.0f;    // 法则（化神解锁后显示�
 static constexpr float XP_BAR_Y = 42.0f;     // 修为经验（百分比，法则隐藏时紧贴灵力）
 static constexpr float FULLNESS_BAR_Y = 60.0f;
 static constexpr float REALM_LABEL_Y = 78.0f;
-static constexpr float ROW_STEP = 16.0f;     // 条高16，紧贴无间距
-static constexpr int FONT_SIZE_XS = 9;
-static constexpr int FONT_SIZE_MD = 14;
-static constexpr int FONT_SIZE_LG = 20;
+static constexpr float ROW_STEP = 13.0f;     // 条高11+间距2
+static constexpr int FONT_SIZE_XS = 8;
+static constexpr int FONT_SIZE_MD = 12;
+static constexpr int FONT_SIZE_LG = 18;
 
 void GameHUD::_bind_methods() {
     ClassDB::bind_method(D_METHOD("on_player_health_changed", "current", "max"),
@@ -1018,7 +1018,7 @@ void GameHUD::_update_skill_bar() {
 
 GameHUD::BossBarUi *GameHUD::_create_boss_bar_item() {
     // bg/fill/名字直接挂 CanvasLayer；名字用 font 精确度量绝对定位居中（见 on_boss_fight_update）
-    const float W = 240.0f, H = 16.0f;
+    const float W = 240.0f, H = 11.0f;
     const float x = (_vw - W) * 0.5f;
 
     _boss_bars.push_back(BossBarUi());
@@ -1058,12 +1058,12 @@ GameHUD::BossBarUi *GameHUD::_find_boss_bar(const String &p_name) {
 }
 
 void GameHUD::_relayout_boss_bars() {
-    // 任意数量：自上而下排列，血条 16px/条（名字在条内居中）
-    const float W = 240.0f, H = 16.0f;
+    // 任意数量：自上而下排列，血条 11px/条（名字在条内居中）
+    const float W = 240.0f, H = 11.0f;
     const float x = (_vw - W) * 0.5f;
     for (int i = 0; i < (int)_boss_bars.size(); i++) {
         BossBarUi &b = _boss_bars[i];
-        float y = 8.0f + (float)i * 18.0f;
+        float y = 8.0f + (float)i * 14.0f;
         if (b.bg) b.bg->set_position(Vector2(x, y));
         if (b.fill) b.fill->set_position(Vector2(x, y));
         if (b.name_label) _position_boss_name(&b, x, y);
@@ -1073,7 +1073,7 @@ void GameHUD::_relayout_boss_bars() {
 // 名字用 font 实际度量（宽度=get_string_size.x，高度=get_height）绝对定位居中于血条，
 // 再上移 2px 补偿 CJK 字形在 line-height 内的视觉偏下
 void GameHUD::_position_boss_name(BossBarUi *p_bar, float p_x, float p_y) {
-    const float W = 240.0f, H = 16.0f;
+    const float W = 240.0f, H = 11.0f;
     Label *lbl = p_bar->name_label;
     Ref<Font> font = lbl->get_theme_font("font");
     int fs = lbl->get_theme_font_size("font_size");
