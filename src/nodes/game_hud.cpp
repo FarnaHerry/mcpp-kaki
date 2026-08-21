@@ -130,10 +130,10 @@ void GameHUD::_ready() {
     _vw = 0.0f;
     _vh = 0.0f;
 
-    // 洲名横幅（进入新洲时大字淡入淡出，不随 _hud_visible 隐藏——过场也要看得到）
+    // 洲名横幅（进入新洲时大字淡入淡出，屏幕正中央显示）
     _continent_label = memnew(Label);
-    _continent_label->set_position(Vector2(0, 0));
-    _continent_label->set_size(Vector2(480, 30));
+    _continent_label->set_position(Vector2(0, 120.0f));
+    _continent_label->set_size(Vector2(480, 60));
     _continent_label->set_horizontal_alignment(HorizontalAlignment::HORIZONTAL_ALIGNMENT_CENTER);
     _continent_label->set_vertical_alignment(VerticalAlignment::VERTICAL_ALIGNMENT_CENTER);
     _continent_label->add_theme_font_size_override("font_size", 18);
