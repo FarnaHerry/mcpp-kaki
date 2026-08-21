@@ -556,46 +556,46 @@ void GameHUD::_layout_right_side() {
     }
 }
 
-// 左下角：数值条竖排（生命→灵力→[法则]→修为→饱食→境界），贴左下角从下往上堆叠。
+// 左下角：数值条竖排（生命→灵力→[法则]→修为→饱食→境界），贴左下角从上往下堆叠。
 // 无文字，仅纯色条。法则条化神解锁才显示。
 void GameHUD::_layout_left_column() {
     const float bx = BAR_X; // 贴左
-    // 从下往上堆叠：生命在最下，境界在最上；底部起点 = 视口底部
-    float y = _vh - 4.0f - BAR_HEIGHT;
-    // 生命
+    // 从上往下堆叠：生命在最上，境界在最下；顶部起点 = 视口底部往上一共 7 行
+    float y = _vh - 4.0f - BAR_HEIGHT - (float)(_law_shown ? 6 : 5) * ROW_STEP;
+    // 生命（最上）
     if (_health_bg) {
         _health_bg->set_position(Vector2(bx, y));
         _health_fill->set_position(Vector2(bx, y));
     }
-    y -= ROW_STEP;
+    y += ROW_STEP;
     // 灵力
     if (_energy_bg) {
         _energy_bg->set_position(Vector2(bx, y));
         _energy_fill->set_position(Vector2(bx, y));
     }
-    y -= ROW_STEP;
+    y += ROW_STEP;
     // 法则（化神解锁才显示）
     if (_law_shown && _law_bg) {
         _law_bg->set_position(Vector2(bx, y));
         _law_fill->set_position(Vector2(bx, y));
-        y -= ROW_STEP;
+        y += ROW_STEP;
     }
     // 修为
     if (_xp_bg) {
         _xp_bg->set_position(Vector2(bx, y));
         _xp_fill->set_position(Vector2(bx, y));
     }
-    y -= ROW_STEP;
+    y += ROW_STEP;
     // buff
     if (_buff_label) _buff_label->set_position(Vector2(bx, y + 4.0f));
-    y -= ROW_STEP;
+    y += ROW_STEP;
     // 饱食
     if (_fullness_bg) {
         _fullness_bg->set_position(Vector2(bx, y));
         _fullness_fill->set_position(Vector2(bx, y));
     }
-    y -= ROW_STEP;
-    // 境界
+    y += ROW_STEP;
+    // 境界（最下）
     if (_realm_label) _realm_label->set_position(Vector2(bx, y));
     if (_jiyuan_label) _jiyuan_label->set_position(Vector2(bx + BAR_WIDTH + 8.0f, y + 4.0f));
 }
@@ -607,13 +607,11 @@ void GameHUD::_layout_consumable_bar() {
         return;
     const float SLOT_W = 20.0f, SLOT_GAP = 2.0f;
     const float x0 = BAR_X;
-    // 状态栏总行数：境界/饱食/buff/修为/法则(可选)/灵力/生命 = 7 或 6
+    // 状态栏顶部（生命行 y），消耗品栏在其上方 6px
     int rows = 7;
     if (!_law_shown) rows = 6;
-    const float skill_y_top = _vh - 48.0f;
-    float state_top = skill_y_top - 4.0f - BAR_HEIGHT - (float)rows * ROW_STEP;
-    // 消耗品栏在状态栏上方 6px（同 x 对齐）
-    const float y = state_top - 6.0f - SLOT_W;
+    float health_y = _vh - 4.0f - BAR_HEIGHT - (float)rows * ROW_STEP;
+    const float y = health_y - 6.0f - SLOT_W;
     for (int i = 0; i < 6; i++) {
         float x = x0 + i * (SLOT_W + SLOT_GAP);
         int b = base + i * 4;
