@@ -535,16 +535,23 @@ void GameHUD::_relayout_hud() {
     _relayout_boss_bars();
 }
 
-// 右上：威压/灵压指示器（法则条已移左列生命/灵力之下）
+// 威压/灵压指示器：放在技能栏右侧（节约右上角空间）
 void GameHUD::_layout_right_side() {
-    const float rx = _vw - BAR_WIDTH - 8.0f;
+    // 技能栏行位置（居中技能栏右端 + 8px）
+    const float SLOT_W = 20.0f, SLOT_GAP = 2.0f;
+    const int COLS = 6;
+    const float row_w = COLS * SLOT_W + (COLS - 1) * SLOT_GAP; // 130
+    const float x0 = (_vw - row_w) * 0.5f;
+    const float y_top = _vh - 48.0f;
+    const float y_bot = _vh - 24.0f;
+    // 威压放上行右端，灵压放下行右端
     if (_wei_bg) {
-        _wei_bg->set_position(Vector2(rx, 6.0f));
-        _wei_label->set_position(Vector2(rx + 2, 5.0f));
+        _wei_bg->set_position(Vector2(x0 + row_w + 8.0f, y_top));
+        _wei_label->set_position(Vector2(x0 + row_w + 10.0f, y_top - 1));
     }
     if (_lin_bg) {
-        _lin_bg->set_position(Vector2(rx + 70.0f, 6.0f));
-        _lin_label->set_position(Vector2(rx + 72.0f, 5.0f));
+        _lin_bg->set_position(Vector2(x0 + row_w + 8.0f, y_bot));
+        _lin_label->set_position(Vector2(x0 + row_w + 10.0f, y_bot - 1));
     }
 }
 
@@ -815,12 +822,12 @@ void GameHUD::_update_law_bar() {
 // 数字键消耗品栏（技能栏上方一行：1~6 槽，名首字+数量；design/alchemy.md S6）
 
 // ============================================================
-// 威压/灵压冷却指示器（法则条下方；就绪亮色 / 冷却灰+秒）
+// 威压/灵压冷却指示器（技能栏右侧；就绪亮色 / 冷却灰+秒）
 // ============================================================
 
 void GameHUD::_create_pressure_indicators() {
-	const float x0 = 0.0f; // 由 _layout_right_side() 锚定（与法则条同左缘）
-	const float y = 20.0f;
+	const float x0 = 0.0f; // 由 _layout_right_side() 锚定
+	const float y = 0.0f;
 	const float W = 66.0f, H = 14.0f;
 
 	// V 威压
