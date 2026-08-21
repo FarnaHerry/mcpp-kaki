@@ -108,6 +108,14 @@ public:
 	void clear();
 	void set_slot(int p_idx, const StringName &p_id, int p_qty);
 
+	// 装备强化：额外攻/防加成（按 item_id 跟踪，随存档持久化）
+	int get_item_extra_atk(const StringName &p_id) const;
+	int get_item_extra_def(const StringName &p_id) const;
+	bool upgrade_item(const StringName &p_id, int p_atk_inc, int p_def_inc);
+	// 强化存档序列化
+	Dictionary save_extra_bonuses() const;
+	void load_extra_bonuses(const Dictionary &p_data);
+
 protected:
 	static void _bind_methods();
 
@@ -125,6 +133,13 @@ private:
 
 	Slot _slots[UNLIMITED_SLOTS];
 	int _capacity = DEFAULT_SLOTS;
+
+	// 装备强化额外加成：item_id → {extra_atk, extra_def}（随存档持久化）
+	struct ExtraBonus {
+		int atk = 0;
+		int def = 0;
+	};
+	HashMap<StringName, ExtraBonus> _extra_bonuses;
 
 	int _find_stackable_slot(const StringName &p_id) const;
 	int _find_empty_slot() const;

@@ -117,34 +117,28 @@ func _process(delta) -> bool:
 			var menu = root.find_child("GameMenu", true, false)
 			var found = false
 			for c in menu.get_children():
-				if c is Label and "炼丹" in c.text:
+				if c is Label and "熔炼炉" in c.text:
 					found = true
-			_check(found, "alchemy page title exists in GameMenu")
+			_check(found, "forge page title exists in GameMenu")
 			_check(_has_label("回春丹"), "丹方卡片：回春丹（首卡）")
 			_check(_has_label("回血 30"), "初始选中回春丹（详情行效果）")
-			Input.action_press("left") # 行首左移钳制（按住一帧；同帧释放会被 just_pressed 轮询错过）
+			# 侧边栏 ←/→ 切换子页；子页内 ↑/↓ 行移（no left/right column nav）
+			# 行首钳制：按 up 仍为首行
+			Input.action_press("up")
 		19:
-			_check(_has_label("回血 30"), "行首左移钳制（仍回春丹）")
-			Input.action_release("left")
-			Input.action_press("right") # → 聚气丹
+			_check(_has_label("回血 30"), "行首上移钳制（仍回春丹）")
+			Input.action_release("up")
+			Input.action_press("down") # → 赤焰丹（第2行同列1，index 3）
 		20:
-			_check(_has_label("回灵 50"), "右移到聚气丹（列移）")
-			Input.action_release("right")
-			Input.action_press("right") # → 冰心丹
-		21:
-			_check(_has_label("水抗+15% 300s"), "右移到冰心丹")
-			Input.action_release("right")
-			Input.action_press("down") # → 悟道丹（下行同列）
-		22:
-			_check(_has_label("修为+200"), "下移到悟道丹（行移）")
+			_check(_has_label("赤焰丹"), "下移到赤焰丹（行移）")
 			Input.action_release("down")
-			Input.action_press("left") # → 金刚丹
-		23:
-			_check(_has_label("防御+20% 300s"), "左移到金刚丹")
-			Input.action_release("left")
-			Input.action_press("up") # → 聚气丹（上行同列）
-		24:
-			_check(_has_label("回灵 50"), "上移到聚气丹")
+			Input.action_press("down") # → 大还丹（第3行同列1，index 6）
+		21:
+			_check(_has_label("大还丹"), "下移到大还丹")
+			Input.action_release("down")
+			Input.action_press("up") # → 赤焰丹
+		22:
+			_check(_has_label("赤焰丹"), "上移到赤焰丹")
 			Input.action_release("up")
 			Input.action_press("menu")
 		25:

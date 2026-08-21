@@ -18,6 +18,7 @@ module;
 #include <godot_cpp/variant/rect2.hpp>
 
 #include "../utils/text.h"
+#include "../core/currency_system.h"
 
 #include <godot_cpp/classes/audio_server.hpp>
 #include <godot_cpp/classes/color_rect.hpp>
@@ -40,7 +41,7 @@ import mcpp_kaki.inventory;
 import mcpp_kaki.utils;
 namespace godot {
 
-static const char *TAB_NAMES[] = { "个人信息", "背包", "能力", "功法", "技能", "法宝", "宗门", "云游", "炼丹", "设置" };
+static const char *TAB_NAMES[] = { "个人信息", "背包", "能力", "功法", "技能", "法宝", "宗门", "云游", "熔炼炉", "设置" };
 
 void GameMenu::_bind_methods() {
 }
@@ -225,8 +226,8 @@ void GameMenu::_rebuild_page() {
 			break;
 		case PAGE_ALCHEMY:
 			if (_inv_panel) _inv_panel->close();
-			_build_alchemy_page();
-			_set_hint(LOC("Q/E 切换页  ↑/↓ 选方  X 炼制  ESC 关闭"));
+			_build_forge_page();
+			_set_hint(LOC("Q/E 切页  ↑/↓←/→ 选子页  X 确认  ESC 关闭"));
 			break;
 		case PAGE_SETTINGS:
 			if (_inv_panel) _inv_panel->close();
@@ -1239,10 +1240,11 @@ void GameMenu::_handle_travel_input() {
 // ============================================================
 
 // ============================================================
-// 炼丹页（design/alchemy.md：丹炉随身，配方列表 → 材料够=亮/不够=灰 → X 炼制）
+// 熔炼炉页（design：左侧侧边栏 4 子页 + 右侧主区域）
+// 子页 0=炼丹 1=装备铸造 2=法宝铸造 3=装备强化
 // ============================================================
 
-void GameMenu::_build_alchemy_page() {
+void GameMenu::_build_forge_page() {
 	auto add_line = [&](const String &text, float x, float y, int size, const Color &c) {
 		Label *l = memnew(Label);
 		l->set_text(text);
@@ -1260,21 +1262,63 @@ void GameMenu::_build_alchemy_page() {
 	Color ok_c(0.6f, 1.0f, 0.6f);
 	Color bad_c(1.0f, 0.5f, 0.5f);
 
+	// 标题
 	Label *title = memnew(Label);
-	title->set_text(LOC("—— 炼丹 ——"));
+	title->set_text(LOC("—— 熔炼炉 ——"));
 	title->add_theme_font_size_override("font_size", 13);
 	title->add_theme_color_override("font_color", Color(1.0f, 0.9f, 0.5f));
-	title->set_position(Vector2(195, 36));
+	title->set_position(Vector2(185, 36));
 	add_child(title);
 	_page_nodes.push_back(title);
 
+	// 左侧侧边栏（4 子页标签竖排）
+	static const char *SUB_NAMES[4] = { "炼丹", "装备铸造", "法宝铸造", "装备强化" };
+	for (int i = 0; i < 4; i++) {
+		bool is_sel = (i == _forge_sub);
+		Label *sl = memnew(Label);
+		sl->set_text(is_sel ? LOC("▶ ") + LOC(SUB_NAMES[i]) : LOC("  ") + LOC(SUB_NAMES[i]));
+		sl->add_theme_font_size_override("font_size", 9);
+		sl->add_theme_color_override("font_color", is_sel ? sel_c : dim_c);
+		sl->set_position(Vector2(12, 60 + i * 22));
+		add_child(sl);
+		_page_nodes.push_back(sl);
+	}
+
+	// 右侧主区域
+	switch (_forge_sub) {
+		case 0: _build_forge_alchemy(); break;
+		case 1: _build_forge_equip(); break;
+		case 2: _build_forge_artifact(); break;
+		case 3: _build_forge_upgrade(); break;
+	}
+}
+
+// 子页 0：炼丹（调用 AlchemySystem 既有 API，与旧 _build_alchemy_page 一致）
+void GameMenu::_build_forge_alchemy() {
+	auto add_line = [&](const String &text, float x, float y, int size, const Color &c) {
+		Label *l = memnew(Label);
+		l->set_text(text);
+		l->add_theme_font_size_override("font_size", size);
+		l->add_theme_color_override("font_color", c);
+		l->set_position(Vector2(x, y));
+		add_child(l);
+		_page_nodes.push_back(l);
+	};
+
+	Color head_c(1.0f, 0.85f, 0.5f);
+	Color body_c(0.85f, 0.85f, 0.85f);
+	Color dim_c(0.45f, 0.45f, 0.45f);
+	Color sel_c(1.0f, 0.95f, 0.6f);
+	Color ok_c(0.6f, 1.0f, 0.6f);
+	Color bad_c(1.0f, 0.5f, 0.5f);
+
 	AlchemySystem *al = _player ? _player->get_alchemy() : nullptr;
 	if (!al) {
-		add_line(LOC("（丹炉未备）"), 70.0f, 60.0f, 9, dim_c);
+		add_line(LOC("（丹炉未备）"), 80.0f, 60.0f, 9, dim_c);
 		return;
 	}
 
-	// 顶部：各草药持有数
+	// 顶部草药持有数
 	static const char *HERB_IDS[] = {
 		"zhi_xue_cao", "ju_ling_cao", "bing_xin_lian", "chi_yan_hua",
 		"jin_gang_teng", "wu_dao_cha", "qian_nian_ling_zhi"
@@ -1288,12 +1332,12 @@ void GameMenu::_build_alchemy_page() {
 		herb_line += (def ? LOC(def->name) : String(HERB_IDS[i])) + LOC("×") +
 			String::num_int64(inv ? inv->get_item_count(StringName(HERB_IDS[i])) : 0);
 	}
-	add_line(herb_line, 40.0f, 58.0f, 8, head_c);
+	add_line(herb_line, 80.0f, 58.0f, 8, head_c);
 
-	// 丹方卡片（GridList，3 列；←/→ 列移 ↑/↓ 行移）
+	// 丹方卡片（GridList，3 列）
 	Array recipes = al->get_recipe_list();
 	static const int GRID_COLS = 3;
-	_alchemy_sel = CLAMP(_alchemy_sel, 0, (int)recipes.size() - 1);
+	_forge_sel = CLAMP(_forge_sel, 0, (int)recipes.size() - 1);
 	Array items;
 	for (int i = 0; i < recipes.size(); i++) {
 		Dictionary r = recipes[i];
@@ -1302,30 +1346,30 @@ void GameMenu::_build_alchemy_page() {
 		bool locked = bool(r["realm_locked"]);
 		bool can = bool(r["can_craft"]);
 		if (locked) {
-			cell["dim"] = true; // 境界未达：灰显
+			cell["dim"] = true;
 			cell["color"] = Color(0.5f, 0.5f, 0.5f, 1.0f);
 		} else if (can) {
-			cell["color"] = ok_c; // 材料齐：绿
+			cell["color"] = ok_c;
 		} else {
-			cell["color"] = bad_c; // 材料不足：红
+			cell["color"] = bad_c;
 		}
 		items.push_back(cell);
 	}
 	GridList *grid = memnew(GridList);
-	grid->set_position(Vector2(40, 78));
-	grid->set_size(Vector2(400, 84)); // 3 行窗口
+	grid->set_position(Vector2(80, 78));
+	grid->set_size(Vector2(360, 84)); // 3 行窗口
 	add_child(grid);
 	grid->set_columns(GRID_COLS);
-	grid->set_cell_size(Vector2(133, 28));
+	grid->set_cell_size(Vector2(120, 28));
 	grid->set_items(items);
-	grid->set_selected(_alchemy_sel);
+	grid->set_selected(_forge_sel);
 	_page_nodes.push_back(grid);
 
-	// 选中丹方详情：效果 + 材料（够=灰 / 不够=红）
-	Dictionary selr = recipes[_alchemy_sel];
+	// 选中丹方详情
+	Dictionary selr = recipes[_forge_sel];
 	String detail = LOC(String(selr["name"])) + LOC("  ") + LOC(String(selr["effect"]));
 	if (bool(selr["realm_locked"])) detail += LOC("  （金丹起）");
-	add_line(detail, 40.0f, 170.0f, 9, sel_c);
+	add_line(detail, 80.0f, 170.0f, 9, sel_c);
 	String mat_line = LOC("材料 ");
 	Array mats = selr["mats"];
 	for (int j = 0; j < mats.size(); j++) {
@@ -1334,56 +1378,480 @@ void GameMenu::_build_alchemy_page() {
 		mat_line += String(m["name"]) + LOC("×") + String::num_int64((int)m["need"]) +
 			LOC("(") + String::num_int64((int)m["have"]) + LOC(")");
 	}
-	add_line(mat_line, 40.0f, 184.0f, 8, bool(selr["can_craft"]) ? dim_c : bad_c);
+	add_line(mat_line, 80.0f, 184.0f, 8, bool(selr["can_craft"]) ? dim_c : bad_c);
 
 	// 炼制结果提示
-	if (!_alchemy_msg.is_empty()) {
-		bool ok = _alchemy_msg.contains(LOC("炼成"));
-		add_line(_alchemy_msg, 60.0f, 250.0f, 10, ok ? ok_c : bad_c);
+	if (!_forge_msg.is_empty()) {
+		bool ok = _forge_msg.contains(LOC("炼成"));
+		add_line(_forge_msg, 80.0f, 250.0f, 10, ok ? ok_c : bad_c);
 	} else {
-		add_line(LOC("↑/↓←/→ 选丹方  X 炼制。炼制亦修行：每炉喂练气 +5。"), 60.0f, 250.0f, 8, dim_c);
+		add_line(LOC("↑/↓←/→ 选方  X 炼制。炼制亦修行：每炉喂练气 +5。"), 80.0f, 250.0f, 8, dim_c);
 	}
 }
 
-void GameMenu::_handle_alchemy_input() {
+// 子页 1：装备铸造（硬编码配方 5 条，扣材料给装备）
+void GameMenu::_build_forge_equip() {
+	auto add_line = [&](const String &text, float x, float y, int size, const Color &c) {
+		Label *l = memnew(Label);
+		l->set_text(text);
+		l->add_theme_font_size_override("font_size", size);
+		l->add_theme_color_override("font_color", c);
+		l->set_position(Vector2(x, y));
+		add_child(l);
+		_page_nodes.push_back(l);
+	};
+
+	Color head_c(1.0f, 0.85f, 0.5f);
+	Color body_c(0.85f, 0.85f, 0.85f);
+	Color dim_c(0.45f, 0.45f, 0.45f);
+	Color sel_c(1.0f, 0.95f, 0.6f);
+	Color ok_c(0.6f, 1.0f, 0.6f);
+	Color bad_c(1.0f, 0.5f, 0.5f);
+
+	// 硬编码铸造配方：{result_id, result_name, mat1_id, mat1_name, mat1_qty, mat2_id, mat2_name, mat2_qty}
+	struct ForgeRecipe {
+		const char *result_id, *result_name;
+		const char *mat1_id, *mat1_name; int mat1_qty;
+		const char *mat2_id, *mat2_name; int mat2_qty;
+	};
+	static const ForgeRecipe RECIPES[] = {
+		{ "iron_sword", "铁剑", "zhi_xue_cao", "止血草", 3, "ju_ling_cao", "聚灵草", 2 },
+		{ "protect_robe", "护体法衣", "bing_xin_lian", "冰心莲", 2, "chi_yan_hua", "赤焰花", 2 },
+		{ "qing_feng_gu_jian", "青锋古剑", "long_gu", "龙骨", 2, "xuan_bing_sui", "玄冰髓", 1 },
+		{ "bi_shui_zhu", "避水珠", "xuan_bing_shen", "玄冰参", 3, "long_gu", "龙骨", 2 },
+		{ "she_li_zi", "舍利子", "jin_gang_teng", "金刚藤", 3, "xuan_bing_sui", "玄冰髓", 1 },
+	};
+	static const int RECIPE_COUNT = 5;
+
+	Inventory *inv = _player ? _player->get_inventory() : nullptr;
+	ItemDatabase *db = ItemDatabase::get_singleton();
+
+	_forge_sel = CLAMP(_forge_sel, 0, RECIPE_COUNT - 1);
+
+	// 铸造列表
+	add_line(LOC("— 装备铸造 —"), 80.0f, 56.0f, 10, head_c);
+	for (int i = 0; i < RECIPE_COUNT; i++) {
+		bool is_sel = (i == _forge_sel);
+		int have1 = inv ? inv->get_item_count(StringName(RECIPES[i].mat1_id)) : 0;
+		int have2 = inv ? inv->get_item_count(StringName(RECIPES[i].mat2_id)) : 0;
+		bool enough = have1 >= RECIPES[i].mat1_qty && have2 >= RECIPES[i].mat2_qty;
+		float y = 76.0f + i * 22;
+		String prefix = is_sel ? LOC("▶ ") : LOC("  ");
+		add_line(prefix + LOC(RECIPES[i].result_name), 80.0f, y, 9, is_sel ? sel_c : (enough ? body_c : dim_c));
+		String mat = LOC(RECIPES[i].mat1_name) + LOC("×") + String::num_int64(RECIPES[i].mat1_qty) +
+			LOC("(") + String::num_int64(have1) + LOC(") + ") +
+			LOC(RECIPES[i].mat2_name) + LOC("×") + String::num_int64(RECIPES[i].mat2_qty) +
+			LOC("(") + String::num_int64(have2) + LOC(")");
+		add_line(mat, 100.0f, y + 10, 8, is_sel ? (enough ? ok_c : bad_c) : dim_c);
+	}
+
+	// 结果提示
+	if (!_forge_msg.is_empty()) {
+		bool ok = _forge_msg.contains(LOC("铸造"));
+		add_line(_forge_msg, 80.0f, 250.0f, 10, ok ? ok_c : bad_c);
+	} else {
+		add_line(LOC("↑/↓ 选配方  X 铸造（材料够绿色，不够红色）"), 80.0f, 250.0f, 8, dim_c);
+	}
+}
+
+// 子页 2：法宝铸造（硬编码配方 2~3 条，扣材料→ArtifactSystem::acquire）
+void GameMenu::_build_forge_artifact() {
+	auto add_line = [&](const String &text, float x, float y, int size, const Color &c) {
+		Label *l = memnew(Label);
+		l->set_text(text);
+		l->add_theme_font_size_override("font_size", size);
+		l->add_theme_color_override("font_color", c);
+		l->set_position(Vector2(x, y));
+		add_child(l);
+		_page_nodes.push_back(l);
+	};
+
+	Color head_c(1.0f, 0.85f, 0.5f);
+	Color body_c(0.85f, 0.85f, 0.85f);
+	Color dim_c(0.45f, 0.45f, 0.45f);
+	Color sel_c(1.0f, 0.95f, 0.6f);
+	Color ok_c(0.6f, 1.0f, 0.6f);
+	Color bad_c(1.0f, 0.5f, 0.5f);
+
+	struct ForgeRecipe {
+		const char *result_id, *result_name;
+		const char *mat1_id, *mat1_name; int mat1_qty;
+		const char *mat2_id, *mat2_name; int mat2_qty;
+	};
+	static const ForgeRecipe RECIPES[] = {
+		{ "fei_jian", "飞剑", "iron_sword", "铁剑", 1, "zhi_xue_cao", "止血草", 5 },
+		{ "zhao_yao_hu", "照妖葫", "long_gu", "龙骨", 2, "xuan_bing_sui", "玄冰髓", 2 },
+		{ "xuan_tie_ta", "玄铁塔", "xuan_bing_shen", "玄冰参", 3, "jin_gang_teng", "金刚藤", 3 },
+	};
+	static const int RECIPE_COUNT = 3;
+
+	Inventory *inv = _player ? _player->get_inventory() : nullptr;
+	ArtifactSystem *arts = _player ? _player->get_artifacts() : nullptr;
+
+	_forge_sel = CLAMP(_forge_sel, 0, RECIPE_COUNT - 1);
+
+	add_line(LOC("— 法宝铸造 —"), 80.0f, 56.0f, 10, head_c);
+	for (int i = 0; i < RECIPE_COUNT; i++) {
+		bool is_sel = (i == _forge_sel);
+		int have1 = inv ? inv->get_item_count(StringName(RECIPES[i].mat1_id)) : 0;
+		int have2 = inv ? inv->get_item_count(StringName(RECIPES[i].mat2_id)) : 0;
+		bool enough = have1 >= RECIPES[i].mat1_qty && have2 >= RECIPES[i].mat2_qty;
+		bool already_owned = arts && arts->is_owned(StringName(RECIPES[i].result_id));
+		float y = 76.0f + i * 22;
+		String prefix = is_sel ? LOC("▶ ") : LOC("  ");
+		String name = LOC(RECIPES[i].result_name);
+		if (already_owned) name += LOC("（已拥有）");
+		add_line(prefix + name, 80.0f, y, 9, is_sel ? sel_c : (already_owned ? dim_c : (enough ? ok_c : bad_c)));
+		String mat = LOC(RECIPES[i].mat1_name) + LOC("×") + String::num_int64(RECIPES[i].mat1_qty) +
+			LOC("(") + String::num_int64(have1) + LOC(") + ") +
+			LOC(RECIPES[i].mat2_name) + LOC("×") + String::num_int64(RECIPES[i].mat2_qty) +
+			LOC("(") + String::num_int64(have2) + LOC(")");
+		add_line(mat, 100.0f, y + 10, 8, is_sel ? (enough ? ok_c : bad_c) : dim_c);
+	}
+
+	if (!_forge_msg.is_empty()) {
+		bool ok = _forge_msg.contains(LOC("铸造")) || _forge_msg.contains(LOC("习得"));
+		add_line(_forge_msg, 80.0f, 250.0f, 10, ok ? ok_c : bad_c);
+	} else {
+		add_line(LOC("↑/↓ 选配方  X 铸造法宝（材料够绿色，不够红色）"), 80.0f, 250.0f, 8, dim_c);
+	}
+}
+
+// 子页 3：装备强化（选中装备，消耗材料提升 attack_bonus/defense_bonus，上限 +10）
+void GameMenu::_build_forge_upgrade() {
+	auto add_line = [&](const String &text, float x, float y, int size, const Color &c) {
+		Label *l = memnew(Label);
+		l->set_text(text);
+		l->add_theme_font_size_override("font_size", size);
+		l->add_theme_color_override("font_color", c);
+		l->set_position(Vector2(x, y));
+		add_child(l);
+		_page_nodes.push_back(l);
+	};
+
+	Color head_c(1.0f, 0.85f, 0.5f);
+	Color body_c(0.85f, 0.85f, 0.85f);
+	Color dim_c(0.45f, 0.45f, 0.45f);
+	Color sel_c(1.0f, 0.95f, 0.6f);
+	Color ok_c(0.6f, 1.0f, 0.6f);
+	Color bad_c(1.0f, 0.5f, 0.5f);
+
+	add_line(LOC("— 装备强化 —"), 80.0f, 56.0f, 10, head_c);
+
+	Inventory *inv = _player ? _player->get_inventory() : nullptr;
+	ItemDatabase *db = ItemDatabase::get_singleton();
+
+	// 收集所有背包中的装备（type=3）
+	struct EquipEntry {
+		StringName id;
+		String name;
+		int qty;
+		int extra_atk;
+		int extra_def;
+	};
+	std::vector<EquipEntry> equips;
+	if (inv && db) {
+		for (int i = 0; i < inv->get_capacity(); i++) {
+			Dictionary slot = inv->get_slot(i);
+			if (slot.is_empty()) continue;
+			StringName sid = StringName(String(slot["id"]));
+			const Item *def = db->get_item(sid);
+			if (!def || def->type != Item::EQUIPMENT) continue;
+			// 去重：如果已有同 id 条目，加数量
+			bool found = false;
+			for (auto &e : equips) {
+				if (e.id == sid) { e.qty += int(slot["quantity"]); found = true; break; }
+			}
+			if (!found) {
+				EquipEntry ee;
+				ee.id = sid;
+				ee.name = LOC(def->name);
+				ee.qty = int(slot["quantity"]);
+				ee.extra_atk = inv->get_item_extra_atk(sid);
+				ee.extra_def = inv->get_item_extra_def(sid);
+				equips.push_back(ee);
+			}
+		}
+		// 也检查已装备的
+		for (int i = 0; i < 3; i++) {
+			StringName eid = _player->get_equipment_in_slot(i);
+			if (eid.is_empty()) continue;
+			const Item *def = db->get_item(eid);
+			if (!def) continue;
+			bool found = false;
+			for (auto &e : equips) {
+				if (e.id == eid) { found = true; break; }
+			}
+			if (!found) {
+				EquipEntry ee;
+				ee.id = eid;
+				ee.name = LOC(def->name);
+				ee.qty = 1;
+				ee.extra_atk = inv ? inv->get_item_extra_atk(eid) : 0;
+				ee.extra_def = inv ? inv->get_item_extra_def(eid) : 0;
+				equips.push_back(ee);
+			}
+		}
+	}
+
+	int count = (int)equips.size();
+	if (count == 0) {
+		add_line(LOC("（背包中无装备）"), 80.0f, 76.0f, 9, dim_c);
+		return;
+	}
+
+	_forge_sel = CLAMP(_forge_sel, 0, count - 1);
+
+	// 检查强化材料：5 中品灵石 + 1 玄冰髓
+	CurrencySystem *cs = CurrencySystem::get_singleton();
+	bool can_upgrade = false;
+	if (cs && inv) {
+		int mid_cost = 5 * CurrencySystem::tier_value(CurrencySystem::TIER_MID); // 5 中品 = 50 下品
+		can_upgrade = cs->can_afford(mid_cost) && inv->get_item_count(StringName("xuan_bing_sui")) >= 1;
+	}
+
+	for (int i = 0; i < count; i++) {
+		bool is_sel = (i == _forge_sel);
+		float y = 76.0f + i * 20;
+		String prefix = is_sel ? LOC("▶ ") : LOC("  ");
+		int bonus = equips[i].extra_atk + equips[i].extra_def;
+		bool capped = bonus >= 10;
+		String line = prefix + equips[i].name + LOC(" ×") + String::num_int64(equips[i].qty);
+		String bonus_str;
+		if (equips[i].extra_atk > 0) bonus_str += LOC(" 攻+") + String::num_int64(equips[i].extra_atk);
+		if (equips[i].extra_def > 0) bonus_str += LOC(" 防+") + String::num_int64(equips[i].extra_def);
+		if (bonus_str.is_empty()) bonus_str = LOC(" 未强化");
+		add_line(line + bonus_str, 80.0f, y, 9, is_sel ? sel_c : body_c);
+	}
+
+	// 详情行
+	add_line(LOC("选中: ") + equips[_forge_sel].name + LOC("  强化 ") +
+		String::num_int64(equips[_forge_sel].extra_atk + equips[_forge_sel].extra_def) + LOC("/10"),
+		80.0f, 180.0f, 9, sel_c);
+	add_line(LOC("消耗: 5 中品灵石 + 1 玄冰髓  → 攻/防 +1（上限 +10）"),
+		80.0f, 194.0f, 8, dim_c);
+
+	if (!_forge_msg.is_empty()) {
+		bool ok = _forge_msg.contains(LOC("强化"));
+		add_line(_forge_msg, 80.0f, 250.0f, 10, ok ? ok_c : bad_c);
+	} else {
+		add_line(LOC("↑/↓ 选装备  X 强化（材料够绿色，不够红色）"), 80.0f, 250.0f, 8, dim_c);
+	}
+}
+
+void GameMenu::_handle_forge_input() {
+	Input *input = Input::get_singleton();
+
+	// 侧边栏切换：←/→ 切换子页（← 上一页 / → 下一页）
+	// ↑/↓ 留给子页内部内容导航（GridList 行移）
+	static const int SUB_COUNT = 4;
+
+	if (input->is_action_just_pressed(LOC("left"))) {
+		_forge_sub = (_forge_sub - 1 + SUB_COUNT) % SUB_COUNT;
+		_forge_sel = 0;
+		_forge_msg = String();
+		_rebuild_page();
+		return;
+	}
+	if (input->is_action_just_pressed(LOC("right"))) {
+		_forge_sub = (_forge_sub + 1) % SUB_COUNT;
+		_forge_sel = 0;
+		_forge_msg = String();
+		_rebuild_page();
+		return;
+	}
+
+	// 以下在各子页内处理（↑/↓ 留给子页 GridList 纵向导航）
+	switch (_forge_sub) {
+		case 0: _handle_forge_alchemy_input(); break;
+		case 1: _handle_forge_equip_input(); break;
+		case 2: _handle_forge_artifact_input(); break;
+		case 3: _handle_forge_upgrade_input(); break;
+	}
+}
+
+void GameMenu::_handle_forge_alchemy_input() {
 	AlchemySystem *al = _player ? _player->get_alchemy() : nullptr;
 	if (!al) return;
 	Input *input = Input::get_singleton();
 	Array recipes = al->get_recipe_list();
 	int count = recipes.size();
 	if (count == 0) return;
-	_alchemy_sel = CLAMP(_alchemy_sel, 0, count - 1);
-	static const int GRID_COLS = 3; // 与 _build_alchemy_page 一致
+	_forge_sel = CLAMP(_forge_sel, 0, count - 1);
+	static const int GRID_COLS = 3;
 	if (input->is_action_just_pressed(LOC("up"))) {
-		_alchemy_sel = Math::max(0, _alchemy_sel - GRID_COLS);
+		_forge_sel = Math::max(0, _forge_sel - GRID_COLS);
 		_rebuild_page();
 	}
 	if (input->is_action_just_pressed(LOC("down"))) {
-		_alchemy_sel = Math::min(count - 1, _alchemy_sel + GRID_COLS);
-		_rebuild_page();
-	}
-	if (input->is_action_just_pressed(LOC("left"))) {
-		int row = _alchemy_sel / GRID_COLS;
-		int col = Math::max(0, _alchemy_sel % GRID_COLS - 1);
-		_alchemy_sel = Math::min(count - 1, row * GRID_COLS + col);
-		_rebuild_page();
-	}
-	if (input->is_action_just_pressed(LOC("right"))) {
-		int row = _alchemy_sel / GRID_COLS;
-		int col = Math::min(GRID_COLS - 1, _alchemy_sel % GRID_COLS + 1);
-		_alchemy_sel = Math::min(count - 1, row * GRID_COLS + col);
+		_forge_sel = Math::min(count - 1, _forge_sel + GRID_COLS);
 		_rebuild_page();
 	}
 	if (input->is_action_just_pressed(LOC("interact"))) {
-		Array recipes = al->get_recipe_list();
-		int sel = CLAMP(_alchemy_sel, 0, (int)recipes.size() - 1);
+		int sel = CLAMP(_forge_sel, 0, (int)recipes.size() - 1);
 		if (sel >= 0) {
 			StringName id = Dictionary(recipes[sel])["id"];
 			al->craft(id);
-			_alchemy_msg = al->get_last_message();
-			_alchemy_msg_t = 2.5f;
+			_forge_msg = al->get_last_message();
+			_forge_msg_t = 2.5f;
 			_rebuild_page();
 		}
+	}
+}
+
+void GameMenu::_handle_forge_equip_input() {
+	Input *input = Input::get_singleton();
+	struct ForgeRecipe {
+		const char *result_id, *result_name;
+		const char *mat1_id, *mat1_name; int mat1_qty;
+		const char *mat2_id, *mat2_name; int mat2_qty;
+	};
+	static const ForgeRecipe RECIPES[] = {
+		{ "iron_sword", "铁剑", "zhi_xue_cao", "止血草", 3, "ju_ling_cao", "聚灵草", 2 },
+		{ "protect_robe", "护体法衣", "bing_xin_lian", "冰心莲", 2, "chi_yan_hua", "赤焰花", 2 },
+		{ "qing_feng_gu_jian", "青锋古剑", "long_gu", "龙骨", 2, "xuan_bing_sui", "玄冰髓", 1 },
+		{ "bi_shui_zhu", "避水珠", "xuan_bing_shen", "玄冰参", 3, "long_gu", "龙骨", 2 },
+		{ "she_li_zi", "舍利子", "jin_gang_teng", "金刚藤", 3, "xuan_bing_sui", "玄冰髓", 1 },
+	};
+	static const int RECIPE_COUNT = 5;
+	_forge_sel = CLAMP(_forge_sel, 0, RECIPE_COUNT - 1);
+	if (input->is_action_just_pressed(LOC("interact"))) {
+		Inventory *inv = _player ? _player->get_inventory() : nullptr;
+		if (!inv) return;
+		int idx = _forge_sel;
+		int have1 = inv->get_item_count(StringName(RECIPES[idx].mat1_id));
+		int have2 = inv->get_item_count(StringName(RECIPES[idx].mat2_id));
+		if (have1 < RECIPES[idx].mat1_qty || have2 < RECIPES[idx].mat2_qty) {
+			_forge_msg = LOC("材料不足，无法铸造");
+			_forge_msg_t = 2.5f;
+			_rebuild_page();
+			return;
+		}
+		inv->remove_item(StringName(RECIPES[idx].mat1_id), RECIPES[idx].mat1_qty);
+		inv->remove_item(StringName(RECIPES[idx].mat2_id), RECIPES[idx].mat2_qty);
+		inv->add_item(StringName(RECIPES[idx].result_id), 1);
+		_forge_msg = LOC("铸造成功！获得 ") + LOC(RECIPES[idx].result_name);
+		_forge_msg_t = 2.5f;
+		_rebuild_page();
+	}
+}
+
+void GameMenu::_handle_forge_artifact_input() {
+	Input *input = Input::get_singleton();
+	struct ForgeRecipe {
+		const char *result_id, *result_name;
+		const char *mat1_id, *mat1_name; int mat1_qty;
+		const char *mat2_id, *mat2_name; int mat2_qty;
+	};
+	static const ForgeRecipe RECIPES[] = {
+		{ "fei_jian", "飞剑", "iron_sword", "铁剑", 1, "zhi_xue_cao", "止血草", 5 },
+		{ "zhao_yao_hu", "照妖葫", "long_gu", "龙骨", 2, "xuan_bing_sui", "玄冰髓", 2 },
+		{ "xuan_tie_ta", "玄铁塔", "xuan_bing_shen", "玄冰参", 3, "jin_gang_teng", "金刚藤", 3 },
+	};
+	static const int RECIPE_COUNT = 3;
+	_forge_sel = CLAMP(_forge_sel, 0, RECIPE_COUNT - 1);
+	if (input->is_action_just_pressed(LOC("interact"))) {
+		Inventory *inv = _player ? _player->get_inventory() : nullptr;
+		ArtifactSystem *arts = _player ? _player->get_artifacts() : nullptr;
+		if (!inv || !arts) return;
+		int idx = _forge_sel;
+		StringName res_id = StringName(RECIPES[idx].result_id);
+		if (arts->is_owned(res_id)) {
+			_forge_msg = LOC("已拥有该法宝");
+			_forge_msg_t = 2.5f;
+			_rebuild_page();
+			return;
+		}
+		int have1 = inv->get_item_count(StringName(RECIPES[idx].mat1_id));
+		int have2 = inv->get_item_count(StringName(RECIPES[idx].mat2_id));
+		if (have1 < RECIPES[idx].mat1_qty || have2 < RECIPES[idx].mat2_qty) {
+			_forge_msg = LOC("材料不足，无法铸造法宝");
+			_forge_msg_t = 2.5f;
+			_rebuild_page();
+			return;
+		}
+		inv->remove_item(StringName(RECIPES[idx].mat1_id), RECIPES[idx].mat1_qty);
+		inv->remove_item(StringName(RECIPES[idx].mat2_id), RECIPES[idx].mat2_qty);
+		arts->acquire(res_id);
+		_forge_msg = LOC("铸造成功！习得法宝 ") + LOC(RECIPES[idx].result_name);
+		_forge_msg_t = 2.5f;
+		_rebuild_page();
+	}
+}
+
+void GameMenu::_handle_forge_upgrade_input() {
+	Input *input = Input::get_singleton();
+	// 先收集背包+已装备列表
+	Inventory *inv = _player ? _player->get_inventory() : nullptr;
+	ItemDatabase *db = ItemDatabase::get_singleton();
+	struct EquipEntry {
+		StringName id;
+		String name;
+		int qty;
+		int extra_atk;
+		int extra_def;
+	};
+	std::vector<EquipEntry> equips;
+	if (inv && db) {
+		for (int i = 0; i < inv->get_capacity(); i++) {
+			Dictionary slot = inv->get_slot(i);
+			if (slot.is_empty()) continue;
+			StringName sid = StringName(String(slot["id"]));
+			const Item *def = db->get_item(sid);
+			if (!def || def->type != Item::EQUIPMENT) continue;
+			bool found = false;
+			for (auto &e : equips) { if (e.id == sid) { e.qty += int(slot["quantity"]); found = true; break; } }
+			if (!found) {
+				EquipEntry ee;
+				ee.id = sid; ee.name = LOC(def->name); ee.qty = int(slot["quantity"]);
+				ee.extra_atk = inv->get_item_extra_atk(sid); ee.extra_def = inv->get_item_extra_def(sid);
+				equips.push_back(ee);
+			}
+		}
+		for (int i = 0; i < 3; i++) {
+			StringName eid = _player->get_equipment_in_slot(i);
+			if (eid.is_empty()) continue;
+			const Item *def = db->get_item(eid);
+			if (!def) continue;
+			bool found = false;
+			for (auto &e : equips) { if (e.id == eid) { found = true; break; } }
+			if (!found) {
+				EquipEntry ee;
+				ee.id = eid; ee.name = LOC(def->name); ee.qty = 1;
+				ee.extra_atk = inv ? inv->get_item_extra_atk(eid) : 0;
+				ee.extra_def = inv ? inv->get_item_extra_def(eid) : 0;
+				equips.push_back(ee);
+			}
+		}
+	}
+	int count = (int)equips.size();
+	if (count == 0) return;
+	_forge_sel = CLAMP(_forge_sel, 0, count - 1);
+
+	if (input->is_action_just_pressed(LOC("interact"))) {
+		StringName eid = equips[_forge_sel].id;
+		int bonus = equips[_forge_sel].extra_atk + equips[_forge_sel].extra_def;
+		if (bonus >= 10) {
+			_forge_msg = LOC("已达强化上限 +10");
+			_forge_msg_t = 2.5f;
+			_rebuild_page();
+			return;
+		}
+		CurrencySystem *cs = CurrencySystem::get_singleton();
+		if (!cs || !inv) return;
+		int mid_cost = 5 * CurrencySystem::tier_value(CurrencySystem::TIER_MID);
+		if (!cs->can_afford(mid_cost) || inv->get_item_count(StringName("xuan_bing_sui")) < 1) {
+			_forge_msg = LOC("材料不足：需要 5 中品灵石 + 1 玄冰髓");
+			_forge_msg_t = 2.5f;
+			_rebuild_page();
+			return;
+		}
+		cs->spend(mid_cost);
+		inv->remove_item(StringName("xuan_bing_sui"), 1);
+		inv->upgrade_item(eid, 1, 1);
+		_forge_msg = LOC("强化成功！") + equips[_forge_sel].name + LOC(" 攻防+1");
+		_forge_msg_t = 2.5f;
+		_rebuild_page();
 	}
 }
 
@@ -1742,7 +2210,15 @@ void GameMenu::_process(double p_delta) {
 		}
 	}
 
-	if (_alchemy_msg_t > 0.0f) {
+	if (_forge_msg_t > 0.0f) {
+			_forge_msg_t -= float(p_delta);
+			if (_forge_msg_t <= 0.0f && _page == PAGE_ALCHEMY) {
+				_forge_msg = String();
+				_rebuild_page();
+			}
+		}
+
+		if (_alchemy_msg_t > 0.0f) {
 		_alchemy_msg_t -= float(p_delta);
 		if (_alchemy_msg_t <= 0.0f && _page == PAGE_ALCHEMY) {
 			_alchemy_msg = String();
@@ -1797,7 +2273,7 @@ void GameMenu::_process(double p_delta) {
 			if (input->is_action_just_pressed(LOC("interact"))) _inv_panel->ext_use();
 			break;
 		case PAGE_ALCHEMY:
-			_handle_alchemy_input();
+			_handle_forge_input();
 			break;
 		case PAGE_SKILL:
 			_handle_skill_input();

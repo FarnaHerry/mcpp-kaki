@@ -1821,6 +1821,8 @@ namespace godot {
 			if (!_equipment[i].is_empty()) {
 				const Item *def = ItemDatabase::get_singleton()->get_item(_equipment[i]);
 				if (def) bonus += def->attack_bonus;
+				// 装备强化额外加成（熔炼炉·强化）
+				if (_inventory) bonus += float(_inventory->get_item_extra_atk(_equipment[i]));
 			}
 		}
 		return bonus;
@@ -1833,6 +1835,8 @@ namespace godot {
 			if (!_equipment[i].is_empty()) {
 				const Item *def = ItemDatabase::get_singleton()->get_item(_equipment[i]);
 				if (def) bonus += def->defense_bonus;
+				// 装备强化额外加成（熔炼炉·强化）
+				if (_inventory) bonus += float(_inventory->get_item_extra_def(_equipment[i]));
 			}
 		}
 		return bonus;

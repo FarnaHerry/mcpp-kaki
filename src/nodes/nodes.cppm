@@ -462,6 +462,21 @@ export class GameMenu : public CanvasLayer {
 	float _alchemy_msg_t = 0.0f;
 	void _handle_alchemy_input();
 
+	int _forge_sub = 0; // 熔炼炉子页：0炼丹 1装备铸造 2法宝铸造 3装备强化
+	int _forge_sel = 0; // 子页内选中索引
+	String _forge_msg;
+	float _forge_msg_t = 0.0f;
+	void _handle_forge_input();
+	void _build_forge_page();
+	void _build_forge_alchemy();
+	void _build_forge_equip();
+	void _build_forge_artifact();
+	void _build_forge_upgrade();
+	void _handle_forge_alchemy_input();
+	void _handle_forge_equip_input();
+	void _handle_forge_artifact_input();
+	void _handle_forge_upgrade_input();
+
 	int _skill_sel = 0;
 	String _skill_msg;
 	float _skill_msg_t = 0.0f;

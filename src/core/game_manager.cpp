@@ -474,6 +474,8 @@ Dictionary GameManager::collect_save_data() const {
 				}
 			}
 			inv["_unlimited"] = _player->get_inventory()->is_unlimited();
+			// 装备强化额外加成
+			inv["_extra_bonuses"] = _player->get_inventory()->save_extra_bonuses();
 			data["inventory"] = inv;
 
 		// ---- Equipment ----
@@ -677,6 +679,13 @@ void GameManager::_apply_save_dict(const Dictionary &data) {
 		}
 	}
 
+	// ---- Restore 装备强化额外加成 ----
+	if (!inv.is_empty() && _player->get_inventory()) {
+		Dictionary extra = inv.get("_extra_bonuses", Dictionary());
+		if (!extra.is_empty()) {
+			_player->get_inventory()->load_extra_bonuses(extra);
+		}
+	}
 	// ---- Restore 灵石货币（四阶钱包）+ 老档迁移（旧 inventory 的 spirit_stone → 钱包下品）----
 	CurrencySystem *cs = CurrencySystem::get_singleton();
 	if (cs) {
