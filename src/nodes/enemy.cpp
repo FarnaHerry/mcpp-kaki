@@ -608,6 +608,19 @@ namespace godot {
 		state_machine->physics_update(p_delta);
 	}
 
+	// 脱离场景（死亡 queue_free / 场景卸载）：若 Boss 血条仍挂 HUD，撤下——
+	// 玩家出房/清场时 Boss 战未正常结束（无死亡 enter），避免血条残留
+	void Enemy::_exit_tree() {
+		if (_boss_hud_active) {
+			SignalBus *bus = SignalBus::get_singleton();
+			if (bus) {
+				String nm = display_name.is_empty() ? String(get_name()) : display_name;
+				bus->emit_signal("boss_fight_ended", nm);
+			}
+			_boss_hud_active = false;
+		}
+	}
+
 	void Enemy::_process(double p_delta) {
 		if (Engine::get_singleton()->is_editor_hint() || !state_machine)
 			return;

@@ -124,11 +124,14 @@ void GameHUD::_ready() {
     add_child(_buff_label);
     // Boss 血条惰性创建（多 Boss 同场时按名动态增删）
 
+    // 首帧布局：不等 _process → _sync_viewport（_vw/_vh 初始为 0，首帧必定触发重排）
+    _vw = 0.0f;
+    _vh = 0.0f;
+
     // 洲名横幅（进入新洲时大字淡入淡出，不随 _hud_visible 隐藏——过场也要看得到）
     _continent_label = memnew(Label);
     _continent_label->set_position(Vector2(0, 78));
     _continent_label->set_size(Vector2(480, 30));
-    _continent_label->set_horizontal_alignment(HorizontalAlignment::HORIZONTAL_ALIGNMENT_CENTER);
     _continent_label->add_theme_font_size_override("font_size", 18);
     _continent_label->add_theme_color_override("font_color", Color(1.0f, 0.92f, 0.6f, 1.0f));
     _continent_label->add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9f));
@@ -138,6 +141,11 @@ void GameHUD::_ready() {
 
     set_process_unhandled_input(true);
     set_process(true); // 技能栏冷却轮询
+
+    // 首帧立即布局（left_column 依赖 _vw/_vh，先设好再排；其余靠 _sync_viewport 首次触发）
+    _vw = 480.0f;
+    _vh = 270.0f;
+    _layout_left_column();
 
     // Connect to SignalBus
     SignalBus *bus = SignalBus::get_singleton();

@@ -148,6 +148,7 @@ class Enemy : public CharacterBody2D {
 		void _ready() override;
 		void _physics_process(double p_delta) override;
 		void _process(double p_delta) override;
+		void _exit_tree() override;
 		void _on_hurtbox_hit(Object *p_hitbox, Node *p_source);
 
 	// Spawn a projectile toward the player (called by Shoot state)
