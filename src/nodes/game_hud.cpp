@@ -45,8 +45,8 @@ static String _lifespan_txt(int p_lifespan) {
 }
 
 // Layout constants (480×270 viewport)
-static constexpr float BAR_WIDTH = 100.0f;
-static constexpr float BAR_HEIGHT = 12.0f; // slimmed for left-column compact layout
+static constexpr float BAR_WIDTH = 140.0f;
+static constexpr float BAR_HEIGHT = 16.0f;
 static constexpr float BAR_X = 8.0f;
 // 左下角竖排（_layout_left_column）：生命→灵力→[法则·化神起显示]→修为→饱食→境界（寿元移个人信息页）
 static constexpr float HEALTH_BAR_Y = 6.0f;
@@ -55,10 +55,10 @@ static constexpr float LAW_BAR_Y = 42.0f;    // 法则（化神解锁后显示�
 static constexpr float XP_BAR_Y = 42.0f;     // 修为经验（百分比，法则隐藏时紧贴灵力）
 static constexpr float FULLNESS_BAR_Y = 60.0f;
 static constexpr float REALM_LABEL_Y = 78.0f;
-static constexpr float ROW_STEP = 14.0f;     // 条高12+间距2
-static constexpr int FONT_SIZE_XS = 8;
-static constexpr int FONT_SIZE_MD = 12;
-static constexpr int FONT_SIZE_LG = 18;
+static constexpr float ROW_STEP = 16.0f;     // 条高16，紧贴无间距
+static constexpr int FONT_SIZE_XS = 9;
+static constexpr int FONT_SIZE_MD = 14;
+static constexpr int FONT_SIZE_LG = 20;
 
 void GameHUD::_bind_methods() {
     ClassDB::bind_method(D_METHOD("on_player_health_changed", "current", "max"),
