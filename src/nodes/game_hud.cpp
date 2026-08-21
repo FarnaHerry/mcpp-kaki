@@ -132,8 +132,10 @@ void GameHUD::_ready() {
 
     // 洲名横幅（进入新洲时大字淡入淡出，不随 _hud_visible 隐藏——过场也要看得到）
     _continent_label = memnew(Label);
-    _continent_label->set_position(Vector2(0, 78));
+    _continent_label->set_position(Vector2(0, 0));
     _continent_label->set_size(Vector2(480, 30));
+    _continent_label->set_horizontal_alignment(HorizontalAlignment::HORIZONTAL_ALIGNMENT_CENTER);
+    _continent_label->set_vertical_alignment(VerticalAlignment::VERTICAL_ALIGNMENT_CENTER);
     _continent_label->add_theme_font_size_override("font_size", 18);
     _continent_label->add_theme_color_override("font_color", Color(1.0f, 0.92f, 0.6f, 1.0f));
     _continent_label->add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9f));
@@ -478,7 +480,11 @@ void GameHUD::_relayout_hud() {
     _layout_consumable_bar();
     _layout_skill_bar();
     // 全宽居中标签/全屏遮罩
-    if (_continent_label) _continent_label->set_size(Vector2(_vw, 30));
+    if (_continent_label) {
+        // 屏幕垂直中间（大横幅居中使用）
+        _continent_label->set_position(Vector2(0, _vh * 0.5f - 30.0f));
+        _continent_label->set_size(Vector2(_vw, 60));
+    }
     if (_interact_label) {
         _interact_label->set_position(Vector2(0, _vh - 40.0f));
         _interact_label->set_size(Vector2(_vw, 30));
