@@ -146,6 +146,8 @@ void GameHUD::_ready() {
     _vw = 480.0f;
     _vh = 270.0f;
     _layout_left_column();
+    _layout_consumable_bar();
+    _layout_skill_bar();
 
     // Connect to SignalBus
     SignalBus *bus = SignalBus::get_singleton();
@@ -429,8 +431,8 @@ void GameHUD::_sync_viewport() {
 void GameHUD::_relayout_hud() {
     _layout_right_side();
     _layout_left_column();
-    _layout_skill_bar();
     _layout_consumable_bar();
+    _layout_skill_bar();
     // 全宽居中标签/全屏遮罩
     if (_continent_label) _continent_label->set_size(Vector2(_vw, 30));
     if (_interact_label) {
@@ -456,58 +458,96 @@ void GameHUD::_layout_right_side() {
     }
 }
 
-// 左下角：数值条竖排（生命→灵力→[法则]→修为→饱食→境界），自下而上堆叠于左下角。
+// 左下角：数值条竖排（生命→灵力→[法则]→修为→饱食→境界），贴底从下往上堆叠。
+// 消耗品栏（数字快捷栏）在状态条上方，再上方是技能栏。
 // 法则条化神解锁才显示——隐藏时下方元素上移补位，不留空槽。寿元已移入 ESC 个人信息页。
 void GameHUD::_layout_left_column() {
     const float bx = BAR_X; // 贴左
-    // 自下而上：境界 → 饱食 → buff → 修为 → [法则] → 灵力 → 生命
-    float y = _vh - 48.0f - ROW_STEP; // 境界行（技能栏顶行上方一格）
-    if (_realm_label) _realm_label->set_position(Vector2(bx, y));
-    if (_jiyuan_label) _jiyuan_label->set_position(Vector2(bx + BAR_WIDTH + 8.0f, y + 4.0f));
-    y -= ROW_STEP;
-    if (_fullness_bg) {
-        _fullness_bg->set_position(Vector2(bx, y));
-        _fullness_fill->set_position(Vector2(bx, y));
-        _fullness_label->set_position(Vector2(bx, y - 2.0f));
+    const int rows = 7; // 境界/饱食/buff/修为/法则/灵力/生命
+    // 从底部往上堆叠：生命在最下，境界在最上
+    float y = _vh - 2.0f - BAR_HEIGHT; // 贴底，留 2px 边距
+    // 生命
+    if (_health_bg) {
+        _health_bg->set_position(Vector2(bx, y));
+        _health_fill->set_position(Vector2(bx, y));
+        _health_label->set_position(Vector2(bx, y - 2.0f));
     }
     y -= ROW_STEP;
-    if (_buff_label) _buff_label->set_position(Vector2(bx, y + 4.0f));
-    y -= ROW_STEP;
-    if (_xp_bg) {
-        _xp_bg->set_position(Vector2(bx, y));
-        _xp_fill->set_position(Vector2(bx, y));
-        _xp_label->set_position(Vector2(bx, y - 2.0f));
-    }
-    y -= ROW_STEP;
-    if (_law_shown && _law_bg) {
-        _law_bg->set_position(Vector2(bx, y));
-        _law_fill->set_position(Vector2(bx, y));
-        _law_label->set_position(Vector2(bx, y - 2.0f));
-        y -= ROW_STEP;
-    }
+    // 灵力
     if (_energy_bg) {
         _energy_bg->set_position(Vector2(bx, y));
         _energy_fill->set_position(Vector2(bx, y));
         _energy_label->set_position(Vector2(bx, y - 2.0f));
     }
     y -= ROW_STEP;
-    if (_health_bg) {
-        _health_bg->set_position(Vector2(bx, y));
-        _health_fill->set_position(Vector2(bx, y));
-        _health_label->set_position(Vector2(bx, y - 2.0f));
+    // 法则（化神解锁才显示）
+    if (_law_shown && _law_bg) {
+        _law_bg->set_position(Vector2(bx, y));
+        _law_fill->set_position(Vector2(bx, y));
+        _law_label->set_position(Vector2(bx, y - 2.0f));
+        y -= ROW_STEP;
     }
+    // 修为
+    if (_xp_bg) {
+        _xp_bg->set_position(Vector2(bx, y));
+        _xp_fill->set_position(Vector2(bx, y));
+        _xp_label->set_position(Vector2(bx, y - 2.0f));
+    }
+    y -= ROW_STEP;
+    // buff
+    if (_buff_label) _buff_label->set_position(Vector2(bx, y + 4.0f));
+    y -= ROW_STEP;
+    // 饱食
+    if (_fullness_bg) {
+        _fullness_bg->set_position(Vector2(bx, y));
+        _fullness_fill->set_position(Vector2(bx, y));
+        _fullness_label->set_position(Vector2(bx, y - 2.0f));
+    }
+    y -= ROW_STEP;
+    // 境界
+    if (_realm_label) _realm_label->set_position(Vector2(bx, y));
+    if (_jiyuan_label) _jiyuan_label->set_position(Vector2(bx + BAR_WIDTH + 8.0f, y + 4.0f));
 }
 
-// 底部居中：12 技能槽两排（节点顺序 = 创建顺序，4 节点/槽：slot/key/name/cd）
+// 左下角：消耗品栏（数字快捷栏 1~6，放在状态栏上方）
+void GameHUD::_layout_consumable_bar() {
+    const int base = 12 * 4 + 1;
+    if (_bar_name_labels.empty() || (int)_skill_bar_nodes.size() < base + 6 * 4)
+        return;
+    const float SLOT_W = 20.0f, SLOT_GAP = 2.0f;
+    const float x0 = BAR_X;
+    // 状态栏总行数：境界/饱食/buff/修为/法则(可选)/灵力/生命 = 7 或 6
+    int rows = 7;
+    if (!_law_shown) rows = 6;
+    float state_top = _vh - 2.0f - BAR_HEIGHT - (float)rows * ROW_STEP;
+    // 消耗品栏在状态栏上方 4px
+    const float SLOT_H = 20.0f;
+    float y = state_top - 6.0f - SLOT_H;
+    for (int i = 0; i < 6; i++) {
+        float x = x0 + i * (SLOT_W + SLOT_GAP);
+        int b = base + i * 4;
+        if (Control *slot = Object::cast_to<Control>(_skill_bar_nodes[b + 0]))
+            slot->set_position(Vector2(x, y));
+        if (Control *key = Object::cast_to<Control>(_skill_bar_nodes[b + 1]))
+            key->set_position(Vector2(x + 1, y + 1));
+        _bar_name_labels[i]->set_position(Vector2(x + 6, y + 4));
+        _bar_count_labels[i]->set_position(Vector2(x + 12, y + 12));
+    }
+}
 void GameHUD::_layout_skill_bar() {
     if (_skill_bar_nodes.size() < 12 * 4)
         return;
     const float SLOT_W = 20.0f, SLOT_GAP = 2.0f;
     const int COLS = 6;
-    const float row_w = COLS * SLOT_W + (COLS - 1) * SLOT_GAP; // 130
-    const float x0 = (_vw - row_w) * 0.5f;
-    const float y_top = _vh - 48.0f;
-    const float y_bot = _vh - 24.0f;
+    const float x0 = BAR_X;
+    const float SLOT_H = 20.0f;
+    // 消耗品栏顶部
+    int rows = 7;
+    if (!_law_shown) rows = 6;
+    float consumable_top = _vh - 2.0f - BAR_HEIGHT - (float)rows * ROW_STEP - 6.0f - SLOT_H;
+    // 技能栏在消耗品栏上方 4px
+    const float y_top = consumable_top - SLOT_H - 4.0f;
+    const float y_bot = y_top + SLOT_H + SLOT_GAP;
     for (int i = 0; i < 12; i++) {
         int row = i / COLS, col = i % COLS;
         float x = x0 + col * (SLOT_W + SLOT_GAP);
@@ -520,26 +560,7 @@ void GameHUD::_layout_skill_bar() {
         _skill_cd_labels[i]->set_position(Vector2(x + 10, y + 12));
     }
     if (_page_badge)
-        _page_badge->set_position(Vector2(x0 + row_w + 8.0f, y_bot + 6.0f));
-}
-
-// 左下角：消耗品栏（贴左贴底；_skill_bar_nodes 中下标 49 起 = 12 技能槽×4 + page_badge）
-void GameHUD::_layout_consumable_bar() {
-    const int base = 12 * 4 + 1;
-    if (_bar_name_labels.empty() || (int)_skill_bar_nodes.size() < base + 6 * 4)
-        return;
-    const float SLOT_W = 20.0f, SLOT_GAP = 2.0f;
-    const float x0 = 8.0f, y = _vh - 24.0f;
-    for (int i = 0; i < 6; i++) {
-        float x = x0 + i * (SLOT_W + SLOT_GAP);
-        int b = base + i * 4;
-        if (Control *slot = Object::cast_to<Control>(_skill_bar_nodes[b + 0]))
-            slot->set_position(Vector2(x, y));
-        if (Control *key = Object::cast_to<Control>(_skill_bar_nodes[b + 1]))
-            key->set_position(Vector2(x + 1, y + 1));
-        _bar_name_labels[i]->set_position(Vector2(x + 6, y + 4));
-        _bar_count_labels[i]->set_position(Vector2(x + 12, y + 12));
-    }
+        _page_badge->set_position(Vector2(x0 + 6 * (SLOT_W + SLOT_GAP) + 8.0f, y_bot + 6.0f));
 }
 
 void GameHUD::_process(double p_delta) {
@@ -693,6 +714,8 @@ void GameHUD::_update_law_bar() {
         _law_fill->set_visible(show);
         _law_label->set_visible(show);
         _layout_left_column(); // 显隐切换 → 左列重排补位
+        _layout_consumable_bar();
+        _layout_skill_bar();
     }
     if (!show)
         return;
