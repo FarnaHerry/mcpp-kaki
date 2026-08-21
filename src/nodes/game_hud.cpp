@@ -555,14 +555,14 @@ void GameHUD::_layout_right_side() {
     }
 }
 
-// 左下角：数值条竖排（生命→灵力→[法则]→修为→饱食→境界），贴底从下往上堆叠。
-// 消耗品栏（数字快捷栏）在状态条上方，再上方是技能栏。
-// 法则条化神解锁才显示——隐藏时下方元素上移补位，不留空槽。寿元已移入 ESC 个人信息页。
+// 左下角：数值条竖排（生命→灵力→[法则]→修为→饱食→境界），从下往上堆叠，
+// 紧贴技能栏（QWERTY 上行）上方。消耗品栏在状态条上方。法则条化神解锁才显示。
 void GameHUD::_layout_left_column() {
     const float bx = BAR_X; // 贴左
     const int rows = 7; // 境界/饱食/buff/修为/法则/灵力/生命
-    // 从底部往上堆叠：生命在最下，境界在最上
-    float y = _vh - 2.0f - BAR_HEIGHT; // 贴底，留 2px 边距
+    // 从下往上堆叠：生命在最下，境界在最上；底部起点 = 技能栏上行 y - 4px
+    const float skill_y_top = _vh - 48.0f;
+    float y = skill_y_top - 4.0f - BAR_HEIGHT;
     // 生命
     if (_health_bg) {
         _health_bg->set_position(Vector2(bx, y));
@@ -616,10 +616,10 @@ void GameHUD::_layout_consumable_bar() {
     // 状态栏总行数：境界/饱食/buff/修为/法则(可选)/灵力/生命 = 7 或 6
     int rows = 7;
     if (!_law_shown) rows = 6;
-    float state_top = _vh - 2.0f - BAR_HEIGHT - (float)rows * ROW_STEP;
-    // 消耗品栏在状态栏上方 4px
-    const float SLOT_H = 20.0f;
-    float y = state_top - 6.0f - SLOT_H;
+    const float skill_y_top = _vh - 48.0f;
+    float state_top = skill_y_top - 4.0f - BAR_HEIGHT - (float)rows * ROW_STEP;
+    // 消耗品栏在状态栏上方 6px（同 x 对齐）
+    const float y = state_top - 6.0f - SLOT_W;
     for (int i = 0; i < 6; i++) {
         float x = x0 + i * (SLOT_W + SLOT_GAP);
         int b = base + i * 4;
