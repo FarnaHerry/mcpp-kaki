@@ -634,9 +634,9 @@ void GameHUD::_layout_consumable_bar() {
 void GameHUD::_layout_skill_bar() {
     if (_skill_bar_nodes.size() < 12 * 4)
         return;
-    const float SLOT_W = 20.0f, SLOT_GAP = 2.0f;
+    const float SLOT_W = 20.0f, SLOT_GAP = 0.0f;
     const int COLS = 6;
-    const float row_w = COLS * SLOT_W + (COLS - 1) * SLOT_GAP; // 130
+    const float row_w = COLS * SLOT_W + (COLS - 1) * SLOT_GAP; // 120 无间隙
     const float x0 = (_vw - row_w) * 0.5f;
     const float y_top = _vh - 48.0f;
     const float y_bot = _vh - 24.0f;
