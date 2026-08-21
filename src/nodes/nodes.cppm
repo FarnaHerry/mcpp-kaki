@@ -120,7 +120,7 @@ private:
 	ColorRect *_xp_fill = nullptr;
 	Label *_xp_label = nullptr;
 	float _xp_progress = 0.0f;
-	String _xp_prefix = LOC("修为"); // 真仙+ 改显「仙元」（九九归一后修为经验即仙元）
+	String _xp_prefix = LOC("修为");
 	Color _xp_color = Color(0.9f, 0.75f, 0.2f, 1.0f);
 
 	// 饱食度条（食物/辟谷，design/cultivation-realms.md 饮食；辟谷后隐藏）

@@ -233,12 +233,38 @@ void GameHUD::_create_energy_bar() {
 }
 
 void GameHUD::_create_xp_bar() {
-    _build_bar(this, XP_BAR_Y, _xp_color,
-               _xp_bg, _xp_fill, _xp_label, LOC("修为 0%"));
+    // 修为经验：左下角圆形容器 + 注入水纹（圆形底 + 圆内填充 + 顶部水位线）
+    const float R = 16.0f;
+    const float S = R * 2.0f; // 容器边长 32
+    // 底（圆形，半透明）
+    _xp_bg = memnew(ColorRect);
     _xp_bg->set_name("XpBg");
+    _xp_bg->set_position(Vector2(BAR_X, 0));
+    _xp_bg->set_size(Vector2(S, S));
+    _xp_bg->set_color(Color(0.15f, 0.15f, 0.15f, 0.85f));
+    add_child(_xp_bg);
+
+    // 填充（水注入：fill 从底部往上增长，模拟水位）
+    _xp_fill = memnew(ColorRect);
     _xp_fill->set_name("XpFill");
+    _xp_fill->set_position(Vector2(BAR_X, S)); // 初始在底部之下（空）
+    _xp_fill->set_size(Vector2(S, 0));
+    _xp_fill->set_color(Color(0.9f, 0.75f, 0.2f, 0.9f));
+    add_child(_xp_fill);
+
+    // 百分比文字（盖在中心）
+    _xp_label = memnew(Label);
     _xp_label->set_name("XpLabel");
-    _xp_fill->set_size(Vector2(0, BAR_HEIGHT)); // starts empty
+    _xp_label->set_position(Vector2(BAR_X + 2, 8.0f));
+    _xp_label->set_size(Vector2(S - 4, S - 4));
+    _xp_label->add_theme_font_size_override("font_size", FONT_SIZE_XS);
+    _xp_label->add_theme_color_override("font_color", Color(1, 1, 1, 1));
+    _xp_label->add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9f));
+    _xp_label->add_theme_constant_override("outline_size", 1);
+    _xp_label->set_horizontal_alignment(HorizontalAlignment::HORIZONTAL_ALIGNMENT_CENTER);
+    _xp_label->set_vertical_alignment(VerticalAlignment::VERTICAL_ALIGNMENT_CENTER);
+    _xp_label->set_text(LOC("0%"));
+    add_child(_xp_label);
 }
 
 void GameHUD::_create_fullness_bar() {
@@ -556,13 +582,21 @@ void GameHUD::_layout_right_side() {
     }
 }
 
-// 左下角：数值条竖排（生命→灵力→[法则]→修为→饱食→境界），贴左下角从上往下堆叠。
+// 左下角：数值条竖排 + 经验圆（最上方），贴左下角从上往下堆叠。
 // 无文字，仅纯色条。法则条化神解锁才显示。
 void GameHUD::_layout_left_column() {
     const float bx = BAR_X; // 贴左
-    // 从上往下堆叠：生命在最上，境界在最下；顶部起点 = 视口底部往上一共 7 行
-    float y = _vh - 4.0f - BAR_HEIGHT - (float)(_law_shown ? 6 : 5) * ROW_STEP;
-    // 生命（最上）
+    const float RING_S = 32.0f;
+    // 从上往下堆叠：经验圆最上，境界最下；顶部起点 = 视口底部往上一共 7 行 + 圆
+    float y = RING_S + 4.0f; // 顶部预留圆高度
+    // 经验圆（最上）
+    if (_xp_bg) {
+        _xp_bg->set_position(Vector2(bx, 4.0f));
+        _xp_fill->set_position(Vector2(bx, 4.0f + RING_S - _xp_fill->get_size().y));
+        _xp_label->set_position(Vector2(bx + 2, 4.0f + 8.0f));
+    }
+    y = 4.0f + RING_S + 4.0f; // 圆下方起点
+    // 生命
     if (_health_bg) {
         _health_bg->set_position(Vector2(bx, y));
         _health_fill->set_position(Vector2(bx, y));
@@ -580,12 +614,8 @@ void GameHUD::_layout_left_column() {
         _law_fill->set_position(Vector2(bx, y));
         y += ROW_STEP;
     }
-    // 修为
-    if (_xp_bg) {
-        _xp_bg->set_position(Vector2(bx, y));
-        _xp_fill->set_position(Vector2(bx, y));
-    }
-    y += ROW_STEP;
+    // 修为已转为圆（无条）
+    y -= ROW_STEP; // 修为行不再占位（圆已含修为）
     // buff
     if (_buff_label) _buff_label->set_position(Vector2(bx, y + 4.0f));
     y += ROW_STEP;
@@ -1241,7 +1271,7 @@ void GameHUD::_refresh_mana_label() {
 void GameHUD::_refresh_xp_label() {
     if (_xp_label) {
         _xp_label->set_text(
-            _xp_prefix + " " + String::num_int64(int64_t(_xp_progress * 100.0f)) + "%");
+            String::num_int64(int64_t(_xp_progress * 100.0f)) + "%");
     }
 }
 
@@ -1252,12 +1282,16 @@ void GameHUD::_refresh_realm_label() {
 }
 
 void GameHUD::on_spiritual_energy_changed(int64_t p_current, int64_t p_max, float p_progress) {
-    // 修为经验：HUD 只显示境内进度百分比（符合修仙"进度感"）
+    // 修为经验圆：水位从底部注入（fill 高度 = 进度 × 圆直径）
     _xp_progress = p_progress;
-    if (_xp_fill) {
+    if (_xp_fill && _xp_bg) {
+        const float RING_S = _xp_bg->get_size().y;
+        float h = RING_S * Math::clamp(p_progress, 0.0f, 1.0f);
         Vector2 size = _xp_fill->get_size();
-        size.x = BAR_WIDTH * Math::clamp(p_progress, 0.0f, 1.0f);
+        size.y = h;
         _xp_fill->set_size(size);
+        Vector2 pos = _xp_bg->get_position();
+        _xp_fill->set_position(Vector2(pos.x, pos.y + RING_S - h));
     }
     // 修为圆满 → 提示机缘已至（渡劫/天尊无经验条，恒满不提示）
     bool jiyuan = (p_max > 0) && p_progress >= 1.0f;
