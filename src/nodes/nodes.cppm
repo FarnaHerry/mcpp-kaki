@@ -442,7 +442,7 @@ private:
 export class GameMenu : public CanvasLayer {
 	GDCLASS(GameMenu, CanvasLayer)
 
-	enum Page { PAGE_PROFILE = 0, PAGE_INVENTORY, PAGE_ABILITY, PAGE_GONGFA, PAGE_SKILL, PAGE_ARTIFACT, PAGE_SECT, PAGE_TRAVEL, PAGE_ALCHEMY, PAGE_SETTINGS, PAGE_COUNT };
+	enum Page { PAGE_PROFILE = 0, PAGE_INVENTORY, PAGE_ABILITY, PAGE_GONGFA, PAGE_SKILL, PAGE_ARTIFACT, PAGE_SECT, PAGE_TRAVEL, PAGE_ALCHEMY, PAGE_SETTINGS, PAGE_BESTIARY, PAGE_COUNT };
 
 	CanvasLayer *_tabs_layer = nullptr;
 	Label *_tab_labels[PAGE_COUNT] = {};
@@ -498,6 +498,16 @@ export class GameMenu : public CanvasLayer {
 	int _vsync = 1;         // 垂直同步 0关/1开，默认开
 	std::vector<int> _fps_opts; // 帧率上限档（启动按系统最高刷新率动态生成，末尾 0=无限）
 	bool _startup_applied = false; // 启动窗口就绪后应用一次显示设置（_ready 时窗口未完全就绪）
+
+	// 图鉴页（ESC 第 11 页，设置页之后）：分类 0物品 1敌人 2装备
+	int _bestiary_cat = 0;
+	int _bestiary_sel = 0;
+	String _bestiary_msg;
+	float _bestiary_msg_t = 0.0f;
+	void _build_bestiary_page();
+	void _handle_bestiary_input();
+	// 图鉴条目详情构建：返回 [名称, 描述]（从 items/enemies 定义读取，兜底 fallback）
+	void _bestiary_entry_detail(const String &p_id, int p_cat, String &r_name, String &r_desc);
 
 	void _open_menu(int p_page);
 	void _close_menu();

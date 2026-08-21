@@ -1,5 +1,6 @@
 module;
 #include "../nodes/player.h"
+#include "../core/enemy_database.h"
 #include <godot_cpp/classes/collision_shape2d.hpp>
 #include <godot_cpp/classes/color_rect.hpp>
 #include <godot_cpp/classes/input_event.hpp>
@@ -40,7 +41,7 @@ import mcpp_kaki.inventory;
 import mcpp_kaki.utils;
 namespace godot {
 
-static const char *TAB_NAMES[] = { "个人信息", "背包", "能力", "功法", "技能", "法宝", "宗门", "云游", "炼丹", "设置" };
+static const char *TAB_NAMES[] = { "个人信息", "背包", "能力", "功法", "技能", "法宝", "宗门", "云游", "炼丹", "设置", "图鉴" };
 
 void GameMenu::_bind_methods() {
 }
@@ -67,7 +68,7 @@ void GameMenu::_ready() {
 		Label *t = memnew(Label);
 		t->set_text(LOC(TAB_NAMES[i]));
 		t->add_theme_font_size_override("font_size", 9);
-		t->set_position(Vector2(42 + i * 44, 12));
+		t->set_position(Vector2(42 + i * 40, 12));
 		_tabs_layer->add_child(t);
 		_tab_labels[i] = t;
 	}
@@ -232,6 +233,11 @@ void GameMenu::_rebuild_page() {
 			if (_inv_panel) _inv_panel->close();
 			_build_settings_page();
 			_set_hint(LOC("Q/E 切换页  ↑/↓ 选择  ←/→ 调节  X 确认  ESC 关闭"));
+			break;
+		case PAGE_BESTIARY:
+			if (_inv_panel) _inv_panel->close();
+			_build_bestiary_page();
+			_set_hint(LOC("Q/E 切换页  ←/→ 切分类  ↑/↓ 选条目  X 备注循环  ESC 关闭"));
 			break;
 	}
 }
@@ -1387,6 +1393,220 @@ void GameMenu::_handle_alchemy_input() {
 	}
 }
 
+// ============================================================
+// 图鉴页（Bestiary）：ESC 第 11 页（设置页之后），←/→ 切分类（物品/敌人/装备），
+// ↑/↓ 选条目，X 循环备注标记（无 → ★重要 → 待收集 → 已收集 → 无），详情行显示名称/描述/来源。
+// 备注保存在 Player._notes Dictionary，持久化到存档 pd["bestiary"]["notes"]。
+// ============================================================
+
+static const char *BESTIARY_CAT_NAMES[3] = { "物品", "敌人", "装备" };
+
+void GameMenu::_bestiary_entry_detail(const String &p_id, int p_cat, String &r_name, String &r_desc) {
+	// 从 ItemDatabase 或 EnemyDatabase 读取定义；无定义则 fallback
+	if (p_cat == 1) {
+		// 敌人
+		const EnemyDef *edef = EnemyDatabase::get_def(p_id);
+		if (edef) {
+			r_name = LOC(edef->name.utf8().get_data());
+			r_desc = LOC("击杀可获取修为与掉落物。");
+			return;
+		}
+	}
+	// 物品（含装备）
+	const Item *item = ItemDatabase::get_singleton()->get_item(StringName(p_id));
+	if (item) {
+		r_name = LOC(item->name.utf8().get_data());
+		r_desc = LOC(item->description.utf8().get_data());
+		return;
+	}
+	// Fallback
+	r_name = p_id;
+	r_desc = LOC("未知条目");
+}
+
+// 备注循环档（X 循环切换；index 0 = 无备注）
+static const char *BESTIARY_NOTE_CYCLE[4] = { "", "★重要", "待收集", "已收集" };
+
+// 备注档中文名 → 序号（未命中返回 -1）
+static int _bestiary_note_index(const String &p_note) {
+	for (int i = 0; i < 4; i++) {
+		if (LOC(BESTIARY_NOTE_CYCLE[i]) == p_note) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+void GameMenu::_build_bestiary_page() {
+	auto add_line = [&](const String &text, float x, float y, int size, const Color &c) {
+		Label *l = memnew(Label);
+		l->set_text(text);
+		l->add_theme_font_size_override("font_size", size);
+		l->add_theme_color_override("font_color", c);
+		l->set_position(Vector2(x, y));
+		add_child(l);
+		_page_nodes.push_back(l);
+	};
+
+	Color head_c(1.0f, 0.85f, 0.5f);
+	Color body_c(0.85f, 0.85f, 0.85f);
+	Color dim_c(0.45f, 0.45f, 0.45f);
+	Color sel_c(1.0f, 0.95f, 0.6f);
+	Color note_c(0.6f, 1.0f, 0.6f);
+
+	Label *title = memnew(Label);
+	title->set_text(LOC("—— 图鉴 ——"));
+	title->add_theme_font_size_override("font_size", 13);
+	title->add_theme_color_override("font_color", Color(1.0f, 0.9f, 0.5f));
+	title->set_position(Vector2(195, 36));
+	add_child(title);
+	_page_nodes.push_back(title);
+
+	Player *p = _player;
+	if (!p) {
+		add_line(LOC("（玩家未就绪）"), 70.0f, 60.0f, 9, dim_c);
+		return;
+	}
+
+	// 分类标签行：物品 | 敌人 | 装备（←/→ 切分类）
+	{
+		float x = 60.0f;
+		for (int i = 0; i < 3; i++) {
+			String cat_text = i == _bestiary_cat ? LOC("【") + LOC(BESTIARY_CAT_NAMES[i]) + LOC("】") : LOC("  ") + LOC(BESTIARY_CAT_NAMES[i]) + LOC("  ");
+			Color c = i == _bestiary_cat ? sel_c : dim_c;
+			add_line(cat_text, x, 56.0f, 10, c);
+			x += 80.0f;
+		}
+	}
+
+	// 获取当前分类的已见过 id 列表
+	Array seen_ids;
+	switch (_bestiary_cat) {
+		case 0: seen_ids = p->get_seen_items(); break;
+		case 1: seen_ids = p->get_seen_enemies(); break;
+		case 2: seen_ids = p->get_seen_equipment(); break;
+	}
+	_bestiary_sel = CLAMP(_bestiary_sel, 0, MAX(0, (int)seen_ids.size() - 1));
+
+	if (seen_ids.is_empty()) {
+		add_line(LOC("（尚未收录任何条目，拾取物品/击杀敌人后自动记录）"), 70.0f, 80.0f, 9, dim_c);
+		return;
+	}
+
+	// 图鉴条目 GridList（3 列卡片）
+	static const int GRID_COLS = 3;
+	Array items;
+	for (int i = 0; i < seen_ids.size(); i++) {
+		String id = seen_ids[i];
+		String name, desc;
+		_bestiary_entry_detail(id, _bestiary_cat, name, desc);
+		Dictionary cell;
+		cell["text"] = name;
+		// 有备注标记的条目加前缀色
+		String note = p->get_note(id);
+		if (!note.is_empty()) {
+			cell["color"] = note_c;
+		} else {
+			cell["color"] = body_c;
+		}
+		items.push_back(cell);
+	}
+	GridList *grid = memnew(GridList);
+	grid->set_position(Vector2(40, 76));
+	grid->set_size(Vector2(400, 84)); // 3 行窗口
+	add_child(grid);
+	grid->set_columns(GRID_COLS);
+	grid->set_cell_size(Vector2(133, 28));
+	grid->set_items(items);
+	grid->set_selected(_bestiary_sel);
+	_page_nodes.push_back(grid);
+
+	// 选中条目详情行
+	{
+		String id = seen_ids[_bestiary_sel];
+		String name, desc;
+		_bestiary_entry_detail(id, _bestiary_cat, name, desc);
+		String detail = name + LOC("  ") + desc;
+		add_line(detail, 40.0f, 170.0f, 9, sel_c);
+	}
+
+	// 备注行（选中条目）
+	{
+		String id = seen_ids[_bestiary_sel];
+		String note = p->get_note(id);
+		String note_line = LOC("备注: ");
+		if (note.is_empty()) {
+			note_line += LOC("（无，X 循环标记）");
+		} else {
+			note_line += note;
+		}
+		add_line(note_line, 40.0f, 184.0f, 8, dim_c);
+	}
+
+	// 提示信息
+	if (!_bestiary_msg.is_empty()) {
+		add_line(_bestiary_msg, 60.0f, 250.0f, 9, note_c);
+	} else {
+		add_line(LOC("←/→ 切分类  ↑/↓ 选条目  X 循环备注标记（★重要 → 待收集 → 已收集）。"), 60.0f, 250.0f, 8, dim_c);
+	}
+}
+
+void GameMenu::_handle_bestiary_input() {
+	Player *p = _player;
+	if (!p) return;
+	Input *input = Input::get_singleton();
+
+	// 获取当前分类的已见过 id 列表
+	Array seen_ids;
+	switch (_bestiary_cat) {
+		case 0: seen_ids = p->get_seen_items(); break;
+		case 1: seen_ids = p->get_seen_enemies(); break;
+		case 2: seen_ids = p->get_seen_equipment(); break;
+	}
+	// ←/→ 切分类（重置选中）——必须先于空列表判断：空分类也要能切走
+	if (input->is_action_just_pressed(LOC("left"))) {
+		_bestiary_cat = (_bestiary_cat - 1 + 3) % 3;
+		_bestiary_sel = 0;
+		_rebuild_page();
+		return;
+	}
+	if (input->is_action_just_pressed(LOC("right"))) {
+		_bestiary_cat = (_bestiary_cat + 1) % 3;
+		_bestiary_sel = 0;
+		_rebuild_page();
+		return;
+	}
+
+	// 空分类下其余交互无意义（选中/备注），提前返回
+	int count = seen_ids.size();
+	if (count == 0) return;
+	_bestiary_sel = CLAMP(_bestiary_sel, 0, count - 1);
+
+	static const int GRID_COLS = 3;
+	if (input->is_action_just_pressed(LOC("up"))) {
+		_bestiary_sel = Math::max(0, _bestiary_sel - GRID_COLS);
+		_rebuild_page();
+	}
+	if (input->is_action_just_pressed(LOC("down"))) {
+		_bestiary_sel = Math::min(count - 1, _bestiary_sel + GRID_COLS);
+		_rebuild_page();
+	}
+
+	// X：循环备注标记 无 → ★重要 → 待收集 → 已收集 → 无
+	if (input->is_action_just_pressed(LOC("interact"))) {
+		String id = seen_ids[_bestiary_sel];
+		String cur = p->get_note(id);
+		int idx = _bestiary_note_index(cur);
+		if (idx < 0) idx = 0;
+		int next_idx = (idx + 1) % 4;
+		String nv = LOC(BESTIARY_NOTE_CYCLE[next_idx]);
+		p->set_note(id, nv);
+		_bestiary_msg = LOC("标记: ") + nv;
+		_bestiary_msg_t = 2.0f;
+		_rebuild_page();
+	}
+}
+
 void GameMenu::_build_settings_page() {
 	_refresh_settings_page();
 }
@@ -1782,6 +2002,14 @@ void GameMenu::_process(double p_delta) {
 		}
 	}
 
+	if (_bestiary_msg_t > 0.0f) {
+		_bestiary_msg_t -= float(p_delta);
+		if (_bestiary_msg_t <= 0.0f && _page == PAGE_BESTIARY) {
+			_bestiary_msg = String();
+			_rebuild_page();
+		}
+	}
+
 	if (input->is_action_just_pressed(LOC("menu"))) {
 		_close_menu();
 		return;
@@ -1813,6 +2041,9 @@ void GameMenu::_process(double p_delta) {
 			break;
 		case PAGE_SETTINGS:
 			_handle_settings_input();
+			break;
+		case PAGE_BESTIARY:
+			_handle_bestiary_input();
 			break;
 		default:
 			break;

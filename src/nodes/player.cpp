@@ -5,6 +5,7 @@
 
 
 #include "../core/currency_system.h"
+#include "../core/enemy_database.h"
 #include "../utils/text.h"
 
 #include <godot_cpp/classes/collision_shape2d.hpp>
@@ -757,6 +758,16 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("is_in_tribulation"), &Player::is_in_tribulation);
 		ClassDB::bind_method(D_METHOD("set_suppressed_realm", "v"), &Player::set_suppressed_realm);
 		ClassDB::bind_method(D_METHOD("get_suppressed_realm"), &Player::get_suppressed_realm);
+		ClassDB::bind_method(D_METHOD("apply_save_data", "data"), &Player::apply_save_data);
+
+		ClassDB::bind_method(D_METHOD("mark_seen", "id"), &Player::mark_seen);
+		ClassDB::bind_method(D_METHOD("is_seen", "id"), &Player::is_seen);
+		ClassDB::bind_method(D_METHOD("get_seen_items"), &Player::get_seen_items);
+		ClassDB::bind_method(D_METHOD("get_seen_enemies"), &Player::get_seen_enemies);
+		ClassDB::bind_method(D_METHOD("get_seen_equipment"), &Player::get_seen_equipment);
+		ClassDB::bind_method(D_METHOD("set_note", "id", "note"), &Player::set_note);
+		ClassDB::bind_method(D_METHOD("get_note", "id"), &Player::get_note);
+		ClassDB::bind_method(D_METHOD("get_all_notes"), &Player::get_all_notes);
 
 		ADD_PROPERTY(PropertyInfo(Variant::INT, "suppressed_realm"), "set_suppressed_realm", "get_suppressed_realm");
 
@@ -1308,6 +1319,13 @@ namespace godot {
 	}
 
 	void Player::_on_enemy_killed(Object *p_enemy, Object *p_killer) {
+		// 图鉴：击杀即记录敌人 id（包括 Boss 和勾魂使等）
+		{
+			Enemy *e = Object::cast_to<Enemy>(p_enemy);
+			if (e && !e->get_enemy_id().is_empty()) {
+				mark_seen(e->get_enemy_id());
+			}
+		}
 		// 炼体行为：近战击杀喂养（主系 100%/副系 20%，GongfaSystem 内部处理）
 		if (p_killer == this && _gongfa) {
 			_gongfa->feed(GongfaSystem::SCHOOL_BODY, 15.0f);
@@ -1879,6 +1897,11 @@ namespace godot {
 			bus->emit_signal("item_picked_up", String(p_item_id), p_qty);
 		}
 
+		// 图鉴：拾取即记录「已见过」（装备是物品子集，一并记录）
+		if (_seen.find(String(p_item_id)) == _seen.end()) {
+			_seen.insert(String(p_item_id));
+		}
+
 		// 消耗品自动入快捷栏：已存在→不动；否则找空位或已耗尽槽（首个）
 		if (def->type == Item::CONSUMABLE) {
 			bool in_bar = false;
@@ -2048,6 +2071,71 @@ namespace godot {
 		return state_machine ? String(state_machine->get_current_name()) : String();
 	}
 
+	// ============================================================
+	// 图鉴（Bestiary）：已见过集合 + 备注
+	// ============================================================
+
+	void Player::mark_seen(const String &p_id) {
+		if (p_id.is_empty()) return;
+		_seen.insert(p_id);
+	}
+
+	bool Player::is_seen(const String &p_id) const {
+		return _seen.find(p_id) != _seen.end();
+	}
+
+	// 按类别枚举已见过 id（引用 ItemDatabase / EnemyDatabase 定义；无定义的 id 归入「物品」）
+	Array Player::get_seen_items() const {
+		Array out;
+		for (const String &id : _seen) {
+			const Item *item = ItemDatabase::get_singleton()->get_item(StringName(id));
+			if (item && item->type != Item::EQUIPMENT) {
+				out.append(id);
+			} else if (!item && !EnemyDatabase::get_def(id)) {
+				out.append(id);
+			}
+		}
+		return out;
+	}
+
+	Array Player::get_seen_enemies() const {
+		Array out;
+		for (const String &id : _seen) {
+			if (EnemyDatabase::get_def(id)) {
+				out.append(id);
+			}
+		}
+		return out;
+	}
+
+	Array Player::get_seen_equipment() const {
+		Array out;
+		for (const String &id : _seen) {
+			const Item *item = ItemDatabase::get_singleton()->get_item(StringName(id));
+			if (item && item->type == Item::EQUIPMENT) {
+				out.append(id);
+			}
+		}
+		return out;
+	}
+
+	void Player::set_note(const String &p_id, const String &p_note) {
+		if (p_id.is_empty()) return;
+		if (p_note.is_empty()) {
+			_notes.erase(p_id);
+		} else {
+			_notes[p_id] = p_note;
+		}
+	}
+
+	String Player::get_note(const String &p_id) const {
+		return _notes.has(p_id) ? String(_notes[p_id]) : String();
+	}
+
+	Dictionary Player::get_all_notes() const {
+		return _notes;
+	}
+
 	// ---- Save / Load ----
 
 	void Player::apply_save_data(const Dictionary &p_data) {
@@ -2086,6 +2174,17 @@ namespace godot {
 			for (int i = 0; i < CONSUMABLE_BAR_SLOTS && i < bar.size(); i++) {
 				_consumable_bar[i] = StringName(bar[i]);
 			}
+		}
+
+		// 图鉴：已见过集合 + 备注（存档段 pd["bestiary"]：{"seen":[...], "notes":{...}}）
+		{
+			Dictionary bd = p_data.get("bestiary", Dictionary());
+			Array seen = bd.get("seen", Array());
+			_seen.clear();
+			for (int i = 0; i < seen.size(); i++) {
+				_seen.insert(String(seen[i]));
+			}
+			_notes = bd.get("notes", Dictionary());
 		}
 
 		// Position

@@ -427,6 +427,20 @@ Dictionary GameManager::collect_save_data() const {
 			}
 			pd["consumable_bar"] = bar;
 		}
+		// 图鉴：已见过集合 + 备注
+		{
+			Dictionary bd;
+			Array all;
+			Array items = _player->get_seen_items();
+			Array enemies = _player->get_seen_enemies();
+			Array equipment = _player->get_seen_equipment();
+			for (int i = 0; i < items.size(); i++) all.push_back(items[i]);
+			for (int i = 0; i < enemies.size(); i++) all.push_back(enemies[i]);
+			for (int i = 0; i < equipment.size(); i++) all.push_back(equipment[i]);
+			bd["seen"] = all;
+			bd["notes"] = _player->get_all_notes();
+			pd["bestiary"] = bd;
+		}
 		}
 		data["player"] = pd;
 

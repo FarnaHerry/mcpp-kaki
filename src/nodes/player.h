@@ -5,6 +5,8 @@
 #include <godot_cpp/classes/input.hpp>
 #include <godot_cpp/variant/color.hpp>
 
+#include <set>
+
 import mcpp_kaki.combat;
 import mcpp_kaki.inventory;
 import mcpp_kaki.cultivation;
@@ -212,6 +214,16 @@ class Player : public CharacterBody2D {
 		void exec_skill_invuln(float p_seconds);                                      // 金刚不坏：短时无敌
 		bool is_invulnerable() const { return _time < _invuln_until; }
 
+		// 图鉴（Bestiary）：记录已见过物品/敌人/装备，支持备注
+		void mark_seen(const String &p_id);
+		bool is_seen(const String &p_id) const;
+		Array get_seen_items() const;
+		Array get_seen_enemies() const;
+		Array get_seen_equipment() const;
+		void set_note(const String &p_id, const String &p_note);
+		String get_note(const String &p_id) const;
+		Dictionary get_all_notes() const;
+
 		// Save / Load
 		void apply_save_data(const Dictionary &p_data);
 
@@ -270,6 +282,10 @@ class Player : public CharacterBody2D {
 		bool _in_tribulation = false;    // 渡劫三灾中：次要法宝禁用 + 装备加成置空
 
 		int _suppressed_realm = -1;      // 秘境压制修为（-1=不压制，0~12=压制到该境界）
+
+		// 图鉴系统
+		std::set<String> _seen;          // 已见过物品/敌人 id
+		Dictionary _notes;               // 备注：key=id, value=备注字符串
 
 		void _update_buffers();
 		void _update_facing();
