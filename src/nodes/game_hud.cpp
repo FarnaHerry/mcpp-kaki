@@ -199,18 +199,19 @@ static void _build_bar(CanvasLayer *p_parent, float p_y, const Color &p_fill_col
     r_fill->set_color(p_fill_color);
     p_parent->add_child(r_fill);
 
-    // Value text drawn inside the bar (nudged up: font metrics sit low otherwise)
+    // Value text drawn inside the bar — removed per user request (bar-only, no text)
     r_label = memnew(Label);
-    r_label->set_position(Vector2(BAR_X, p_y - 2.0f));
+    r_label->set_position(Vector2(BAR_X, p_y - 3.0f));
     r_label->set_size(Vector2(BAR_WIDTH, BAR_HEIGHT));
     r_label->add_theme_font_size_override("font_size", FONT_SIZE_XS);
     r_label->add_theme_color_override("font_color", Color(1, 1, 1, 1));
     r_label->add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9f));
-    r_label->add_theme_constant_override("outline_size", 2);
+    r_label->add_theme_constant_override("outline_size", 0);
     r_label->set_horizontal_alignment(HorizontalAlignment::HORIZONTAL_ALIGNMENT_CENTER);
     r_label->set_vertical_alignment(VerticalAlignment::VERTICAL_ALIGNMENT_CENTER);
     r_label->set_clip_text(true);
     r_label->set_text(p_initial_text);
+    r_label->set_visible(false);
     p_parent->add_child(r_label);
 }
 
@@ -555,40 +556,34 @@ void GameHUD::_layout_right_side() {
     }
 }
 
-// 左下角：数值条竖排（生命→灵力→[法则]→修为→饱食→境界），从下往上堆叠，
-// 紧贴技能栏（QWERTY 上行）上方。消耗品栏在状态条上方。法则条化神解锁才显示。
+// 左下角：数值条竖排（生命→灵力→[法则]→修为→饱食→境界），贴左下角从下往上堆叠。
+// 无文字，仅纯色条。法则条化神解锁才显示。
 void GameHUD::_layout_left_column() {
     const float bx = BAR_X; // 贴左
-    const int rows = 7; // 境界/饱食/buff/修为/法则/灵力/生命
-    // 从下往上堆叠：生命在最下，境界在最上；底部起点 = 技能栏上行 y - 4px
-    const float skill_y_top = _vh - 48.0f;
-    float y = skill_y_top - 4.0f - BAR_HEIGHT;
+    // 从下往上堆叠：生命在最下，境界在最上；底部起点 = 视口底部
+    float y = _vh - 4.0f - BAR_HEIGHT;
     // 生命
     if (_health_bg) {
         _health_bg->set_position(Vector2(bx, y));
         _health_fill->set_position(Vector2(bx, y));
-        _health_label->set_position(Vector2(bx, y - 2.0f));
     }
     y -= ROW_STEP;
     // 灵力
     if (_energy_bg) {
         _energy_bg->set_position(Vector2(bx, y));
         _energy_fill->set_position(Vector2(bx, y));
-        _energy_label->set_position(Vector2(bx, y - 2.0f));
     }
     y -= ROW_STEP;
     // 法则（化神解锁才显示）
     if (_law_shown && _law_bg) {
         _law_bg->set_position(Vector2(bx, y));
         _law_fill->set_position(Vector2(bx, y));
-        _law_label->set_position(Vector2(bx, y - 2.0f));
         y -= ROW_STEP;
     }
     // 修为
     if (_xp_bg) {
         _xp_bg->set_position(Vector2(bx, y));
         _xp_fill->set_position(Vector2(bx, y));
-        _xp_label->set_position(Vector2(bx, y - 2.0f));
     }
     y -= ROW_STEP;
     // buff
@@ -598,7 +593,6 @@ void GameHUD::_layout_left_column() {
     if (_fullness_bg) {
         _fullness_bg->set_position(Vector2(bx, y));
         _fullness_fill->set_position(Vector2(bx, y));
-        _fullness_label->set_position(Vector2(bx, y - 2.0f));
     }
     y -= ROW_STEP;
     // 境界
@@ -807,7 +801,7 @@ void GameHUD::_update_law_bar() {
         _law_shown = show;
         _law_bg->set_visible(show);
         _law_fill->set_visible(show);
-        _law_label->set_visible(show);
+        _law_label->set_visible(false); // 纯色条，无文字
         _layout_left_column(); // 显隐切换 → 左列重排补位
         _layout_consumable_bar();
         _layout_skill_bar();
@@ -1165,20 +1159,20 @@ void GameHUD::_unhandled_input(const Ref<InputEvent> &p_event) {
 void GameHUD::_apply_hud_visibility() {
     if (_health_bg)     _health_bg->set_visible(_hud_visible);
     if (_health_fill)   _health_fill->set_visible(_hud_visible);
-    if (_health_label)  _health_label->set_visible(_hud_visible);
+    if (_health_label)  _health_label->set_visible(false);
     if (_energy_bg)     _energy_bg->set_visible(_hud_visible);
     if (_energy_fill)   _energy_fill->set_visible(_hud_visible);
-    if (_energy_label)  _energy_label->set_visible(_hud_visible);
+    if (_energy_label)  _energy_label->set_visible(false);
     if (_xp_bg)         _xp_bg->set_visible(_hud_visible);
     if (_xp_fill)       _xp_fill->set_visible(_hud_visible);
-    if (_xp_label)      _xp_label->set_visible(_hud_visible);
+    if (_xp_label)      _xp_label->set_visible(false);
     if (_realm_label)   _realm_label->set_visible(_hud_visible);
     if (_jiyuan_label)  _jiyuan_label->set_visible(_hud_visible && _xp_progress >= 1.0f);
     // 饱食度条：辟谷后隐藏
     bool show_fullness = _hud_visible && !_bigu;
     if (_fullness_bg) _fullness_bg->set_visible(show_fullness);
     if (_fullness_fill) _fullness_fill->set_visible(show_fullness);
-    if (_fullness_label) _fullness_label->set_visible(show_fullness);
+    if (_fullness_label) _fullness_label->set_visible(false);
     // Combo/prompt manage their own visibility; only show when HUD is on
     if (_combo_label)   _combo_label->set_visible(_hud_visible && _combo_count >= 3);
     if (_interact_label) _interact_label->set_visible(_hud_visible && _prompt_showing);
@@ -1324,7 +1318,7 @@ void GameHUD::on_bigu_changed(bool p_bigu) {
     // 辟谷：不需要进食，隐藏饱食度条
     if (_fullness_bg) _fullness_bg->set_visible(_hud_visible && !p_bigu);
     if (_fullness_fill) _fullness_fill->set_visible(_hud_visible && !p_bigu);
-    if (_fullness_label) _fullness_label->set_visible(_hud_visible && !p_bigu);
+    if (_fullness_label) _fullness_label->set_visible(false);
 }
 
 void GameHUD::on_ledger_inspect(const Dictionary &p_data, bool p_show) {
