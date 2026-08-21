@@ -228,7 +228,7 @@ void GameMenu::_rebuild_page() {
 		case PAGE_ALCHEMY:
 			if (_inv_panel) _inv_panel->close();
 			_build_forge_page();
-			_set_hint(LOC("Q/E 切页  ↑/↓←/→ 选子页  X 确认  ESC 关闭"));
+			_set_hint(LOC("Q/E 切页  ↑/↓←/→ 选配方  X 炼制/铸造  ↑到顶进侧边栏"));
 			break;
 		case PAGE_SETTINGS:
 			if (_inv_panel) _inv_panel->close();
@@ -238,7 +238,7 @@ void GameMenu::_rebuild_page() {
 		case PAGE_BESTIARY:
 			if (_inv_panel) _inv_panel->close();
 			_build_bestiary_page();
-			_set_hint(LOC("Q/E 切换页  ←/→ 切分类  ↑/↓ 选条目  X 备注循环  ESC 关闭"));
+			_set_hint(LOC("Q/E 切换页  ↑/↓←/→ 选条目  X 备注  ↑顶行/←左列进分类  ESC 关闭"));
 			break;
 	}
 }
@@ -283,6 +283,16 @@ void GameMenu::_build_profile_page() {
 	add_line(LOC("境界"), cult ? cult->get_full_title() : LOC("凡人"), y); y += 16.0f;
 	add_line(LOC("生命"), p ? fmt(p->get_max_health()) : TXT("0"), y); y += 16.0f;
 	add_line(LOC("灵力"), cult ? fmt(cult->get_max_mana()) : TXT("0"), y); y += 16.0f;
+	// 回复速度
+	{
+		double mana_regen_rate = cult ? (cult->get_max_mana() * 0.02 * cult->get_mana_regen_mult()) : 0.0;
+		double mana_regen_pct = 2.0 * (cult ? cult->get_mana_regen_mult() : 1.0);
+		add_line(LOC("灵力回复"), fmt(mana_regen_rate) + TXT("/s  (") + String::num(mana_regen_pct, 1) + TXT("%)"), y); y += 16.0f;
+	}
+	// 生命回复：目前无非打坐被动回复，显示 0，预留显示 buff/技能加成
+	{
+		add_line(LOC("生命回复"), TXT("0/s"), y); y += 16.0f;
+	}
 	add_line(LOC("攻击"), p ? fmt(p->get_effective_attack()) : TXT("0"), y); y += 16.0f;
 	add_line(LOC("防御"), p ? fmt(p->get_effective_defense()) : TXT("0"), y); y += 16.0f;
 	add_line(LOC("速度"), p ? fmt(p->move_speed) : TXT("0"), y); y += 16.0f;
@@ -1277,14 +1287,18 @@ void GameMenu::_build_forge_page() {
 	add_child(title);
 	_page_nodes.push_back(title);
 
-	// 左侧侧边栏（4 子页标签竖排）
+	// 左侧侧边栏（4 子页标签竖排，同背包筛选行：非焦点仅高亮色，焦点时选中项方括号括起）
 	static const char *SUB_NAMES[4] = { "炼丹", "装备铸造", "法宝铸造", "装备强化" };
 	for (int i = 0; i < 4; i++) {
 		bool is_sel = (i == _forge_sub);
 		Label *sl = memnew(Label);
-		sl->set_text(is_sel ? LOC("▶ ") + LOC(SUB_NAMES[i]) : LOC("  ") + LOC(SUB_NAMES[i]));
-		sl->add_theme_font_size_override("font_size", 9);
+		if (_forge_sidebar_focus) {
+			sl->set_text(is_sel ? LOC("[") + LOC(SUB_NAMES[i]) + LOC("]") : LOC(SUB_NAMES[i]));
+		} else {
+			sl->set_text(LOC(SUB_NAMES[i]));
+		}
 		sl->add_theme_color_override("font_color", is_sel ? sel_c : dim_c);
+		sl->add_theme_font_size_override("font_size", 9);
 		sl->set_position(Vector2(12, 60 + i * 22));
 		add_child(sl);
 		_page_nodes.push_back(sl);
@@ -1391,7 +1405,7 @@ void GameMenu::_build_forge_alchemy() {
 		bool ok = _forge_msg.contains(LOC("炼成"));
 		add_line(_forge_msg, 80.0f, 250.0f, 10, ok ? ok_c : bad_c);
 	} else {
-		add_line(LOC("↑/↓←/→ 选方  X 炼制。炼制亦修行：每炉喂练气 +5。"), 80.0f, 250.0f, 8, dim_c);
+		add_line(LOC("↑/↓←/→ 选方  X 炼制。炼制亦修行：每炉喂练气 +5。↑顶行/←左列进侧边栏"), 80.0f, 250.0f, 8, dim_c);
 	}
 }
 
@@ -1456,7 +1470,7 @@ void GameMenu::_build_forge_equip() {
 		bool ok = _forge_msg.contains(LOC("铸造"));
 		add_line(_forge_msg, 80.0f, 250.0f, 10, ok ? ok_c : bad_c);
 	} else {
-		add_line(LOC("↑/↓ 选配方  X 铸造（材料够绿色，不够红色）"), 80.0f, 250.0f, 8, dim_c);
+		add_line(LOC("↑/↓ 选配方  X 铸造（材料够绿色，不够红色）  ↑顶行/←左列进侧边栏"), 80.0f, 250.0f, 8, dim_c);
 	}
 }
 
@@ -1519,7 +1533,7 @@ void GameMenu::_build_forge_artifact() {
 		bool ok = _forge_msg.contains(LOC("铸造")) || _forge_msg.contains(LOC("习得"));
 		add_line(_forge_msg, 80.0f, 250.0f, 10, ok ? ok_c : bad_c);
 	} else {
-		add_line(LOC("↑/↓ 选配方  X 铸造法宝（材料够绿色，不够红色）"), 80.0f, 250.0f, 8, dim_c);
+		add_line(LOC("↑/↓ 选配方  X 铸造法宝（材料够绿色，不够红色）  ↑顶行/←左列进侧边栏"), 80.0f, 250.0f, 8, dim_c);
 	}
 }
 
@@ -1641,33 +1655,42 @@ void GameMenu::_build_forge_upgrade() {
 		bool ok = _forge_msg.contains(LOC("强化"));
 		add_line(_forge_msg, 80.0f, 250.0f, 10, ok ? ok_c : bad_c);
 	} else {
-		add_line(LOC("↑/↓ 选装备  X 强化（材料够绿色，不够红色）"), 80.0f, 250.0f, 8, dim_c);
+		add_line(LOC("↑/↓ 选装备  X 强化（材料够绿色，不够红色）  ↑顶行/←左列进侧边栏"), 80.0f, 250.0f, 8, dim_c);
 	}
 }
 
 void GameMenu::_handle_forge_input() {
 	Input *input = Input::get_singleton();
-
-	// 侧边栏切换：←/→ 切换子页（← 上一页 / → 下一页）
-	// ↑/↓ 留给子页内部内容导航（GridList 行移）
 	static const int SUB_COUNT = 4;
 
-	if (input->is_action_just_pressed(LOC("left"))) {
-		_forge_sub = (_forge_sub - 1 + SUB_COUNT) % SUB_COUNT;
-		_forge_sel = 0;
-		_forge_msg = String();
-		_rebuild_page();
-		return;
-	}
-	if (input->is_action_just_pressed(LOC("right"))) {
-		_forge_sub = (_forge_sub + 1) % SUB_COUNT;
-		_forge_sel = 0;
-		_forge_msg = String();
-		_rebuild_page();
+	if (_forge_sidebar_focus) {
+		// 侧边栏焦点模式：↑/↓ 切子页，X/↓ 确认返回内容
+		if (input->is_action_just_pressed(LOC("up"))) {
+			_forge_sub = (_forge_sub - 1 + SUB_COUNT) % SUB_COUNT;
+			_forge_sel = 0;
+			_forge_msg = String();
+			_rebuild_page();
+			return;
+		}
+		if (input->is_action_just_pressed(LOC("down"))) {
+			_forge_sub = (_forge_sub + 1) % SUB_COUNT;
+			_forge_sel = 0;
+			_forge_msg = String();
+			_rebuild_page();
+			return;
+		}
+		if (input->is_action_just_pressed(LOC("interact"))) {
+			// X 确认 → 返回内容区
+			_forge_sidebar_focus = false;
+			_forge_sel = 0;
+			_forge_msg = String();
+			_rebuild_page();
+			return;
+		}
 		return;
 	}
 
-	// 以下在各子页内处理（↑/↓ 留给子页 GridList 纵向导航）
+	// 内容区模式：各子页处理 ↑/↓←/→ 导航内容，↑ 顶行进侧边栏
 	switch (_forge_sub) {
 		case 0: _handle_forge_alchemy_input(); break;
 		case 1: _handle_forge_equip_input(); break;
@@ -1686,12 +1709,34 @@ void GameMenu::_handle_forge_alchemy_input() {
 	_forge_sel = CLAMP(_forge_sel, 0, count - 1);
 	static const int GRID_COLS = 3;
 	if (input->is_action_just_pressed(LOC("up"))) {
+		// 顶行 ↑ 进侧边栏子页选择
+		if (_forge_sel < GRID_COLS) {
+			_forge_sidebar_focus = true;
+			_rebuild_page();
+			return;
+		}
 		_forge_sel = Math::max(0, _forge_sel - GRID_COLS);
 		_rebuild_page();
 	}
 	if (input->is_action_just_pressed(LOC("down"))) {
 		_forge_sel = Math::min(count - 1, _forge_sel + GRID_COLS);
 		_rebuild_page();
+	}
+	if (input->is_action_just_pressed(LOC("left"))) {
+		if (_forge_sel % GRID_COLS > 0) {
+			_forge_sel = Math::max(0, _forge_sel - 1);
+			_rebuild_page();
+		} else {
+			// 最左列 ← 进侧边栏子页选择
+			_forge_sidebar_focus = true;
+			_rebuild_page();
+		}
+	}
+	if (input->is_action_just_pressed(LOC("right"))) {
+		if (_forge_sel % GRID_COLS < GRID_COLS - 1) {
+			_forge_sel = Math::min(count - 1, _forge_sel + 1);
+			_rebuild_page();
+		}
 	}
 	if (input->is_action_just_pressed(LOC("interact"))) {
 		int sel = CLAMP(_forge_sel, 0, (int)recipes.size() - 1);
@@ -1721,6 +1766,33 @@ void GameMenu::_handle_forge_equip_input() {
 	};
 	static const int RECIPE_COUNT = 5;
 	_forge_sel = CLAMP(_forge_sel, 0, RECIPE_COUNT - 1);
+	if (input->is_action_just_pressed(LOC("up"))) {
+		// 首行 ↑ 进侧边栏子页选择
+		if (_forge_sel == 0) {
+			_forge_sidebar_focus = true;
+			_rebuild_page();
+			return;
+		}
+		_forge_sel = Math::max(0, _forge_sel - 1);
+		_rebuild_page();
+	}
+	if (input->is_action_just_pressed(LOC("down"))) {
+		_forge_sel = Math::min(RECIPE_COUNT - 1, _forge_sel + 1);
+		_rebuild_page();
+	}
+	if (input->is_action_just_pressed(LOC("left"))) {
+		if (_forge_sel == 0) {
+			_forge_sidebar_focus = true;
+			_rebuild_page();
+			return;
+		}
+		_forge_sel = Math::max(0, _forge_sel - 1);
+		_rebuild_page();
+	}
+	if (input->is_action_just_pressed(LOC("right"))) {
+		_forge_sel = Math::min(RECIPE_COUNT - 1, _forge_sel + 1);
+		_rebuild_page();
+	}
 	if (input->is_action_just_pressed(LOC("interact"))) {
 		Inventory *inv = _player ? _player->get_inventory() : nullptr;
 		if (!inv) return;
@@ -1756,6 +1828,33 @@ void GameMenu::_handle_forge_artifact_input() {
 	};
 	static const int RECIPE_COUNT = 3;
 	_forge_sel = CLAMP(_forge_sel, 0, RECIPE_COUNT - 1);
+	if (input->is_action_just_pressed(LOC("up"))) {
+		// 首行 ↑ 进侧边栏子页选择
+		if (_forge_sel == 0) {
+			_forge_sidebar_focus = true;
+			_rebuild_page();
+			return;
+		}
+		_forge_sel = Math::max(0, _forge_sel - 1);
+		_rebuild_page();
+	}
+	if (input->is_action_just_pressed(LOC("down"))) {
+		_forge_sel = Math::min(RECIPE_COUNT - 1, _forge_sel + 1);
+		_rebuild_page();
+	}
+	if (input->is_action_just_pressed(LOC("left"))) {
+		if (_forge_sel == 0) {
+			_forge_sidebar_focus = true;
+			_rebuild_page();
+			return;
+		}
+		_forge_sel = Math::max(0, _forge_sel - 1);
+		_rebuild_page();
+	}
+	if (input->is_action_just_pressed(LOC("right"))) {
+		_forge_sel = Math::min(RECIPE_COUNT - 1, _forge_sel + 1);
+		_rebuild_page();
+	}
 	if (input->is_action_just_pressed(LOC("interact"))) {
 		Inventory *inv = _player ? _player->get_inventory() : nullptr;
 		ArtifactSystem *arts = _player ? _player->get_artifacts() : nullptr;
@@ -1833,6 +1932,20 @@ void GameMenu::_handle_forge_upgrade_input() {
 	int count = (int)equips.size();
 	if (count == 0) return;
 	_forge_sel = CLAMP(_forge_sel, 0, count - 1);
+
+	if (input->is_action_just_pressed(LOC("up"))) {
+		if (_forge_sel == 0) {
+			_forge_sidebar_focus = true;
+			_rebuild_page();
+			return;
+		}
+		_forge_sel = Math::max(0, _forge_sel - 1);
+		_rebuild_page();
+	}
+	if (input->is_action_just_pressed(LOC("down"))) {
+		_forge_sel = Math::min(count - 1, _forge_sel + 1);
+		_rebuild_page();
+	}
 
 	if (input->is_action_just_pressed(LOC("interact"))) {
 		StringName eid = equips[_forge_sel].id;
@@ -1936,11 +2049,16 @@ void GameMenu::_build_bestiary_page() {
 		return;
 	}
 
-	// 分类标签行：物品 | 敌人 | 装备（←/→ 切分类）
+	// 分类标签行：物品 | 敌人 | 装备（同背包筛选行：非焦点仅高亮色，焦点时选中项方括号括起）
 	{
 		float x = 60.0f;
 		for (int i = 0; i < 3; i++) {
-			String cat_text = i == _bestiary_cat ? LOC("【") + LOC(BESTIARY_CAT_NAMES[i]) + LOC("】") : LOC("  ") + LOC(BESTIARY_CAT_NAMES[i]) + LOC("  ");
+			String cat_text;
+			if (_bestiary_cat_focus) {
+				cat_text = i == _bestiary_cat ? LOC("[") + LOC(BESTIARY_CAT_NAMES[i]) + LOC("]") : LOC(BESTIARY_CAT_NAMES[i]);
+			} else {
+				cat_text = LOC(BESTIARY_CAT_NAMES[i]);
+			}
 			Color c = i == _bestiary_cat ? sel_c : dim_c;
 			add_line(cat_text, x, 56.0f, 10, c);
 			x += 80.0f;
@@ -2015,7 +2133,7 @@ void GameMenu::_build_bestiary_page() {
 	if (!_bestiary_msg.is_empty()) {
 		add_line(_bestiary_msg, 60.0f, 250.0f, 9, note_c);
 	} else {
-		add_line(LOC("←/→ 切分类  ↑/↓ 选条目  X 循环备注标记（★重要 → 待收集 → 已收集）。"), 60.0f, 250.0f, 8, dim_c);
+		add_line(LOC("↑/↓←/→ 选条目  X 备注  ←最左列/↑顶行 进分类  ESC 关闭"), 60.0f, 250.0f, 8, dim_c);
 	}
 }
 
@@ -2024,6 +2142,35 @@ void GameMenu::_handle_bestiary_input() {
 	if (!p) return;
 	Input *input = Input::get_singleton();
 
+	if (_bestiary_cat_focus) {
+		// 分类焦点模式：←/→ 切分类，↓/X 返回内容
+		if (input->is_action_just_pressed(LOC("left"))) {
+			_bestiary_cat = (_bestiary_cat - 1 + 3) % 3;
+			_bestiary_sel = 0;
+			_rebuild_page();
+			return;
+		}
+		if (input->is_action_just_pressed(LOC("right"))) {
+			_bestiary_cat = (_bestiary_cat + 1) % 3;
+			_bestiary_sel = 0;
+			_rebuild_page();
+			return;
+		}
+		if (input->is_action_just_pressed(LOC("down"))) {
+			_bestiary_cat_focus = false;
+			_bestiary_sel = 0;
+			_rebuild_page();
+			return;
+		}
+		if (input->is_action_just_pressed(LOC("interact"))) {
+			_bestiary_cat_focus = false;
+			_bestiary_sel = 0;
+			_rebuild_page();
+			return;
+		}
+		return;
+	}
+
 	// 获取当前分类的已见过 id 列表
 	Array seen_ids;
 	switch (_bestiary_cat) {
@@ -2031,21 +2178,30 @@ void GameMenu::_handle_bestiary_input() {
 		case 1: seen_ids = p->get_seen_enemies(); break;
 		case 2: seen_ids = p->get_seen_equipment(); break;
 	}
-	// ←/→ 切分类（重置选中）——必须先于空列表判断：空分类也要能切走
-	if (input->is_action_just_pressed(LOC("left"))) {
-		_bestiary_cat = (_bestiary_cat - 1 + 3) % 3;
-		_bestiary_sel = 0;
-		_rebuild_page();
-		return;
+	// 内容区 ↑ 顶行 → 进分类焦点模式
+	if (input->is_action_just_pressed(LOC("up"))) {
+		if (_bestiary_sel < 3 || seen_ids.is_empty()) {
+			_bestiary_cat_focus = true;
+			_rebuild_page();
+			return;
+		}
 	}
-	if (input->is_action_just_pressed(LOC("right"))) {
-		_bestiary_cat = (_bestiary_cat + 1) % 3;
-		_bestiary_sel = 0;
-		_rebuild_page();
-		return;
+	// ← 最左列 → 进分类焦点模式（空分类也能进）
+	if (input->is_action_just_pressed(LOC("left"))) {
+		if (_bestiary_sel % 3 == 0 || seen_ids.is_empty()) {
+			_bestiary_cat_focus = true;
+			_rebuild_page();
+			return;
+		}
+		// 不是最左列，正常左移
+		if (_bestiary_sel % 3 > 0) {
+			_bestiary_sel = Math::max(0, _bestiary_sel - 1);
+			_rebuild_page();
+			return;
+		}
 	}
 
-	// 空分类下其余交互无意义（选中/备注），提前返回
+	// 空分类下其余交互无意义，提前返回
 	int count = seen_ids.size();
 	if (count == 0) return;
 	_bestiary_sel = CLAMP(_bestiary_sel, 0, count - 1);
@@ -2058,6 +2214,18 @@ void GameMenu::_handle_bestiary_input() {
 	if (input->is_action_just_pressed(LOC("down"))) {
 		_bestiary_sel = Math::min(count - 1, _bestiary_sel + GRID_COLS);
 		_rebuild_page();
+	}
+	if (input->is_action_just_pressed(LOC("left"))) {
+		if (_bestiary_sel % GRID_COLS > 0) {
+			_bestiary_sel = Math::max(0, _bestiary_sel - 1);
+			_rebuild_page();
+		}
+	}
+	if (input->is_action_just_pressed(LOC("right"))) {
+		if (_bestiary_sel % GRID_COLS < GRID_COLS - 1) {
+			_bestiary_sel = Math::min(count - 1, _bestiary_sel + 1);
+			_rebuild_page();
+		}
 	}
 
 	// X：循环备注标记 无 → ★重要 → 待收集 → 已收集 → 无

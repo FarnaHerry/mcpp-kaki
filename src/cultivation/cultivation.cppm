@@ -131,6 +131,8 @@ public:
 	// 秘境压制修为：Player 通过此字段通知 CultivationSystem 按压制境界算法力上限
 	void set_suppressed_realm_for_mana(int v) { _suppressed_realm_for_mana = v; }
 	void set_mana_regen_mult(double p_m) { _mana_regen_mult = p_m; }
+	// 灵力回复总倍率（功法×被动×聚灵阵等外部乘区组合共用）
+	double get_mana_regen_mult() const { return _mana_regen_mult; }
 	void set_law_regen_mult(double p_m) { _law_regen_mult = p_m; }
 
 	double get_law_power() const { return _law_power; }

@@ -275,7 +275,6 @@ private:
 	Label *_equip_labels[3];
 	Label *_equip_names[3];
 
-	Label *_inv_header = nullptr;
 	GridList *_grid = nullptr;       // 物品格子列表（统一 GridList 组件）
 	std::vector<int> _slot_map;      // 紧凑格子索引 → 背包真实槽位
 	Label *_action_hint = nullptr;   // 选中项操作提示（[X]使用/装备）
@@ -284,7 +283,7 @@ private:
 
 	// ---- 类型筛选（全部/消耗品/材料/装备/关键物品）----
 	static constexpr int FILTER_COUNT = 5;
-	Label *_filter_label = nullptr;  // 筛选行（物品标题行右侧，[活动项] 括起）
+	Label *_filter_buttons[FILTER_COUNT] = {}; // 筛选行逐项标签（选中高亮/切换中括起，同图鉴分类行）
 	int _filter = 0;                 // 0=全部 1..4=Item::Type
 	bool _filtering = false;         // 选中在筛选行（↑ 进入 / ↓或X 返回）
 
@@ -464,6 +463,7 @@ export class GameMenu : public CanvasLayer {
 
 	int _forge_sub = 0; // 熔炼炉子页：0炼丹 1装备铸造 2法宝铸造 3装备强化
 	int _forge_sel = 0; // 子页内选中索引
+	bool _forge_sidebar_focus = false; // 侧边栏焦点：内容区顶行 ↑ 进入，↑/↓ 选子页 X 确认（背包筛选行同款）
 	String _forge_msg;
 	float _forge_msg_t = 0.0f;
 	void _handle_forge_input();
@@ -517,6 +517,7 @@ export class GameMenu : public CanvasLayer {
 	// 图鉴页（ESC 第 11 页，设置页之后）：分类 0物品 1敌人 2装备
 	int _bestiary_cat = 0;
 	int _bestiary_sel = 0;
+	bool _bestiary_cat_focus = false; // 分类焦点模式：↑ 顶行进，←/→ 切分类，↓/X 返回内容
 	String _bestiary_msg;
 	float _bestiary_msg_t = 0.0f;
 	void _build_bestiary_page();

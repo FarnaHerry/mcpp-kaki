@@ -466,6 +466,7 @@ Label *GameHUD::_spawn_pickup_label(const String &p_text) {
     l->add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9f));
     l->add_theme_constant_override("outline_size", 2);
     l->set_horizontal_alignment(HorizontalAlignment::HORIZONTAL_ALIGNMENT_RIGHT);
+    l->set_text(p_text);
     l->set_visible(true); // 创建即显示（此前滑入逻辑有遗漏：新标签未 set_visible(true) 同步）
     add_child(l);
     _pickup_labels.push_back(l);
@@ -494,6 +495,12 @@ void GameHUD::_on_item_picked_up(const String &p_item_id, int p_qty) {
     else
         text = LOC("获得 ") + name;
     Label *l = _spawn_pickup_label(text);
+    // 最多 5 条，超出则移除最旧（队首）的
+    while (_pickup_labels.size() > 5) {
+        Label *oldest = _pickup_labels.front();
+        oldest->queue_free();
+        _pickup_labels.erase(_pickup_labels.begin());
+    }
     // 新条目出现在队列末尾（最下）
     _layout_pickup_notify();
 }
@@ -1209,6 +1216,10 @@ void GameHUD::_apply_hud_visibility() {
     if (_interact_label) _interact_label->set_visible(_hud_visible && _prompt_showing);
     for (CanvasItem *n : _skill_bar_nodes) {
         if (n) n->set_visible(_hud_visible);
+    }
+    // 拾取提示：随 HUD 显隐（F4 隐藏时一并隐藏，避免残留孤立标签）
+    for (Label *l : _pickup_labels) {
+        if (l) l->set_visible(_hud_visible);
     }
     // 多 Boss 血条：按各自 alive 状态恢复/隐藏
     for (BossBarUi &b : _boss_bars) {

@@ -385,6 +385,9 @@ namespace godot {
 			Vector2 vel = p->get_velocity();
 			vel.x = 0.0f;
 			p->set_velocity(vel);
+			// 入坐时清除饥饿 debuff
+			if (p->get_buffs() && p->get_buffs()->has("buff_hunger"))
+				p->get_buffs()->remove("buff_hunger");
 			SignalBus *bus = SignalBus::get_singleton();
 			if (bus) {
 				double jlz = p->get_dongtian_meditate_mult();
@@ -392,7 +395,7 @@ namespace godot {
 					LOC(" · 聚灵阵×") + String::num(jlz, 2) : String();
 				bus->emit_signal("interaction_prompt",
 					LOC("打坐中 · 修为+") + String::num(p->get_meditate_rate(), 1) +
-					LOC("/s") + jlz_text + LOC(" · 灵力回复×3（移动/受击收功）"), true);
+					LOC("/s") + jlz_text + LOC(" · 疗伤 · 灵力回复×5（移动/受击收功）"), true);
 			}
 		}
 		void exit(Player *p) override {
@@ -427,12 +430,37 @@ namespace godot {
 				// 灵力回复 ×3（基础 tick 在 _physics_process 已 ×1，这里补 ×2）
 				c->tick_mana_regen(delta * 2.0);
 
+				// 疗伤：每秒恢复 5% HP + 5% 饱食度 + 5% 法力，满血/满蓝后额外加速灵力回复
+				float hp_regen = p->get_max_health() * 0.05f * float(delta);
+				if (hp_regen > 0.0f) {
+					p->current_health = Math::min(p->max_health, p->current_health + hp_regen);
+				}
+				// 法力恢复（打坐强化：每秒 5% 上限，叠加在回复×3之上）
+				double mana_regen = c->get_max_mana() * 0.05 * delta;
+				if (mana_regen > 0.0) {
+					c->restore_mana(mana_regen);
+				}
+				// 饱食度恢复（每秒 5/s，1s 满）
+				if (p->get_fullness() < p->get_max_fullness()) {
+					p->set_fullness(p->get_fullness() + 5.0f * float(delta));
+				}
+				// 血蓝都满时额外加速灵力回复（×2 叠加，即总 ×5）
+				if (p->current_health >= p->max_health && c->get_mana() >= c->get_max_mana() * 0.999) {
+					c->tick_mana_regen(delta * 2.0);
+				}
+
+				// 每帧发射信号让 HUD 刷新
+				SignalBus *bus = SignalBus::get_singleton();
+				if (bus) {
+					bus->emit_signal("player_health_changed", p->current_health, p->max_health);
+					bus->emit_signal("mana_changed", c->get_mana(), c->get_max_mana());
+				}
+
 				// 修为封顶（或 F5 调试无门槛）→ 入定 1s 后自动请求机缘突破
 				_sit_time += delta;
 				if (!_bt_fired && _sit_time >= 1.0 &&
 					(c->is_free_breakthrough() || (!c->is_max_realm() && c->get_realm_progress() >= 1.0))) {
 					_bt_fired = true;
-					SignalBus *bus = SignalBus::get_singleton();
 					if (bus) {
 						bus->emit_signal("breakthrough_requested");
 					}

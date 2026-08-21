@@ -388,15 +388,6 @@ void InventoryPanel::_build_equipment_section() {
 }
 
 void InventoryPanel::_build_item_list() {
-	// Header
-	_inv_header = memnew(Label);
-	_inv_header->set_name("InvHeader");
-	_inv_header->set_position(Vector2(16, ITEM_LIST_Y - 16));
-	_inv_header->add_theme_font_size_override("font_size", FONT_SZ_TITLE);
-	_inv_header->add_theme_color_override("font_color", Color(1.0f, 0.85f, 0.3f, 1));
-	_inv_header->set_text(LOC("物品"));
-	add_child(_inv_header);
-
 	// 统一格子列表：6 列 × 6 行窗口（480×270 内 75×22 格；底行留说明区）
 	_grid = memnew(GridList);
 	_grid->set_name("ItemGrid");
@@ -406,11 +397,14 @@ void InventoryPanel::_build_item_list() {
 	_grid->set_columns(6);
 	_grid->set_cell_size(Vector2(75, 22));
 
-	// 类型筛选行（物品标题右侧）：[全部] 消耗品 材料 装备 关键物品，[活动项] 括起
-	_filter_label = memnew(Label);
-	_filter_label->set_position(Vector2(50, 56));
-	_filter_label->add_theme_font_size_override("font_size", 11);
-	add_child(_filter_label);
+	// 类型筛选行（格子列表上方）：逐项标签，同图鉴分类行——非焦点仅高亮色，焦点时切换对象括起
+	for (int i = 0; i < FILTER_COUNT; i++) {
+		Label *fl = memnew(Label);
+		fl->set_name("FilterLabel" + String::num_int64(i));
+		fl->add_theme_font_size_override("font_size", FONT_SZ_TITLE);
+		add_child(fl);
+		_filter_buttons[i] = fl;
+	}
 	_update_filter_label();
 
 	// 选中项操作提示（网格下方一行）
@@ -454,7 +448,7 @@ void InventoryPanel::_build_close_hint() {
 	_close_hint->set_position(Vector2(350, START_Y));
 	_close_hint->add_theme_font_size_override("font_size", FONT_SZ);
 	_close_hint->add_theme_color_override("font_color", Color(0.5f, 0.5f, 0.5f, 1));
-	_close_hint->set_text(LOC("[I/ESC] 关闭"));
+	_close_hint->set_text(LOC("[ESC] 关闭"));
 	add_child(_close_hint);
 }
 
@@ -464,26 +458,31 @@ void InventoryPanel::_on_language_changed(const String &p_locale) {
 	for (int i = 0; i < 3; i++) {
 		if (_equip_labels[i]) _equip_labels[i]->set_text(LOC(EQUIP_SLOT_NAMES[i]) + ":");
 	}
-	if (_inv_header) _inv_header->set_text(LOC("物品"));
-	if (_close_hint) _close_hint->set_text(LOC("[I/ESC] 关闭"));
+	if (_close_hint) _close_hint->set_text(LOC("[ESC] 关闭"));
 	// Refresh dynamic content (item names, stats, filter, etc.)
 	refresh();
 }
 
 void InventoryPanel::_update_filter_label() {
-	if (!_filter_label)
-		return;
-	String txt;
-	for (int i = 0; i < FILTER_COUNT; i++) {
-		if (i > 0)
-			txt += " ";
-		String name = LOC(FILTER_NAMES[i]);
-		txt += (i == _filter) ? "[" + name + "]" : name;
+		// 逐项渲染：非焦点时选中项仅高亮色；焦点（切换中）时选中项括起中括号
+		float x = 16.0f;
+		for (int i = 0; i < FILTER_COUNT; i++) {
+			if (!_filter_buttons[i]) continue;
+			String name = LOC(FILTER_NAMES[i]);
+			if (_filtering && i == _filter) {
+				_filter_buttons[i]->set_text(LOC("[") + name + LOC("]"));
+				_filter_buttons[i]->add_theme_color_override("font_color", Color(1.0f, 0.85f, 0.35f, 1.0f));
+			} else if (!_filtering && i == _filter) {
+				_filter_buttons[i]->set_text(name);
+				_filter_buttons[i]->add_theme_color_override("font_color", Color(1.0f, 0.9f, 0.5f, 1.0f));
+			} else {
+				_filter_buttons[i]->set_text(name);
+				_filter_buttons[i]->add_theme_color_override("font_color", Color(0.72f, 0.72f, 0.72f, 1.0f));
+			}
+			_filter_buttons[i]->set_position(Vector2(x, ITEM_LIST_Y - 16));
+			x += _filter_buttons[i]->get_minimum_size().x + 14.0f;
+		}
 	}
-	_filter_label->set_text(txt);
-	_filter_label->add_theme_color_override("font_color",
-			_filtering ? Color(1.0f, 0.85f, 0.35f, 1.0f) : Color(0.72f, 0.72f, 0.72f, 1.0f));
-}
 
 bool InventoryPanel::_filter_matches(const Item *p_def) const {
 	if (_filter == 0)

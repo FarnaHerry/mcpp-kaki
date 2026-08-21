@@ -66,7 +66,7 @@ func _process(delta) -> bool:
 			Input.action_press("menu") # 打开 GameMenu（默认背包页），按住一帧
 		2:
 			Input.action_release("menu")
-			_check(_has_label("[全部]"), "初始筛选=全部")
+			_check(_has_label("全部"), "初始筛选=全部")
 			_check(_grid_count() >= 4, "全部：4 槽不同类物品全可见")
 			_check(_grid_has("回春丹"), "全部：回春丹可见")
 			_check(_grid_has("灵石"), "全部：灵石可见")
@@ -91,7 +91,7 @@ func _process(delta) -> bool:
 		6:
 			Input.action_release("down")
 			_check(not _has_label("筛选类型"), "返回网格（筛选说明消失）")
-			_check(_has_label("[材料]"), "筛选保持=材料")
+			_check(_has_label("材料"), "筛选保持=材料（无括号，仅高亮）")
 			Input.action_press("menu")
 		7:
 			_next = _t + 0.2

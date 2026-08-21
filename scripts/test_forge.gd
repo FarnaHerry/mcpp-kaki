@@ -38,11 +38,12 @@ func _hl(s: String) -> bool:
 
 func _cnt(id: String) -> int:
 	if _inv == null: return 0
+	var total := 0
 	for i in range(_inv.call("get_capacity")):
 		var sd = _inv.call("get_slot", i)
 		if not sd.is_empty() and String(sd["id"]) == id:
-			return int(sd["quantity"])
-	return 0
+			total += int(sd["quantity"])
+	return total
 
 func _pk(code: int):
 	var ev := InputEventKey.new()
@@ -80,6 +81,12 @@ func _process(delta) -> bool:
 			_inv.call("add_item", "zhi_xue_cao", 20)
 			_inv.call("add_item", "ju_ling_cao", 20)
 			_inv.call("add_item", "xuan_bing_sui", 5)
+			_inv.call("add_item", "iron_sword", 1)
+			_inv.call("add_item", "bing_xin_lian", 2)
+			_inv.call("add_item", "chi_yan_hua", 2)
+			_inv.call("add_item", "long_gu", 2)
+			_inv.call("add_item", "xuan_bing_shen", 3)
+			_inv.call("add_item", "jin_gang_teng", 3)
 			if _cs: _cs.call("add", 1, 20)
 			_press_action("menu")
 		2:
@@ -112,55 +119,81 @@ func _process(delta) -> bool:
 			_check(_hl("法宝铸造"), "侧边栏子页：法宝铸造")
 			_check(_hl("装备强化"), "侧边栏子页：装备强化")
 			_check(_hl("回春丹"), "炼丹子页：回春丹配方")
-			# 侧边栏切到装备铸造（→）
-			_press_action("right")
+			# ↑ 进侧边栏焦点模式
+			_press_action("up")
 		10:
 			_next = _t + 0.25
-			_release_action("right")
+			_release_action("up")
+			# 现在在侧边栏焦点：↓ 切换到装备铸造
+			_press_action("down")
+		11:
+			_next = _t + 0.25
+			_release_action("down")
+			_check(_hl("装备铸造"), "侧边栏焦点：装备铸造")
+			# X 确认 → 切到装备铸造子页
+			_press_action("interact")
+		12:
+			_next = _t + 0.25
+			_release_action("interact")
 			_check(_hl("铁剑"), "装备铸造子页：铁剑")
 			_press_action("interact")
-		11:
+		13:
 			_next = _t + 0.25
 			_release_action("interact")
 			_check(_hl("铸造成功"), "装备铸造成功")
-			_check(_cnt("iron_sword") >= 1, "铁剑已入背包")
+			_check(_cnt("iron_sword") >= 2, "铁剑已入背包（铸造1+原有1=2）")
 			_check(_cnt("zhi_xue_cao") == 17, "止血草扣3（余17）")
-			_inv.call("add_item", "iron_sword", 1)
-			# 侧边栏切到法宝铸造（→）
-			_press_action("right")
-		12:
+			# ↑ 到顶进侧边栏 → 切法宝铸造
+			_press_action("up")
+		14:
 			_next = _t + 0.25
-			_release_action("right")
+			_release_action("up")
+			_press_action("down")
+		15:
+			_next = _t + 0.25
+			_release_action("down")
+			_press_action("interact")
+		16:
+			_next = _t + 0.25
+			_release_action("interact")
 			_check(_hl("飞剑"), "法宝铸造子页：飞剑")
 			_press_action("interact")
-		13:
+		17:
 			_next = _t + 0.25
 			_release_action("interact")
 			var owned = _arts != null and _arts.call("is_owned", "fei_jian")
 			_check(owned, "飞剑已习得")
 			_check(_cnt("iron_sword") >= 1, "铁剑消耗1把后仍≥1")
-			# 侧边栏切到装备强化（→）
-			_press_action("right")
-		14:
+			# ↑ 到顶进侧边栏 → 切装备强化
+			_press_action("up")
+		18:
 			_next = _t + 0.25
-			_release_action("right")
+			_release_action("up")
+			_press_action("down")
+		19:
+			_next = _t + 0.25
+			_release_action("down")
+			_press_action("interact")
+		20:
+			_next = _t + 0.25
+			_release_action("interact")
 			_check(_hl("装备强化"), "装备强化子页标题")
 			_check(_hl("铁剑"), "铁剑在强化列表")
 			_press_action("interact")
-		15:
+		21:
 			_next = _t + 0.25
 			_release_action("interact")
 			_check(_hl("强化成功"), "装备强化成功")
 			_check(_inv.call("get_item_extra_atk", "iron_sword") == 1, "铁剑攻+1")
 			_check(_inv.call("get_item_extra_def", "iron_sword") == 1, "铁剑防+1")
 			_press_action("interact")
-		16:
+		22:
 			_next = _t + 0.25
 			_release_action("interact")
 			_check(_inv.call("get_item_extra_atk", "iron_sword") == 2, "二次强化攻+2")
 			_check(_inv.call("get_item_extra_def", "iron_sword") == 2, "二次强化防+2")
 			_press_action("menu")
-		17:
+		23:
 			_next = _t + 0.25
 			_release_action("menu")
 			_check(_gm != null, "GameManager")
@@ -170,7 +203,7 @@ func _process(delta) -> bool:
 				_find_refs()
 				_check(_inv.call("get_item_extra_atk", "iron_sword") == 2, "读档后攻+2 保持")
 				_check(_inv.call("get_item_extra_def", "iron_sword") == 2, "读档后防+2 保持")
-		18:
+		24:
 			_next = _t + 0.35
 			if _fail == 0:
 				print("[TEST] ALL PASS")

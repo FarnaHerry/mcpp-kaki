@@ -122,26 +122,34 @@ func _process(delta) -> bool:
 			_check(found, "forge page title exists in GameMenu")
 			_check(_has_label("回春丹"), "丹方卡片：回春丹（首卡）")
 			_check(_has_label("回血 30"), "初始选中回春丹（详情行效果）")
-			# 侧边栏 ←/→ 切换子页；子页内 ↑/↓ 行移（no left/right column nav）
-			# 行首钳制：按 up 仍为首行
+			# 首行 ↑ 进侧边栏焦点模式（新行为）
 			Input.action_press("up")
 		19:
-			_check(_has_label("回血 30"), "行首上移钳制（仍回春丹）")
+			_next = _t + 0.3
+			_check(_has_label("回血 30"), "行首上移进侧边栏（仍回春丹）")
 			Input.action_release("up")
-			Input.action_press("down") # → 赤焰丹（第2行同列1，index 3）
+			Input.action_press("interact") # X 确认退出侧边栏
 		20:
-			_check(_has_label("赤焰丹"), "下移到赤焰丹（行移）")
-			Input.action_release("down")
-			Input.action_press("down") # → 大还丹（第3行同列1，index 6）
+			_next = _t + 0.3
+			Input.action_release("interact")
+			_check(_has_label("回血 30"), "确认后仍回春丹选中")
+			Input.action_press("down") # → 赤焰丹（第2行同列1，index 3）
 		21:
-			_check(_has_label("大还丹"), "下移到大还丹")
+			_next = _t + 0.3
 			Input.action_release("down")
-			Input.action_press("up") # → 赤焰丹
+			_check(_has_label("赤焰丹"), "下移到赤焰丹（行移）")
+			Input.action_press("down") # → 大还丹（第3行同列1，index 6）
 		22:
-			_check(_has_label("赤焰丹"), "上移到赤焰丹")
+			_next = _t + 0.3
+			Input.action_release("down")
+			_check(_has_label("大还丹"), "下移到大还丹")
+			Input.action_press("up") # → 赤焰丹
+		23:
+			_next = _t + 0.3
 			Input.action_release("up")
+			_check(_has_label("赤焰丹"), "上移到赤焰丹")
 			Input.action_press("menu")
-		25:
+		24:
 			_next = _t + 0.2
 			Input.action_release("menu")
 			if _fail == 0:
