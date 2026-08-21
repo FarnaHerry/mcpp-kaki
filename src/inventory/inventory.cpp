@@ -24,6 +24,11 @@ void Inventory::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_slot", "idx"), &Inventory::get_slot);
 	ClassDB::bind_method(D_METHOD("clear"), &Inventory::clear);
 	ClassDB::bind_method(D_METHOD("set_slot", "idx", "id", "qty"), &Inventory::set_slot);
+	ClassDB::bind_method(D_METHOD("get_item_extra_atk", "id"), &Inventory::get_item_extra_atk);
+	ClassDB::bind_method(D_METHOD("get_item_extra_def", "id"), &Inventory::get_item_extra_def);
+	ClassDB::bind_method(D_METHOD("upgrade_item", "id", "atk_inc", "def_inc"), &Inventory::upgrade_item);
+	ClassDB::bind_method(D_METHOD("save_extra_bonuses"), &Inventory::save_extra_bonuses);
+	ClassDB::bind_method(D_METHOD("load_extra_bonuses", "data"), &Inventory::load_extra_bonuses);
 	ClassDB::bind_method(D_METHOD("unlock_unlimited"), &Inventory::unlock_unlimited);
 	ClassDB::bind_method(D_METHOD("is_unlimited"), &Inventory::is_unlimited);
 	ClassDB::bind_method(D_METHOD("get_capacity"), &Inventory::get_capacity);
@@ -203,6 +208,59 @@ int Inventory::_find_empty_slot() const {
 
 void Inventory::_emit_changed() {
 	emit_signal("inventory_changed");
+}
+
+int Inventory::get_item_extra_atk(const StringName &p_id) const {
+	auto it = _extra_bonuses.find(p_id);
+	if (it != _extra_bonuses.end()) return it->value.atk;
+	return 0;
+}
+
+int Inventory::get_item_extra_def(const StringName &p_id) const {
+	auto it = _extra_bonuses.find(p_id);
+	if (it != _extra_bonuses.end()) return it->value.def;
+	return 0;
+}
+
+bool Inventory::upgrade_item(const StringName &p_id, int p_atk_inc, int p_def_inc) {
+	if (!has_item(p_id)) return false;
+	const Item *def = ItemDatabase::get_singleton()->get_item(p_id);
+	if (!def || def->type != Item::EQUIPMENT) return false;
+	auto &bonus = _extra_bonuses[p_id];
+	bonus.atk += p_atk_inc;
+	bonus.def += p_def_inc;
+	// 上限 +10
+	if (bonus.atk > 10) bonus.atk = 10;
+	if (bonus.def > 10) bonus.def = 10;
+	_emit_changed();
+	return true;
+}
+
+Dictionary Inventory::save_extra_bonuses() const {
+	Dictionary d;
+	for (const auto &kv : _extra_bonuses) {
+		Dictionary entry;
+		entry["atk"] = kv.value.atk;
+		entry["def"] = kv.value.def;
+		d[String(kv.key)] = entry;
+	}
+	return d;
+}
+
+void Inventory::load_extra_bonuses(const Dictionary &p_data) {
+	_extra_bonuses.clear();
+	Array keys = p_data.keys();
+	for (int i = 0; i < keys.size(); i++) {
+		String key = String(keys[i]);
+		Dictionary entry = p_data.get(keys[i], Dictionary());
+		if (!entry.is_empty()) {
+			StringName id = StringName(key);
+			ExtraBonus b;
+			b.atk = int(entry.get("atk", 0));
+			b.def = int(entry.get("def", 0));
+			_extra_bonuses[id] = b;
+		}
+	}
 }
 
 } // namespace godot
