@@ -875,9 +875,9 @@ namespace godot {
 		};
 		for (int i = 0; i < 12; i++) {
 			if (!input->is_action_just_pressed(SLOT_ACTIONS[i])) continue;
-			if (_skill_page == 1 && i < 6) {
-				// 法宝页：A~H = 法宝槽 0..5（T/Y 神通/仙法两页通用）
-				if (_artifacts) _artifacts->activate_slot(i);
+			if (_skill_page == 1 && i >= 6) {
+				// 法宝页：A~H = 法宝槽 0..5（下行 ASDFGH，6 槽对应 6 个法宝快捷键）
+				if (_artifacts) _artifacts->activate_slot(i - 6);
 			} else {
 				if (_skills) _skills->cast_slot(i);
 			}
