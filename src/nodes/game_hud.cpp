@@ -445,6 +445,7 @@ void GameHUD::_create_skill_bar() {
 
 void GameHUD::_create_pickup_notify() {
     _pickup_color = Color(1.0f, 0.92f, 0.55f, 1.0f);
+    _pickup_scroll_t = 1.5f; // 首条保留 1.5s 再开始滚动
 }
 
 Label *GameHUD::_spawn_pickup_label(const String &p_text) {
@@ -454,8 +455,9 @@ Label *GameHUD::_spawn_pickup_label(const String &p_text) {
     l->add_theme_font_size_override("font_size", FONT_SIZE_MD);
     l->add_theme_color_override("font_color", _pickup_color);
     l->add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9f));
-    l->add_theme_constant_override("outline_size", 3);
+    l->add_theme_constant_override("outline_size", 2);
     l->set_horizontal_alignment(HorizontalAlignment::HORIZONTAL_ALIGNMENT_RIGHT);
+    l->set_visible(true); // 创建即显示（此前滑入逻辑有遗漏：新标签未 set_visible(true) 同步）
     add_child(l);
     _pickup_labels.push_back(l);
     return l;
@@ -483,15 +485,7 @@ void GameHUD::_on_item_picked_up(const String &p_item_id, int p_qty) {
     else
         text = LOC("获得 ") + name;
     Label *l = _spawn_pickup_label(text);
-    l->set_visible(true);
-    // 新条目滑入（从下方 12px 进场）
-    l->set_position(Vector2(_vw - 200.0f, _vh * 0.5f - 60.0f + (float)(_pickup_labels.size() - 1) * 18.0f - _pickup_scroll + 12.0f));
-    // 最多保留 6 条，多了从顶部挤出
-    while ((int)_pickup_labels.size() > 6) {
-        Label *old = _pickup_labels.front();
-        old->queue_free();
-        _pickup_labels.erase(_pickup_labels.begin());
-    }
+    // 新条目出现在队列末尾（最下）
     _layout_pickup_notify();
 }
 
@@ -582,52 +576,50 @@ void GameHUD::_layout_right_side() {
     }
 }
 
-// 左下角：数值条竖排 + 经验圆（最上方），贴左下角从上往下堆叠。
+// 左下角：经验圆（最上）+ 数值条竖排，贴左下角从下往上堆叠。
 // 无文字，仅纯色条。法则条化神解锁才显示。
 void GameHUD::_layout_left_column() {
     const float bx = BAR_X; // 贴左
     const float RING_S = 32.0f;
-    // 从上往下堆叠：经验圆最上，境界最下；顶部起点 = 视口底部往上一共 7 行 + 圆
-    float y = RING_S + 4.0f; // 顶部预留圆高度
-    // 经验圆（最上）
-    if (_xp_bg) {
-        _xp_bg->set_position(Vector2(bx, 4.0f));
-        _xp_fill->set_position(Vector2(bx, 4.0f + RING_S - _xp_fill->get_size().y));
-        _xp_label->set_position(Vector2(bx + 2, 4.0f + 8.0f));
-    }
-    y = 4.0f + RING_S + 4.0f; // 圆下方起点
-    // 生命
-    if (_health_bg) {
-        _health_bg->set_position(Vector2(bx, y));
-        _health_fill->set_position(Vector2(bx, y));
-    }
-    y += ROW_STEP;
-    // 灵力
-    if (_energy_bg) {
-        _energy_bg->set_position(Vector2(bx, y));
-        _energy_fill->set_position(Vector2(bx, y));
-    }
-    y += ROW_STEP;
-    // 法则（化神解锁才显示）
-    if (_law_shown && _law_bg) {
-        _law_bg->set_position(Vector2(bx, y));
-        _law_fill->set_position(Vector2(bx, y));
-        y += ROW_STEP;
-    }
-    // 修为已转为圆（无条）
-    y -= ROW_STEP; // 修为行不再占位（圆已含修为）
-    // buff
-    if (_buff_label) _buff_label->set_position(Vector2(bx, y + 4.0f));
-    y += ROW_STEP;
+    // 从下往上计算：先算境界在最下，再往上堆到生命，最后经验圆在最上
+    float y = _vh - 4.0f - BAR_HEIGHT; // 境界行（最下）
+    // 境界（最下）
+    if (_realm_label) _realm_label->set_position(Vector2(bx, y));
+    if (_jiyuan_label) _jiyuan_label->set_position(Vector2(bx + BAR_WIDTH + 8.0f, y + 4.0f));
+    y -= ROW_STEP;
     // 饱食
     if (_fullness_bg) {
         _fullness_bg->set_position(Vector2(bx, y));
         _fullness_fill->set_position(Vector2(bx, y));
     }
-    y += ROW_STEP;
-    // 境界（最下）
-    if (_realm_label) _realm_label->set_position(Vector2(bx, y));
-    if (_jiyuan_label) _jiyuan_label->set_position(Vector2(bx + BAR_WIDTH + 8.0f, y + 4.0f));
+    y -= ROW_STEP;
+    // buff
+    if (_buff_label) _buff_label->set_position(Vector2(bx, y + 4.0f));
+    y -= ROW_STEP;
+    // 法则（化神解锁才显示）
+    if (_law_shown && _law_bg) {
+        _law_bg->set_position(Vector2(bx, y));
+        _law_fill->set_position(Vector2(bx, y));
+        y -= ROW_STEP;
+    }
+    // 灵力
+    if (_energy_bg) {
+        _energy_bg->set_position(Vector2(bx, y));
+        _energy_fill->set_position(Vector2(bx, y));
+    }
+    y -= ROW_STEP;
+    // 生命
+    if (_health_bg) {
+        _health_bg->set_position(Vector2(bx, y));
+        _health_fill->set_position(Vector2(bx, y));
+    }
+    // 经验圆
+    y -= RING_S + 4.0f;
+    if (_xp_bg) {
+        _xp_bg->set_position(Vector2(bx, y));
+        _xp_fill->set_position(Vector2(bx, y + RING_S - _xp_fill->get_size().y));
+        _xp_label->set_position(Vector2(bx + 2, y + 8.0f));
+    }
 }
 
 // 左下角：消耗品栏（数字快捷栏 1~6，放在状态栏上方）
