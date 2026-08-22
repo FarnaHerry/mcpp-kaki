@@ -119,13 +119,13 @@ func _process(delta) -> bool:
 			var sp2: Node2D = b.get_node_or_null("Polygon2D")
 			_check(sp2 != null and _feq(sp2.scale.x, 1.3), "首领 sprite 放大 ×1.3（实际 %.2f）" % (sp2.scale.x if sp2 else -1.0))
 
-			# ④ Boss 拒绝精英化：赤瞳魔狼（30×5=150）
+			# ④ Boss 拒绝精英化：赤瞳魔狼（30×2.0×5=300，realm2）
 			var boss = WC.spawn_enemy_by_id(_scene, Vector2(100, 195), "chi_tong_mo_lang", "T_BossRefuse")
 			_mobs["boss"] = boss
-			_check(bool(boss.get("is_boss")) and _feq(_f(boss, "max_health"), 150.0), "Boss 生成血 150")
+			_check(bool(boss.get("is_boss")) and _feq(_f(boss, "max_health"), 300.0), "Boss 生成血 300")
 			boss.call("make_elite", 1, "kuang_bao")
 			_check(int(boss.get("elite_tier")) == 0, "Boss 拒绝精英化 tier 仍 0")
-			_check(_feq(_f(boss, "max_health"), 150.0), "Boss 血不变 150")
+			_check(_feq(_f(boss, "max_health"), 300.0), "Boss 血不变 300")
 			_check(not String(boss.get("display_name")).contains("精英"), "Boss 名不加前缀")
 
 			# ⑤ elite_chance 数据读取（zhu_yao 0.08 / sha_guai 0.10 / bing_jia_yuan 0.12 / Boss 0）

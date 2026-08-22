@@ -134,12 +134,13 @@ func _process(delta) -> bool:
 			var defb = float(p.call("get_equip_bonus_defense"))
 			var cult = p.call("get_cultivation")
 			var defmult = float(cult.call("get_defense_multiplier"))
-			# 物理：防御平减
+			# 物理：比例减伤 150/(150+防御)
 			p.call("set_current_health", maxh)
 			p.call("take_damage", 50.0, null)
 			var loss_phys = maxh - float(p.call("get_current_health"))
-			_check(abs(loss_phys - maxf(50.0 - defb * defmult, 1.0)) < 0.6,
-				"物理结算被防御减免（50→%.1f）" % loss_phys)
+			var def_total = defb * defmult
+			_check(abs(loss_phys - 50.0 * (150.0 / (150.0 + def_total))) < 0.6,
+				"物理比例减伤（50→%.1f，防%.1f）" % [loss_phys, def_total])
 			# 元素（雷=ELEM_LEI 6）：防御不可减免
 			p.call("set_current_health", maxh)
 			p.call("take_damage_typed", 50.0, 2, 6, null)

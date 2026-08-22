@@ -35,24 +35,24 @@ namespace godot {
 	// 各境基础攻防速倍率（草案数值，后续平衡）
 	static const RealmStats REALM_STATS[CultivationSystem::REALM_COUNT] = {
 		{ "凡人", 1.0f, 1.0f, 1.0f },
-		{ "炼气", 1.3f, 1.2f, 1.1f },
-		{ "筑基", 1.7f, 1.5f, 1.2f },
-		{ "金丹", 2.3f, 2.0f, 1.35f },
-		{ "元婴", 3.2f, 2.8f, 1.5f },
-		{ "化神", 4.5f, 4.0f, 1.7f },
-		{ "炼虚", 6.0f, 5.5f, 1.9f },
-		{ "合体", 8.5f, 8.0f, 2.1f },
-		{ "大乘", 12.0f, 11.0f, 2.4f },
-		{ "渡劫", 14.0f, 12.0f, 2.5f },
-		{ "真仙", 20.0f, 18.0f, 2.8f },
-		{ "金仙", 32.0f, 30.0f, 3.4f },  // 平衡：42/38 → 32/30，消除 2.1× 跳变
-		{ "天尊", 60.0f, 50.0f, 4.5f },  // 平衡：100/100 → 60/50，HP 压回四位数
+		{ "炼气", 2.0f, 1.5f, 1.1f },
+		{ "筑基", 3.5f, 2.5f, 1.2f },
+		{ "金丹", 6.0f, 4.0f, 1.4f },
+		{ "元婴", 10.0f, 7.0f, 1.6f },
+		{ "化神", 16.0f, 11.0f, 1.9f },
+		{ "炼虚", 25.0f, 17.0f, 2.2f },
+		{ "合体", 40.0f, 27.0f, 2.6f },
+		{ "大乘", 65.0f, 42.0f, 3.0f },
+		{ "渡劫", 90.0f, 60.0f, 3.5f },
+		{ "真仙", 140.0f, 90.0f, 4.5f },
+		{ "金仙", 220.0f, 150.0f, 6.0f },
+		{ "天尊", 350.0f, 250.0f, 8.0f },
 	};
 
 	// 混元一气（玩家上限）固定倍率
-	static constexpr float HUNYUAN_DMG = 70.0f;
-	static constexpr float HUNYUAN_DEF = 65.0f;
-	static constexpr float HUNYUAN_SPD = 4.5f;
+	static constexpr float HUNYUAN_DMG = 400.0f;
+	static constexpr float HUNYUAN_DEF = 300.0f;
+	static constexpr float HUNYUAN_SPD = 8.0f;
 
 	// 期数加成：中期×1.05 后期×1.10 大圆满×1.20
 	static const float STAGE_FACTOR[4] = { 1.0f, 1.05f, 1.10f, 1.20f };
@@ -307,10 +307,10 @@ namespace godot {
 		double base = 0.0;
 		switch (realm) {
 			case MORTAL:          base = 0.0; break;
-			case TRUE_IMMORTAL:   base = 1000.0; break;
-			case GOLDEN_IMMORTAL: base = 2000.0; break;
-			case TIAN_ZUN:        base = 9999.0; break;
-			default:              base = double(realm) * 50.0; break;
+			case TRUE_IMMORTAL:   base = 3000.0; break;
+			case GOLDEN_IMMORTAL: base = 6000.0; break;
+			case TIAN_ZUN:        base = 20000.0; break;
+			default:              base = double(realm) * 100.0; break;
 		}
 		return base * _mana_max_mult * get_path_spell_mult(); // 功法（练气）×元神分叉 乘区
 	}
@@ -709,7 +709,7 @@ namespace godot {
 	}
 
 	double CultivationSystem::get_max_health_for_realm(int realm) const {
-		return 100.0 * get_defense_multiplier_for_realm(realm);
+		return 200.0 * get_defense_multiplier_for_realm(realm);
 	}
 
 	double CultivationSystem::get_max_mana_for_realm(int realm) const {
@@ -719,10 +719,10 @@ namespace godot {
 		double base = 0.0;
 		switch (realm) {
 			case CultivationSystem::MORTAL:          base = 0.0; break;
-			case CultivationSystem::TRUE_IMMORTAL:   base = 1000.0; break;
-			case CultivationSystem::GOLDEN_IMMORTAL: base = 2000.0; break;
-			case CultivationSystem::TIAN_ZUN:        base = 9999.0; break;
-			default:                                 base = double(realm) * 50.0; break;
+			case CultivationSystem::TRUE_IMMORTAL:   base = 3000.0; break;
+			case CultivationSystem::GOLDEN_IMMORTAL: base = 6000.0; break;
+			case CultivationSystem::TIAN_ZUN:        base = 20000.0; break;
+			default:                                 base = double(realm) * 100.0; break;
 		}
 		return base * _mana_max_mult * get_path_spell_mult(); // 功法（练气）×元神分叉 乘区照旧
 	}

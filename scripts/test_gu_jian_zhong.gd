@@ -1,5 +1,5 @@
 # 古剑冢秘境（断崖绝壁深处，Portal 房间模式）：
-# ①物品注册（青锋古剑 地品武器 攻+15）②入口 Portal 在断崖绝壁段(2600~3900) ③↑ 进秘境
+# ①物品注册（青锋古剑 地品武器 攻+25）②入口 Portal 在断崖绝壁段(2600~3900) ③↑ 进秘境
 # ④敌情断言（锈剑傀儡×3+精英×1/剑灵×2/守灵 Boss，realm/精英词缀）⑤击杀守灵 → 必掉青锋古剑 ⑥出秘境
 extends SceneTree
 
@@ -75,12 +75,12 @@ func _process(delta) -> bool:
 
 	match _step:
 		0:
-			# ①物品注册：青锋古剑（地品武器 攻+15）
+			# ①物品注册：青锋古剑（地品武器 攻+25）
 			var info = _db().call("get_item_info", "qing_feng_gu_jian")
 			_check(not info.is_empty(), "物品注册: qing_feng_gu_jian")
 			_check(int(info.get("type", -1)) == 3, "青锋古剑=装备")
 			_check(int(info.get("grade", -1)) == 2, "青锋古剑=地品")
-			# 攻+15 实测（凡人期乘区=1.0，避免境界倍率摊入；get_item_info 不含 attack_bonus，走装备管线）
+			# 攻+25 实测（凡人期乘区=1.0，避免境界倍率摊入；get_item_info 不含 attack_bonus，走装备管线）
 			var p0 = _player()
 			var atk0 = float(p0.call("get_effective_attack"))
 			var inv0 = p0.call("get_inventory")
@@ -93,7 +93,7 @@ func _process(delta) -> bool:
 					break
 			_check(equipped, "装备青锋古剑")
 			var atk1 = float(p0.call("get_effective_attack"))
-			_check(abs(atk1 - atk0 - 15.0) < 0.01, "青锋古剑攻+15（%.0f→%.0f）" % [atk0, atk1])
+			_check(abs(atk1 - atk0 - 25.0) < 0.01, "青锋古剑攻+25（%.0f→%.0f）" % [atk0, atk1])
 			# 金丹（血厚防秘境怪围殴致死，干扰断言）
 			_breakthrough_to(3)
 			# ②入口 Portal 在断崖绝壁段

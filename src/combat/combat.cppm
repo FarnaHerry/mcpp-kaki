@@ -77,7 +77,8 @@ public:
 		float dmg = p_info.base_amount;
 		switch (p_info.category) {
 			case DMG_PHYSICAL:
-				dmg -= p_def.defense; // 平减（沿用现有模型）
+				// 比例减伤（session 数值重平衡）：def=150 → 50%、600 → 80%、1350 → 90%，永不免疫
+				dmg *= 150.0f / (150.0f + p_def.defense);
 				break;
 			case DMG_SPELL:
 				dmg *= 1.0f - CLAMP(p_def.spell_resist, 0.0f, SPELL_RESIST_CAP);

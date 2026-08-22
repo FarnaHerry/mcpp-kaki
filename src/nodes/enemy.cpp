@@ -486,13 +486,15 @@ namespace godot {
 		_def_color = def->color;
 		_def_size = def->size;
 		// 先应用普通属性（def.hp 是基础血，未 ×5）……
-		max_health = def->hp;
-		current_health = def->hp;
+		// 数值重平衡：敌人攻/血随境界缩放（realm0=1.0× → realm11=6.5×），Boss ×5 在其后
+		const float realm_scale = 1.0f + 0.5f * float(def->realm);
+		max_health = def->hp * realm_scale;
+		current_health = def->hp * realm_scale;
 		move_speed = def->speed;
 		detection_radius = def->detection;
 		attack_range = def->attack_range;
 		attack_cooldown = def->attack_cooldown;
-		attack_damage = def->atk;
+		attack_damage = def->atk * realm_scale;
 		preferred_distance = def->preferred;
 		realm = def->realm;
 		is_ranged = def->ranged;

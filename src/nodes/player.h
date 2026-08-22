@@ -44,7 +44,7 @@ class Player : public CharacterBody2D {
 		// Combat
 		float max_health = 100.0f;
 		float current_health = 100.0f;
-		float attack_damage = 10.0f;
+		float attack_damage = 25.0f;
 
 		// 抗性剖面（DamageCalculator 统一结算；defense 来自装备×境界，见 take_damage）
 		float spell_resist = 0.0f;               // 法术抗性（比例）

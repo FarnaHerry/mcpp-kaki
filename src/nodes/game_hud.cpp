@@ -1285,7 +1285,7 @@ void GameHUD::_refresh_mana_label() {
 void GameHUD::_refresh_xp_label() {
     if (_xp_label) {
         _xp_label->set_text(
-            String::num_int64(int64_t(_xp_progress * 100.0f)) + "%");
+            _xp_prefix + String::num_int64(int64_t(_xp_progress * 100.0f)) + "%");
     }
 }
 

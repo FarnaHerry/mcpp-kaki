@@ -66,11 +66,11 @@ func _process(delta) -> bool:
 			var yc = WC.spawn_enemy_by_id(current_scene, Vector2(80, 210), "xun_hai_ye_cha", "T_YeCha")
 			_check(bool(yc.get("is_ranged")), "夜叉 ranged")
 			_check(_f(yc, "attack_range") == 300.0 and _f(yc, "preferred_distance") == 190.0, "夜叉 range300/pref190")
-			_check(_f(yc, "attack_damage") == 16.0 and _feq(yc, "attack_cooldown", 1.4), "夜叉 atk16/cd1.4")
-			_check(_f(yc, "max_health") == 40.0 and int(yc.get("realm")) == 3, "夜叉 hp40/realm3")
+			_check(_f(yc, "attack_damage") == 40.0 and _feq(yc, "attack_cooldown", 1.4), "夜叉 atk16/cd1.4")
+			_check(_f(yc, "max_health") == 100.0 and int(yc.get("realm")) == 3, "夜叉 hp40/realm3")
 			# 飞行怪：雷鸟
 			var ln = WC.spawn_enemy_by_id(current_scene, Vector2(100, 150), "lei_niao", "T_LeiNiao")
-			_check(bool(ln.get("is_flying")) and _f(ln, "max_health") == 15.0, "雷鸟 flying/hp15")
+			_check(bool(ln.get("is_flying")) and _f(ln, "max_health") == 37.5, "雷鸟 flying/hp15")
 			_next = _t + 0.3
 			_step = 2
 		2:
@@ -78,8 +78,8 @@ func _process(delta) -> bool:
 			var chi = WC.spawn_enemy_by_id(current_scene, Vector2(120, 195), "you_gu_chi_long", "T_ChiLong")
 			_mobs["chi"] = chi
 			_check(bool(chi.get("is_boss")), "螭龙 is_boss")
-			_check(_f(chi, "max_health") == 300.0, "螭龙血 60×5=300（实际 %.0f）" % _f(chi, "max_health"))
-			_check(_f(chi, "current_health") == 300.0, "螭龙满血 300")
+			_check(_f(chi, "max_health") == 900.0, "螭龙血 60×3.0×5=900（实际 %.0f）" % _f(chi, "max_health"))
+			_check(_f(chi, "current_health") == 900.0, "螭龙满血 900")
 			_check(String(chi.call("get_display_name")) == "幽谷螭龙", "display_name 幽谷螭龙")
 			_check(int(chi.get("realm")) == 4, "螭龙 realm 4")
 			_check(String(chi.get("drop_table")) == "you_gu_chi_long", "螭龙 drop_table=you_gu_chi_long")
@@ -89,7 +89,7 @@ func _process(delta) -> bool:
 			late.position = Vector2(140, 210)
 			current_scene.add_child(late) # _ready 跑完（is_boss false，hp1）
 			late.set("enemy_id", "xuan_ming")
-			_check(_f(late, "max_health") == 3000.0, "玄冥入树后 set id 血 600×5=3000（实际 %.0f）" % _f(late, "max_health"))
+			_check(_f(late, "max_health") == 18000.0, "玄冥入树后 set id 血 600×6.0×5=18000（实际 %.0f）" % _f(late, "max_health"))
 			_check(String(late.get("drop_table")) == "xuan_ming", "玄冥 drop_table=xuan_ming")
 			late.queue_free()
 			# 旧场景直摆路径不回归：_ready 前置 is_boss（模拟 .tscn 直摆）
@@ -98,14 +98,14 @@ func _process(delta) -> bool:
 			pre.position = Vector2(160, 210)
 			pre.set("enemy_id", "zhen_shou_jiang") # 未入树：set_is_boss 不补偿
 			current_scene.add_child(pre) # _ready: hp 160 → ×5 = 800
-			_check(_f(pre, "max_health") == 800.0, "镇守将 160×5=800（实际 %.0f）" % _f(pre, "max_health"))
+			_check(_f(pre, "max_health") == 3600.0, "镇守将 160×4.5×5=3600（实际 %.0f）" % _f(pre, "max_health"))
 			_check(String(pre.get("drop_table")) == "zhen_shou_jiang", "镇守将 drop_table=zhen_shou_jiang")
 			pre.queue_free()
 			_next = _t + 0.3
 			_step = 3
 		3:
 			# ④ Boss 五件套表名
-			for pair in [["ju_ling_shen", "巨灵神", 800.0, 11], ["bai_yuan_lao_zu", "白猿老祖", 80.0, 3]]:
+			for pair in [["ju_ling_shen", "巨灵神", 5200.0, 11], ["bai_yuan_lao_zu", "白猿老祖", 200.0, 3]]:
 				var e = ClassDB.instantiate("Enemy")
 				e.set("enemy_id", pair[0])
 				_check(String(e.get("drop_table")) == pair[0], "%s drop_table=%s" % [pair[1], pair[0]])
@@ -114,7 +114,7 @@ func _process(delta) -> bool:
 			# 巨灵神 Boss 血（未入树 set id → 这里直接实例不入树，只验基础值经属性可读）
 			var jl = ClassDB.instantiate("Enemy")
 			jl.set("enemy_id", "ju_ling_shen")
-			_check(_f(jl, "max_health") == 800.0, "巨灵神基础血 800（未入树不×5）")
+			_check(_f(jl, "max_health") == 5200.0, "巨灵神基础血 800×6.5=5200（未入树不×5）")
 			_check(int(jl.get("realm")) == 11, "巨灵神 realm 11")
 			jl.free()
 			# ⑤ 未知 id：保持默认 + def 访问器回退默认
@@ -136,7 +136,7 @@ func _process(delta) -> bool:
 			var chi = current_scene.find_child("Boss_ChiLong", true, false)
 			_check(chi != null, "主图 Boss_ChiLong 已生成")
 			if chi:
-				_check(_f(chi, "max_health") == 300.0, "主图螭龙血 300")
+				_check(_f(chi, "max_health") == 900.0, "主图螭龙血 900")
 				_check(String(chi.call("get_display_name")) == "幽谷螭龙", "主图螭龙名 幽谷螭龙")
 				_check(String(chi.get("drop_table")) == "you_gu_chi_long", "主图螭龙掉落表")
 			for n in ["ZhuYao1", "YaXiao1", "YaGong1", "YanGui1", "GuXiao0", "LeiShou", "GuTu1", "YuanGuai0", "XunHaiYeCha0"]:

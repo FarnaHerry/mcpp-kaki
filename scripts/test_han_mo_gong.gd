@@ -96,7 +96,7 @@ func _process(delta) -> bool:
 					var hg = room.find_child("HanYuanGui%d" % i, true, false)
 					_check(hg != null and int(hg.call("get_realm")) == 9, "寒渊龟%d 在场 realm9" % i)
 					if hg:
-						_check(float(hg.call("get_max_health")) >= 350.0, "寒渊龟血量 >= 350（实际 %.0f）" % float(hg.call("get_max_health")))
+						_check(float(hg.call("get_max_health")) >= 1925.0, "寒渊龟血量 >= 1925（实际 %.0f）" % float(hg.call("get_max_health")))
 						_check(float(hg.call("get_move_speed")) <= 40.0, "寒渊龟低速 <= 40（实际 %.0f）" % float(hg.call("get_move_speed")))
 				var elite = room.find_child("HanMoJiaoElite", true, false)
 				_check(elite != null, "精英墨鲛守殿")
@@ -108,7 +108,7 @@ func _process(delta) -> bool:
 				if boss:
 					_check(bool(boss.get("is_boss")), "寒渊君 is_boss")
 					_check(int(boss.call("get_realm")) == 9, "寒渊君 realm9")
-					_check(abs(float(boss.call("get_max_health")) - 1250.0) < 0.5, "Boss ×5 血量 1250（实际 %.0f）" % float(boss.call("get_max_health")))
+					_check(abs(float(boss.call("get_max_health")) - 6875.0) < 0.5, "Boss ×5 血量 6875（实际 %.0f）" % float(boss.call("get_max_health")))
 			_next = _t + 0.3
 			_step = 5
 		5:

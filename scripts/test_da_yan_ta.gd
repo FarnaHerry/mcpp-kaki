@@ -106,7 +106,7 @@ func _process(delta) -> bool:
 				if boss:
 					_check(bool(boss.get("is_boss")), "守塔金刚 is_boss")
 					_check(int(boss.call("get_realm")) == 7, "守塔金刚 realm7")
-					_check(abs(float(boss.call("get_max_health")) - 900.0) < 0.5, "Boss ×5 血量 900（实际 %.0f）" % float(boss.call("get_max_health")))
+					_check(abs(float(boss.call("get_max_health")) - 4050.0) < 0.5, "Boss ×5 血量 4050（实际 %.0f）" % float(boss.call("get_max_health")))
 			_next = _t + 0.3
 			_step = 5
 		5:

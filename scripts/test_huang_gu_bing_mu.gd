@@ -113,7 +113,7 @@ func _process(delta) -> bool:
 				_check(String(boss.get("enemy_id")) == "wan_nian_bing_po", "Boss id=wan_nian_bing_po")
 				_check(bool(boss.get("is_boss")), "万年冰魄 is_boss")
 				_check(int(boss.get("realm")) == 9, "万年冰魄 realm=9")
-				_check(float(boss.get("max_health")) >= 2000.0, "万年冰魄 Boss ×5 血量 (%.0f)" % float(boss.get("max_health")))
+				_check(float(boss.get("max_health")) >= 11000.0, "万年冰魄 Boss ×5 血量 (%.0f)" % float(boss.get("max_health")))
 			# ④ 机制：墓道 IceZone + 冰穹厅 ColdZone 存在
 			_check(room.get_node_or_null("IceZone_MuDao") != null, "墓道 IceZone 存在")
 			_check(room.get_node_or_null("ColdZone_BingQiong") != null, "冰穹厅 ColdZone 存在")

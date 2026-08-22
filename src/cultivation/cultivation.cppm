@@ -200,7 +200,7 @@ public:
 	float get_damage_multiplier() const;
 	float get_defense_multiplier() const;
 	float get_speed_multiplier() const;
-	double get_max_health() const { return 100.0 * get_defense_multiplier(); }
+	double get_max_health() const { return 200.0 * get_defense_multiplier(); }
 
 	// 秘境压制修为：按指定境界的 REALM_STATS 底数计乘区（当前实例 STAGE_FACTOR/分叉乘区照旧）
 	float get_damage_multiplier_for_realm(int realm) const;
