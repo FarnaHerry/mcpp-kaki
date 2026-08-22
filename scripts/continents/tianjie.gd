@@ -103,6 +103,28 @@ func _setup():
 	WC.make_sprite(furnace, Color(0.7, 0.55, 0.3, 1), Vector2(16, 8), Vector2(0, -24))
 	# 炉旁丹药拾取（老君遗丹）
 	WC.spawn_item_pickup(self, Vector2(2710, 228), "xuan_long_dan", 1)
+	# ===== 仙人抚顶（兜率宫·太上老君授长生）=====
+	# 兜率宫石阶上立着老君化身（丹炉旁），真仙方可受仙缘
+	var laojun = ClassDB.instantiate("NarrativeNode")
+	laojun.name = "TaiShangLaoJun"
+	laojun.position = Vector2(2580, 214)
+	laojun.set("title", "太上老君")
+	laojun.set("prompt", "[X] 太上老君")
+	laojun.set("color", Color(0.95, 0.8, 0.25, 1))
+	laojun.set("once_flag", "immortal_touch_granted")
+	laojun.set("precheck_method", "check_immortal_touch")
+	laojun.set("gm_method", "grant_immortal_touch")
+	laojun.set("lines", PackedStringArray([
+		"天地玄黄，宇宙洪荒。日月盈昃，辰宿列张。",
+		"你自下界一路修来，犯天条、灭妖魔、渡三灾——已非凡骨。",
+		"天上白玉京，十二楼五城。仙人抚我顶，结发受长生。",
+		"此乃道门金丹之初授：得此机缘，可续寿元、固道基。",
+		"（攻防提升，寿元增加，修为精进。）",
+	]))
+	laojun.set("after_lines", PackedStringArray([
+		"长生之路，道阻且长。你已受我抚顶之礼，再看你的造化了。",
+	]))
+	add_child(laojun)
 	WC.create_checkpoint(self, 2750)
 	# 蟠桃园（粉色桃树 + 蟠桃拾取×2）
 	WC.make_landmark(self, 2950, 60, "蟠桃园", Color(1.0, 0.65, 0.8, 1))

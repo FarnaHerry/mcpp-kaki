@@ -33,6 +33,9 @@ namespace godot {
 		{ "buff_xuan_ming", "玄冥归元", 900.0f, 0.25f, 0.25f, ELEM_NONE,  0.0f  }, // 玄冥归元丹：攻击+25% 防御+25%（渡劫顶级灵丹，宫主镇宫之宝）
 		// ---- 机缘突破战败惩罚 ----
 		{ "buff_dao_xin_bu_wen", "道心不稳", 300.0f, -0.05f, -0.05f, ELEM_NONE, 0.0f }, // 心魔劫/三尸劫战败：攻击-5% 防御-5%
+			// ---- 机缘叙事（仙人抚顶 / 醍醐灌顶）----
+			{ "buff_chang_sheng", "长生", 900.0f, 0.15f, 0.15f, ELEM_NONE, 0.0f }, // 仙人抚顶：攻+15% 防+15%（太上老君授长生）
+			{ "buff_ti_hu",      "醍醐", 900.0f, 0.10f, 0.10f, ELEM_NONE, 0.0f }, // 醍醐灌顶：攻+10% 防+10%（菩提佛法开悟）
 	};
 
 	const BuffSystem::Def *BuffSystem::find_def(const StringName &p_id) {

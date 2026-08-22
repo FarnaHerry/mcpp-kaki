@@ -126,6 +126,10 @@ void GameManager::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("complete_ascension_ending"), &GameManager::complete_ascension_ending);
 	ClassDB::bind_method(D_METHOD("check_puti_acquisition"), &GameManager::check_puti_acquisition);
 	ClassDB::bind_method(D_METHOD("grant_da_pin_tian_xian_jue"), &GameManager::grant_da_pin_tian_xian_jue);
+	ClassDB::bind_method(D_METHOD("check_immortal_touch"), &GameManager::check_immortal_touch);
+	ClassDB::bind_method(D_METHOD("grant_immortal_touch"), &GameManager::grant_immortal_touch);
+	ClassDB::bind_method(D_METHOD("check_ti_hu_guan_ding"), &GameManager::check_ti_hu_guan_ding);
+	ClassDB::bind_method(D_METHOD("grant_ti_hu_guan_ding"), &GameManager::grant_ti_hu_guan_ding);
 
 	// Save / Load
 	ClassDB::bind_method(D_METHOD("save_game", "slot_name"), &GameManager::save_game, DEFVAL("auto"));
@@ -828,6 +832,76 @@ void GameManager::complete_ascension_ending() {
 	if (_signal_bus) {
 		_signal_bus->emit_signal("player_health_changed", _player->current_health, _player->max_health);
 		_signal_bus->emit_signal("interaction_prompt", LOC("混元一气成就——混元金仙！飞升之路已至绝巅。"), true);
+	}
+}
+
+// ============================================================
+// 仙人抚顶（兜率宫·太上老君授长生）
+// ============================================================
+
+String GameManager::check_immortal_touch() {
+	if (!_player || !_player->get_cultivation())
+		return LOC("机缘未至。");
+	if (has_flag(TXT("immortal_touch_granted")))
+		return String();
+	int realm = _player->get_cultivation()->get_realm_index();
+	if (realm < 10)
+		return LOC("你修为未至真仙，仙缘未到。");
+	return String();
+}
+
+void GameManager::grant_immortal_touch() {
+	if (!_player || !_player->get_cultivation())
+		return;
+	set_flag(TXT("immortal_touch_granted"), true);
+	// 仙人抚顶：攻+15%防+15% 600s
+	if (_player->get_buffs())
+		_player->get_buffs()->apply(StringName("buff_chang_sheng"));
+	// 修为+5000（仙元）
+	_player->get_cultivation()->accumulate_energy(5000.0);
+	// 寿元+500（簿上寿元增加）
+	SoulLedgerSystem *ledger = GameManager::get_singleton()->get_soul_ledger();
+	if (ledger)
+		ledger->set_ledger_lifespan(ledger->get_ledger_lifespan() + 500);
+	if (_signal_bus) {
+		_signal_bus->emit_signal("interaction_prompt",
+		                         LOC("仙人抚顶，结发受长生——攻防提升，寿元增加！"), true);
+	}
+}
+
+// ============================================================
+// 醍醐灌顶（西牛贺洲·佛教机缘）
+// ============================================================
+
+String GameManager::check_ti_hu_guan_ding() {
+	if (!_player || !_player->get_cultivation())
+		return LOC("机缘未至。");
+	if (has_flag(TXT("ti_hu_guan_ding_granted")))
+		return String();
+	int realm = _player->get_cultivation()->get_realm_index();
+	if (realm < 5)
+		return LOC("你修为未至化神，尚不足以悟此佛法真谛。");
+	return String();
+}
+
+void GameManager::grant_ti_hu_guan_ding() {
+	if (!_player || !_player->get_cultivation())
+		return;
+	set_flag(TXT("ti_hu_guan_ding_granted"), true);
+	// 醍醐灌顶：攻+10%防+10% 600s
+	if (_player->get_buffs())
+		_player->get_buffs()->apply(StringName("buff_ti_hu"));
+	// 修为+3000
+	_player->get_cultivation()->accumulate_energy(3000.0);
+	// 法则+20（化神后才有法则系统，不够则补满）
+	if (_player->get_cultivation()->get_law_power_max() > 0.0) {
+		double cur = _player->get_cultivation()->get_law_power();
+		double max_law = _player->get_cultivation()->get_law_power_max();
+		_player->get_cultivation()->set_law_power(Math::min(cur + 20.0, max_law));
+	}
+	if (_signal_bus) {
+		_signal_bus->emit_signal("interaction_prompt",
+		                         LOC("醍醐灌顶，佛法开悟——攻防提升，法则之力充盈！"), true);
 	}
 }
 

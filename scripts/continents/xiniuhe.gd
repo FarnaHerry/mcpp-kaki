@@ -114,6 +114,29 @@ func _setup():
 	WC.spawn_herb(self, Vector2(3000, 214), "zhi_xue_cao", 2)
 	WC.spawn_item_pickup(self, Vector2(3200, 232), "spirit_stone", 20)
 
+	# ===== 醍醐灌顶（流沙河畔·佛教机缘）=====
+	# 流沙河西岸，古佛化身端坐——化神方可悟此佛法真谛
+	var buddha = ClassDB.instantiate("NarrativeNode")
+	buddha.name = "TiHuGuDing"
+	buddha.position = Vector2(3400, 214)
+	buddha.set("title", "古佛化身")
+	buddha.set("prompt", "[X] 参拜古佛")
+	buddha.set("color", Color(0.95, 0.85, 0.6, 1))
+	buddha.set("once_flag", "ti_hu_guan_ding_granted")
+	buddha.set("precheck_method", "check_ti_hu_guan_ding")
+	buddha.set("gm_method", "grant_ti_hu_guan_ding")
+	buddha.set("lines", PackedStringArray([
+		"尔从东土来，历火焰山，登灵台方寸，渡流沙弱水——心志已坚。",
+		"佛法东传，不立文字，直指人心。",
+		"醍醐灌顶者，以无上智慧，注于尔之顶门。",
+		"如饮醍醐，清凉自在——烦恼即菩提，生死即涅槃。",
+		"（攻防提升，修为精进，法则之力充盈。）",
+	]))
+	buddha.set("after_lines", PackedStringArray([
+		"佛法无边，回头是岸。你已得醍醐灌顶之缘，好自修行。",
+	]))
+	add_child(buddha)
+
 	WC.create_checkpoint(self, 100)
 	WC.create_checkpoint(self, 1100)
 	WC.create_checkpoint(self, 2600)

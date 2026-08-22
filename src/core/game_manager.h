@@ -118,6 +118,14 @@ public:
 	String check_puti_acquisition();   // 前置校验："" = 可传法，否则为拒绝原因
 	void grant_da_pin_tian_xian_jue(); // 传法大品天仙诀
 
+	// ---- 仙人抚顶（兜率宫·太上老君授长生）----
+	String check_immortal_touch();     // 前置校验："" = 可授，否则为拒绝原因
+	void grant_immortal_touch();       // 仙人抚顶：攻+15%防+15% + 修为+5000 + 寿元+500
+
+	// ---- 醍醐灌顶（西牛贺洲·佛教机缘）----
+	String check_ti_hu_guan_ding();    // 前置校验："" = 可授，否则为拒绝原因
+	void grant_ti_hu_guan_ding();      // 醍醐灌顶：攻+10%防+10% + 修为+3000 + 法则+20
+
 	void _ready() override;
 	void _process(double p_delta) override;
 
