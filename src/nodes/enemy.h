@@ -45,6 +45,28 @@ class Enemy : public CharacterBody2D {
 		String drop_table;            // 命名掉落表（空串=类别兜底；DropSystem 经 get("drop_table") 读）
 		float preferred_distance = 0.0f; // ideal combat range (0 = melee)
 
+			// 行为描述（Wave4 组件化：从 EnemyDef 装配，支持组合 ranged+flying+boss 等）。
+			// is_ranged/is_flying/is_boss 三字段保留兼容（读写同步到 behavior，见 setter/getter 与 set_enemy_id）。
+			struct EnemyBehavior {
+				bool ranged = false;   // 远程：保持距离 + 投射物
+				bool flying = false;   // 飞行：无视重力 + 悬浮
+				bool boss = false;     // Boss：多阶段 + 特殊技 + ×5 血
+				bool slow = false;     // 迟缓：移动 ×0.6（JSON flags "slow"）
+				bool heavy = false;    // 重甲：防御 +5（JSON flags "heavy"）
+				bool summon = false;   // 召唤：开战召唤小怪（预留，JSON flags "summon"）
+				float move_mult = 1.0f;  // 速度乘区（set_enemy_id 一次算好）
+				float atk_mult = 1.0f;   // 攻击乘区（预留）
+				float def_add = 0.0f;    // 防御平加（重甲）
+			};
+			EnemyBehavior behavior;
+
+			// 命名策略函数（状态类调用，行为语义集中）
+			bool wants_flee() const;              // ranged && player_too_close
+			bool can_ranged_attack() const;       // ranged && player_at_preferred_range
+			bool hover_movement() const;          // flying：相位悬浮垂直移动
+			bool use_boss_special() const;        // boss && can_special（攻击态随机特殊技）
+			void _apply_behavior();               // set_enemy_id 内调用，一次性装配数值乘区
+
 		// 精英词缀（design：elite_tier 0 普通 / 1 精英 / 2 首领；affix_id 空=无词缀）
 		int elite_tier = 0;
 		String affix_id;
@@ -102,8 +124,8 @@ class Enemy : public CharacterBody2D {
 		void set_attack_range(float v) { attack_range = v; }
 		void set_attack_damage(float v) { attack_damage = v; }
 		void set_attack_cooldown(float v) { attack_cooldown = v; }
-		void set_is_ranged(bool v) { is_ranged = v; }
-		void set_is_flying(bool v) { is_flying = v; }
+		void set_is_ranged(bool v) { is_ranged = v; behavior.ranged = v; }
+		void set_is_flying(bool v) { is_flying = v; behavior.flying = v; }
 		void set_is_boss(bool v); // 见 enemy.cpp：×5 血量在置位时补偿（_ready 时序陷阱修复）
 		void set_no_drops(bool v) { no_drops = v; }
 		void set_show_hp_bar(bool v) { show_hp_bar = v; }

@@ -51,7 +51,7 @@ namespace godot {
 			_idle_timer += delta;
 
 			if (e->can_see_player()) {
-				if (e->is_ranged && e->player_too_close()) {
+				if (e->wants_flee()) {
 					e->state_machine->transition_to(EnemyStates::Flee);
 				} else if (e->player_in_attack_range() && e->can_attack()) {
 					e->state_machine->transition_to(EnemyStates::Attack);
@@ -68,7 +68,7 @@ namespace godot {
 
 			Vector2 vel = e->get_velocity();
 			vel.x = 0.0f;
-			if (!e->is_flying) vel.y += e->get_gravity() * delta;
+			if (!e->hover_movement()) vel.y += e->get_gravity() * delta;
 			e->set_velocity(vel);
 			e->move_and_slide();
 		}
@@ -90,7 +90,7 @@ namespace godot {
 			_patrol_timer += delta;
 
 			if (e->can_see_player()) {
-				if (e->is_ranged && e->player_too_close()) {
+				if (e->wants_flee()) {
 					e->state_machine->transition_to(EnemyStates::Flee);
 				} else {
 					e->state_machine->transition_to(EnemyStates::Chase);
@@ -106,7 +106,7 @@ namespace godot {
 			}
 
 			Vector2 vel = e->get_velocity();
-			if (e->is_flying) {
+			if (e->hover_movement()) {
 				// Sine-wave hover patrol
 				e->fly_phase_time += delta;
 				vel.x = _patrol_dir * e->move_speed * 0.3f;
@@ -132,17 +132,17 @@ namespace godot {
 			}
 
 			// Ranged: flee if player gets too close
-			if (e->is_ranged && e->player_too_close()) {
+			if (e->wants_flee()) {
 				e->state_machine->transition_to(EnemyStates::Flee);
 				return;
 			}
 
 			// Check attack conditions
 			if (e->can_attack()) {
-				if (e->is_ranged && e->player_at_preferred_range()) {
+				if (e->can_ranged_attack()) {
 					e->state_machine->transition_to(EnemyStates::Attack);
 					return;
-				} else if (!e->is_ranged && e->player_in_attack_range()) {
+				} else if (!e->behavior.ranged && e->player_in_attack_range()) {
 					e->state_machine->transition_to(EnemyStates::Attack);
 					return;
 				}
@@ -155,10 +155,10 @@ namespace godot {
 
 			Vector2 vel = e->get_velocity();
 
-			if (e->is_ranged && e->player_at_preferred_range()) {
+			if (e->can_ranged_attack()) {
 				// Stop at preferred range — don't close further
 				vel.x = Math::move_toward(vel.x, 0.0f, float(e->move_speed * 5.0 * delta));
-			} else if (e->is_ranged) {
+			} else if (e->behavior.ranged) {
 				// Move toward preferred range
 				float dist = e->get_global_position().distance_to(target->get_global_position());
 				if (dist > e->preferred_distance) {
@@ -171,7 +171,7 @@ namespace godot {
 				vel.x = dir * e->move_speed;
 			}
 
-			if (e->is_flying) {
+			if (e->hover_movement()) {
 				// Hover toward player
 				e->fly_phase_time += delta;
 				float target_y = target->get_global_position().y - 40.0f;
@@ -214,7 +214,7 @@ namespace godot {
 
 			Vector2 vel = e->get_velocity();
 			vel.x = dir * e->move_speed * 1.2f;
-			if (!e->is_flying) vel.y += e->get_gravity() * delta;
+			if (!e->hover_movement()) vel.y += e->get_gravity() * delta;
 			e->set_velocity(vel);
 			e->move_and_slide();
 
@@ -227,7 +227,7 @@ namespace godot {
 	class EnemyAttackState : public State<Enemy> {
 	public:
 		void enter(Enemy *e) override {
-			if (e->is_ranged) {
+			if (e->behavior.ranged) {
 				// 远程：直接放箭。不能 transition_to(Shoot)——pending 只会存一个，
 				// 同帧 Attack::physics_update 的 Chase 会覆盖 Shoot，
 				// Shoot::enter 永远执行不到（远程攻击从未生效的根因）
@@ -253,7 +253,7 @@ namespace godot {
 			e->last_attack_time = e->get_time();
 
 			// Boss: randomly use special attack
-			if (e->is_boss && e->can_special() && (std::rand() % 3 == 0)) {
+			if (e->use_boss_special() && (std::rand() % 3 == 0)) {
 				e->state_machine->transition_to(EnemyStates::BossSpecial);
 				return;
 			}
@@ -314,11 +314,11 @@ namespace godot {
 
 			Vector2 vel = e->get_velocity();
 			vel.x = _knockback_x * e->knockback_resistance;
-			vel.y = e->is_flying ? -50.0f : -100.0f;
+			vel.y = e->hover_movement() ? -50.0f : -100.0f;
 			e->set_velocity(vel);
 
 			// Boss phase transition
-			if (e->is_boss && e->current_health <= e->max_health * e->boss_phase2_threshold
+			if (e->behavior.boss && e->current_health <= e->max_health * e->boss_phase2_threshold
 			    && e->boss_phase < 2) {
 				e->boss_phase = 2;
 				e->move_speed *= 1.3f;
@@ -335,7 +335,7 @@ namespace godot {
 				return;
 			}
 
-			if (_hurt_timer > 0.3f && (e->is_on_floor() || e->is_flying)) {
+			if (_hurt_timer > 0.3f && (e->is_on_floor() || e->hover_movement())) {
 				if (e->can_see_player()) {
 					e->state_machine->transition_to(EnemyStates::Chase);
 				} else {
@@ -345,7 +345,7 @@ namespace godot {
 			}
 
 			Vector2 vel = e->get_velocity();
-			if (!e->is_flying) vel.y += e->get_gravity() * delta;
+			if (!e->hover_movement()) vel.y += e->get_gravity() * delta;
 			e->set_velocity(vel);
 			e->move_and_slide();
 		}
@@ -363,7 +363,7 @@ namespace godot {
 				}
 			}
 			// Boss: big energy reward
-			float energy = e->is_boss ? 150.0f : 15.0f;
+			float energy = e->behavior.boss ? 150.0f : 15.0f;
 
 			Node *source = e->get_node_or_null(".."); // parent is the scene
 			if (source) {
@@ -471,11 +471,32 @@ namespace godot {
 
 	void Enemy::set_is_boss(bool v) {
 		is_boss = v;
+		behavior.boss = v; // 兼容字段同步
 		// 时序陷阱修复：脚本 add_child 后才 set("is_boss")（_ready 已跑完），
 		// 在此补偿 ×5 血量；之后脚本再显式 set max_health 的以显式值为准（bootstrap/beijulu 现状）
 		if (v && is_inside_tree() && !is_queued_for_deletion()) {
 			_apply_boss_hp_scale();
 		}
+	}
+
+	// ============================================================
+	// 命名策略函数（行为语义集中，状态类调用）
+	// ============================================================
+
+	bool Enemy::wants_flee() const {
+		return behavior.ranged && player_too_close();
+	}
+
+	bool Enemy::can_ranged_attack() const {
+		return behavior.ranged && player_at_preferred_range();
+	}
+
+	bool Enemy::hover_movement() const {
+		return behavior.flying;
+	}
+
+	bool Enemy::use_boss_special() const {
+		return behavior.boss && can_special();
 	}
 
 	void Enemy::set_enemy_id(const String &v) {
@@ -497,8 +518,26 @@ namespace godot {
 		attack_damage = def->atk * realm_scale;
 		preferred_distance = def->preferred;
 		realm = def->realm;
-		is_ranged = def->ranged;
-		is_flying = def->flying;
+		// 行为聚合（Wave4：ranged/flying/boss 兼容 + slow/heavy/summon 组合；乘区一次性算好）
+		{
+			EnemyBehavior b;
+			b.ranged = def->ranged;
+			b.flying = def->flying;
+			b.boss = def->boss;
+			b.slow = def->slow;
+			b.heavy = def->heavy;
+			b.summon = def->summon;
+			b.move_mult = b.slow ? 0.6f : 1.0f;
+			b.atk_mult = 1.0f;
+			b.def_add = b.heavy ? 5.0f : 0.0f;
+			behavior = b;
+			is_ranged = b.ranged; // 兼容字段同步
+			is_flying = b.flying;
+		}
+		// 数值乘区应用（slow 减速 / heavy 加防）
+		move_speed *= behavior.move_mult;
+		attack_damage *= behavior.atk_mult;
+		defense += behavior.def_add;
 		display_name = def->name;
 		drop_table = def->drops;
 		// ……最后才置 Boss（其 _apply_boss_hp_scale 幂等补偿把血量 ×5，
@@ -601,7 +640,7 @@ namespace godot {
 		if (_suppress_t > 0.0) {
 			Vector2 vel = get_velocity();
 			vel.x = 0.0f;
-			if (!is_flying) vel.y += get_gravity() * p_delta;
+			if (!hover_movement()) vel.y += get_gravity() * p_delta;
 			set_velocity(vel);
 			move_and_slide();
 			return;
@@ -645,7 +684,7 @@ namespace godot {
 
 	void Enemy::_activate_boss_hud() {
 		// Boss 战触发（aggro 或首次受击）：上报 HUD 顶部 Boss 条
-		if (_boss_hud_active || !(is_boss || show_hp_bar))
+		if (_boss_hud_active || !(behavior.boss || show_hp_bar))
 			return;
 		_boss_hud_active = true;
 		SignalBus *bus = SignalBus::get_singleton();
@@ -769,14 +808,14 @@ namespace godot {
 
 			// Give spiritual energy（平衡：随境界成长，防高境击杀无用）
 			if (p_source) {
-				float energy = (is_boss ? 150.0f : 15.0f) * (1.0f + realm);
+				float energy = (behavior.boss ? 150.0f : 15.0f) * (1.0f + realm);
 				p_source->call("gain_spiritual_energy", energy);
 			}
 
 			SignalBus *bus = SignalBus::get_singleton();
 			if (bus) {
 				bus->emit_signal("enemy_killed", this, p_source);
-				if (is_boss) {
+				if (behavior.boss) {
 					bus->emit_signal("boss_died");
 				}
 				// 精英追加奖励掉落（幻境之敌 no_drops 不 emit）
@@ -789,7 +828,7 @@ namespace godot {
 				state_machine->transition_to(EnemyStates::Death);
 			}
 			emit_signal("enemy_died");
-			if (is_boss) {
+			if (behavior.boss) {
 				emit_signal("boss_died"); // 自身信号（SignalBus boss_died 之外，供定点 connect——渡劫天罚使/天界巨灵神）
 			}
 			return;
@@ -816,7 +855,7 @@ namespace godot {
 		proj->set_position(get_global_position());
 		proj->direction = dir;
 		proj->speed = 250.0f;
-		proj->damage = attack_damage * (is_boss ? 1.5f : 1.0f);
+		proj->damage = attack_damage * (behavior.boss ? 1.5f : 1.0f);
 		proj->set_source(this);
 		proj->set_collision_mask_value(3, true); // Hit player
 		proj->set_collision_mask_value(1, true); // Hit ground walls

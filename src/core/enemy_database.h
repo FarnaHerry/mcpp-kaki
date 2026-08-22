@@ -28,6 +28,9 @@ struct EnemyDef {
 	bool ranged = false;
 	bool flying = false;
 	bool boss = false;
+		bool slow = false;       // 迟缓：移动 ×0.6（JSON flags "slow"）
+		bool heavy = false;      // 重甲：防御 +5（JSON flags "heavy"）
+		bool summon = false;     // 召唤：开战召唤小怪（预留，JSON flags "summon"）
 	Color color = Color(1.0f, 1.0f, 1.0f, 1.0f);
 	Vector2 size = Vector2(20, 28);
 	String drops;            // 命名掉落表（空串=走类别兜底掉落表）

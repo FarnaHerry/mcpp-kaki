@@ -793,7 +793,9 @@
     "attack_range": 35,
     "attack_cooldown": 0.8,
     "realm": 9,
-    "flags": [],
+    "flags": [
+      "slow"
+    ],
     "color": [
       0.65,
       0.8,
@@ -1066,11 +1068,12 @@
     "atk": 22,
     "speed": 95,
     "detection": 320,
-    "attack_range": 35,
+    "attack_range": 260,
     "attack_cooldown": 0.8,
     "realm": 6,
     "flags": [
-      "flying"
+      "flying",
+      "ranged"
     ],
     "color": [
       0.95,
@@ -1082,7 +1085,8 @@
       18,
       18
     ],
-    "drops": ""
+    "drops": "",
+    "preferred": 160
   },
   "shou_ta_jin_gang": {
     "name": "守塔金刚",
@@ -1324,7 +1328,9 @@
     "attack_range": 35,
     "attack_cooldown": 1.5,
     "realm": 9,
-    "flags": [],
+    "flags": [
+      "heavy"
+    ],
     "color": [
       0.3,
       0.35,

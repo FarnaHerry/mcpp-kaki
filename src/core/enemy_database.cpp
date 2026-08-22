@@ -174,6 +174,9 @@ void EnemyDatabase::_apply_json() {
 				if (f == "ranged") def->ranged = true;
 				else if (f == "flying") def->flying = true;
 				else if (f == "boss") def->boss = true;
+					else if (f == "slow") def->slow = true;
+					else if (f == "heavy") def->heavy = true;
+					else if (f == "summon") def->summon = true;
 			}
 		}
 		if (d.has("color")) {
