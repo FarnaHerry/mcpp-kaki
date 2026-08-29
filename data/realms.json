@@ -1,0 +1,24 @@
+{
+	"tuning": {
+		"stage_factor": [1.0, 1.05, 1.1, 1.2],
+		"hunyuan_dmg": 400.0,
+		"hunyuan_def": 300.0,
+		"hunyuan_spd": 8.0,
+		"mana_regen_pct": 0.02
+	},
+	"realms": [
+		{ "id": "mortal",      "name": "凡人", "dmg": 1.0,   "def": 1.0,   "spd": 1.0, "cap": 9,       "mana_base": 0.0 },
+		{ "id": "lian_qi",     "name": "炼气", "dmg": 2.0,   "def": 1.5,   "spd": 1.1, "cap": 99,      "mana_base": 100.0 },
+		{ "id": "zhu_ji",      "name": "筑基", "dmg": 3.5,   "def": 2.5,   "spd": 1.2, "cap": 999,     "mana_base": 200.0 },
+		{ "id": "jin_dan",     "name": "金丹", "dmg": 6.0,   "def": 4.0,   "spd": 1.4, "cap": 3999,    "mana_base": 300.0 },
+		{ "id": "yuan_ying",   "name": "元婴", "dmg": 10.0,  "def": 7.0,   "spd": 1.6, "cap": 13999,   "mana_base": 400.0 },
+		{ "id": "hua_shen",    "name": "化神", "dmg": 16.0,  "def": 11.0,  "spd": 1.9, "cap": 43999,   "mana_base": 500.0 },
+		{ "id": "lian_xu",     "name": "炼虚", "dmg": 25.0,  "def": 17.0,  "spd": 2.2, "cap": 143999,  "mana_base": 600.0 },
+		{ "id": "he_ti",       "name": "合体", "dmg": 40.0,  "def": 27.0,  "spd": 2.6, "cap": 443999,  "mana_base": 700.0 },
+		{ "id": "da_cheng",    "name": "大乘", "dmg": 65.0,  "def": 42.0,  "spd": 3.0, "cap": 1443999, "mana_base": 800.0 },
+		{ "id": "du_jie",      "name": "渡劫", "dmg": 90.0,  "def": 60.0,  "spd": 3.5, "cap": 0,       "mana_base": 900.0 },
+		{ "id": "zhen_xian",   "name": "真仙", "dmg": 140.0, "def": 90.0,  "spd": 4.5, "cap": 99999,   "mana_base": 3000.0 },
+		{ "id": "jin_xian",    "name": "金仙", "dmg": 220.0, "def": 150.0, "spd": 6.0, "cap": 999999,  "mana_base": 6000.0 },
+		{ "id": "tian_zun",    "name": "天尊", "dmg": 350.0, "def": 250.0, "spd": 8.0, "cap": 0,       "mana_base": 20000.0 }
+	]
+}

@@ -1,52 +1,41 @@
 module;
 
+#include <string>
+#include <vector>
+
+#include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/core/math.hpp>
 
 #include "../utils/text.h"
 
 module mcpp_kaki.cultivation;
+import mcpp_kaki.core;
 import mcpp_kaki.utils;
 namespace godot {
 
 	// 渡劫成功、灵力转仙元：仙元清零重起数（九九归一，凡尘修为尽数归一）
 	static constexpr int64_t INITIAL_XIANYUAN = 0;
 
-	// 境界圆满门槛（9 为尊，累计经验上限；0 = 无经验条）
-	// 凡尘九境全局累计；仙阶九九归一（仙元重新起数）
-	// 平衡（session 011）：金丹起每境 ~3.3× 而非 ×10，打怪/清图路线可持续
-	static const int64_t REALM_CAPS[CultivationSystem::REALM_COUNT] = {
-		9,          // 凡人
-		99,         // 炼气
-		999,        // 筑基
-		3999,       // 金丹
-		13999,      // 元婴
-		43999,      // 化神
-		143999,     // 炼虚
-		443999,     // 合体
-		1443999,    // 大乘
-		0,          // 渡劫（过渡态，无经验条）
-		99999,      // 真仙（仙元 9 系门槛）
-		999999,     // 金仙（仙元 9 系门槛；满=大圆满，混元一气为特殊解锁非经验堆叠）
-		0           // 天尊
-	};
-
-	struct RealmStats { const char *name; float dmg, def, spd; };
-	// 各境基础攻防速倍率（草案数值，后续平衡）
-	static const RealmStats REALM_STATS[CultivationSystem::REALM_COUNT] = {
-		{ "凡人", 1.0f, 1.0f, 1.0f },
-		{ "炼气", 2.0f, 1.5f, 1.1f },
-		{ "筑基", 3.5f, 2.5f, 1.2f },
-		{ "金丹", 6.0f, 4.0f, 1.4f },
-		{ "元婴", 10.0f, 7.0f, 1.6f },
-		{ "化神", 16.0f, 11.0f, 1.9f },
-		{ "炼虚", 25.0f, 17.0f, 2.2f },
-		{ "合体", 40.0f, 27.0f, 2.6f },
-		{ "大乘", 65.0f, 42.0f, 3.0f },
-		{ "渡劫", 90.0f, 60.0f, 3.5f },
-		{ "真仙", 140.0f, 90.0f, 4.5f },
-		{ "金仙", 220.0f, 150.0f, 6.0f },
-		{ "天尊", 350.0f, 250.0f, 8.0f },
+	// ---- 境界表（data/realms.json，design/data-externalization.md P2）----
+	// 兜底表仅在 DataLoader 不可用 / JSON 缺失损坏时生效；name 为 LOC() 本地化查键。
+	struct RealmRow { const char *name; float dmg, def, spd; int64_t cap; double mana_base; };
+	static const RealmRow REALM_ROWS[CultivationSystem::REALM_COUNT] = {
+		//       name    攻      防      速      经验上限(0=无经验条)  灵力底数
+		{ "凡人", 1.0f,   1.0f,   1.0f,  9,       0.0 },
+		{ "炼气", 2.0f,   1.5f,   1.1f,  99,      100.0 },
+		{ "筑基", 3.5f,   2.5f,   1.2f,  999,     200.0 },
+		{ "金丹", 6.0f,   4.0f,   1.4f,  3999,    300.0 },
+		{ "元婴", 10.0f,  7.0f,   1.6f,  13999,   400.0 },
+		{ "化神", 16.0f,  11.0f,  1.9f,  43999,   500.0 },
+		{ "炼虚", 25.0f,  17.0f,  2.2f,  143999,  600.0 },
+		{ "合体", 40.0f,  27.0f,  2.6f,  443999,  700.0 },
+		{ "大乘", 65.0f,  42.0f,  3.0f,  1443999, 800.0 },
+		{ "渡劫", 90.0f,  60.0f,  3.5f,  0,       900.0 },
+		{ "真仙", 140.0f, 90.0f,  4.5f,  99999,   3000.0 },
+		{ "金仙", 220.0f, 150.0f, 6.0f,  999999,  6000.0 },
+		{ "天尊", 350.0f, 250.0f, 8.0f,  0,       20000.0 },
 	};
 
 	// 混元一气（玩家上限）固定倍率
@@ -55,7 +44,68 @@ namespace godot {
 	static constexpr float HUNYUAN_SPD = 8.0f;
 
 	// 期数加成：中期×1.05 后期×1.10 大圆满×1.20
-	static const float STAGE_FACTOR[4] = { 1.0f, 1.05f, 1.10f, 1.20f };
+	static const float STAGE_FALLBACK[4] = { 1.0f, 1.05f, 1.10f, 1.20f };
+
+	// 灵力自动回复：每秒回上限百分比
+	static constexpr double MANA_REGEN_PCT = 0.02;
+
+	// JSON 装载结果（空 = 走兜底表）
+	static std::vector<RealmRow> s_rows;
+	static std::vector<std::string> s_strings; // name 持久化（const char* 指入，reserve 防挪移）
+	static std::vector<float> s_stage;
+	static float s_hunyuan_dmg = HUNYUAN_DMG;
+	static float s_hunyuan_def = HUNYUAN_DEF;
+	static float s_hunyuan_spd = HUNYUAN_SPD;
+	static double s_mana_regen_pct = MANA_REGEN_PCT;
+	static bool s_loaded = false;
+
+	void CultivationSystem::ensure_defs_loaded() {
+		if (s_loaded)
+			return;
+		s_loaded = true;
+		SceneTree *st = Object::cast_to<SceneTree>(Engine::get_singleton()->get_main_loop());
+		Node *scene = st ? st->get_current_scene() : nullptr;
+		DataLoader *dl = scene ? Object::cast_to<DataLoader>(scene->find_child("DataLoader", true, false)) : nullptr;
+		if (!dl)
+			return;
+		Array realms = dl->get_all_realms();
+		if (realms.size() != CultivationSystem::REALM_COUNT)
+			return; // 数量不符视为损坏，整表走兜底
+		s_strings.reserve(realms.size());
+		for (int i = 0; i < realms.size(); i++) {
+			Dictionary d = realms[i];
+			s_strings.push_back(String(d["name"]).utf8().get_data());
+			RealmRow r;
+			r.name = s_strings.back().c_str();
+			r.dmg = d.has("dmg") ? float(d["dmg"]) : REALM_ROWS[i].dmg;
+			r.def = d.has("def") ? float(d["def"]) : REALM_ROWS[i].def;
+			r.spd = d.has("spd") ? float(d["spd"]) : REALM_ROWS[i].spd;
+			r.cap = d.has("cap") ? int64_t(d["cap"]) : REALM_ROWS[i].cap;
+			r.mana_base = d.has("mana_base") ? double(d["mana_base"]) : REALM_ROWS[i].mana_base;
+			s_rows.push_back(r);
+		}
+		Dictionary t = dl->get_realm_tuning();
+		if (t.has("stage_factor")) {
+			Array sf = t["stage_factor"];
+			if (sf.size() == 4)
+				for (int i = 0; i < 4; i++)
+					s_stage.push_back(float(sf[i]));
+		}
+		if (t.has("hunyuan_dmg")) s_hunyuan_dmg = float(t["hunyuan_dmg"]);
+		if (t.has("hunyuan_def")) s_hunyuan_def = float(t["hunyuan_def"]);
+		if (t.has("hunyuan_spd")) s_hunyuan_spd = float(t["hunyuan_spd"]);
+		if (t.has("mana_regen_pct")) s_mana_regen_pct = double(t["mana_regen_pct"]);
+	}
+
+	// 表访问器：先保证装载，再取值
+	static const RealmRow &row(int i) {
+		CultivationSystem::ensure_defs_loaded();
+		return s_rows.empty() ? REALM_ROWS[i] : s_rows[i];
+	}
+	static float stage_f(int i) {
+		CultivationSystem::ensure_defs_loaded();
+		return s_stage.empty() ? STAGE_FALLBACK[i] : s_stage[i];
+	}
 
 	CultivationSystem::CultivationSystem() {
 	}
@@ -152,11 +202,11 @@ namespace godot {
 	int64_t CultivationSystem::get_realm_cap(Realm p_realm) {
 		if (p_realm < 0 || p_realm >= REALM_COUNT)
 			return 0;
-		return REALM_CAPS[p_realm];
+		return row(p_realm).cap;
 	}
 
 	String CultivationSystem::get_realm_name() const {
-		const char *base = REALM_STATS[_current_realm].name;
+		const char *base = row(_current_realm).name;
 
 		if (_current_realm == TRUE_IMMORTAL || _current_realm == GOLDEN_IMMORTAL) {
 			// 混元一气：混元 + 门派 + 金仙
@@ -181,17 +231,17 @@ namespace godot {
 	String CultivationSystem::realm_name_of(int p_realm) {
 		if (p_realm < 0 || p_realm >= REALM_COUNT)
 			return String();
-		return LOC(REALM_STATS[p_realm].name);
+		return LOC(row(p_realm).name);
 	}
 
 	// 当前境界的经验区间 [lo, hi)：hi <= 0 表示无经验条（渡劫/天尊）
 	static void _realm_xp_band(CultivationSystem::Realm p_realm, int64_t &r_lo, int64_t &r_hi) {
-		r_hi = REALM_CAPS[p_realm];
+		r_hi = row(p_realm).cap;
 		r_lo = 0;
 		if (p_realm == CultivationSystem::GOLDEN_IMMORTAL) {
-			r_lo = REALM_CAPS[CultivationSystem::TRUE_IMMORTAL];
+			r_lo = row(CultivationSystem::TRUE_IMMORTAL).cap;
 		} else if (p_realm > CultivationSystem::MORTAL && p_realm != CultivationSystem::TRUE_IMMORTAL) {
-			r_lo = REALM_CAPS[p_realm - 1];
+			r_lo = row(p_realm - 1).cap;
 		}
 	}
 
@@ -284,7 +334,7 @@ namespace godot {
 	}
 
 	int64_t CultivationSystem::get_max_energy() const {
-		return REALM_CAPS[_current_realm];
+		return row(_current_realm).cap;
 	}
 
 	void CultivationSystem::_emit_energy_changed() {
@@ -301,18 +351,11 @@ namespace godot {
 	// ---- 灵力（法力资源）----
 
 	double CultivationSystem::get_max_mana() const {
-		// 凡人未引气入体，没有灵力；凡尘每境 +50；仙阶另起（草案数值）
 		// 秘境压制修为：_suppressed_realm_for_mana >= 0 时按压制境界计底数
 		int realm = _suppressed_realm_for_mana >= 0 ? _suppressed_realm_for_mana : (int)_current_realm;
-		double base = 0.0;
-		switch (realm) {
-			case MORTAL:          base = 0.0; break;
-			case TRUE_IMMORTAL:   base = 3000.0; break;
-			case GOLDEN_IMMORTAL: base = 6000.0; break;
-			case TIAN_ZUN:        base = 20000.0; break;
-			default:              base = double(realm) * 100.0; break;
-		}
-		return base * _mana_max_mult * get_path_spell_mult(); // 功法（练气）×元神分叉 乘区
+		if (realm < 0 || realm >= REALM_COUNT)
+			realm = (int)_current_realm;
+		return row(realm).mana_base * _mana_max_mult * get_path_spell_mult(); // 功法（练气）×元神分叉 乘区
 	}
 
 	void CultivationSystem::_emit_law_changed() {
@@ -389,9 +432,10 @@ namespace godot {
 		double max_mana = get_max_mana();
 		if (max_mana <= 0.0 || _mana >= max_mana)
 			return;
-		// 缓慢回复：每秒 2% 上限（满蓝约 50 秒）；仅在整数值变化时发信号
+		// 缓慢回复：每秒回上限百分比（realms.json mana_regen_pct，满蓝约 50 秒）；仅在整数值变化时发信号
+		ensure_defs_loaded();
 		double before = Math::floor(_mana);
-		_mana = Math::min(_mana + max_mana * 0.02 * _mana_regen_mult * p_delta, max_mana);
+		_mana = Math::min(_mana + max_mana * s_mana_regen_pct * _mana_regen_mult * p_delta, max_mana);
 		if (Math::floor(_mana) != before) {
 			_emit_mana_changed();
 		}
@@ -409,7 +453,7 @@ namespace godot {
 	void CultivationSystem::accumulate_energy(double p_amount) {
 		RealmStage before = get_stage();
 		// 经验到顶即卡在当前境界（设计：过机缘事件后才能继续累计）
-		int64_t cap = REALM_CAPS[_current_realm];
+		int64_t cap = row(_current_realm).cap;
 		if (cap <= 0)
 			return; // 渡劫/天尊无经验条
 		if (is_immortal()) {
@@ -496,7 +540,7 @@ namespace godot {
 			return false;
 
 		// 经验门槛（调试开关 _free_breakthrough 打开时不检查，正式上线恢复）
-		int64_t cap = REALM_CAPS[_current_realm];
+		int64_t cap = row(_current_realm).cap;
 		if (!_free_breakthrough && get_current_energy() < cap)
 			return false;
 
@@ -666,46 +710,46 @@ namespace godot {
 
 	float CultivationSystem::get_damage_multiplier() const {
 		if (_hunyuan)
-			return HUNYUAN_DMG;
-		return REALM_STATS[_current_realm].dmg * STAGE_FACTOR[get_stage()];
+			return s_hunyuan_dmg;
+		return row(_current_realm).dmg * stage_f(get_stage());
 	}
 
 	float CultivationSystem::get_defense_multiplier() const {
 		if (_hunyuan)
-			return HUNYUAN_DEF;
-		return REALM_STATS[_current_realm].def * STAGE_FACTOR[get_stage()] * (1.0f + 0.03f * get_path_body_level());
+			return s_hunyuan_def;
+		return row(_current_realm).def * stage_f(get_stage()) * (1.0f + 0.03f * get_path_body_level());
 	}
 
 	float CultivationSystem::get_speed_multiplier() const {
 		if (_hunyuan)
-			return HUNYUAN_SPD;
-		return REALM_STATS[_current_realm].spd * STAGE_FACTOR[get_stage()];
+			return s_hunyuan_spd;
+		return row(_current_realm).spd * stage_f(get_stage());
 	}
 
 	// ---- 秘境压制修为（Portal 房间：按指定境界底数计乘区，高境界门控技能/法宝/神通仍可用）----
 
 	float CultivationSystem::get_damage_multiplier_for_realm(int realm) const {
 		if (_hunyuan)
-			return HUNYUAN_DMG; // 混元一气（玩家上限）：压制不再起作用
+			return s_hunyuan_dmg; // 混元一气（玩家上限）：压制不再起作用
 		if (realm < 0 || realm >= REALM_COUNT)
 			realm = _current_realm;
-		return REALM_STATS[realm].dmg * STAGE_FACTOR[get_stage()];
+		return row(realm).dmg * stage_f(get_stage());
 	}
 
 	float CultivationSystem::get_defense_multiplier_for_realm(int realm) const {
 		if (_hunyuan)
-			return HUNYUAN_DEF;
+			return s_hunyuan_def;
 		if (realm < 0 || realm >= REALM_COUNT)
 			realm = _current_realm;
-		return REALM_STATS[realm].def * STAGE_FACTOR[get_stage()] * (1.0f + 0.03f * get_path_body_level());
+		return row(realm).def * stage_f(get_stage()) * (1.0f + 0.03f * get_path_body_level());
 	}
 
 	float CultivationSystem::get_speed_multiplier_for_realm(int realm) const {
 		if (_hunyuan)
-			return HUNYUAN_SPD;
+			return s_hunyuan_spd;
 		if (realm < 0 || realm >= REALM_COUNT)
 			realm = _current_realm;
-		return REALM_STATS[realm].spd * STAGE_FACTOR[get_stage()];
+		return row(realm).spd * stage_f(get_stage());
 	}
 
 	double CultivationSystem::get_max_health_for_realm(int realm) const {
@@ -715,22 +759,14 @@ namespace godot {
 	double CultivationSystem::get_max_mana_for_realm(int realm) const {
 		if (realm < 0 || realm >= REALM_COUNT)
 			realm = _current_realm;
-		// 凡人未引气入体，没有灵力；凡尘每境 +50；仙阶另起（与 get_max_mana 同底数逻辑）
-		double base = 0.0;
-		switch (realm) {
-			case CultivationSystem::MORTAL:          base = 0.0; break;
-			case CultivationSystem::TRUE_IMMORTAL:   base = 3000.0; break;
-			case CultivationSystem::GOLDEN_IMMORTAL: base = 6000.0; break;
-			case CultivationSystem::TIAN_ZUN:        base = 20000.0; break;
-			default:                                 base = double(realm) * 100.0; break;
-		}
-		return base * _mana_max_mult * get_path_spell_mult(); // 功法（练气）×元神分叉 乘区照旧
+		// 灵力底数与 get_max_mana 同表（realms.json mana_base）
+		return row(realm).mana_base * _mana_max_mult * get_path_spell_mult(); // 功法（练气）×元神分叉 乘区照旧
 	}
 
 	int64_t CultivationSystem::energy_to_next_realm() const {
 		if (is_max_realm())
 			return 0;
-		return REALM_CAPS[_current_realm];
+		return row(_current_realm).cap;
 	}
 
 } // namespace godot

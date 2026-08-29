@@ -214,6 +214,10 @@ public:
 
 	static int64_t get_realm_cap(Realm p_realm);
 
+	// 境界表外抽（data/realms.json，design/data-externalization.md）：惰性装载，
+	// DataLoader 可用走 JSON，否则回退硬编码兜底表（值与 JSON 同步）
+	static void ensure_defs_loaded();
+
 protected:
 	static void _bind_methods();
 

@@ -1,23 +1,27 @@
 
-## 实施状态 (2026-07-26)
+## 实施状态 (2026-08-28)
 
 | 优先级 | 系统 | JSON文件 | 运行时 | 状态 |
 |---|---|---|---|---|
-| P0 | 物品 | data/items.json (22) | ItemDatabase::_ready → DataLoader | ✅ |
-| P0 | 技能 | data/skills.json (24) | SkillSystem::ensure_defs_loaded → DataLoader | ✅ |
-| P1 | Buff | data/buffs.json (6) | BuffSystem::ensure_defs_loaded → DataLoader | ✅ |
-| P1 | 功法 | data/gongfas.json (6) | GongfaSystem::ensure_defs_loaded → DataLoader | ✅ |
-| P1 | 宗门 | data/sects.json (4) | SectSystem::ensure_defs_loaded → DataLoader | ✅ |
+| P0 | 物品 | data/items.json | ItemDatabase::_ready → DataLoader | ✅ |
+| P0 | 技能 | data/skills.json | SkillSystem::ensure_defs_loaded → DataLoader | ✅ |
+| P0 | 敌人 | data/enemies.json | EnemyDatabase::ensure_loaded → DataLoader | ✅ |
+| P1 | Buff | data/buffs.json | BuffSystem::ensure_defs_loaded → DataLoader | ✅ |
+| P1 | 功法 | data/gongfas.json | GongfaSystem::ensure_defs_loaded → DataLoader | ✅ |
+| P1 | 宗门 | data/sects.json | SectSystem::ensure_defs_loaded → DataLoader | ✅ |
+| P1 | 机缘事件 | data/events.json | BreakthroughManager → DataLoader::get_event | ✅ |
 | P2 | 掉落 | data/drops.json | DropSystem::_roll_drops → DataLoader | ✅ |
-| P2 | 配方 | data/recipes.json (7) | DataLoader 已加载, JSON 就绪 | ⏸️ |
-| P2 | 洲 | data/continents.json (4) | DataLoader 已加载, JSON 就绪 | ⏸️ |
-| P2 | 境界 | — | 待做 | ❌ |
-| P3 | 事件 | — | 待做 | ❌ |
+| P2 | 配方 | data/recipes.json | AlchemySystem::ensure_defs_loaded → DataLoader | ✅ |
+| P2 | 洲 | data/continents.json | ContinentManager::ensure_loaded → DataLoader | ✅ |
+| P2 | 境界 | data/realms.json | CultivationSystem::ensure_defs_loaded → DataLoader | ✅ |
 | P3 | 能力 | — | 待做 | ❌ |
+| P4 | 输入映射 | — | 待做（需键位配置 UI） | ❌ |
+| P5 | UI 文本/布局 | — | 待做（需本地化框架/UI 皮肤） | ❌ |
 
 > 核心模式：每个系统增加 `static std::vector<Def> s_defs` + `static bool s_loaded` +
 > `static void ensure_loaded()` 惰性填充。DataLoader 可用时走 JSON，否则退回硬编码静态数组。
 > `const char*` 字段通过 `static std::vector<std::string>` 持久化存储。
+> 境界表（realms.json）带 `tuning` 全局段：期数加成/混元三值/灵力回复率。
 
 
 # 硬编码数据外抽清单
@@ -415,21 +419,22 @@ artifact_page/skill_a~h/consume_1~6/pressure_wei/pressure_lin。
 
 ## 优先级建议
 
-| 优先级 | 系统 | 理由 |
-|---|---|---|
-| **P0** | 物品数据库 | 最频繁新增（新道具/装备/消耗品），tres 最成熟 |
-| **P0** | 技能定义表 | 21 条，新增技能是主要内容迭代路径 |
-| **P1** | 掉落表 | 数值调优刚需，当前结构过于简陋 |
-| **P1** | 宗门/功法/Buff | 规则稳定后可抽，当前硬编码尚可维护 |
-| **P2** | 配方表 | 7 条，新增配方是内容迭代 |
-| **P2** | 境界参数 | 数值平衡调优时需外部化 |
-| **P3** | 洲定义 | 4 条，新增洲才需要改 |
-| **P3** | 突破事件 | 叙事文本天然适合外部资源文件 |
-| **P3** | 能力解锁 | 15+7 条，境界调整时需同步 |
-| **P4** | Player 属性 | 需引入角色模板/装备系统后才可抽 |
-| **P4** | 敌人 archetype | 需定义 enemy 模板系统 |
-| **P4** | 输入映射 | 需键位配置 UI |
-| **P5** | UI 文本/布局 | 需本地化框架或 UI 皮肤系统 |
+| 优先级 | 系统 | 理由 | 状态 |
+|---|---|---|---|
+| **P0** | 物品数据库 | 最频繁新增（新道具/装备/消耗品） | ✅ items.json |
+| **P0** | 技能定义表 | 21 条，新增技能是主要内容迭代路径 | ✅ skills.json |
+| **P0** | 敌人定义 | 新秘境/新敌种迭代（session 020 落地） | ✅ enemies.json |
+| **P1** | 掉落表 | 数值调优刚需（session 020 v2：tables + min_realm） | ✅ drops.json |
+| **P1** | 宗门/功法/Buff | 规则稳定后可抽 | ✅ sects/gongfas/buffs.json |
+| **P1** | 突破事件 | 叙事文本天然适合外部资源文件（W4-1） | ✅ events.json |
+| **P2** | 配方表 | 新增配方是内容迭代 | ✅ recipes.json |
+| **P2** | 洲定义 | 新增洲才需要改 | ✅ continents.json |
+| **P2** | 境界参数 | 数值平衡调优时需外部化（2026-08-28 落地） | ✅ realms.json |
+| **P3** | 能力解锁 | 15+7 条，境界调整时需同步 | ❌ |
+| **P4** | Player 属性 | 需引入角色模板后才可抽 | ❌ |
+| **P4** | 敌人 spawn 坐标（世界布局） | 洲脚本 GDScript 手写坐标（world_common + 各洲脚本） | ❌ |
+| **P4** | 输入映射 | 需键位配置 UI | ❌ |
+| **P5** | UI 文本/布局 | 需本地化框架或 UI 皮肤系统 | ❌ |
 
 ---
 

@@ -26,6 +26,8 @@ void DataLoader::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_drop_table"), &DataLoader::get_drop_table);
 	ClassDB::bind_method(D_METHOD("get_recipe", "id"), &DataLoader::get_recipe);
 	ClassDB::bind_method(D_METHOD("get_all_recipes"), &DataLoader::get_all_recipes);
+	ClassDB::bind_method(D_METHOD("get_all_realms"), &DataLoader::get_all_realms);
+	ClassDB::bind_method(D_METHOD("get_realm_tuning"), &DataLoader::get_realm_tuning);
 }
 
 void DataLoader::_ready() {
@@ -62,11 +64,24 @@ void DataLoader::_ready() {
 		}
 	}
 
+	// Realms: object with "tuning" (global knobs) + "realms" array indexed by realm order
+	if (FileAccess::file_exists("res://data/realms.json")) {
+		String raw = FileAccess::get_file_as_string("res://data/realms.json");
+		Variant p = JSON::parse_string(raw);
+		if (p.get_type() == Variant::DICTIONARY) {
+			Dictionary d = p;
+			if (d.has("realms") && d["realms"].get_type() == Variant::ARRAY)
+				_realms = d["realms"];
+			if (d.has("tuning") && d["tuning"].get_type() == Variant::DICTIONARY)
+				_realm_tuning = d["tuning"];
+		}
+	}
+
 	UtilityFunctions::print(
-		vformat(TXT("DataLoader: %d items, %d skills, %d buffs, %d gongfas, %d sects, %d recipes, %d continents, %d events, drops=%s"),
+		vformat(TXT("DataLoader: %d items, %d skills, %d buffs, %d gongfas, %d sects, %d recipes, %d continents, %d events, drops=%s, realms=%d"),
 			_items.size(), _skills.size(), _buffs.size(), _gongfas.size(), _sects.size(),
 			_recipes.size(), _continents.size(), _events.size(),
-			_drop_table.is_empty() ? TXT("no") : TXT("yes")));
+			_drop_table.is_empty() ? TXT("no") : TXT("yes"), _realms.size()));
 }
 
 void DataLoader::_load_json_array(const String &p_path, HashMap<StringName, Dictionary> &r_out) {
@@ -195,6 +210,14 @@ Dictionary DataLoader::get_event(int p_realm) const {
 	HashMap<int, Dictionary>::ConstIterator it = _events.find(p_realm);
 	if (it) return it->value;
 	return Dictionary();
+}
+
+Array DataLoader::get_all_realms() const {
+	return _realms;
+}
+
+Dictionary DataLoader::get_realm_tuning() const {
+	return _realm_tuning;
 }
 
 } // namespace godot

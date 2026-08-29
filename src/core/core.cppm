@@ -53,6 +53,10 @@ public:
 
 	Dictionary get_event(int p_realm) const;
 
+	// 境界表（data/realms.json）：realms 数组按境界序号排列 + 全局 tuning
+	Array get_all_realms() const;
+	Dictionary get_realm_tuning() const;
+
 protected:
 	static void _bind_methods();
 
@@ -66,6 +70,8 @@ private:
 	HashMap<StringName, Dictionary> _continents;
 	HashMap<int, Dictionary> _events;
 	Dictionary _drop_table;
+	Array _realms;         // 下标 = 境界序号
+	Dictionary _realm_tuning;
 
 	void _load_json_array(const String &p_path, HashMap<StringName, Dictionary> &r_out);
 };
