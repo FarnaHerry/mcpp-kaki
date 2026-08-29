@@ -2,6 +2,7 @@
 
 #include "../core/enemy_database.h"
 #include "../utils/text.h"
+#include "safe_zone.h"
 
 
 #include <cmath>
@@ -880,6 +881,12 @@ namespace godot {
 
 	bool Enemy::can_see_player() const {
 		if (!_player_target) return false;
+		// 城镇安全区：玩家或自身在区内均不索敌（chase 自然退回 idle/patrol）。
+		// 仅世界层生效——Portal 房间挂洲原点（坐标带重叠），房间内一律正常索敌。
+		if (_player_target->get_parent() == get_tree()->get_current_scene() &&
+				(SafeZone::is_point_safe(_player_target->get_global_position()) ||
+						SafeZone::is_point_safe(get_global_position())))
+			return false;
 		float dist = get_global_position().distance_to(_player_target->get_global_position());
 		return dist <= detection_radius;
 	}

@@ -331,6 +331,46 @@ static func make_landmark(root: Node, x: float, y: float, text: String, color :=
 	root.add_child(l)
 	return l
 
+# ---- 城镇安全区（每洲城镇：敌人不索敌 + 玩家缓速休整 + NPC）----
+# npcs: [{name,color,lines(PackedStringArray),heal(bool),dx(float)}]，heal 型 X=全恢复歇息
+static func create_town(root: Node, x: float, half_w: float, town_name: String, npcs: Array, ground_y := 238.0) -> void:
+	var zone = ClassDB.instantiate("SafeZone")
+	zone.name = "SafeZone_" + town_name
+	zone.position = Vector2(x, ground_y - 60)
+	root.add_child(zone)
+	zone.call("setup", Vector2(half_w * 2.0, 120), town_name)
+	# 村舍 ×2（分立两端，与 NPC 错位）+ 名牌
+	make_house(root, Vector2(x - half_w * 0.78, ground_y))
+	make_house(root, Vector2(x + half_w * 0.78, ground_y))
+	make_landmark(root, x - float(town_name.length()) * 7.0, ground_y - 158, town_name, Color(1.0, 0.85, 0.55, 1))
+	for d in npcs:
+		var npc = ClassDB.instantiate("TownNpc")
+		npc.name = "TownNpc_" + str(d.get("name", "路人"))
+		npc.position = Vector2(x + float(d.get("dx", 0)), ground_y - 28)
+		root.add_child(npc)
+		npc.call("setup", str(d.get("name", "路人")), d.get("color", Color(0.5, 0.5, 0.62)), d.get("lines", []), bool(d.get("heal", false)))
+
+# 村舍（纯视觉：墙 + 屋顶 + 门）
+static func make_house(root: Node, base: Vector2) -> void:
+	var wall = Polygon2D.new()
+	wall.name = "HouseWall"
+	wall.color = Color(0.42, 0.33, 0.24, 1)
+	wall.polygon = PackedVector2Array([Vector2(-22, -30), Vector2(22, -30), Vector2(22, 0), Vector2(-22, 0)])
+	wall.position = base
+	root.add_child(wall)
+	var roof = Polygon2D.new()
+	roof.name = "HouseRoof"
+	roof.color = Color(0.55, 0.2, 0.16, 1)
+	roof.polygon = PackedVector2Array([Vector2(-28, -30), Vector2(28, -30), Vector2(0, -48)])
+	roof.position = base
+	root.add_child(roof)
+	var door = Polygon2D.new()
+	door.name = "HouseDoor"
+	door.color = Color(0.2, 0.13, 0.09, 1)
+	door.polygon = PackedVector2Array([Vector2(-6, -14), Vector2(6, -14), Vector2(6, 0), Vector2(-6, 0)])
+	door.position = base
+	root.add_child(door)
+
 # ---- F6 读档（各洲 _input 转发到这里）----
 static func handle_input(root: Node, event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:

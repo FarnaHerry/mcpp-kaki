@@ -2,6 +2,7 @@
 #include "enemy.h"
 #include "clone_avatar.h"
 #include "dongtian_manager.h"
+#include "safe_zone.h"
 
 
 #include "../core/currency_system.h"
@@ -842,6 +843,21 @@ namespace godot {
 		}
 		if (_buffs) {
 			_buffs->tick(p_delta); // buff 计时（到期自动消失）
+		}
+
+		// 城镇安全区休整：HP 缓回 1%/s + 灵力额外 ×1（与基础 tick 合计 ×2）。
+		// 仅世界层生效——Portal 房间挂洲原点（坐标带重叠），房间内不休整。
+		if (!is_dead() && get_parent() == get_tree()->get_current_scene() &&
+				SafeZone::is_point_safe(get_global_position())) {
+			float mh = get_max_health();
+			if (current_health < mh) {
+				current_health = Math::min(current_health + (float)(mh * 0.01 * p_delta), mh);
+				SignalBus *bus = SignalBus::get_singleton();
+				if (bus)
+					bus->emit_signal("player_health_changed", current_health, mh);
+			}
+			if (_cultivation)
+				_cultivation->tick_mana_regen(p_delta);
 		}
 
 		_update_fullness(p_delta);

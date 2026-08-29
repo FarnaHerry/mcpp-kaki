@@ -29,14 +29,28 @@ func _setup_game():
 	# ---- Enemies (variety: melee, archer, flyer, boss)——定义见 data/enemies.json ----
 	WC.spawn_enemy_by_id(self, Vector2(350, 200), "shan_xiao")
 	WC.spawn_enemy_by_id(self, Vector2(500, 200), "huo_xiao")
-	WC.spawn_enemy_by_id(self, Vector2(750, 200), "qing_yi_gong_shou")
-	WC.spawn_enemy_by_id(self, Vector2(650, 150), "zi_fu")
-	WC.spawn_enemy_by_id(self, Vector2(950, 200), "chi_xiao")
+	WC.spawn_enemy_by_id(self, Vector2(905, 200), "qing_yi_gong_shou")
+	WC.spawn_enemy_by_id(self, Vector2(815, 150), "zi_fu")
+	WC.spawn_enemy_by_id(self, Vector2(985, 200), "chi_xiao")
 	WC.spawn_enemy_by_id(self, Vector2(1050, 200), "lu_lin_gong_shou")
 	# BOSS — 赤瞳魔狼（落霞村外围守关；平衡 session 011：15→150 血，凡人攻10 → ~15击 20~30s）
 	var boss = WC.spawn_enemy_by_id(self, Vector2(1200, 195), "chi_tong_mo_lang")
 	boss.get_node("Polygon2D").scale = Vector2(1.5, 1.5)
 	boss.connect("boss_died", Callable(WC, "on_boss_died"))
+
+	# ---- 落霞村（城镇安全区：敌人不索敌 + 缓速休整 + NPC）----
+	WC.create_town(self, 700, 90, "落霞村", [
+		{"name": "王村长", "color": Color(0.55, 0.35, 0.3), "dx": -32, "lines": [
+			"村外妖兽横行，切莫走远。",
+			"东行青竹林多竹妖，结伴同行。",
+			"断崖绝壁之后，便是幽谷飞行地。",
+		]},
+		{"name": "王婆客栈", "color": Color(0.4, 0.55, 0.4), "dx": 0, "heal": true},
+		{"name": "落霞货郎", "color": Color(0.35, 0.45, 0.6), "dx": 45, "lines": [
+			"东海之滨，定海神针现世。",
+			"花果山桃熟了，仙桃补身。",
+		]},
+	])
 
 	# ---- Item Pickups ----
 	WC.spawn_item_pickup(self, Vector2(250, 220), "healing_pill", 1)

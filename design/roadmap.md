@@ -1,4 +1,49 @@
-# 开发路线图（截至 session 014）
+# 开发路线图（截至 session 021 + 2026-08-23）
+
+## 〇、路线图状态刷新说明（2026-08-28）
+
+第二节/第三节的勾选状态已按实际进度刷新（session 015-021 及 8/17-8/23 提交），
+第一节的历史总结（session 002-014）保留原样作为记录；session 015-021 概要见下方追加块。
+
+### Session 015-021 概要（详见 docs/sessions/session-015~021.md）
+
+- **015/016**（未单独成文，并入 017 主题）：显示设置迭代前奏（动态 gcd 视口尝试）
+- **017**：分辨率终案 v1——引擎托管整数缩放（Celeste 式 keep+integer）；凌霄宝殿主线叙事 +
+  飞升结局（NarrativeNode/CondPortal 通用组件 + GameManager flags 持久化 + boss_dead flag）
+- **018**：渲染分辨率与窗口解耦终案（16:9 固定基准 + aspect=keep 黑边 + 分数倍缩放 +
+  动态帧率档（系统刷新率上限）+ 垂直同步；game_menu 显示设置 v7 轮次）
+- **019**：元婴分叉（肉身/元神双轨喂养 + 合体形神合一）+ 渡劫 v2（三灾齐至并发 + 天罚使 Boss
+  斩之即飞升 + 双过法减免联动）；Enemy 自身 boss_died 信号补发修复
+- **020**：敌人定义数据化（EnemyDatabase + enemies.json 42 条）+ 掉落表 v2（tables/min_realm/
+  Boss 专属/精英表）+ 品级五色（凡白/灵蓝/地紫/天金/仙青，光柱/格子底染）+ 功法四阶（黄玄地天）
+  + Boss 血条境界名；多 agent worktree 并行（baseRef=head 流程）
+- **021**：四洲秘境副本（古剑冢/大雁塔地宫/地心火窟/荒古冰墓，Portal 房间模式 + 数据契约预注册）+
+  DropSystem 掉落挂点修复（挂玩家当前父节点，房间内击杀可拾取）
+
+### 8/28-8/29 提交
+
+- **境界参数外抽**（8/28）：data/realms.json（caps/stats/期数/灵力基底/混元/回复率）+
+  CultivationSystem::ensure_defs_loaded（DataLoader 优先+兜底）；data-externalization P0-P2 全 ✅
+- **云游图 v2**（8/29）：ESC 云游页升级可视化世界地图（地理方位岛体/云海航线/详情栏/←→ 导航）
+- **城镇安全区 + NPC**（8/29）：SafeZone（区内敌人不索敌 + 玩家缓速休整，世界层守卫）+
+  TownNpc（对话气泡/客栈歇息全恢复）+ WC.create_town 五洲落地（落霞村/避火庄/长安坊市/苦寒驿/
+  天庭街市）；城镇落位硬约束 x>700（房间挂原点内容带重叠）
+
+### 8/17-8/23 提交（session 022+ 未成文，git log 为准）
+
+- **W4 系列**（4 agent）：机缘事件接 events.json + 道心不稳 debuff；洞天灵兽闯阵 + 采集点×4；
+  技能连招派生（combo_after/window/mult 数据驱动）；法宝温养来源扩充（精英/Boss/服丹/打坐四路 SignalBus）
+- **W5 系列**（5 agent）：大品天仙诀获得线（斜月三星洞·菩提传法，金仙门槛）；心魔镜像用玩家
+  已装配技能模拟施法；北俱芦洲·寒墨旧魔宫（墨鲛/寒渊龟/寒渊君 + 玄冥归元丹）；法宝温养进度
+  可视化（get_nurture_progress）；秘境压制修为（Portal 房间属性压制到指定境界）
+- **UI 大修**（8/21）：HUD 状态栏/技能栏/消耗品栏多轮重排定型（底部居中堆叠 + QWERTY 紧凑槽位）、
+  拾取提示多条目滚动、掉落『获得 XXX』提示、修为经验圆形水位注入、图鉴页（Bestiary 三类 +
+  存档持久化）、熔炼炉页（炼丹/装备铸造/法宝铸造/装备强化 4 子页）、打坐疗伤
+- **数值终轮**（8/22）：线性成长 + 比例减伤 + 敌人随境界缩放全面重平衡；仙人抚顶/醍醐灌顶
+  双机缘叙事（兜率宫太上老君/流沙河古佛化身）
+- **Wave4**（8/23）：敌人行为组件化——EnemyBehavior 聚合结构（ranged/flying/boss + slow/heavy/
+  summon）+ 命名策略函数取代 ~30 处硬编码分支 + JSON flags 扩展；is_ranged/is_flying/is_boss
+  兼容保留
 
 ## 一、最近修改总结
 
@@ -105,37 +150,44 @@
 
 ## 二、后续计划（按优先级）
 
-1. ~~**机缘突破事件**~~（session 009 已完成 v1）——后续可做：机缘事件失败惩罚细化、
-   心魔用玩家外观/招式、三灾「硬抗 vs 躲避」双过法（肉身/元神分叉检验）
-2. ~~**洞天系统**~~（session 009 洞天 v1 + v2 种植 + v3 聚灵阵 + session 013 v4 扩张经营 +
-   session 014 设施补全：灵泉打坐点/丹房就地炼丹/灵植采集点×2；design/dongtian.md）——
-   后续可做：洞天内小怪/更多采集点
-3. ~~**技能/法术系统**~~（session 010 已落地 SkillSystem 管线：主动 13/被动 6 + 8 槽装配 + FX 9 种）——后续：组合技/派生
-4. ~~**法宝系统完善**~~（session 011 ArtifactSystem v1 + session 014 v2：次要法宝×3 补全/
-   飞升解锁 6 槽/渡劫只带本命法宝规则生效/**法宝页可交互**——可选中、X 设本命、A~H 装槽）——
-   后续可做：法宝图标/温养来源扩充
-5. ~~**食物/辟谷**~~（session 007 已完成 v1：饱食度衰减/饥饿debuff/食物倍率/筑基辟谷/洞天种灵米）
-6. ~~**地府/生死簿/勾魂**~~（session 006 v1 + session 008 进阶：审判叙事 + 划名阴寿豁免；地府入口正式搬到南赡部洲长安）
-6b. ~~**南赡部洲（长安坊市）**~~（session 008 已完成 v1：商店系统灵石买卖 + 五庄观人参果 + 地府入口）
-6c. ~~**西牛贺洲**~~（session 009 已完成 v1：火焰山环境火伤+芭蕉扇灭火 + 灵台方寸山三星洞秘境 + 流沙河弱水禁飞）
-6d. ~~**北俱芦洲**~~（session 010 已完成 v1：冰面打滑/极寒/玄冰窟/玄冥 Boss/炼体圣地/南天门序章）
-6e. ~~**天界**~~（session 013 已完成 v1：南天门登天真仙门槛 + 兜率宫蟠桃园 + 巨灵神守关）——
-   后续可做：凌霄宝殿主线叙事、飞升结局
-6f. ~~**东海龙宫秘境**~~（session 013 已完成：弱水走廊 + 虾兵蟹将/镇守将 + 避水珠/千年珍珠）
-7. ~~**数值平衡**~~（session 011 一轮：成长曲线/敌人Boss/技能/经济 +
-   session 013 遗留 5 项补齐：三灾元素结算/心魔realm/普攻全乘区/recipes.json/Boss×5 幂等）
-8. ~~**工程清理**~~（session 006 已完成：Player/GameManager 析构 memdelete 成员，退出 0 泄漏）
+> 2026-08-28 状态刷新：1~8 主体全部落地（勾除原因见各项）。
+
+1. ~~**机缘突破事件**~~（session 009 v1 + 019 渡劫 v2 三灾齐至/天罚使 + 元婴双过法分叉 +
+   W4-1 事件数据化 events.json/道心不稳 debuff + W5-2 心魔镜像玩家招式 + 8/22 仙人抚顶/
+   醍醐灌顶双机缘）——后续可做：天罚使换正式 Boss（用户预留，改 _spawn_boss 即可）
+2. ~~**洞天系统**~~（v1-v4 全落地 + W4-2 灵兽闯阵/采集点×4 + session 014 设施补全）——
+   后续可做：洞天时间流速（design/dongtian.md 待敲定 Q4，成本高需拍板）、药童/傀儡 NPC、灵兽栏
+3. ~~**技能/法术系统**~~（session 010 管线 + W4-3 连招派生 combo_after/window/mult）
+4. ~~**法宝系统完善**~~（session 011 v1 + 014 v2 + W4-4 温养来源扩充 + W5-4 温养进度可视化）——
+   后续可做：法宝图标（依赖美术管线，design/art-assets.md）
+5. ~~**食物/辟谷**~~（session 007 v1）
+6. ~~**地府/南赡/西牛/北俱/天界/龙宫**~~（session 006-013 + 017 飞升结局全落地）
+7. ~~**数值平衡**~~（session 011 + 013 遗留 + 8/22 线性成长/比例减伤/敌境缩放终轮）
+8. ~~**工程清理**~~（session 006 完成；2026-08-28 补：境界参数外抽 data/realms.json——
+   REALM_CAPS/REALM_STATS/期数/灵力基底/混元/回复率全表数据驱动，见 design/data-externalization.md）
+
+### 剩余可做（无阻塞，按价值排序）
+
+- **美术素材管线**（design/art-assets.md 仅规划未实现——全游戏程序化绘制，接入外部贴图是大升级，
+  需要素材生成/审图工具链配合）
+- **云游图 UI**（洲间旅行当前走地图节点，云游图作为其 UI 载体，design/world-map.md）
+- **键位配置 UI**（设置页内重映射，data-externalization P4）
+- **能力解锁表外抽**（data-externalization P3，15+7 条）
 
 ## 三、需要抽成 OOP 的候选
 
 | 现状 | 抽取方向 | 优先级 |
 |---|---|---|
-| 物品硬编码在 ItemDatabase::_register_items | Item 定义迁移 .tres Resource（数据驱动，CLAUDE.md 原定方向） | 高 |
-| 掉落表硬编码在 DropSystem::_roll_drops | DropTable Resource + 稀有度/品质系统 | 高 |
-| 敌人种类 = Enemy 上的 bool 标志（is_ranged/is_flying/is_boss） | EnemyDefinition Resource 或行为组件（RangedBehavior/FlyMovement/BossPhases） | 高 |
-| 技能不存在，只有 consume_mana 接口 | Skill 基类 + SkillManager（法术/神通继承体系） | 高 |
-| 法宝 = Player 上的 benming 字段 + flying_sword 特判 | Artifact 类 + ArtifactManager（槽位/温养/觉醒统一） | 中 |
-| bootstrap.gd 里手写场景搭建（敌人/拾取物/传送门坐标） | WorldBuilder / LevelManager C++ 类 + 场景数据 | 中 |
-| ~~机缘事件不存在~~ | ~~BreakthroughEvent 基类 + EventManager~~（session 009 已实现：BreakthroughManager + TribulationController） | ~~中~~ |
-| 交互提示两处重复（bootstrap _interact_hint + GameHUD _interact_label） | 统一收进 GameHUD（SignalBus interaction_prompt 已有） | 低 |
-| 食物/buff 不存在 | BuffSystem（食物/丹药/状态统一为 Buff） | 低 |
+| ~~物品硬编码~~ | ~~Item 迁移数据驱动~~（items.json，session 002-006 落地） | ~~高~~✅ |
+| ~~掉落表硬编码~~ | ~~DropTable 数据驱动~~（drops.json v2 + min_realm + Boss 专属，session 020） | ~~高~~✅ |
+| ~~敌人 bool 标志~~ | ~~行为组件~~（Wave4：EnemyBehavior 聚合结构 + 命名策略 + JSON flags 扩展；
+   敌人定义本身 session 020 已 enemies.json 数据化） | ~~高~~✅ |
+| ~~技能不存在~~ | ~~SkillSystem 管线~~（session 010 主动13/被动6 + W4-3 连招派生） | ~~高~~✅ |
+| ~~法宝 = Player 字段~~ | ~~ArtifactSystem~~（session 011 v1 + 014 v2 + W4/W5 温养两轮） | ~~中~~✅ |
+| bootstrap/洲脚本手写场景搭建 | WorldCommon + 各洲/房间脚本已分工清晰；剩坐标级「场景数据外抽」
+  （洲布局 JSON），收益中等、破坏面大（全部秘境/洲测试依赖现脚本），暂缓 | 低 |
+| ~~机缘事件不存在~~ | ~~BreakthroughManager~~（session 009；W4-1 接 events.json） | ~~中~~✅ |
+| ~~交互提示两处重复~~ | portal hint（world_common）与 GameHUD _interact_label 已各自收敛用法：
+  portal 提示走 hint Label，交互类提示走 SignalBus interaction_prompt → GameHUD——
+  若要彻底归一需 portal 也发 SignalBus 信号，收益小 | 低 |
+| ~~食物/buff 不存在~~ | ~~BuffSystem~~（buffs.json 数据驱动） | ~~低~~✅ |

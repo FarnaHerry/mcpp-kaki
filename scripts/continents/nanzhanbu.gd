@@ -43,6 +43,15 @@ func _setup():
 	keeper.name = "ShopKeeper"
 	keeper.position = Vector2(1500, 205)
 	add_child(keeper)
+	# 长安坊市安全区（王城之内妖邪避走；掌柜/城隍与商店掌柜同城）
+	WC.create_town(self, 1450, 130, "长安坊市", [
+		{"name": "城隍", "color": Color(0.5, 0.42, 0.55), "dx": -90, "lines": [
+			"长安城中，妖邪避走。",
+			"大雁塔地宫藏佛门舍利。",
+			"坊市交易，货比三家。",
+		]},
+		{"name": "悦来客栈", "color": Color(0.5, 0.48, 0.38), "dx": 55, "heal": true},
+	], 238.0)
 
 	# ===== 大雁塔：地宫秘境入口（长安战斗秘境，守塔金刚 Boss + 舍利子秘藏）=====
 	WC.make_landmark(self, 1615, 120, "大雁塔", Color(1.0, 0.85, 0.4, 1))
