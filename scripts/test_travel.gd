@@ -64,6 +64,18 @@ func _count_menu_label(sub: String) -> int:
 			n += 1
 	return n
 
+func _find_menu_label(sub: String) -> Label:
+	for l in _menu_labels():
+		if sub in l.text:
+			return l
+	return null
+
+func _menu_nodes(cls: String) -> Array:
+	var menu = root.find_child("GameMenu", true, false)
+	if menu == null:
+		return []
+	return menu.find_children("*", cls, true, false)
+
 func _hud_banner_text() -> String:
 	var hud = root.find_child("GameHUD", true, false)
 	if hud == null:
@@ -125,10 +137,34 @@ func _process(delta) -> bool:
 			_check(_has_menu_label("【当前】"), "当前洲标记")
 			_check(_count_menu_label("未解锁") == 4, "凡人期四洲未解锁灰显（西牛/南赡/北俱/天界）")
 			_check(_has_menu_label("条件："), "门控条件话术")
+			# —— 云游图可视化地图断言（地理方位落位 + 岛体/航线绘制 + 详情栏）——
+			_check(_menu_nodes("Polygon2D").size() >= 10, "岛体绘制（5 洲 blob+岛影+描边环）")
+			_check(_menu_nodes("ColorRect").size() >= 6, "海底板/云带/云海航线点绘制")
+			var d = _find_menu_label("东胜神洲")
+			var x = _find_menu_label("西牛贺洲")
+			var n = _find_menu_label("北俱芦洲")
+			var s = _find_menu_label("南赡部洲")
+			var t = _find_menu_label("天界")
+			_check(d != null and x != null and d.position.x > x.position.x, "东胜在东、西牛在西")
+			_check(n != null and s != null and n.position.y < s.position.y, "北俱在北、南赡在南")
+			_check(t != null and n != null and t.position.y < n.position.y, "天界浮空最北（九霄之上）")
+			_check(_has_menu_label("当前所在洲"), "详情栏：当前洲状态行")
+			var tj_gate = _find_menu_label("条件：真仙")
+			_check(tj_gate != null and t != null and tj_gate.position.y > t.position.y, "锁定门槛行挂岛下（天界·真仙）")
+			_check(_has_menu_label("↑↓←→ 选择"), "详情栏操作提示")
+			_press("left") # 地图导航：← 逆序循环 → 天界
+			_step = 60
+		60:
+			_check(_has_menu_label("▶ 天界"), "← 循环选中天界（索引尾）")
+			_press("right")
+			_step = 61
+		61:
+			_check(_has_menu_label("▶ 东胜神洲"), "→ 回到东胜神洲")
 			_press("down") # → 选西牛贺洲
 			_step = 7
 		7:
 			_check(_has_menu_label("▶ 西牛贺洲"), "光标移到西牛贺洲")
+			_check(_has_menu_label("境界门槛："), "详情栏：锁定洲显示境界门槛")
 			_press("interact") # 未解锁 → 拒行
 			_step = 8
 		8:

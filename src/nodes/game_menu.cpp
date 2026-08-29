@@ -223,7 +223,7 @@ void GameMenu::_rebuild_page() {
 		case PAGE_TRAVEL:
 			if (_inv_panel) _inv_panel->close();
 			_build_travel_page();
-			_set_hint(LOC("Q/E 切换页  ↑/↓ 选洲  X 前往  ESC 关闭"));
+			_set_hint(LOC("Q/E 切换页  ↑↓←→ 选洲  X 前往  ESC 关闭"));
 			break;
 		case PAGE_ALCHEMY:
 			if (_inv_panel) _inv_panel->close();
@@ -1150,7 +1150,11 @@ void GameMenu::_handle_sect_input() {
 }
 
 // ============================================================
-// 云游页（design/world-map.md：四大部洲列表 → X 前往已解锁洲）
+// 云游图页（design/world-map.md 四）：可视化世界地图——四大部洲按地理方位落位 +
+// 云海航线点线 + 天界浮空；▲选中/【当前】/未解锁灰显 + 门槛随节点展示，底部详情栏。
+// 文本约定（test_travel.gd 断言依赖）：标题「—— 云游图 ——」；节点名行含 ▶ 前缀（选中）/
+// 【当前】/未解锁 字样；锁定节点附属行以「条件：」开头；除节点名外任何文案不得含
+// 「未解锁」（页内计数 == 锁定洲数）。
 // ============================================================
 
 void GameMenu::_build_travel_page() {
@@ -1163,21 +1167,68 @@ void GameMenu::_build_travel_page() {
 		add_child(l);
 		_page_nodes.push_back(l);
 	};
+	// 近似宽度（CJK 全角≈字号，ASCII≈0.55×）——仅用于居中摆放
+	auto text_w = [](const String &s, int size) -> float {
+		float w = 0;
+		for (int i = 0; i < s.length(); i++) {
+			uint32_t ch = (uint32_t)s[i];
+			bool wide = ch >= 0x2E80 || ch == 0x25B6;
+			w += wide ? size : size * 0.55f;
+		}
+		return w;
+	};
+	auto add_rect = [&](float x, float y, float w, float h, const Color &c) {
+		ColorRect *r = memnew(ColorRect);
+		r->set_position(Vector2(x, y));
+		r->set_size(Vector2(w, h));
+		r->set_color(c);
+		add_child(r);
+		_page_nodes.push_back(r);
+	};
+	// 有机岛屿形色块（固定抖动表，10 边形；size = 外接矩形）
+	auto add_blob = [&](Vector2 center, Vector2 size, const Color &c) {
+		Polygon2D *p = memnew(Polygon2D);
+		static const float jit[10] = { 1.0f, 0.84f, 0.96f, 0.8f, 0.98f, 0.86f, 0.92f, 0.8f, 1.0f, 0.88f };
+		PackedVector2Array pts;
+		for (int i = 0; i < 10; i++) {
+			float a = Math_TAU * i / 10.0f;
+			pts.push_back(Vector2(Math::cos(a) * size.x * 0.5f * jit[i],
+					Math::sin(a) * size.y * 0.5f * jit[(i + 5) % 10]));
+		}
+		p->set_polygon(pts);
+		p->set_color(c);
+		p->set_position(center);
+		add_child(p);
+		_page_nodes.push_back(p);
+	};
+	// 云海航线：两节点间铺点（离节点 26px 内不铺，留出洲岸）
+	auto add_route = [&](Vector2 a, Vector2 b, const Color &c) {
+		Vector2 ab = b - a;
+		float len = ab.length();
+		if (len < 1.0f) return;
+		Vector2 dir = ab / len;
+		int n = (int)(len / 14.0f);
+		for (int i = 1; i < n; i++) {
+			Vector2 p = a + dir * (i * 14.0f);
+			if ((p - a).length() < 26.0f || (p - b).length() < 26.0f) continue;
+			add_rect(p.x - 2, p.y - 2, 4, 4, c);
+		}
+	};
 
-	Color head_c(1.0f, 0.85f, 0.5f);
-	Color body_c(0.85f, 0.85f, 0.85f);
+	Color sel_c(1.0f, 0.92f, 0.5f);
+	Color cur_c(0.55f, 0.95f, 0.55f);
+	Color body_c(0.88f, 0.88f, 0.88f);
 	Color dim_c(0.5f, 0.5f, 0.5f);
-	Color sel_c(1.0f, 0.95f, 0.6f);
-	Color cur_c(0.6f, 1.0f, 0.6f);
-	Color lock_c(0.45f, 0.45f, 0.45f);
+	Color lock_c(0.72f, 0.72f, 0.8f);
 	Color ok_c(0.6f, 1.0f, 0.6f);
 	Color bad_c(1.0f, 0.5f, 0.5f);
+	Color route_c(0.78f, 0.87f, 1.0f, 0.4f);
 
 	Label *title = memnew(Label);
 	title->set_text(LOC("—— 云游图 ——"));
 	title->add_theme_font_size_override("font_size", 13);
 	title->add_theme_color_override("font_color", Color(1.0f, 0.9f, 0.5f));
-	title->set_position(Vector2(185, 32));
+	title->set_position(Vector2(185, 26));
 	add_child(title);
 	_page_nodes.push_back(title);
 
@@ -1186,27 +1237,108 @@ void GameMenu::_build_travel_page() {
 		return;
 	}
 
+	// ---- 洲节点版式（地理方位：东胜居东、西牛居西、南赡居南、北俱居北，天界浮空九霄）----
+	struct NodeLayout {
+		const char *id;
+		Vector2 pos;
+		Vector2 size;
+		Color base;
+	};
+	static const NodeLayout LAYOUTS[] = {
+		{ "tianjie",   Vector2(240, 64),  Vector2(66, 26),  Color(0.95f, 0.84f, 0.45f) }, // 天界·金
+		{ "beijulu",   Vector2(330, 102), Vector2(96, 34),  Color(0.55f, 0.78f, 0.95f) }, // 北俱芦洲·冰蓝
+		{ "xiniuhe",   Vector2(104, 148), Vector2(96, 34),  Color(0.95f, 0.62f, 0.45f) }, // 西牛贺洲·赤土
+		{ "dongsheng", Vector2(376, 148), Vector2(96, 34),  Color(0.55f, 0.85f, 0.6f) },  // 东胜神洲·青
+		{ "nanzhanbu", Vector2(240, 178), Vector2(96, 34),  Color(0.9f, 0.85f, 0.55f) },  // 南赡部洲·黄土
+	};
+
+	// ---- 底图：东海云海 + 天界云带 ----
+	add_rect(16, 44, 448, 172, Color(0.1f, 0.17f, 0.3f, 0.45f));
+	add_rect(48, 82, 384, 10, Color(1, 1, 1, 0.05f));
+	add_rect(90, 88, 300, 7, Color(1, 1, 1, 0.05f));
+
+	// ---- 云海航线（四洲环渡）+ 北俱南天门登天路 ----
+	add_route(Vector2(376, 148), Vector2(330, 102), route_c);
+	add_route(Vector2(330, 102), Vector2(104, 148), route_c);
+	add_route(Vector2(104, 148), Vector2(240, 178), route_c);
+	add_route(Vector2(240, 178), Vector2(376, 148), route_c);
+	add_route(Vector2(330, 102), Vector2(240, 64), Color(0.8f, 0.8f, 0.85f, 0.3f)); // 登天虚线
+
 	Array list = _continent_mgr->get_continent_list();
 	_travel_sel = CLAMP(_travel_sel, 0, (int)list.size() - 1);
+
+	// 两遍绘制：先岛体（描边环→岛影→岛体），后全部文字（门槛/洲名不被后画岛体压住）
+	struct NodeDraw {
+		String name_txt, gate_txt;
+		Color name_c;
+		Vector2 pos, size;
+		bool locked;
+	};
+	std::vector<NodeDraw> draws;
 	for (int i = 0; i < list.size(); i++) {
 		Dictionary c = list[i];
+		String id = c["id"];
+		String name = c["name"];
 		bool unlocked = c["unlocked"];
 		bool current = c["current"];
 		bool is_sel = (i == _travel_sel);
-		float y = 62.0f + i * 34;
 
-		String line1 = (is_sel ? LOC("▶ ") : LOC("  ")) + String(c["name"]);
-		if (current) line1 += LOC("  【当前】");
-		else if (!unlocked) line1 += LOC("  未解锁");
-		Color c1 = is_sel ? sel_c : (current ? cur_c : (unlocked ? body_c : lock_c));
-		add_line(line1, 70.0f, y, 10, c1);
-
-		String line2 = LOC("    ") + String(c["desc"]);
-		if (!unlocked) {
-			line2 += LOC("  ｜ 条件：") + String(c["gate"]);
+		// 版式查表；未收录 id 兜底横排（防未来新增洲越界）
+		Vector2 pos(80 + i * 80, 120);
+		Vector2 size(80, 30);
+		Color base(0.6f, 0.7f, 0.7f);
+		for (const NodeLayout &nl : LAYOUTS) {
+			if (id == nl.id) {
+				pos = nl.pos;
+				size = nl.size;
+				base = nl.base;
+				break;
+			}
 		}
-		add_line(line2, 70.0f, y + 14, 8, dim_c);
+		Color fill = unlocked ? base : base.lerp(Color(0.32f, 0.32f, 0.36f), 0.75f);
+
+		// 选中/当前描边环（大 blob 垫底成边框）：选中金在最外，当前绿在其内
+		if (current)
+			add_blob(pos, size + Vector2(13, 11), Color(cur_c.r, cur_c.g, cur_c.b, 0.9f));
+		if (is_sel)
+			add_blob(pos, size + Vector2(26, 21), Color(sel_c.r, sel_c.g, sel_c.b, 0.9f));
+		// 岛影 + 岛体
+		add_blob(pos + Vector2(0, 3), size, Color(0, 0, 0, 0.25f));
+		add_blob(pos, size, fill);
+
+		NodeDraw nd;
+		nd.name_txt = (is_sel ? LOC("▶ ") : String()) + name;
+		if (current) nd.name_txt += LOC("【当前】");
+		if (!unlocked) nd.name_txt += LOC(" 未解锁");
+		nd.name_c = is_sel ? sel_c : (current ? cur_c : (unlocked ? body_c : lock_c));
+		nd.gate_txt = unlocked ? String() : LOC("条件：") + String(c["gate"]);
+		nd.pos = pos;
+		nd.size = size;
+		nd.locked = !unlocked;
+		draws.push_back(nd);
 	}
+	for (const NodeDraw &nd : draws) {
+		float nw = text_w(nd.name_txt, 9);
+		// 洲名暗底垫：与岛体/描边环分隔，保证灰字锁定态可读
+		add_rect(nd.pos.x - nw * 0.5f - 3, nd.pos.y - 8, nw + 6, 15, Color(0, 0, 0, 0.45f));
+		add_line(nd.name_txt, nd.pos.x - nw * 0.5f, nd.pos.y - 6, 9, nd.name_c);
+		// 锁定洲：岛下门槛行（页内「条件：」唯一来源）
+		if (nd.locked) {
+			float gw = text_w(nd.gate_txt, 7);
+			add_line(nd.gate_txt, nd.pos.x - gw * 0.5f, nd.pos.y + nd.size.y * 0.5f + 2, 7, Color(0.75f, 0.75f, 0.82f));
+		}
+	}
+
+	// ---- 底部详情栏（当前选中洲）----
+	Dictionary sel = list[_travel_sel];
+	add_line(String(sel["name"]), 70.0f, 216.0f, 10, sel_c);
+	add_line(String(sel["desc"]), 70.0f, 231.0f, 8, body_c);
+	String state;
+	if (bool(sel["current"])) state = LOC("当前所在洲");
+	else if (bool(sel["unlocked"])) state = LOC("已解锁 · X 前往");
+	else state = LOC("境界门槛：") + String(sel["gate"]);
+	add_line(state, 280.0f, 231.0f, 8, bool(sel["current"]) ? cur_c : (bool(sel["unlocked"]) ? ok_c : lock_c));
+	add_line(LOC("↑↓←→ 选择  X 前往"), 350.0f, 216.0f, 8, dim_c);
 
 	// 云游结果提示 / 说明
 	if (!_travel_msg.is_empty()) {
@@ -1224,11 +1356,11 @@ void GameMenu::_handle_travel_input() {
 	int count = list.size();
 	if (count == 0) return;
 	_travel_sel = CLAMP(_travel_sel, 0, count - 1);
-	if (input->is_action_just_pressed(LOC("up"))) {
+	if (input->is_action_just_pressed(LOC("up")) || input->is_action_just_pressed(LOC("left"))) {
 		_travel_sel = (_travel_sel - 1 + count) % count;
 		_rebuild_page();
 	}
-	if (input->is_action_just_pressed(LOC("down"))) {
+	if (input->is_action_just_pressed(LOC("down")) || input->is_action_just_pressed(LOC("right"))) {
 		_travel_sel = (_travel_sel + 1) % count;
 		_rebuild_page();
 	}
