@@ -80,6 +80,7 @@ void ContinentManager::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("can_travel", "id"), &ContinentManager::can_travel);
 	ClassDB::bind_method(D_METHOD("travel_to", "id"), &ContinentManager::travel_to);
 	ClassDB::bind_method(D_METHOD("travel_to_direct", "id"), &ContinentManager::travel_to_direct);
+	ClassDB::bind_method(D_METHOD("travel_to_direct_to", "id", "x", "y"), &ContinentManager::travel_to_direct_to);
 	ClassDB::bind_method(D_METHOD("complete_travel"), &ContinentManager::complete_travel);
 	ClassDB::bind_method(D_METHOD("get_continent_list"), &ContinentManager::get_continent_list);
 }
@@ -195,6 +196,26 @@ bool ContinentManager::travel_to_direct(const String &p_id) {
 	GameManager::set_travel_bridge(data);
 	GameManager::set_travel_target(Vector2(d->spawn_x, d->spawn_y));
 	gm->request_scene_change(String(d->scene), Vector2(d->spawn_x, d->spawn_y));
+	return true;
+}
+
+bool ContinentManager::travel_to_direct_to(const String &p_id, float p_x, float p_y) {
+	const Def *d = find_def(p_id);
+	if (!d || !can_travel(p_id)) return false;
+	GameManager *gm = GameManager::get_singleton();
+	if (!gm) return false;
+
+	// 与 travel_to_direct 同桥，仅落点改为阵点坐标
+	Dictionary data = gm->collect_save_data();
+	Dictionary cp;
+	cp["position_x"] = p_x;
+	cp["position_y"] = p_y;
+	cp["scene_path"] = String(d->scene);
+	cp["has_checkpoint"] = true;
+	data["checkpoint"] = cp;
+	GameManager::set_travel_bridge(data);
+	GameManager::set_travel_target(Vector2(p_x, p_y));
+	gm->request_scene_change(String(d->scene), Vector2(p_x, p_y));
 	return true;
 }
 

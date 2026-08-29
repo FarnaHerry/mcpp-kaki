@@ -103,6 +103,10 @@ namespace godot {
         Node *pill = root ? root->find_child("PillLabPanel", true, false) : nullptr;
         if (pill && bool(pill->call("is_open")))
             return;
+        // 云游阵驾云面板同理
+        Node *tpp = root ? root->find_child("TeleportPanel", true, false) : nullptr;
+        if (tpp && tpp->has_method("is_open") && bool(tpp->call("is_open")))
+            return;
         if (_inside) {
             _exit(true);
         } else {

@@ -57,6 +57,9 @@ public:
 	Array get_all_realms() const;
 	Dictionary get_realm_tuning() const;
 
+	// 云游阵（data/teleports.json）：数组序=面板列表序
+	Array get_all_teleports() const;
+
 protected:
 	static void _bind_methods();
 
@@ -72,6 +75,7 @@ private:
 	Dictionary _drop_table;
 	Array _realms;         // 下标 = 境界序号
 	Dictionary _realm_tuning;
+	Array _teleports;      // 云游阵定义（数组序=面板序）
 
 	void _load_json_array(const String &p_path, HashMap<StringName, Dictionary> &r_out);
 };
@@ -123,6 +127,8 @@ public:
 	bool can_travel(const String &p_id) const;
 	bool travel_to(const String &p_id);
 	bool travel_to_direct(const String &p_id);
+	// 直达 + 自定义落点（云游阵跨洲驾云：落到阵点而非洲 spawn）
+	bool travel_to_direct_to(const String &p_id, float p_x, float p_y);
 	bool complete_travel();
 	Array get_continent_list() const;
 

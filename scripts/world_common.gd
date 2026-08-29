@@ -144,6 +144,9 @@ static func setup(root: Node) -> Dictionary:
 	hint.visible = false
 	hint_layer.add_child(hint)
 
+	# 云游阵（data/teleports.json：本洲阵碑 + 驾云面板）
+	setup_teleports(root)
+
 	return {
 		"player": player, "camera": camera, "game_mgr": game_mgr,
 		"hint": hint, "continents": continents, "telemetry": telemetry,
@@ -370,6 +373,24 @@ static func make_house(root: Node, base: Vector2) -> void:
 	door.polygon = PackedVector2Array([Vector2(-6, -14), Vector2(6, -14), Vector2(6, 0), Vector2(-6, 0)])
 	door.position = base
 	root.add_child(door)
+
+# ---- 云游阵装配（data/teleports.json：本洲阵碑生成 + 驾云面板）----
+static func setup_teleports(root: Node) -> void:
+	var dl = root.find_child("DataLoader", true, false)
+	if dl == null:
+		return
+	var scene_path := str(root.get_scene_file_path())
+	for d in dl.call("get_all_teleports"):
+		if str(d["scene"]) != scene_path:
+			continue
+		var arr = ClassDB.instantiate("TeleportArray")
+		arr.name = "TpArray_" + str(d["id"])
+		arr.position = Vector2(float(d["x"]), float(d["y"]) + 18.0)
+		root.add_child(arr)
+		arr.call("setup", str(d["id"]), str(d["name"]), str(d["continent"]), str(d["scene"]))
+	var panel = load("res://scripts/teleport_panel.gd").new()
+	panel.name = "TeleportPanel"
+	root.add_child(panel)
 
 # ---- F6 读档（各洲 _input 转发到这里）----
 static func handle_input(root: Node, event: InputEvent) -> void:

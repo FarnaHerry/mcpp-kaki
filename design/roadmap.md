@@ -28,6 +28,9 @@
 - **城镇安全区 + NPC**（8/29）：SafeZone（区内敌人不索敌 + 玩家缓速休整，世界层守卫）+
   TownNpc（对话气泡/客栈歇息全恢复）+ WC.create_town 五洲落地（落霞村/避火庄/长安坊市/苦寒驿/
   天庭街市）；城镇落位硬约束 x>700（房间挂原点内容带重叠）
+- **云游阵**（8/29）：快速传送网络——各地阵碑走近自动铭刻（GameManager flag 随档），
+  X 开驾云面板选阵点：同洲落点直达，跨洲 travel_to_direct_to 沿用境界门控；
+  data/teleports.json 10 阵点 + WC.setup 自动装配；test_teleports.gd 28 断言
 
 ### 8/17-8/23 提交（session 022+ 未成文，git log 为准）
 

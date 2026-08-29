@@ -1,0 +1,12 @@
+[
+	{"id": "luoxia",     "name": "落霞村",     "continent": "dongsheng", "scene": "res://scenes/main.tscn",                        "x": 800,  "y": 200},
+	{"id": "huaguoshan", "name": "花果山",     "continent": "dongsheng", "scene": "res://scenes/main.tscn",                        "x": 6150, "y": 200},
+	{"id": "donghai",    "name": "东海之滨",   "continent": "dongsheng", "scene": "res://scenes/main.tscn",                        "x": 8240, "y": 200},
+	{"id": "bihuo",      "name": "避火庄",     "continent": "xiniuhe",   "scene": "res://scenes/continents/xiniuhe.tscn",          "x": 1590, "y": 200},
+	{"id": "liushahe",   "name": "流沙河西岸", "continent": "xiniuhe",   "scene": "res://scenes/continents/xiniuhe.tscn",          "x": 2900, "y": 200},
+	{"id": "changan",    "name": "长安坊市",   "continent": "nanzhanbu", "scene": "res://scenes/continents/nanzhanbu.tscn",        "x": 1550, "y": 200},
+	{"id": "wuzhuang",   "name": "五庄观",     "continent": "nanzhanbu", "scene": "res://scenes/continents/nanzhanbu.tscn",        "x": 1790, "y": 200},
+	{"id": "kuhanyi",    "name": "苦寒驿",     "continent": "beijulu",   "scene": "res://scenes/continents/beijulu.tscn",          "x": 2610, "y": 200},
+	{"id": "nantianmen", "name": "南天门",     "continent": "beijulu",   "scene": "res://scenes/continents/beijulu.tscn",          "x": 3380, "y": 200},
+	{"id": "tianting",   "name": "天庭街市",   "continent": "tianjie",   "scene": "res://scenes/continents/tianjie.tscn",          "x": 1410, "y": 200}
+]

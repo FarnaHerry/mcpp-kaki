@@ -28,6 +28,7 @@ void DataLoader::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_all_recipes"), &DataLoader::get_all_recipes);
 	ClassDB::bind_method(D_METHOD("get_all_realms"), &DataLoader::get_all_realms);
 	ClassDB::bind_method(D_METHOD("get_realm_tuning"), &DataLoader::get_realm_tuning);
+	ClassDB::bind_method(D_METHOD("get_all_teleports"), &DataLoader::get_all_teleports);
 }
 
 void DataLoader::_ready() {
@@ -62,6 +63,14 @@ void DataLoader::_ready() {
 		if (p.get_type() == Variant::DICTIONARY) {
 			_drop_table = p;
 		}
+	}
+
+	// 云游阵（data/teleports.json）：数组原样保留（序=面板列表序）
+	if (FileAccess::file_exists("res://data/teleports.json")) {
+		String raw = FileAccess::get_file_as_string("res://data/teleports.json");
+		Variant p = JSON::parse_string(raw);
+		if (p.get_type() == Variant::ARRAY)
+			_teleports = p;
 	}
 
 	// Realms: object with "tuning" (global knobs) + "realms" array indexed by realm order
@@ -214,6 +223,10 @@ Dictionary DataLoader::get_event(int p_realm) const {
 
 Array DataLoader::get_all_realms() const {
 	return _realms;
+}
+
+Array DataLoader::get_all_teleports() const {
+	return _teleports;
 }
 
 Dictionary DataLoader::get_realm_tuning() const {

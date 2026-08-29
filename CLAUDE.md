@@ -123,6 +123,18 @@ bin/              # 编译产物 (.so)，gitignored
 - **云海强渡** (scenes/continents/yunhai.tscn) — `travel_to`=先渡云海（检查点改写起云台，`cp["travel_dest"]`记目的洲**随档持久化**，GameManager `_travel_dest` 成员随 checkpoint 段存取）；`travel_to_direct`=直达（调试）；登岸区→`complete_travel`（到岸清 dest）；云海机制：无地面云墩+罡风带（**位移直推**——速度增量被状态机每帧覆写）+落雷柱（预警1s→劈落0.25s）+坠海遣返（y>420 回起云台+15%代价）+雷鸟；过渡场景 `_ready` 保持上一洲身份不播报
 
 - **城镇安全区** (2026-08-29) — **SafeZone** (`src/nodes/safe_zone.*`，Area2D)：区内敌人失去视野（`Enemy::can_see_player` 抑制——玩家或自身在区内均不索敌，chase 自然退回 idle/patrol）+ 玩家缓速休整（HP 1%/s + 灵力额外 ×1，`Player::_physics_process`）；查询走 `"safe_zones"` 组静态遍历 `SafeZone::is_point_safe(point)`（无共享状态，跨场景自然生效）；进出经 interaction_prompt 提示。**仅世界层生效**——Portal 房间/洞天挂洲原点（内容带 0..~700 坐标重叠），enemy/player 两侧都有 `get_parent()==current_scene` 守卫，房间内一律不抑制不休整。**TownNpc** (`src/nodes/town_npc.*`，Area2D，ShopKeeper 交互模板)：贴近 `[X] 交谈/歇息`；交谈型头顶气泡 2.5s 循环播放台词；歇息型（heal）X=HP/灵力全恢复；`"town_npcs"` 组。**WC.create_town(root, x, half_w, town_name, npcs, ground_y)**：SafeZone + 村舍×2（纯视觉）+ 名牌 + NPC 装配（npcs=[{name,color,lines,heal,dx}]）。**落位硬约束：城镇须 x>700**（全部房间挂洲原点 0..~700，地心火窟最远 698；且 Area2D 插入原点带会扰动房间内 zone 事件顺序——冰墓测试踩过）。五洲城镇：东胜·落霞村(700)/西牛·避火庄(1700)/南赡·长安坊市(1450，与 ShopKeeper 同城)/北俱·苦寒驿(2500)/天界·天庭街市(1400)；test_towns.gd 31 断言
+
+- **云游阵** (2026-08-29，快速传送) — **TeleportArray** (`src/nodes/teleport_array.*`，Area2D)：
+  各地阵碑（石碑+云纹，已铭刻青光/未铭刻暗沉），走近**自动铭刻**（GameManager flag `tp:<id>`，随档持久随旅行桥携带），
+  贴近 `[X] 驾云` 开 **TeleportPanel** (`scripts/teleport_panel.gd`，GDScript，CanvasLayer 115，
+  PillLabPanel 模式——GameMenu/DongtianManager 有同名防抢守卫)：列出 data/teleports.json 全部阵点，
+  未铭刻显「？？？ · 未铭刻的阵点」不可选，↑/↓ 选阵 X 驾云 ESC 关（打开暂停）。
+  同洲落阵点坐标直达；跨洲走 `ContinentManager::travel_to_direct_to(id,x,y)`（存档桥+自定义落点，
+  境界门控同云游：金丹/炼虚/渡劫/真仙，不足灰显 gate 话术拒行）。
+  定义 `data/teleports.json`（10 阵点：每洲城镇+花果山/东海之滨/流沙河西岸/五庄观/南天门），
+  DataLoader `get_all_teleports`（数组序=面板序），**WC.setup 自动生成本洲阵碑**（setup_teleports，
+  无需各洲脚本改动）。阵碑面板同帧双消费守卫：open_panel 记 `Engine.get_process_frames()`，
+  开帧的 interact 不再当「驾云」。test_teleports.gd 28 断言
 - **东胜神洲补完** — 花果山(6000~8000：桃林粉台+猿怪+仙桃)+水帘洞秘境(scenes/rooms/shuilian_dong.tscn + scripts/rooms/，Portal 房间模式，白猿老祖精英，秘藏**身外化身残卷**)+东海之滨(8000~9000：巡海夜叉精英远程+**定海神针铁**武器攻+25 地品)；世界尽头墙移至 9000；检查点 6200/8200；**东海龙宫秘境** (scenes/rooms/longgong.tscn + scripts/rooms/longgong.gd，x=8600 入口 `[↑] 入东海龙宫`，Portal 房间模式)：深蓝海底+光柱+珊瑚柱+海底台，**弱水走廊 NoFlyZone 禁飞**，虾兵×2(HP200 realm5)/蟹将精英(HP450 realm6)/**镇守将** Boss(is_boss 后 max_health 800 realm7)；秘藏 **避水珠 bi_shui_zhu**(饰品槽 **水抗20%**——配套弱水禁飞的海底生存装)/**千年珍珠 qian_nian_zhen_zhu**(修为+2000+回灵，低能量自动服用)/灵石
 - **装备元素抗性管线** — Item 加 `float elem_resist[8]`（JSON `elem_resist` 数组 + fallback 兜底）；`Player::_take_damage_typed` 汇总**装备**元素抗性进结算（与 buff/被动/技能抗性同乘区）。避水珠：type 3 饰品槽 equip_slot 2，ELEM_SHUI 0.2
 - **秘籍物品管线** — Item 新字段 `learn_skill`：use_consumable 统一入口习得技能（数据驱动，残卷/秘籍通用）；新物品：仙桃(50%回血+300修为)/身外化身残卷(地品)/定海神针铁

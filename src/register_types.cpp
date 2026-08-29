@@ -23,6 +23,7 @@ import mcpp_kaki.core;
 #include "nodes/shop_keeper.h"
 #include "nodes/safe_zone.h"
 #include "nodes/town_npc.h"
+#include "nodes/teleport_array.h"
 #include "nodes/item_pickup.h"
 #include "nodes/herb_node.h"
 #include "nodes/portal.h"
@@ -52,6 +53,7 @@ void initialize_mcpp_kaki_module(ModuleInitializationLevel p_level) {
 	GDREGISTER_CLASS(ShopKeeper);
 	GDREGISTER_CLASS(SafeZone);
 	GDREGISTER_CLASS(TownNpc);
+	GDREGISTER_CLASS(TeleportArray);
 	GDREGISTER_CLASS(HitBox);
 	GDREGISTER_CLASS(HurtBox);
 	GDREGISTER_CLASS(Projectile);

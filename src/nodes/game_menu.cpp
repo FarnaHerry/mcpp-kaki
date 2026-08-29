@@ -2717,6 +2717,10 @@ void GameMenu::_process(double p_delta) {
 			Node *pp = scene ? scene->find_child("PillLabPanel", true, false) : nullptr;
 			if (pp && pp->has_method("is_open") && bool(pp->call("is_open")))
 				return;
+			// 云游阵驾云面板打开时 ESC 归它处理
+			Node *tp = scene ? scene->find_child("TeleportPanel", true, false) : nullptr;
+			if (tp && tp->has_method("is_open") && bool(tp->call("is_open")))
+				return;
 			_open_menu(_page); // 记住上次页
 			return;
 		}
