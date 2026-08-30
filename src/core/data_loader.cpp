@@ -29,6 +29,7 @@ void DataLoader::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_all_realms"), &DataLoader::get_all_realms);
 	ClassDB::bind_method(D_METHOD("get_realm_tuning"), &DataLoader::get_realm_tuning);
 	ClassDB::bind_method(D_METHOD("get_all_teleports"), &DataLoader::get_all_teleports);
+	ClassDB::bind_method(D_METHOD("get_all_abilities"), &DataLoader::get_all_abilities);
 }
 
 void DataLoader::_ready() {
@@ -73,6 +74,14 @@ void DataLoader::_ready() {
 			_teleports = p;
 	}
 
+	// 能力解锁表（data/abilities.json）：数组原样保留（序=能力页显示序）
+	if (FileAccess::file_exists("res://data/abilities.json")) {
+		String raw = FileAccess::get_file_as_string("res://data/abilities.json");
+		Variant p = JSON::parse_string(raw);
+		if (p.get_type() == Variant::ARRAY)
+			_abilities = p;
+	}
+
 	// Realms: object with "tuning" (global knobs) + "realms" array indexed by realm order
 	if (FileAccess::file_exists("res://data/realms.json")) {
 		String raw = FileAccess::get_file_as_string("res://data/realms.json");
@@ -87,10 +96,10 @@ void DataLoader::_ready() {
 	}
 
 	UtilityFunctions::print(
-		vformat(TXT("DataLoader: %d items, %d skills, %d buffs, %d gongfas, %d sects, %d recipes, %d continents, %d events, drops=%s, realms=%d"),
+		vformat(TXT("DataLoader: %d items, %d skills, %d buffs, %d gongfas, %d sects, %d recipes, %d continents, %d events, drops=%s, realms=%d, abilities=%d"),
 			_items.size(), _skills.size(), _buffs.size(), _gongfas.size(), _sects.size(),
 			_recipes.size(), _continents.size(), _events.size(),
-			_drop_table.is_empty() ? TXT("no") : TXT("yes"), _realms.size()));
+			_drop_table.is_empty() ? TXT("no") : TXT("yes"), _realms.size(), _abilities.size()));
 }
 
 void DataLoader::_load_json_array(const String &p_path, HashMap<StringName, Dictionary> &r_out) {
@@ -227,6 +236,10 @@ Array DataLoader::get_all_realms() const {
 
 Array DataLoader::get_all_teleports() const {
 	return _teleports;
+}
+
+Array DataLoader::get_all_abilities() const {
+	return _abilities;
 }
 
 Dictionary DataLoader::get_realm_tuning() const {

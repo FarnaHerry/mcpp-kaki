@@ -14,7 +14,7 @@
 | P2 | 配方 | data/recipes.json | AlchemySystem::ensure_defs_loaded → DataLoader | ✅ |
 | P2 | 洲 | data/continents.json | ContinentManager::ensure_loaded → DataLoader | ✅ |
 | P2 | 境界 | data/realms.json | CultivationSystem::ensure_defs_loaded → DataLoader | ✅ |
-| P3 | 能力 | — | 待做 | ❌ |
+| P3 | 能力 | data/abilities.json | AbilityManager::ensure_defs_loaded → DataLoader | ✅ |
 | P4 | 输入映射 | — | 待做（需键位配置 UI） | ❌ |
 | P5 | UI 文本/布局 | — | 待做（需本地化框架/UI 皮肤） | ❌ |
 
@@ -345,8 +345,11 @@ RANK_COST = { 0, 100, 300 } // 外门/内门/真传
 
 ## 十二、能力解锁（AbilityManager）
 
-### 12.1 境界→能力映射 — 15 主动 + 7 被动
-**位置**：`src/cultivation/ability_manager.cpp` + `game_menu.cpp` 的能力页
+### 12.1 境界→能力映射 — 15 主动 + 7 被动 ✅（2026-08-31 外抽 `data/abilities.json`）
+**位置**：`src/cultivation/ability_manager.cpp`（`ensure_defs_loaded`：JSON 优先 + ABILITY_DEFS 兜底）+ `game_menu.cpp` 能力页数据驱动渲染
+
+字段：id / name / type(active|passive) / innate / unlock_realm（-1=非境界）/ hunyuan / cond（解锁条件显示文本）/ desc。
+开辟洞天（dongtian）为系统能力不入能力页表，炼虚解锁仍由 `check_realm_unlocks` 显式处理。
 
 | 能力 ID | 解锁境界 |
 |---|---|
@@ -360,7 +363,7 @@ RANK_COST = { 0, 100, 300 } // 外门/内门/真传
 | 领域展开 | 元婴 |
 | … | … |
 
-能力页渲染在 `GameMenu::_build_ability_page()` 中硬编码了名称和解锁条件文本。
+能力页渲染改由 `GameMenu::_build_ability_page()` 从 AbilityManager 数据表读取（外观与此前等价）。
 
 ---
 
@@ -430,7 +433,7 @@ artifact_page/skill_a~h/consume_1~6/pressure_wei/pressure_lin。
 | **P2** | 配方表 | 新增配方是内容迭代 | ✅ recipes.json |
 | **P2** | 洲定义 | 新增洲才需要改 | ✅ continents.json |
 | **P2** | 境界参数 | 数值平衡调优时需外部化（2026-08-28 落地） | ✅ realms.json |
-| **P3** | 能力解锁 | 15+7 条，境界调整时需同步 | ❌ |
+| **P3** | 能力解锁 | 15+7 条，境界调整时需同步（2026-08-31 落地 abilities.json） | ✅ abilities.json |
 | **P4** | Player 属性 | 需引入角色模板后才可抽 | ❌ |
 | **P4** | 敌人 spawn 坐标（世界布局） | 洲脚本 GDScript 手写坐标（world_common + 各洲脚本） | ❌ |
 | **P4** | 输入映射 | 需键位配置 UI | ❌ |

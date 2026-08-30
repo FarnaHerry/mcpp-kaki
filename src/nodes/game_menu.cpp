@@ -325,43 +325,12 @@ void GameMenu::_build_placeholder_page(const String &p_title, const PackedString
 // ============================================================
 
 void GameMenu::_build_ability_page() {
-	struct AbilityRow {
-		const char *id;     // AbilityManager 常量
-		const char *name;
-		bool innate;        // 初始即会（不入 AbilityManager 解锁表）
-		const char *cond;   // 解锁条件显示文本
-	};
-	// 与 AbilityManager::check_realm_unlocks 对齐
-	static const AbilityRow ACTIVE_ROWS[] = {
-		{ AbilityManager::ABILITY_DASH,            "冲刺",     true,  "初始" },
-		{ AbilityManager::ABILITY_DOUBLE_JUMP,     "二段跳",   false, "炼气" },
-		{ AbilityManager::ABILITY_AIR_DASH,        "空中冲刺", false, "筑基" },
-		{ AbilityManager::ABILITY_SHORT_FLIGHT,    "短暂飞行", false, "筑基" },
-		{ AbilityManager::ABILITY_GLIDE,           "滑翔",     false, "金丹" },
-		{ AbilityManager::ABILITY_FREE_FLIGHT,     "自主飞行", false, "金丹" },
-		{ AbilityManager::ABILITY_SOUL_EXIT,       "元婴出窍", false, "元婴" },
-		{ AbilityManager::ABILITY_DOMAIN,          "领域展开", false, "元婴" },
-		{ AbilityManager::ABILITY_SPIRIT_TRAVEL,   "神游太虚", false, "化神" },
-		{ AbilityManager::ABILITY_SPIRIT_SENSE,    "神识扫描", false, "化神" },
-		{ AbilityManager::ABILITY_VOID_SHIFT,      "虚实转换", false, "炼虚" },
-		{ AbilityManager::ABILITY_CLOUD_FLIGHT,    "腾云驾雾", false, "真仙" },
-		{ AbilityManager::ABILITY_GIANT_FORM,      "法天象地", false, "金仙" },
-		{ AbilityManager::ABILITY_DAO_DOMAIN,      "道域展开", false, "混元" },
-		{ AbilityManager::ABILITY_MYRIAD_AVATARS,  "化身千万", false, "混元" },
-	};
-	static const AbilityRow PASSIVE_ROWS[] = {
-		{ AbilityManager::ABILITY_WALL_CLING,     "攀墙",     true,  "初始" },
-		{ AbilityManager::ABILITY_STORAGE_RING,   "纳戒",     false, "炼气" },
-		{ AbilityManager::ABILITY_SPIRIT_VISION,  "灵视",     false, "筑基" },
-		{ AbilityManager::ABILITY_UNITY_FORM,     "形神合一", false, "合体" },
-		{ AbilityManager::ABILITY_MERIT_HALO,     "功德金光", false, "大乘" },
-		{ AbilityManager::ABILITY_TRIBULATION_IMMUNITY,  "三灾免疫", false, "真仙" },
-		{ AbilityManager::ABILITY_GOLDEN_BODY,    "金身护体", false, "金仙" },
-	};
-
+	// 能力表数据驱动（data/abilities.json → AbilityManager::ensure_defs_loaded，
+	// 数组序=显示序：主动 15 + 被动 7），名称/解锁条件文本不再硬编码于此
 	AbilityManager *am = _player ? _player->get_ability_manager() : nullptr;
+	AbilityManager::ensure_defs_loaded();
 
-	auto build_column = [&](const AbilityRow *rows, int count, const String &header, float x, int cols, float w) {
+	auto build_column = [&](bool active, const String &header, float x, int cols, float w) {
 		Label *h = memnew(Label);
 		h->set_text(header);
 		h->add_theme_font_size_override("font_size", 11);
@@ -371,14 +340,17 @@ void GameMenu::_build_ability_page() {
 		_page_nodes.push_back(h);
 
 		Array items;
-		for (int i = 0; i < count; i++) {
-			bool unlocked = rows[i].innate || (am && am->has_ability(StringName(rows[i].id)));
+		for (int i = 0; i < AbilityManager::get_ability_count(); i++) {
+			const AbilityManager::AbilityDef *def = AbilityManager::get_ability(i);
+			if (!def || def->active != active)
+				continue;
+			bool unlocked = def->innate || (am && am->has_ability(StringName(def->id)));
 			Dictionary cell;
 			if (unlocked) {
-				cell["text"] = LOC("✓") + LOC(rows[i].name);
+				cell["text"] = LOC("✓") + LOC(def->name);
 				cell["color"] = Color(0.55f, 0.95f, 0.55f, 1.0f);
 			} else {
-				cell["text"] = LOC("✗") + LOC(rows[i].name) + LOC("·") + LOC(rows[i].cond);
+				cell["text"] = LOC("✗") + LOC(def->name) + LOC("·") + LOC(def->cond);
 				cell["dim"] = true;
 			}
 			items.push_back(cell);
@@ -394,8 +366,8 @@ void GameMenu::_build_ability_page() {
 		_page_nodes.push_back(grid);
 	};
 
-	build_column(ACTIVE_ROWS, 15, LOC("— 主动 —"), 60.0f, 2, 200.0f);
-	build_column(PASSIVE_ROWS, 7, LOC("— 被动 —"), 280.0f, 1, 170.0f);
+	build_column(true, LOC("— 主动 —"), 60.0f, 2, 200.0f);
+	build_column(false, LOC("— 被动 —"), 280.0f, 1, 170.0f);
 
 	// 威压/灵压（先天战技，不占 AbilityManager 槽；凡人期即可施放，仅灵力门控）
 	{
