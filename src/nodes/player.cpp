@@ -2105,6 +2105,7 @@ namespace godot {
 
 	double Player::get_dongtian_meditate_mult() const {
 		// 聚灵阵：仅在洞天内生效，倍率随境界增强 + v4 阵眼升级加成（每级 +0.5）
+		// + v5 灵兽栏加成（降伏灵兽每只 +0.05，上限 3 只）
 		SceneTree *tree = get_tree();
 		if (!tree) return 1.0;
 		Node *root = tree->get_current_scene();
@@ -2112,7 +2113,7 @@ namespace godot {
 		DongtianManager *dt = Object::cast_to<DongtianManager>(root->find_child("DongtianManager", false, false));
 		if (!dt || !dt->is_inside()) return 1.0;
 		int realm = _cultivation ? _cultivation->get_realm_index() : 0;
-		return 2.0 + 0.25 * Math::max(0, realm - CultivationSystem::LIAN_XU) + dt->get_jlz_bonus();
+		return 2.0 + 0.25 * Math::max(0, realm - CultivationSystem::LIAN_XU) + dt->get_jlz_bonus() + dt->get_beast_bonus();
 	}
 
 	String Player::get_state_name() const {

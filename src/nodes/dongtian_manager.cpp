@@ -71,6 +71,12 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("debug_force_invasion"), &DongtianManager::debug_force_invasion);
         ClassDB::bind_method(D_METHOD("debug_suppress_invasion"), &DongtianManager::debug_suppress_invasion);
         ClassDB::bind_method(D_METHOD("_on_invader_killed", "enemy", "killer"), &DongtianManager::_on_invader_killed);
+        ClassDB::bind_method(D_METHOD("is_yaotong_hired"), &DongtianManager::is_yaotong_hired);
+        ClassDB::bind_method(D_METHOD("set_yaotong_hired", "hired"), &DongtianManager::set_yaotong_hired);
+        ClassDB::bind_method(D_METHOD("debug_yaotong_tick"), &DongtianManager::debug_yaotong_tick);
+        ClassDB::bind_method(D_METHOD("get_beast_count"), &DongtianManager::get_beast_count);
+        ClassDB::bind_method(D_METHOD("get_beast", "index"), &DongtianManager::get_beast);
+        ClassDB::bind_method(D_METHOD("get_beast_bonus"), &DongtianManager::get_beast_bonus);
     }
 
     void DongtianManager::_process(double p_delta) {
@@ -90,6 +96,24 @@ namespace godot {
                 SignalBus *bus = SignalBus::get_singleton();
                 if (bus) bus->emit_signal("interaction_prompt", "", false);
             }
+        }
+
+        // 药童：委托后自动收获（0.5s 一拍；药童常驻洞天，玩家在外也照看）
+        if (_yaotong_hired) {
+            _yaotong_tick += float(p_delta);
+            if (_yaotong_tick >= 0.5f) {
+                _yaotong_tick = 0.0f;
+                _yaotong_sweep();
+            }
+        }
+
+        // 灵兽降伏：闯阵中贴近半血以下的入侵灵兽按 X 降伏
+        if (_inside && _invasion_active) {
+            _subdue_poll();
+        } else if (_subdue_prompt_on) {
+            _subdue_prompt_on = false;
+            SignalBus *bus = SignalBus::get_singleton();
+            if (bus) bus->emit_signal("interaction_prompt", "", false);
         }
 
         if (!Input::get_singleton()->is_action_just_pressed("dongtian"))
@@ -303,6 +327,7 @@ namespace godot {
         if (_invaders_left <= 0) {
             _invasion_active = false;
             _invaders_left = 0;
+            _subdue_prompt_on = false; // 提示已让给战报话术，降伏轮询不再清屏
             _show_reason(LOC("灵兽已伏诛，洞天重归安宁"));
         }
     }
@@ -315,6 +340,166 @@ namespace godot {
 
     void DongtianManager::debug_suppress_invasion() {
         _invasion_suppressed = true;
+    }
+
+    // ============================================================
+    // 药童（v5 托付照料：自动收获成熟灵田 → 洞天仓库）
+    // ============================================================
+
+    void DongtianManager::set_yaotong_hired(bool p_hired) {
+        _yaotong_hired = p_hired;
+        _yaotong_tick = 0.0f;
+    }
+
+    void DongtianManager::debug_yaotong_tick() {
+        _yaotong_sweep();
+    }
+
+    int DongtianManager::_storage_free_capacity(const StringName &p_id, int p_max_stack) const {
+        int cap = 0;
+        for (int i = 0; i < STORAGE_SLOTS; i++) {
+            if (_storage[i].item.is_empty())
+                cap += p_max_stack;
+            else if (_storage[i].item == p_id)
+                cap += p_max_stack - _storage[i].qty;
+        }
+        return cap;
+    }
+
+    int DongtianManager::_store_to_storage(const StringName &p_id, int p_qty) {
+        const Item *def = ItemDatabase::get_singleton()->get_item(p_id);
+        int max_stack = def ? def->max_stack : 99;
+        int remaining = p_qty;
+        // 先叠放进同类槽
+        for (int i = 0; i < STORAGE_SLOTS && remaining > 0; i++) {
+            if (_storage[i].item != p_id)
+                continue;
+            int space = max_stack - _storage[i].qty;
+            int moved = remaining < space ? remaining : space;
+            _storage[i].qty += moved;
+            remaining -= moved;
+        }
+        // 余下进空格
+        for (int i = 0; i < STORAGE_SLOTS && remaining > 0; i++) {
+            if (!_storage[i].item.is_empty())
+                continue;
+            int moved = remaining < max_stack ? remaining : max_stack;
+            _storage[i].item = p_id;
+            _storage[i].qty = moved;
+            remaining -= moved;
+        }
+        return p_qty - remaining;
+    }
+
+    void DongtianManager::_yaotong_sweep() {
+        if (!_player)
+            return;
+        ItemDatabase *db = ItemDatabase::get_singleton();
+        if (!db)
+            return;
+        for (int i = 0; i < _plot_count; i++) {
+            Plot &p = _plots[i];
+            if (p.herb.is_empty())
+                continue;
+            const Item *def = db->get_item(p.herb);
+            int grow = def ? def->grow_seconds : 60;
+            if (_now() - p.planted_at < grow)
+                continue; // 未成熟
+            int yield = 2; // 种一收二（同手动收获）
+            int max_stack = def ? def->max_stack : 99;
+            if (_storage_free_capacity(p.herb, max_stack) < yield)
+                continue; // 仓库满则留在地块
+            StringName herb = p.herb;
+            String herb_name = def ? def->name : String(herb);
+            p.herb = StringName();
+            p.planted_at = 0;
+            _store_to_storage(herb, yield);
+            // 药童采收同样喂练气（同手动收获/采集）
+            if (_player->get_gongfa()) {
+                _player->get_gongfa()->feed(GongfaSystem::SCHOOL_QI, 2.0f);
+            }
+            if (_inside)
+                _show_reason(vformat(LOC("药童采收 %s×%d，已存入仓库"), herb_name, yield));
+        }
+    }
+
+    // ============================================================
+    // 灵兽栏（v5：降伏闯阵灵兽入驻；每只打坐倍率 +5%，上限 3 只）
+    // ============================================================
+
+    Dictionary DongtianManager::get_beast(int p_index) const {
+        Dictionary d;
+        ERR_FAIL_INDEX_V(p_index, _beast_count, d);
+        d["id"] = _beasts[p_index].id;
+        d["name"] = _beasts[p_index].name;
+        return d;
+    }
+
+    void DongtianManager::_subdue_poll() {
+        if (!_player)
+            return;
+        // 最近的半血以下入侵灵兽（打服了才肯降伏）
+        Enemy *target = nullptr;
+        float best = 56.0f;
+        TypedArray<Node> invaders = get_tree()->get_nodes_in_group("dongtian_invaders");
+        for (int i = 0; i < invaders.size(); i++) {
+            Enemy *e = Object::cast_to<Enemy>(invaders[i]);
+            if (!e || e->is_dead())
+                continue;
+            if (e->current_health > e->max_health * 0.5f)
+                continue;
+            float dist = _player->get_global_position().distance_to(e->get_global_position());
+            if (dist < best) {
+                best = dist;
+                target = e;
+            }
+        }
+        SignalBus *bus = SignalBus::get_singleton();
+        if (!target) {
+            if (_subdue_prompt_on) {
+                _subdue_prompt_on = false;
+                if (bus) bus->emit_signal("interaction_prompt", "", false);
+            }
+            return;
+        }
+        String name = target->display_name.is_empty() ? String(target->get_name()) : target->display_name;
+        bool pen_full = _beast_count >= MAX_BEASTS;
+        if (bus) {
+            if (pen_full)
+                bus->emit_signal("interaction_prompt", LOC("灵兽栏已满，无法降伏"), true);
+            else
+                bus->emit_signal("interaction_prompt", vformat(LOC("[X] 降伏 ·%s"), name), true);
+        }
+        _subdue_prompt_on = true;
+        // 降伏提示激活期 X=交互优先（不出刀），被本 Manager 消费
+        if (!pen_full && Input::get_singleton()->is_action_just_pressed("interact"))
+            _subdue_invader(target);
+    }
+
+    void DongtianManager::_subdue_invader(Enemy *p_enemy) {
+        if (!p_enemy || _beast_count >= MAX_BEASTS)
+            return;
+        TamedBeast &b = _beasts[_beast_count++];
+        b.id = StringName(p_enemy->get_enemy_id());
+        b.name = p_enemy->display_name.is_empty() ? String(p_enemy->get_name()) : p_enemy->display_name;
+        _invaders_left--;
+        // 降伏非击杀：移除实体，不走死亡/掉落管线
+        p_enemy->remove_from_group(StringName("dongtian_invaders"));
+        Node *parent = p_enemy->get_parent();
+        if (parent)
+            parent->remove_child(p_enemy);
+        p_enemy->queue_free();
+        if (_invaders_left <= 0) {
+            _invasion_active = false;
+            _invaders_left = 0;
+            _show_reason(vformat(LOC("降伏了 %s，灵兽尽数归顺，洞天重归安宁"), b.name));
+        } else {
+            _show_reason(vformat(LOC("降伏了 %s，已迁入灵兽栏"), b.name));
+        }
+        _subdue_prompt_on = false; // 提示已让给降伏话术，降伏轮询不再清屏
+        // 栏内视觉即时刷新（洞天场景脚本装配）
+        if (_loaded_scene && _loaded_scene->has_method("refresh_beast_pen"))
+            _loaded_scene->call("refresh_beast_pen");
     }
 
     // ============================================================
@@ -579,6 +764,16 @@ namespace godot {
             herb_spots.push_back(h);
         }
         d["herb_spots"] = herb_spots;
+        // v5：药童委托状态 + 灵兽栏
+        d["yaotong_hired"] = _yaotong_hired;
+        Array beasts;
+        for (int i = 0; i < _beast_count; i++) {
+            Dictionary b;
+            b["id"] = _beasts[i].id;
+            b["name"] = _beasts[i].name;
+            beasts.push_back(b);
+        }
+        d["beasts"] = beasts;
         return d;
     }
 
@@ -605,6 +800,17 @@ namespace godot {
             StringName herb = StringName(h.get("herb", StringName()));
             _herb_spots[i].herb = herb.is_empty() ? StringName(HERB_SPOT_DEFS[i].herb) : herb;
             _herb_spots[i].harvested_at = int64_t(h.get("harvested_at", int64_t(0)));
+        }
+        // v5 字段缺省走默认值（老档迁移安全）
+        _yaotong_hired = bool(p_data.get("yaotong_hired", false));
+        _yaotong_tick = 0.0f;
+        _beast_count = 0;
+        Array beasts = p_data.get("beasts", Array());
+        for (int i = 0; i < MAX_BEASTS && i < beasts.size(); i++) {
+            Dictionary b = beasts[i];
+            _beasts[i].id = StringName(b.get("id", StringName()));
+            _beasts[i].name = String(b.get("name", String()));
+            _beast_count++;
         }
     }
 
