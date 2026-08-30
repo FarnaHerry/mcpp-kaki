@@ -14,6 +14,7 @@ namespace godot {
 
 class Player;
 class CameraRoom2D;
+class Enemy;
 
 // 洞天系统 v1（后花园·空洞天）— design/dongtian.md
 // 玩家随身小世界：炼虚解锁 dongtian 能力后，安全状态按 O 键进出。
@@ -74,6 +75,25 @@ public:
 	bool gather_herb_spot(int p_index);
 	// 测试用：拨快刷新（harvested_at 回拨 seconds 秒）
 	void debug_age_herb_spot(int p_index, double p_seconds);
+
+	// ---- 药童（v5 经营：托付照料）----
+	// 委托后药童自动收获成熟灵田地块（收获物入洞天仓库，仓库满则留在地块），
+	// 取消委托即停。委托状态随档持久化（data["dongtian"].yaotong_hired）。
+	bool is_yaotong_hired() const { return _yaotong_hired; }
+	void set_yaotong_hired(bool p_hired);
+	// 测试用：立即执行一轮药童自动收获（不等 0.5s 轮询）
+	void debug_yaotong_tick();
+
+	// ---- 灵兽栏（v5：降伏闯阵灵兽入驻）----
+	// 闯阵入侵灵兽被打至半血以下后，贴近按 X 降伏（交互优先不出刀），
+	// 降伏后迁入灵兽栏（不击杀、无掉落）；每只提供聚灵阵打坐倍率 +5%，
+	// 栏位上限 3 只（满栏后只能照旧击杀）。栏位状态随档持久化。
+	static constexpr int MAX_BEASTS = 3;
+	int get_beast_count() const { return _beast_count; }
+	// 灵兽状态：{id, name}
+	Dictionary get_beast(int p_index) const;
+	// 打坐倍率加成（Player::get_dongtian_meditate_mult 叠加）：0.05 × 栏内灵兽数
+	double get_beast_bonus() const { return 0.05 * _beast_count; }
 
 	Dictionary save_to_dict() const;
 	void load_from_dict(const Dictionary &p_data);
@@ -156,6 +176,19 @@ private:
 	bool _invasion_suppressed = false; // debug：下次进入强制不触发
 	bool _bus_connected = false;       // enemy_killed 惰性连接
 
+	// 药童（v5，持久化）
+	bool _yaotong_hired = false;
+	float _yaotong_tick = 0.0f; // 自动收获轮询节拍（0.5s）
+
+	// 灵兽栏（v5，持久化；上限 MAX_BEASTS）
+	struct TamedBeast {
+		StringName id;
+		String name;
+	};
+	TamedBeast _beasts[MAX_BEASTS];
+	int _beast_count = 0;
+	bool _subdue_prompt_on = false; // 降伏提示为本 Manager 所发（离开范围才清自己发的）
+
 	void _try_enter();
 	void _enter();
 	void _exit(bool p_restore_pos);
@@ -164,6 +197,11 @@ private:
 	void _roll_invasion();
 	void _start_invasion();
 	void _on_invader_killed(Object *p_enemy, Object *p_killer);
+	void _yaotong_sweep();                                       // 药童一轮自动收获（成熟→仓库，满仓跳过）
+	int _store_to_storage(const StringName &p_id, int p_qty);    // 直入仓库（返回实存数量）
+	int _storage_free_capacity(const StringName &p_id, int p_max_stack) const;
+	void _subdue_poll();                                         // 降伏轮询（闯阵中，半血以下贴近 X）
+	void _subdue_invader(Enemy *p_enemy);
 };
 
 } // namespace godot
