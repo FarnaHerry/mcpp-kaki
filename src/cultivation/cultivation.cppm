@@ -749,6 +749,7 @@ public:
 
 	// 测试探针
 	bool is_boss_alive() const { return _boss != nullptr && !_aborted; }
+	int get_boss_phase() const { return _boss_phase; } // 天罚使当前阶段（1/2/3）
 
 protected:
 	static void _bind_methods();
@@ -757,6 +758,7 @@ private:
 	struct LightningBolt {
 		Polygon2D *visual = nullptr;
 		float x = 0.0f;
+		float half_w = THUNDER_HIT_HALF_W; // 雷柱半宽（雷域圈更宽）
 		double strike_at = 0.0;
 		double remove_at = 0.0;
 		bool struck = false;
@@ -775,6 +777,12 @@ private:
 	static constexpr float WIND_ERODE_FRAC = 0.006f;
 	static constexpr double WIND_ERODE_TICK = 0.5;
 	static constexpr float BOSS_HP = 2500.0f;
+	// 天罚使多阶段（控制器驱动；Enemy Hurt 态自带阈值对此 Boss 置 0 禁用，防双重加速）
+	static constexpr float PHASE2_HP_FRAC = 0.66f;           // 二相「雷链」：扇形雷弹
+	static constexpr float PHASE3_HP_FRAC = 0.33f;           // 三相「雷域」：脚下落雷圈 + 移速/射速提升
+	static constexpr double DOMAIN_FIRST_DELAY = 1.2;        // 三相开启后首轮雷域延迟
+	static constexpr double DOMAIN_INTERVAL = 2.8;           // 雷域落雷圈间隔
+	static constexpr float DOMAIN_HIT_HALF_W = 22.0f;        // 雷域圈半宽（比普通天雷宽）
 
 	Player *_player = nullptr;
 	Node *_arena_node = nullptr;
@@ -783,6 +791,10 @@ private:
 	double _time = 0.0;
 	bool _aborted = false;
 	bool _enraged = false; // Boss 半血：三灾加剧
+	int _boss_phase = 1;        // 天罚使阶段（1 雷球 / 2 雷链 / 3 雷域）
+	float _boss_base_speed = 0.0f; // 进场基准移速（三相提速以此为底，防重复叠乘）
+	float _boss_base_cd = 0.0f;    // 进场基准射速
+	double _next_domain_at = 0.0;  // 下一次雷域落雷圈时刻
 
 	double _next_strike_at = 1.0;
 	std::vector<LightningBolt> _bolts;
@@ -796,7 +808,11 @@ private:
 
 	void _spawn_boss();
 	void _on_boss_died();
+	void _update_phase();                          // 按 Boss 血量驱动阶段转换（66%/33%）
+	void _enter_phase(int p_phase);                // 阶段生效：技能组/提速/标题/信号
 	void _spawn_bolt();
+	void _spawn_bolt_at(float p_x, float p_half_w, bool p_domain); // 雷柱公共生成（domain=雷域圈）
+	void _spawn_domain_bolt();                     // 三相「雷域」：脚下落雷圈
 	void _update_bolts(double p_delta);
 	void _update_fire(double p_delta);
 	void _update_wind(double p_delta);

@@ -73,7 +73,9 @@ class Enemy : public CharacterBody2D {
 
 		// Boss
 		int boss_phase = 1;
-		float boss_phase2_threshold = 0.5f;
+		float boss_phase2_threshold = 0.5f; // Hurt 态自动转二阶段血量阈值（0=禁用，由外部驱动）
+		float boss_phase3_threshold = 0.0f; // Hurt 态自动转三阶段血量阈值（默认 0=禁用，向后兼容）
+		int special_min_phase = 1;          // BossSpecial 特殊技最低阶段（如天罚使一相纯弹幕=2 禁扇形弹）
 		float special_attack_cooldown = 3.0f;
 
 		// 威压/灵压（design/sect-pressure.md §二）
@@ -151,6 +153,11 @@ class Enemy : public CharacterBody2D {
 		bool get_show_hp_bar() const { return show_hp_bar; }
 		bool get_is_soul_reaper() const { return is_soul_reaper; }
 		float get_preferred_distance() const { return preferred_distance; }
+		// Boss 阶段（注册属性：测试/脚本可读，控制器可写）
+		void set_boss_phase(int v) { boss_phase = v; }
+		int get_boss_phase() const { return boss_phase; }
+		void set_special_min_phase(int v) { special_min_phase = v; }
+		int get_special_min_phase() const { return special_min_phase; }
 		// 精英词缀
 		void set_elite_tier(int v) { elite_tier = v; }
 		int get_elite_tier() const { return elite_tier; }

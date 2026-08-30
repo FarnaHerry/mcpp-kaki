@@ -95,6 +95,9 @@ void EnemyDatabase::_load_hardcoded() {
 	s_defs.push_back(_mk("tian_jiang", "天将", 420, 85, 85, 320, 35, 0.8f, 0, 10, false, false, false, 0.85f, 0.8f, 0.55f, ""));
 	s_defs.push_back(_mk("ju_ling_shen", "巨灵神", 800, 110, 50, 460, 35, 1.0f, 0, 11, false, false, true, 0.8f, 0.75f, 0.4f, "ju_ling_shen"));
 
+	// ===== 渡劫·天罚使（劫云化身；渡劫控制器镜像 realm/显式接管总血量 2500/置 no_drops，多阶段由控制器驱动）=====
+	s_defs.push_back(_mk("tian_fa_shi", "天罚使", 500, 8, 70, 600, 260, 1.6f, 200, 9, true, false, true, 0.55f, 0.35f, 0.85f, ""));
+
 	// ===== Wave3 秘境（古剑冢/大雁塔地宫/地心火窟/荒古冰墓，与 enemies.json 同值）=====
 	// 古剑冢（东胜神洲·断崖绝壁）
 	s_defs.push_back(_mk("jian_ling", "剑灵", 40, 10, 110, 320, 35, 0.8f, 0, 2, false, true, false, 0.7f, 0.85f, 0.95f, ""));
