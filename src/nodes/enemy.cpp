@@ -274,9 +274,9 @@ namespace godot {
 			e->last_special_time = e->get_time();
 			e->update_facing_to_player();
 
-			// Spawn a fan of projectiles
-			int count = (e->boss_phase >= 2) ? 5 : 3;
-			float spread = Math_PI * 0.3f; // ~54 degree spread
+			// Spawn a fan of projectiles（阶段升高扇面更密更宽更快：一相3 / 二相5 / 三相7）
+			int count = (e->boss_phase >= 3) ? 7 : (e->boss_phase >= 2) ? 5 : 3;
+			float spread = Math_PI * ((e->boss_phase >= 3) ? 0.44f : 0.3f); // 三相 ~79°，其余 ~54°
 			float start_angle = -spread * 0.5f;
 
 			for (int i = 0; i < count; i++) {
@@ -284,9 +284,10 @@ namespace godot {
 				Vector2 dir(std::cos(angle) * e->facing_direction, std::sin(angle));
 
 				Projectile *proj = memnew(Projectile);
+				proj->set_name(String("BossFan") + String::num_int64(i)); // 扇形弹标记（重名会被引擎回退为类名，显式带序号）
 				proj->set_position(e->get_global_position());
 				proj->direction = dir;
-				proj->speed = 200.0f + (e->boss_phase >= 2 ? 80.0f : 0.0f);
+				proj->speed = 200.0f + (e->boss_phase >= 3 ? 120.0f : e->boss_phase >= 2 ? 80.0f : 0.0f);
 				proj->damage = e->attack_damage * 0.6f;
 				proj->set_source(e);
 				proj->set_collision_mask_value(3, true); // Hit player
@@ -318,12 +319,20 @@ namespace godot {
 			vel.y = e->hover_movement() ? -50.0f : -100.0f;
 			e->set_velocity(vel);
 
-			// Boss phase transition
-			if (e->behavior.boss && e->current_health <= e->max_health * e->boss_phase2_threshold
-			    && e->boss_phase < 2) {
-				e->boss_phase = 2;
-				e->move_speed *= 1.3f;
-				e->attack_cooldown *= 0.7f;
+			// Boss phase transition（阈值为 0 的段禁用——由外部驱动，如渡劫天罚使按 66%/33% 走控制器）
+			if (e->behavior.boss) {
+				if (e->boss_phase < 2 && e->boss_phase2_threshold > 0.0f
+				    && e->current_health <= e->max_health * e->boss_phase2_threshold) {
+					e->boss_phase = 2;
+					e->move_speed *= 1.3f;
+					e->attack_cooldown *= 0.7f;
+				}
+				if (e->boss_phase == 2 && e->boss_phase3_threshold > 0.0f
+				    && e->current_health <= e->max_health * e->boss_phase3_threshold) {
+					e->boss_phase = 3;
+					e->move_speed *= 1.2f;
+					e->attack_cooldown *= 0.8f;
+				}
 			}
 		}
 		void exit(Enemy *e) override {}
@@ -436,6 +445,10 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("set_realm", "v"), &Enemy::set_realm);
 		ClassDB::bind_method(D_METHOD("get_realm"), &Enemy::get_realm);
 		ClassDB::bind_method(D_METHOD("suppress", "t"), &Enemy::suppress);
+		ClassDB::bind_method(D_METHOD("set_boss_phase", "v"), &Enemy::set_boss_phase);
+		ClassDB::bind_method(D_METHOD("get_boss_phase"), &Enemy::get_boss_phase);
+		ClassDB::bind_method(D_METHOD("set_special_min_phase", "v"), &Enemy::set_special_min_phase);
+		ClassDB::bind_method(D_METHOD("get_special_min_phase"), &Enemy::get_special_min_phase);
 
 		ADD_PROPERTY(PropertyInfo(Variant::INT, "realm"), "set_realm", "get_realm");
 		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "max_health"), "set_max_health", "get_max_health");
@@ -457,6 +470,8 @@ namespace godot {
 		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "preferred_distance"), "set_preferred_distance", "get_preferred_distance");
 		ADD_PROPERTY(PropertyInfo(Variant::INT, "elite_tier"), "set_elite_tier", "get_elite_tier");
 		ADD_PROPERTY(PropertyInfo(Variant::STRING, "affix_id"), "set_affix_id", "get_affix_id");
+		ADD_PROPERTY(PropertyInfo(Variant::INT, "boss_phase"), "set_boss_phase", "get_boss_phase");
+		ADD_PROPERTY(PropertyInfo(Variant::INT, "special_min_phase"), "set_special_min_phase", "get_special_min_phase");
 
 		ADD_SIGNAL(MethodInfo("enemy_died"));
 		ADD_SIGNAL(MethodInfo("boss_died"));
@@ -497,7 +512,7 @@ namespace godot {
 	}
 
 	bool Enemy::use_boss_special() const {
-		return behavior.boss && can_special();
+		return behavior.boss && can_special() && boss_phase >= special_min_phase;
 	}
 
 	void Enemy::set_enemy_id(const String &v) {

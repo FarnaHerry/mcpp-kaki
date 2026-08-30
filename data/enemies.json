@@ -1367,5 +1367,31 @@
       34
     ],
     "drops": "han_mo_gong"
+  },
+  "tian_fa_shi": {
+    "name": "天罚使",
+    "hp": 500,
+    "atk": 8,
+    "speed": 70,
+    "detection": 600,
+    "attack_range": 260,
+    "attack_cooldown": 1.6,
+    "preferred": 200,
+    "realm": 9,
+    "flags": [
+      "ranged",
+      "boss"
+    ],
+    "color": [
+      0.55,
+      0.35,
+      0.85,
+      1.0
+    ],
+    "size": [
+      32,
+      38
+    ],
+    "drops": ""
   }
 }

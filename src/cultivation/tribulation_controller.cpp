@@ -20,7 +20,9 @@ namespace godot {
 
 	void TribulationController::_bind_methods() {
 		ClassDB::bind_method(D_METHOD("is_boss_alive"), &TribulationController::is_boss_alive);
+		ClassDB::bind_method(D_METHOD("get_boss_phase"), &TribulationController::get_boss_phase);
 		ADD_SIGNAL(MethodInfo("tribulation_finished", PropertyInfo(Variant::BOOL, "success")));
+		ADD_SIGNAL(MethodInfo("boss_phase_changed", PropertyInfo(Variant::INT, "phase")));
 	}
 
 	void TribulationController::start_tribulation(Player *p_player, const Rect2 &p_arena, Node *p_arena_node) {
@@ -70,17 +72,6 @@ namespace godot {
 		shape->set_shape(cap);
 		_boss->add_child(shape);
 
-		Polygon2D *vis = memnew(Polygon2D);
-		vis->set_color(Color(0.55f, 0.35f, 0.85f, 1.0f)); // 劫云紫
-		PackedVector2Array poly;
-		poly.push_back(Vector2(-10, -14));
-		poly.push_back(Vector2(10, -14));
-		poly.push_back(Vector2(10, 12));
-		poly.push_back(Vector2(-10, 12));
-		vis->set_polygon(poly);
-		vis->set_scale(Vector2(1.6f, 1.6f));
-		_boss->add_child(vis);
-
 		_boss->set_position(Vector2(_arena.position.x + _arena.size.x * 0.5f, 180.0f));
 		if (_arena_node) {
 			_arena_node->add_child(_boss);
@@ -88,17 +79,40 @@ namespace godot {
 			add_child(_boss);
 		}
 
-		// 配置（add_child 后 set——Boss ×5 血量幂等补偿由 set_is_boss 处理，显式血量后设为准）
-		_boss->set("is_boss", true);
-		_boss->set("display_name", TXT("天罚使"));
-		_boss->set("no_drops", true);
+		// 按 data/enemies.json 的 tian_fa_shi 定义装配（add_child 后 set——
+		// set_enemy_id 应用定义：属性/中文名/realm/ranged+boss flags/color/size，
+		// Boss ×5 血量幂等补偿在 set 内顺序安全，显式血量后设为准）
+		_boss->set("enemy_id", "tian_fa_shi");
+		_boss->set("no_drops", true); // 掉落由渡劫流程控制（斩之渡劫成），非掉落表
 		_boss->set("realm", _player && _player->get_cultivation()
-		                        ? _player->get_cultivation()->get_realm_index() : 9);
-		_boss->set("is_ranged", true);      // 雷法远程，保持距离开道
-		_boss->set("attack_range", 260.0f);
-		_boss->set("move_speed", 70.0f);
+		                        ? _player->get_cultivation()->get_realm_index() : 9); // 镜像玩家：威压/灵压不可慑服劫数
 		_boss->set("max_health", BOSS_HP);
 		_boss->set("current_health", BOSS_HP);
+		// 阶段由本控制器按 66%/33% 驱动——禁用 Enemy Hurt 态自带阈值，防双重加速
+		_boss->boss_phase = 1;
+		_boss->boss_phase2_threshold = 0.0f;
+		_boss->boss_phase3_threshold = 0.0f;
+		_boss->special_min_phase = 2; // 一相纯雷球弹幕，二相起才放「雷链」扇形弹
+		_boss_base_speed = _boss->move_speed;
+		_boss_base_cd = _boss->attack_cooldown;
+
+		// 渡劫秘境玩家重挂载于 arena 节点，Enemy::_find_player 按 current_scene 直查会落空
+		// （旧版天罚使因此从未真正开火）——直接指定索敌目标
+		_boss->_player_target = _player;
+
+		// 视觉：劫云化身（颜色/尺寸随敌人定义）
+		Polygon2D *vis = memnew(Polygon2D);
+		vis->set_color(_boss->get_def_color());
+		const Vector2 sz = _boss->get_def_size();
+		const float hw = sz.x * 0.5f;
+		PackedVector2Array poly;
+		poly.push_back(Vector2(-hw, -sz.y * 0.5f));
+		poly.push_back(Vector2(hw, -sz.y * 0.5f));
+		poly.push_back(Vector2(hw, sz.y * 0.5f));
+		poly.push_back(Vector2(-hw, sz.y * 0.5f));
+		vis->set_polygon(poly);
+		_boss->add_child(vis);
+
 		_boss->connect("boss_died", callable_mp(this, &TribulationController::_on_boss_died));
 	}
 
@@ -107,6 +121,42 @@ namespace godot {
 			return;
 		_boss = nullptr; // 死亡态自处理节点释放
 		_finish();
+	}
+
+	// ============================================================
+	// 天罚使阶段（一相雷球 / 二相雷链 / 三相雷域，66%/33% 血量阈值）
+	// ============================================================
+
+	void TribulationController::_update_phase() {
+		if (!_boss)
+			return;
+		float cur = _boss->get("current_health");
+		float mx = _boss->get("max_health");
+		if (mx <= 0.0f)
+			return;
+		int phase = 1;
+		if (cur <= mx * PHASE3_HP_FRAC) {
+			phase = 3;
+		} else if (cur <= mx * PHASE2_HP_FRAC) {
+			phase = 2;
+		}
+		if (phase != _boss_phase)
+			_enter_phase(phase);
+	}
+
+	void TribulationController::_enter_phase(int p_phase) {
+		_boss_phase = p_phase;
+		if (_boss) {
+			_boss->boss_phase = p_phase; // 驱动敌方状态机技能组（BossSpecial 扇形弹数随阶段）
+			if (p_phase >= 3) {
+				// 三相激怒：移速/射速提升（以进场基准为底，与半血三灾加剧并行叠加）
+				_boss->move_speed = _boss_base_speed * 1.3f;
+				_boss->attack_cooldown = _boss_base_cd * 0.7f;
+				_next_domain_at = _time + DOMAIN_FIRST_DELAY;
+			}
+		}
+		_update_title();
+		emit_signal("boss_phase_changed", p_phase);
 	}
 
 	// ============================================================
@@ -127,6 +177,13 @@ namespace godot {
 				_enraged = true;
 				_update_title();
 			}
+		}
+
+		// 天罚使阶段转换（66%/33%）+ 三相雷域
+		_update_phase();
+		if (_boss_phase >= 3 && _boss && _time >= _next_domain_at) {
+			_spawn_domain_bolt();
+			_next_domain_at = _time + DOMAIN_INTERVAL;
 		}
 
 		// 落雷生成（间隔随激怒缩短）
@@ -156,7 +213,7 @@ namespace godot {
 				if (_time >= bolt.strike_at) {
 					bolt.struck = true;
 					// 命中判定：玩家 x 在雷柱半宽内；雷元素结算（防御无效，抗性/肉身减免）
-					if (Math::abs(_player->get_global_position().x - bolt.x) <= THUNDER_HIT_HALF_W) {
+					if (Math::abs(_player->get_global_position().x - bolt.x) <= bolt.half_w) {
 						_player->take_damage_typed(dmg, int(DMG_ELEMENTAL), int(ELEM_LEI), this);
 					}
 					if (bolt.visual)
@@ -181,11 +238,23 @@ namespace godot {
 		// 落点：玩家附近 ±90（逼迫走位但可预判）
 		float px = _player->get_global_position().x;
 		float x = px + UtilityFunctions::randf_range(-90.0f, 90.0f);
-		x = Math::clamp(x, _arena.position.x + 20.0f, _arena.position.x + _arena.size.x - 20.0f);
+		_spawn_bolt_at(x, THUNDER_HIT_HALF_W, false);
+	}
+
+	void TribulationController::_spawn_domain_bolt() {
+		// 三相「雷域」：正踩玩家脚下的落雷圈（更宽，逼迫持续移动）
+		_spawn_bolt_at(_player->get_global_position().x, DOMAIN_HIT_HALF_W, true);
+	}
+
+	void TribulationController::_spawn_bolt_at(float p_x, float p_half_w, bool p_domain) {
+		float x = Math::clamp(p_x, _arena.position.x + 20.0f, _arena.position.x + _arena.size.x - 20.0f);
 
 		Polygon2D *visual = memnew(Polygon2D);
-		visual->set_color(Color(1.0f, 0.9f, 0.3f, 0.5f));
-		float hw = THUNDER_HIT_HALF_W;
+		if (p_domain)
+			visual->set_name("DomainBolt"); // 雷域圈标记（测试/调试可辨）
+		visual->set_color(p_domain ? Color(0.75f, 0.55f, 1.0f, 0.5f) // 雷域紫
+		                           : Color(1.0f, 0.9f, 0.3f, 0.5f));  // 天雷金
+		float hw = p_half_w;
 		float top = _arena.position.y;
 		float bottom = _arena.position.y + _arena.size.y;
 		PackedVector2Array poly;
@@ -201,6 +270,7 @@ namespace godot {
 		LightningBolt bolt;
 		bolt.visual = visual;
 		bolt.x = x;
+		bolt.half_w = p_half_w;
 		bolt.strike_at = _time + _thunder_warn();
 		bolt.remove_at = bolt.strike_at + 0.25;
 		_bolts.push_back(bolt);
@@ -320,9 +390,21 @@ namespace godot {
 	void TribulationController::_update_title() {
 		if (!_title_label)
 			return;
-		_title_label->set_text(_enraged
-			? LOC("渡劫 · 天罚使暴怒——三灾加剧，斩之可成")
-			: LOC("渡劫 · 三灾齐至——斩天罚使以成仙"));
+		switch (_boss_phase) {
+		case 2:
+			_title_label->set_text(_enraged
+				? LOC("渡劫 · 天罚使二相「雷链」·暴怒——三灾加剧，斩之可成")
+				: LOC("渡劫 · 天罚使二相「雷链」——雷劫如织"));
+			break;
+		case 3:
+			_title_label->set_text(LOC("渡劫 · 天罚使三相「雷域」·暴怒——雷域罩顶，斩之可成"));
+			break;
+		default:
+			_title_label->set_text(_enraged
+				? LOC("渡劫 · 天罚使暴怒——三灾加剧，斩之可成")
+				: LOC("渡劫 · 三灾齐至——斩天罚使以成仙"));
+			break;
+		}
 	}
 
 } // namespace godot
