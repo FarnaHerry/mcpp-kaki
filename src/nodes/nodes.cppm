@@ -514,6 +514,28 @@ export class GameMenu : public CanvasLayer {
 	std::vector<int> _fps_opts; // 帧率上限档（启动按系统最高刷新率动态生成，末尾 0=无限）
 	bool _startup_applied = false; // 启动窗口就绪后应用一次显示设置（_ready 时窗口未完全就绪）
 
+	// 键位配置子页（设置页「键位」行 X 进入）：运行时 InputMap 改绑 + 冲突检测（占用拒绑）
+	// + user://keybinds.cfg 持久化（仅存与默认不同的覆盖项）+ 恢复默认。
+	// 菜单自身 Q/E 翻页、ESC 关闭走 _input 原始键码，不纳入可改绑范围。
+	bool _keybind_open = false;
+	int _keybind_sel = 0;
+	int _keybind_capture = -1;          // >=0 = 等待新键（KEYBIND_ROWS 下标）
+	uint64_t _keybind_cancel_frame = 0; // ESC 取消捕获当帧：同帧 menu 轮询不再退层
+	String _keybind_msg;
+	float _keybind_msg_t = 0.0f;
+	void _enter_keybinds();
+	void _build_keybinds_page();
+	void _handle_keybinds_input();
+	void _capture_keybind(int32_t p_row, int32_t p_physical);
+	int _keybind_conflict_row(int p_row, int32_t p_physical) const;
+	bool _keybind_is_default(const String &p_action) const;
+	int32_t _keybind_first_physical(const String &p_action) const;
+	void _apply_keybind(const String &p_action, int32_t p_physical);
+	void _reset_keybinds();
+	void _load_keybinds();
+	void _save_keybinds();
+	String _keybind_key_text(const String &p_action) const;
+
 	// 图鉴页（ESC 第 11 页，设置页之后）：分类 0物品 1敌人 2装备
 	int _bestiary_cat = 0;
 	int _bestiary_sel = 0;
@@ -564,5 +586,7 @@ public:
 	void _ready() override;
 	void _process(double p_delta) override;
 	void _input(const Ref<InputEvent> &p_event) override;
+
+	void reload_keybinds(); // 重读 user://keybinds.cfg 应用到 InputMap（测试挂钩）
 };
 } // namespace godot
