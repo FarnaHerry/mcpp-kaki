@@ -28,11 +28,15 @@ module;
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/input.hpp>
 #include <godot_cpp/classes/input_event_key.hpp>
+#include <godot_cpp/classes/input_map.hpp>
 #include <godot_cpp/classes/label.hpp>
+#include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/classes/window.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/core/math.hpp>
+
+#include <map>
 
 module mcpp_kaki.nodes;
 import mcpp_kaki.cultivation;
@@ -45,6 +49,7 @@ namespace godot {
 static const char *TAB_NAMES[] = { "个人信息", "背包", "能力", "功法", "技能", "法宝", "宗门", "云游", "熔炼炉", "设置", "图鉴" };
 
 void GameMenu::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("reload_keybinds"), &GameMenu::reload_keybinds);
 }
 
 void GameMenu::_ready() {
@@ -94,6 +99,7 @@ void GameMenu::_ready() {
 	}
 
 	_load_settings();
+	_load_keybinds();
 	_apply_volume();
 	_apply_display();
 
@@ -128,6 +134,8 @@ void GameMenu::_open_menu(int p_page) {
 
 void GameMenu::_close_menu() {
 	_open = false;
+	_keybind_open = false;
+	_keybind_capture = -1;
 	if (_inv_panel) _inv_panel->close();
 	for (CanvasItem *n : _page_nodes) {
 		if (n) n->queue_free();
@@ -139,6 +147,8 @@ void GameMenu::_close_menu() {
 }
 
 void GameMenu::_switch_page(int p_page) {
+	_keybind_open = false; // 键位子页随翻页退出
+	_keybind_capture = -1;
 	_page = (p_page + PAGE_COUNT) % PAGE_COUNT;
 	_rebuild_page();
 }
@@ -147,6 +157,21 @@ void GameMenu::_input(const Ref<InputEvent> &p_event) {
 	if (!_open) return;
 	Ref<InputEventKey> k = p_event;
 	if (k.is_null() || !k->is_pressed() || k->is_echo()) return;
+
+	// 键位捕获态最优先：吃掉一切键（含 Q/E/ESC），按下者即新绑定
+	if (_keybind_open && _keybind_capture >= 0) {
+		int32_t phys = (int32_t)k->get_physical_keycode();
+		if (phys == 0) phys = (int32_t)k->get_keycode();
+		if (phys == KEY_ESCAPE) {
+			// ESC=取消捕获；记当帧，_process 的 menu 轮询同帧不再退层/关菜单
+			_keybind_capture = -1;
+			_keybind_cancel_frame = Engine::get_singleton()->get_process_frames();
+			_refresh_settings_page();
+		} else if (phys > 0) {
+			_capture_keybind(_keybind_capture, phys);
+		}
+		return;
+	}
 
 	// Q/E 翻页任何行都生效（设置页 ←/→ 音量/语言调节走 _process，互不干扰）。
 	// 菜单打开即暂停，Q/E 在此翻页与正常游戏中的 Q/E 技能键分属两态，不冲突。
@@ -2379,8 +2404,10 @@ void GameMenu::_build_settings_page() {
 	_refresh_settings_page();
 }
 
-// 设置页行序：0主音量 1语言 2窗口模式 3分辨率 4帧率 5垂直同步 6保存 7退出
-static const int SETTINGS_ROWS = 8;
+// 设置页行序：0主音量 1语言 2窗口模式 3分辨率 4帧率 5垂直同步 6键位 7保存 8退出
+static const int SETTINGS_ROWS = 9;
+// 行距 22px（9 行须收进 270 高），行起始 y=66，行说明 y=66+9*22=264
+static const int SETTINGS_ROW_H = 22;
 // 窗口模式 3 档：窗口 / 无边框全屏 / 独占全屏（Godot 4 WINDOW_MODE_FULLSCREEN 即无边框全屏）
 static const char *WMODE_NAMES[3] = { "窗口", "无边框全屏", "独占全屏" };
 // 渲染比例固定 16:9（480×270）基准——stretch aspect=keep：非 16:9 比例（16:10/3:2/4:3/21:9）
@@ -2402,6 +2429,11 @@ void GameMenu::_refresh_settings_page() {
 	}
 	_page_nodes.clear();
 
+	if (_keybind_open) { // 键位配置子页
+		_build_keybinds_page();
+		return;
+	}
+
 	bool is_en = Localization::get_singleton() && Localization::get_singleton()->get_language() == "en";
 	String lang_label = LOC("语言") + ": < " + LOC(is_en ? "English" : "中文") + " >";
 	String vol = LOC("主音量") + "  < " + String::num_int64(int64_t(Math::round(_volume * 100.0f))) + "% >";
@@ -2412,7 +2444,7 @@ void GameMenu::_refresh_settings_page() {
 		String::num_int64(FS_RES_PRESETS[_fs_res_idx][0]) + LOC("×") + String::num_int64(FS_RES_PRESETS[_fs_res_idx][1]) + LOC(" >");
 	String fps = LOC("帧率") + LOC("  < ") + (_max_fps == 0 ? LOC("无限") : String::num_int64(int64_t(_max_fps))) + LOC(" >");
 	String vsync = LOC("垂直同步") + LOC("  < ") + LOC(VSYNC_NAMES[_vsync]) + LOC(" >");
-	String names[SETTINGS_ROWS] = { vol, lang_label, wmode, res, fps, vsync, LOC("保存游戏"), LOC("退出游戏") };
+	String names[SETTINGS_ROWS] = { vol, lang_label, wmode, res, fps, vsync, LOC("键位"), LOC("保存游戏"), LOC("退出游戏") };
 
 	Label *title = memnew(Label);
 	title->set_text(LOC("—— 设置 ——"));
@@ -2424,7 +2456,7 @@ void GameMenu::_refresh_settings_page() {
 
 	for (int i = 0; i < SETTINGS_ROWS; i++) {
 		Label *l = memnew(Label);
-		if (_saved_flash > 0.0f && i == 6) {
+		if (_saved_flash > 0.0f && i == 7) {
 			l->set_text(LOC("   ") + LOC("已存档！"));
 		} else if (i == _settings_sel) {
 			l->set_text(LOC("▶ ") + names[i]);
@@ -2434,7 +2466,7 @@ void GameMenu::_refresh_settings_page() {
 		l->add_theme_font_size_override("font_size", 9);
 		Color c = i == _settings_sel ? Color(1.0f, 0.95f, 0.6f) : Color(0.85f, 0.85f, 0.85f);
 		l->add_theme_color_override("font_color", c);
-		l->set_position(Vector2(150, 66 + i * 24));
+		l->set_position(Vector2(150, 66 + i * SETTINGS_ROW_H));
 		add_child(l);
 		_page_nodes.push_back(l);
 	}
@@ -2445,7 +2477,7 @@ void GameMenu::_refresh_settings_page() {
 		hint->set_text(LOC("←/→ 选择分辨率（独占全屏=显示模式；窗口/无边框全屏=窗口尺寸）"));
 		hint->add_theme_font_size_override("font_size", 8);
 		hint->add_theme_color_override("font_color", Color(0.55f, 0.6f, 0.7f));
-		hint->set_position(Vector2(150, 66 + SETTINGS_ROWS * 24));
+		hint->set_position(Vector2(150, 66 + SETTINGS_ROWS * SETTINGS_ROW_H));
 		add_child(hint);
 		_page_nodes.push_back(hint);
 	}
@@ -2455,7 +2487,7 @@ void GameMenu::_refresh_settings_page() {
 		hint->set_text(LOC("←/→ 选择帧率上限（按系统最高刷新率，无限=不锁帧）"));
 		hint->add_theme_font_size_override("font_size", 8);
 		hint->add_theme_color_override("font_color", Color(0.55f, 0.6f, 0.7f));
-		hint->set_position(Vector2(150, 66 + SETTINGS_ROWS * 24));
+		hint->set_position(Vector2(150, 66 + SETTINGS_ROWS * SETTINGS_ROW_H));
 		add_child(hint);
 		_page_nodes.push_back(hint);
 	}
@@ -2465,7 +2497,17 @@ void GameMenu::_refresh_settings_page() {
 		hint->set_text(LOC("←/→ 切换垂直同步（锁定显示器刷新率，消除画面撕裂）"));
 		hint->add_theme_font_size_override("font_size", 8);
 		hint->add_theme_color_override("font_color", Color(0.55f, 0.6f, 0.7f));
-		hint->set_position(Vector2(150, 66 + SETTINGS_ROWS * 24));
+		hint->set_position(Vector2(150, 66 + SETTINGS_ROWS * SETTINGS_ROW_H));
+		add_child(hint);
+		_page_nodes.push_back(hint);
+	}
+	// 键位行说明
+	if (_settings_sel == 6) {
+		Label *hint = memnew(Label);
+		hint->set_text(LOC("X 进入键位配置（移动/技能/消耗品栏改绑，持久化 keybinds.cfg）"));
+		hint->add_theme_font_size_override("font_size", 8);
+		hint->add_theme_color_override("font_color", Color(0.55f, 0.6f, 0.7f));
+		hint->set_position(Vector2(150, 66 + SETTINGS_ROWS * SETTINGS_ROW_H));
 		add_child(hint);
 		_page_nodes.push_back(hint);
 	}
@@ -2473,6 +2515,11 @@ void GameMenu::_refresh_settings_page() {
 
 void GameMenu::_handle_settings_input() {
 	Input *input = Input::get_singleton();
+
+	if (_keybind_open) { // 键位子页接管
+		_handle_keybinds_input();
+		return;
+	}
 
 	if (input->is_action_just_pressed(LOC("up"))) {
 		_settings_sel = (_settings_sel + SETTINGS_ROWS - 1) % SETTINGS_ROWS;
@@ -2555,7 +2602,10 @@ void GameMenu::_handle_settings_input() {
 				_volume = CLAMP(_volume + 0.1f, 0.0f, 1.0f);
 				_apply_volume(); _save_settings(); _refresh_settings_page();
 				break;
-			case 6: {
+			case 6:
+				_enter_keybinds();
+				break;
+			case 7: {
 				Node *gm = get_tree()->get_current_scene()->get_node_or_null(NodePath("GameManager"));
 				if (gm) {
 					gm->call("save_game", String("auto"));
@@ -2564,7 +2614,7 @@ void GameMenu::_handle_settings_input() {
 				}
 				break;
 			}
-			case 7:
+			case 8:
 				get_tree()->quit();
 				break;
 		}
@@ -2679,6 +2729,284 @@ void GameMenu::_save_settings() {
 	cfg->save("user://settings.cfg");
 }
 
+// ============================================================
+// 键位配置子页（运行时 InputMap 改绑 + keybinds.cfg 持久化）
+// ============================================================
+// 可改绑动作表：移动/跳/冲刺/普攻/交互/打坐/威压/灵压/法宝页/洞天 + 12 技能槽 + 6 消耗品栏。
+// 菜单自身 Q/E 翻页、ESC 关闭走 _input 原始键码，固定不可改绑；menu action 也不在表内。
+// 布局 3 列 × 12 行（index = col*12 + row），末尾追加「恢复默认键位」虚拟行（index=KEYBIND_COUNT）。
+struct KeybindRow { const char *action; const char *label; };
+static const KeybindRow KEYBIND_ROWS[] = {
+	// 第 1 列：通用
+	{ "left", "左移" }, { "right", "右移" }, { "up", "向上/进门" }, { "down", "向下" },
+	{ "jump", "跳跃/飞行" }, { "dash", "冲刺" }, { "attack", "普攻" }, { "interact", "交互/确认" },
+	{ "cultivate", "打坐修炼" }, { "pressure_wei", "威压" }, { "pressure_lin", "灵压" }, { "artifact_page", "法宝页" },
+	// 第 2 列：洞天 + 技能槽（QWERTY 上行 → ASDFGH 下行）
+	{ "dongtian", "洞天" },
+	{ "skill_q", "技能槽 Q" }, { "skill_w", "技能槽 W" }, { "skill_e", "技能槽 E" },
+	{ "skill_r", "技能槽 R" }, { "skill_t", "技能槽 T" }, { "skill_y", "技能槽 Y" },
+	{ "skill_a", "技能槽 A" }, { "skill_s", "技能槽 S" }, { "skill_d", "技能槽 D" },
+	{ "skill_f", "技能槽 F" },
+	// 第 3 列：技能槽 H + 消耗品栏
+	{ "skill_g", "技能槽 G" }, { "skill_h", "技能槽 H" },
+	{ "consume_1", "消耗品 1" }, { "consume_2", "消耗品 2" }, { "consume_3", "消耗品 3" },
+	{ "consume_4", "消耗品 4" }, { "consume_5", "消耗品 5" }, { "consume_6", "消耗品 6" },
+};
+static const int KEYBIND_COUNT = (int)(sizeof(KEYBIND_ROWS) / sizeof(KEYBIND_ROWS[0])); // 32
+static const int KEYBIND_COLS = 3;
+static const int KEYBIND_COL_ROWS = 12; // 每列容量；第 3 列实际 8+1(恢复默认)=9 行
+static int _keybind_col_rows(int p_col) {
+	// 每列有效行数（末列含「恢复默认键位」行）
+	int total = KEYBIND_COUNT + 1;
+	int start = p_col * KEYBIND_COL_ROWS;
+	int remaining = total - start;
+	return remaining < KEYBIND_COL_ROWS ? remaining : KEYBIND_COL_ROWS;
+}
+
+// 默认绑定快照（首次进键位系统时从 InputMap 抓全量事件，必须先于 cfg 应用——
+// GameMenu 每场景重建，泄漏式 static 指针保证全进程只快照一次且避开退出期析构）。
+static std::map<String, Array> &keybind_defaults() {
+	static std::map<String, Array> *s_defaults = new std::map<String, Array>();
+	return *s_defaults;
+}
+
+static int32_t _key_event_physical(const Variant &p_ev) {
+	Ref<InputEventKey> k = p_ev;
+	if (k.is_null()) return 0;
+	int32_t phys = (int32_t)k->get_physical_keycode();
+	if (phys == 0) phys = (int32_t)k->get_keycode();
+	return phys;
+}
+
+int32_t GameMenu::_keybind_first_physical(const String &p_action) const {
+	InputMap *im = InputMap::get_singleton();
+	if (!im || !im->has_action(p_action)) return 0;
+	Array evs = im->action_get_events(p_action);
+	for (int i = 0; i < evs.size(); i++) {
+		int32_t phys = _key_event_physical(evs[i]);
+		if (phys > 0) return phys;
+	}
+	return 0;
+}
+
+String GameMenu::_keybind_key_text(const String &p_action) const {
+	InputMap *im = InputMap::get_singleton();
+	if (!im || !im->has_action(p_action)) return TXT("—");
+	Array evs = im->action_get_events(p_action);
+	for (int i = 0; i < evs.size(); i++) {
+		Ref<InputEventKey> k = evs[i];
+		if (k.is_null()) continue;
+		int32_t phys = _key_event_physical(evs[i]);
+		String s = OS::get_singleton()->get_keycode_string((Key)phys);
+		if (evs.size() > 1) s += TXT("+"); // 多事件（如 interact=Space+X）标 +，改绑后收敛为单键
+		return s;
+	}
+	return TXT("—");
+}
+
+bool GameMenu::_keybind_is_default(const String &p_action) const {
+	std::map<String, Array> &defs = keybind_defaults();
+	auto it = defs.find(p_action);
+	if (it == defs.end()) return true; // 未快照=非可改绑项
+	Array cur = InputMap::get_singleton()->action_get_events(p_action);
+	const Array &def = it->second;
+	if (cur.size() != def.size()) return false;
+	for (int i = 0; i < cur.size(); i++) {
+		if (_key_event_physical(cur[i]) != _key_event_physical(def[i])) return false;
+	}
+	return true;
+}
+
+void GameMenu::_apply_keybind(const String &p_action, int32_t p_physical) {
+	InputMap *im = InputMap::get_singleton();
+	if (!im || !im->has_action(p_action) || p_physical <= 0) return;
+	Ref<InputEventKey> ev;
+	ev.instantiate();
+	ev->set_physical_keycode((Key)p_physical);
+	ev->set_keycode((Key)p_physical);
+	im->action_erase_events(p_action);
+	im->action_add_event(p_action, ev);
+}
+
+void GameMenu::_load_keybinds() {
+	InputMap *im = InputMap::get_singleton();
+	if (!im) return;
+	std::map<String, Array> &defs = keybind_defaults();
+	if (defs.empty()) { // 全进程只快照一次（须在应用 cfg 之前）
+		for (int i = 0; i < KEYBIND_COUNT; i++) {
+			String action = TXT(KEYBIND_ROWS[i].action);
+			if (im->has_action(action))
+				defs[action] = im->action_get_events(action).duplicate(true);
+		}
+	}
+	Ref<ConfigFile> cfg;
+	cfg.instantiate();
+	if (cfg->load(TXT("user://keybinds.cfg")) != OK || !cfg->has_section(TXT("keybinds"))) return;
+	PackedStringArray keys = cfg->get_section_keys(TXT("keybinds"));
+	for (int i = 0; i < keys.size(); i++) {
+		int32_t phys = (int32_t)int(cfg->get_value(TXT("keybinds"), keys[i], 0));
+		_apply_keybind(keys[i], phys);
+	}
+}
+
+void GameMenu::_save_keybinds() {
+	// 只持久化与默认不同的覆盖项（未动过的多事件默认——如 interact=Space+X——不入档，
+	// 读档应用不收敛其事件列表）
+	Ref<ConfigFile> cfg;
+	cfg.instantiate();
+	for (int i = 0; i < KEYBIND_COUNT; i++) {
+		String action = TXT(KEYBIND_ROWS[i].action);
+		if (_keybind_is_default(action)) continue;
+		int32_t phys = _keybind_first_physical(action);
+		if (phys > 0) cfg->set_value(TXT("keybinds"), action, phys);
+	}
+	cfg->save("user://keybinds.cfg");
+}
+
+void GameMenu::_reset_keybinds() {
+	InputMap *im = InputMap::get_singleton();
+	if (!im) return;
+	std::map<String, Array> &defs = keybind_defaults();
+	for (int i = 0; i < KEYBIND_COUNT; i++) {
+		String action = TXT(KEYBIND_ROWS[i].action);
+		auto it = defs.find(action);
+		if (it == defs.end() || !im->has_action(action)) continue;
+		im->action_erase_events(action);
+		for (int j = 0; j < it->second.size(); j++) {
+			Ref<InputEvent> ev = it->second[j];
+			if (ev.is_valid()) im->action_add_event(action, ev->duplicate());
+		}
+	}
+	_save_keybinds(); // 全部回默认 → cfg 清空覆盖项
+}
+
+// 冲突检测：该物理键是否已被其他可改绑动作占用（占用则拒绑，不交换——
+// 交换会让被占方静默失绑，拒绑语义更直白）
+int GameMenu::_keybind_conflict_row(int p_row, int32_t p_physical) const {
+	InputMap *im = InputMap::get_singleton();
+	if (!im) return -1;
+	for (int j = 0; j < KEYBIND_COUNT; j++) {
+		if (j == p_row) continue;
+		String action = TXT(KEYBIND_ROWS[j].action);
+		if (!im->has_action(action)) continue;
+		Array evs = im->action_get_events(action);
+		for (int e = 0; e < evs.size(); e++) {
+			if (_key_event_physical(evs[e]) == p_physical) return j;
+		}
+	}
+	return -1;
+}
+
+void GameMenu::_capture_keybind(int32_t p_row, int32_t p_physical) {
+	if (p_row < 0 || p_row >= KEYBIND_COUNT) { _keybind_capture = -1; return; }
+	String key_name = OS::get_singleton()->get_keycode_string((Key)p_physical);
+	int conflict = _keybind_conflict_row(p_row, p_physical);
+	if (conflict >= 0) {
+		_keybind_msg = LOC("按键 ") + key_name + LOC(" 已被「") + LOC(KEYBIND_ROWS[conflict].label) + LOC("」占用");
+	} else {
+		_apply_keybind(TXT(KEYBIND_ROWS[p_row].action), p_physical);
+		_save_keybinds();
+		_keybind_msg = LOC(KEYBIND_ROWS[p_row].label) + LOC(" 已改绑为 ") + key_name;
+	}
+	_keybind_msg_t = 2.5f;
+	_keybind_capture = -1;
+	_refresh_settings_page();
+}
+
+void GameMenu::_enter_keybinds() {
+	_keybind_open = true;
+	_keybind_sel = 0;
+	_keybind_capture = -1;
+	_keybind_msg = String();
+	_keybind_msg_t = 0.0f;
+	_refresh_settings_page();
+	_set_hint(LOC("↑/↓←/→ 选择  X 改绑  ESC 返回  Q/E 切页"));
+}
+
+void GameMenu::_build_keybinds_page() {
+	Label *title = memnew(Label);
+	title->set_text(LOC("—— 键位 ——"));
+	title->add_theme_font_size_override("font_size", 13);
+	title->add_theme_color_override("font_color", Color(1.0f, 0.9f, 0.5f));
+	title->set_position(Vector2(200, 30));
+	add_child(title);
+	_page_nodes.push_back(title);
+
+	for (int i = 0; i <= KEYBIND_COUNT; i++) { // 含末尾「恢复默认键位」
+		int col = i / KEYBIND_COL_ROWS;
+		int row = i % KEYBIND_COL_ROWS;
+		bool is_reset = (i == KEYBIND_COUNT);
+		String text;
+		Color c;
+		if (is_reset) {
+			text = LOC("恢复默认键位");
+			c = Color(0.95f, 0.6f, 0.45f);
+		} else {
+			String key_text = (_keybind_capture == i) ? LOC("按下新键…") : _keybind_key_text(TXT(KEYBIND_ROWS[i].action));
+			text = LOC(KEYBIND_ROWS[i].label) + LOC("  [") + key_text + LOC("]");
+			c = Color(0.85f, 0.85f, 0.85f);
+		}
+		if (i == _keybind_sel) {
+			text = LOC("▶ ") + text;
+			c = (_keybind_capture == i) ? Color(0.55f, 0.85f, 1.0f) : Color(1.0f, 0.95f, 0.6f);
+		} else {
+			text = LOC("  ") + text;
+		}
+		Label *l = memnew(Label);
+		l->set_text(text);
+		l->add_theme_font_size_override("font_size", 8);
+		l->add_theme_color_override("font_color", c);
+		l->set_position(Vector2(28 + col * 152, 52 + row * 15));
+		add_child(l);
+		_page_nodes.push_back(l);
+	}
+
+	if (!_keybind_msg.is_empty()) {
+		Label *msg = memnew(Label);
+		msg->set_text(_keybind_msg);
+		msg->add_theme_font_size_override("font_size", 8);
+		msg->add_theme_color_override("font_color", Color(1.0f, 0.75f, 0.4f));
+		msg->set_position(Vector2(28, 236));
+		add_child(msg);
+		_page_nodes.push_back(msg);
+	}
+}
+
+void GameMenu::_handle_keybinds_input() {
+	if (_keybind_capture >= 0) return; // 捕获期只认 _input 原始键
+	Input *input = Input::get_singleton();
+
+	int col = _keybind_sel / KEYBIND_COL_ROWS;
+	int row = _keybind_sel % KEYBIND_COL_ROWS;
+	int ncol = col, nrow = row;
+	if (input->is_action_just_pressed(LOC("up")))    nrow = row > 0 ? row - 1 : 0;
+	if (input->is_action_just_pressed(LOC("down")))  nrow = MIN(row + 1, _keybind_col_rows(col) - 1);
+	if (input->is_action_just_pressed(LOC("left")))  ncol = col > 0 ? col - 1 : 0;
+	if (input->is_action_just_pressed(LOC("right"))) ncol = MIN(col + 1, KEYBIND_COLS - 1);
+	if (ncol != col) nrow = MIN(nrow, _keybind_col_rows(ncol) - 1); // 换列钳制行
+	int nsel = ncol * KEYBIND_COL_ROWS + nrow;
+	if (nsel != _keybind_sel) {
+		_keybind_sel = nsel;
+		_refresh_settings_page();
+	}
+
+	if (input->is_action_just_pressed(LOC("interact"))) {
+		if (_keybind_sel == KEYBIND_COUNT) {
+			_reset_keybinds();
+			_keybind_msg = LOC("已恢复默认键位");
+			_keybind_msg_t = 2.5f;
+			_refresh_settings_page();
+		} else {
+			_keybind_capture = _keybind_sel;
+			_refresh_settings_page();
+		}
+	}
+}
+
+void GameMenu::reload_keybinds() {
+	_load_keybinds();
+}
+
 void GameMenu::_on_language_changed(const String &p_locale) {
 	// 刷新页签条文字
 	for (int i = 0; i < PAGE_COUNT; i++) {
@@ -2790,7 +3118,28 @@ void GameMenu::_process(double p_delta) {
 		}
 	}
 
+	if (_keybind_msg_t > 0.0f) {
+		_keybind_msg_t -= float(p_delta);
+		if (_keybind_msg_t <= 0.0f && _page == PAGE_SETTINGS && _keybind_open) {
+			_keybind_msg = String();
+			_refresh_settings_page();
+		}
+	}
+
 	if (input->is_action_just_pressed(LOC("menu"))) {
+		if (_keybind_open) {
+			if (_keybind_capture >= 0) {
+				// 捕获期的 ESC（合成 action 路径）：取消捕获，不退层
+				_keybind_capture = -1;
+				_refresh_settings_page();
+			} else if (_keybind_cancel_frame != Engine::get_singleton()->get_process_frames()) {
+				// 普通 ESC：退回设置页（取消捕获当帧的 ESC 已被 _input 消费，不再退层）
+				_keybind_open = false;
+				_refresh_settings_page();
+				_set_hint(LOC("Q/E 切换页  ↑/↓ 选择  ←/→ 调节  X 确认  ESC 关闭"));
+			}
+			return;
+		}
 		_close_menu();
 		return;
 	}

@@ -15,7 +15,7 @@
 | P2 | 洲 | data/continents.json | ContinentManager::ensure_loaded → DataLoader | ✅ |
 | P2 | 境界 | data/realms.json | CultivationSystem::ensure_defs_loaded → DataLoader | ✅ |
 | P3 | 能力 | — | 待做 | ❌ |
-| P4 | 输入映射 | — | 待做（需键位配置 UI） | ❌ |
+| P4 | 输入映射 | user://keybinds.cfg（运行时覆盖） | GameMenu 设置页「键位」子页 → InputMap 改绑 | ✅ |
 | P5 | UI 文本/布局 | — | 待做（需本地化框架/UI 皮肤） | ❌ |
 
 > 核心模式：每个系统增加 `static std::vector<Def> s_defs` + `static bool s_loaded` +
@@ -395,11 +395,16 @@ flight_mana_cost_per_sec() = 10.0f (筑基), 0.0f (金丹+);
 
 ## 十五、输入映射（Input Map）
 
-**位置**：`project.godot` `[input]` section
+**位置**：默认绑定在 `project.godot` `[input]` section；玩家覆盖在 `user://keybinds.cfg`（[keybinds] 段，action → 物理键码）
 
-当前 20+ 个 action：left/right/up/down/jump/dash/interact/cultivate/menu/inventory/
-artifact_page/skill_a~h/consume_1~6/pressure_wei/pressure_lin。
-每个 action 的键位绑定硬编码在 project.godot 中。应提供键位配置界面（设置页内）。
+默认 20+ 个 action 的键位绑定仍在 project.godot 中（不改）；**键位配置 UI 已落地**：
+GameMenu 设置页「键位」行（X 进入子页，3 列 × 12 行）覆盖移动/跳/冲刺/普攻/交互/打坐/
+威压/灵压/法宝页/洞天 + 12 技能槽 + 6 消耗品栏共 32 个 action；X 进入「等待按键」态 →
+按新键即 `InputMap.action_erase_events` + `action_add_event` 生效，ESC 取消；
+冲突检测=占用拒绑（该键已被其他可改绑 action 占用 → 提示「已被 X 占用」不换绑）；
+持久化只存与默认不同的覆盖项（未动的多事件默认如 interact=Space+X 不被收敛），
+启动时 GameMenu `_load_keybinds` 应用；末行「恢复默认键位」从首启快照还原并清档。
+菜单自身 Q/E 翻页与 ESC 关闭走 `_input` 原始键码，固定不可改绑。
 
 ---
 
@@ -433,7 +438,7 @@ artifact_page/skill_a~h/consume_1~6/pressure_wei/pressure_lin。
 | **P3** | 能力解锁 | 15+7 条，境界调整时需同步 | ❌ |
 | **P4** | Player 属性 | 需引入角色模板后才可抽 | ❌ |
 | **P4** | 敌人 spawn 坐标（世界布局） | 洲脚本 GDScript 手写坐标（world_common + 各洲脚本） | ❌ |
-| **P4** | 输入映射 | 需键位配置 UI | ❌ |
+| **P4** | 输入映射 | 键位配置 UI（设置页子页 + keybinds.cfg 运行时覆盖） | ✅ |
 | **P5** | UI 文本/布局 | 需本地化框架或 UI 皮肤系统 | ❌ |
 
 ---
