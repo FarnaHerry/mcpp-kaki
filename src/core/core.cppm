@@ -60,6 +60,9 @@ public:
 	// 云游阵（data/teleports.json）：数组序=面板列表序
 	Array get_all_teleports() const;
 
+	// 能力解锁表（data/abilities.json）：数组序=能力页显示序
+	Array get_all_abilities() const;
+
 protected:
 	static void _bind_methods();
 
@@ -76,6 +79,7 @@ private:
 	Array _realms;         // 下标 = 境界序号
 	Dictionary _realm_tuning;
 	Array _teleports;      // 云游阵定义（数组序=面板序）
+	Array _abilities;      // 能力解锁定义（数组序=能力页显示序）
 
 	void _load_json_array(const String &p_path, HashMap<StringName, Dictionary> &r_out);
 };

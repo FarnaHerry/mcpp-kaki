@@ -64,6 +64,25 @@ public:
 	static const char *ABILITY_DAO_DOMAIN;
 	static const char *ABILITY_MYRIAD_AVATARS;
 
+	// 能力解锁表（data/abilities.json，design/data-externalization.md 十二节）：
+	// ensure_defs_loaded 惰性装载，DataLoader 可用走 JSON（数组序=能力页显示序），
+	// 否则回退硬编码兜底表（值与 JSON 同步）。
+	struct AbilityDef {
+		const char *id;
+		const char *name;
+		bool active;      // true=主动 false=被动（能力页分区）
+		bool innate;      // 初始即会（不入境界解锁流程，构造时已解锁）
+		int unlock_realm; // 境界门控（-1=非境界：innate/混元）
+		bool hunyuan;     // 混元一气解锁（unlock_realm=-1 时看此位）
+		const char *cond; // 解锁条件显示文本（能力页）
+		const char *desc; // 说明
+	};
+
+	static void ensure_defs_loaded();
+	static int get_ability_count();
+	static const AbilityDef *get_ability(int p_idx);
+	static const AbilityDef *find_def(const StringName &p_id);
+
 	AbilityManager();
 
 	void set_cultivation(CultivationSystem *p_cultivation) { _cultivation = p_cultivation; }
@@ -72,10 +91,16 @@ public:
 	void check_realm_unlocks();
 	String get_unlocked_list() const;
 
+	// 全量定义表（能力页/测试用；元素 {id,name,type,innate,unlock_realm,hunyuan,cond,desc}）
+	Array get_ability_list() const;
+
 protected:
 	static void _bind_methods();
 
 private:
+	static std::vector<AbilityDef> s_defs;
+	static bool s_defs_loaded;
+
 	HashSet<StringName> _unlocked;
 	CultivationSystem *_cultivation = nullptr;
 };
