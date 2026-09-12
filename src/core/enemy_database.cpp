@@ -17,7 +17,8 @@ bool EnemyDatabase::s_loaded = false;
 static EnemyDef _mk(const char *p_id, const char *p_name, float p_hp, float p_atk,
 		float p_speed, float p_det, float p_range, float p_cd, float p_pref, int p_realm,
 		bool p_ranged, bool p_flying, bool p_boss,
-		float p_r, float p_g, float p_b, const char *p_drops, float p_elite_chance = 0.0f) {
+		float p_r, float p_g, float p_b, const char *p_drops, float p_elite_chance = 0.0f,
+		const char *p_proj_element = "") {
 	EnemyDef d;
 	d.id = String(p_id); // id 全 ASCII
 	d.name = TXT(p_name);
@@ -36,6 +37,7 @@ static EnemyDef _mk(const char *p_id, const char *p_name, float p_hp, float p_at
 	d.size = Vector2(20, 28);
 	d.drops = String(p_drops);
 	d.elite_chance = p_elite_chance;
+	d.proj_element = String(p_proj_element); // 元素名全 ASCII
 	return d;
 }
 
@@ -56,7 +58,7 @@ void EnemyDatabase::_load_hardcoded() {
 	s_defs.push_back(_mk("ya_gong", "崖弓", 1, 10, 60, 350, 280, 0.8f, 180, 1, true, false, false, 0.5f, 0.5f, 0.2f, ""));
 	s_defs.push_back(_mk("yan_gui", "岩龟", 5, 10, 80, 240, 35, 0.8f, 0, 1, false, false, false, 0.6f, 0.3f, 0.2f, ""));
 	s_defs.push_back(_mk("gu_xiao", "谷枭", 3, 10, 110, 340, 35, 0.8f, 0, 1, false, true, false, 0.6f, 0.5f, 0.9f, ""));
-	s_defs.push_back(_mk("lei_shou", "雷兽", 8, 14, 90, 380, 280, 1.2f, 180, 2, true, false, false, 0.7f, 0.4f, 0.9f, ""));
+	s_defs.push_back(_mk("lei_shou", "雷兽", 8, 14, 90, 380, 280, 1.2f, 180, 2, true, false, false, 0.7f, 0.4f, 0.9f, "", 0.0f, "lei")); // 雷弹走元素结算（雷抗可减免）
 	s_defs.push_back(_mk("gu_tu", "谷兔", 6, 10, 85, 240, 35, 0.8f, 0, 1, false, false, false, 0.5f, 0.3f, 0.3f, ""));
 	s_defs.push_back(_mk("you_gu_chi_long", "幽谷螭龙", 60, 24, 45, 450, 35, 1.1f, 0, 4, false, false, true, 0.2f, 0.6f, 0.6f, "you_gu_chi_long"));
 	// 花果山/东海之滨
@@ -96,7 +98,7 @@ void EnemyDatabase::_load_hardcoded() {
 	s_defs.push_back(_mk("ju_ling_shen", "巨灵神", 800, 110, 50, 460, 35, 1.0f, 0, 11, false, false, true, 0.8f, 0.75f, 0.4f, "ju_ling_shen"));
 
 	// ===== 渡劫·天罚使（劫云化身；渡劫控制器镜像 realm/显式接管总血量 2500/置 no_drops，多阶段由控制器驱动）=====
-	s_defs.push_back(_mk("tian_fa_shi", "天罚使", 500, 8, 70, 600, 260, 1.6f, 200, 9, true, false, true, 0.55f, 0.35f, 0.85f, ""));
+	s_defs.push_back(_mk("tian_fa_shi", "天罚使", 500, 8, 70, 600, 260, 1.6f, 200, 9, true, false, true, 0.55f, 0.35f, 0.85f, "", 0.0f, "lei")); // 雷球/雷链全走雷元素
 
 	// ===== Wave3 秘境（古剑冢/大雁塔地宫/地心火窟/荒古冰墓，与 enemies.json 同值）=====
 	// 古剑冢（东胜神洲·断崖绝壁）
@@ -194,6 +196,7 @@ void EnemyDatabase::_apply_json() {
 		}
 		if (d.has("drops")) def->drops = String(d["drops"]);
 		if (d.has("elite_chance")) def->elite_chance = float(d["elite_chance"]);
+		if (d.has("proj_element")) def->proj_element = String(d["proj_element"]);
 	}
 }
 

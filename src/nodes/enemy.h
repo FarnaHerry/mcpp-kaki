@@ -43,6 +43,7 @@ class Enemy : public CharacterBody2D {
 		String display_name;          // Boss 血条标题（空则回退节点名）
 		String enemy_id;              // 敌人定义 id（EnemyDatabase；set_enemy_id 应用定义）
 		String drop_table;            // 命名掉落表（空串=类别兜底；DropSystem 经 get("drop_table") 读）
+		String proj_element;          // 投射物元素名（"lei" 等；空=物理弹。set_enemy_id 从定义承接）
 		float preferred_distance = 0.0f; // ideal combat range (0 = melee)
 
 			// 行为描述（Wave4 组件化：从 EnemyDef 装配，支持组合 ranged+flying+boss 等）。
@@ -138,6 +139,9 @@ class Enemy : public CharacterBody2D {
 		String get_enemy_id() const { return enemy_id; }
 		void set_drop_table(const String &v) { drop_table = v; }
 		String get_drop_table() const { return drop_table; }
+		void set_proj_element(const String &v) { proj_element = v; }
+		String get_proj_element() const { return proj_element; }
+		Element get_proj_element_enum() const; // 元素名→Element（空/未知=ELEM_NONE；enemy.cpp 实现）
 		Color get_def_color() const { return _def_color; }  // 定义颜色（无定义=白）
 		Vector2 get_def_size() const { return _def_size; }  // 定义尺寸（无定义=20×28）
 		void set_preferred_distance(float v) { preferred_distance = v; }
@@ -182,6 +186,7 @@ class Enemy : public CharacterBody2D {
 
 	// Spawn a projectile toward the player (called by Shoot state)
 	void _spawn_projectile();
+	void _apply_proj_element(Projectile *p_proj) const; // 投射物按 proj_element 装配元素结算（状态类需访问，公开）
 
 	protected:
 		static void _bind_methods();
