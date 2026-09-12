@@ -1393,5 +1393,98 @@
       38
     ],
     "drops": ""
+  },
+  "sao_di_seng_kui": {
+    "name": "扫地僧傀",
+    "hp": 170,
+    "atk": 32,
+    "speed": 65,
+    "detection": 250,
+    "attack_range": 38,
+    "attack_cooldown": 0.9,
+    "realm": 6,
+    "flags": [],
+    "color": [
+      0.55,
+      0.48,
+      0.38,
+      1.0
+    ],
+    "size": [
+      20,
+      28
+    ],
+    "drops": ""
+  },
+  "song_jing_shou": {
+    "name": "诵经兽",
+    "hp": 130,
+    "atk": 28,
+    "speed": 80,
+    "detection": 330,
+    "attack_range": 250,
+    "attack_cooldown": 1.0,
+    "preferred": 170,
+    "realm": 6,
+    "flags": [
+      "ranged"
+    ],
+    "color": [
+      0.45,
+      0.55,
+      0.5,
+      1.0
+    ],
+    "size": [
+      18,
+      22
+    ],
+    "drops": ""
+  },
+  "hu_fa_jin_gang": {
+    "name": "护法金刚",
+    "hp": 260,
+    "atk": 40,
+    "speed": 55,
+    "detection": 300,
+    "attack_range": 42,
+    "attack_cooldown": 1.0,
+    "realm": 7,
+    "flags": [],
+    "color": [
+      0.85,
+      0.7,
+      0.3,
+      1.0
+    ],
+    "size": [
+      24,
+      32
+    ],
+    "drops": ""
+  },
+  "xin_yuan_shi_xiang": {
+    "name": "心猿石像",
+    "hp": 220,
+    "atk": 45,
+    "speed": 70,
+    "detection": 460,
+    "attack_range": 46,
+    "attack_cooldown": 0.85,
+    "realm": 7,
+    "flags": [
+      "boss"
+    ],
+    "color": [
+      0.72,
+      0.68,
+      0.55,
+      1.0
+    ],
+    "size": [
+      28,
+      38
+    ],
+    "drops": "da_lei_yin_si"
   }
 }

@@ -537,5 +537,17 @@
   "buff_id": "buff_xuan_ming",
   "buy_price": 1500,
   "sell_price": 300
+ },
+ {
+  "id": "zhan_tan_gong_de_xiang",
+  "name": "旃檀功德香",
+  "desc": "大雷音寺遗址心猿石像座前供奉的功德香，旃檀佛光缭绕未散。服之修为+5000，全元素抗性+15%，持续 600s。",
+  "type": 0,
+  "max_stack": 3,
+  "grade": 3,
+  "energy_amount": 5000.0,
+  "buff_id": "buff_zhan_tan",
+  "buy_price": 0,
+  "sell_price": 800
  }
 ]

@@ -1,0 +1,145 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/rooms/da_lei_yin_si.gd" id="1"]
+
+[sub_resource type="RectangleShape2D" id="ground_shape"]
+size = Vector2(480, 24)
+
+[sub_resource type="RectangleShape2D" id="wall_shape"]
+size = Vector2(16, 140)
+
+[sub_resource type="RectangleShape2D" id="platform_shape"]
+size = Vector2(120, 10)
+
+[node name="DaLeiYinSi" type="Node2D"]
+script = ExtResource("1")
+
+; Background（废寺残垣，暗金尘灰）
+[node name="Background" type="Polygon2D" parent="."]
+color = Color(0.1, 0.09, 0.07, 1)
+polygon = PackedVector2Array(0, 0, 480, 0, 480, 270, 0, 270)
+
+; 残破佛殿轮廓（背景剪影：塌顶大殿 + 飞檐残角）
+[node name="RuinedHall" type="Polygon2D" parent="."]
+color = Color(0.14, 0.12, 0.1, 1)
+polygon = PackedVector2Array(300, 238, 300, 110, 330, 86, 390, 70, 450, 92, 470, 120, 470, 238)
+
+[node name="HallRoofBroken" type="Polygon2D" parent="."]
+color = Color(0.17, 0.14, 0.11, 1)
+polygon = PackedVector2Array(318, 96, 390, 62, 462, 100, 452, 108, 390, 76, 330, 104)
+
+; 断柱·左（中段崩折，柱础+残柱+断口）
+[node name="PillarBaseL" type="Polygon2D" parent="."]
+color = Color(0.3, 0.24, 0.18, 1)
+polygon = PackedVector2Array(96, 226, 116, 226, 116, 238, 96, 238)
+
+[node name="PillarStumpL" type="Polygon2D" parent="."]
+color = Color(0.34, 0.28, 0.2, 1)
+polygon = PackedVector2Array(99, 168, 113, 168, 113, 226, 99, 226)
+
+[node name="PillarBreakL" type="Polygon2D" parent="."]
+color = Color(0.4, 0.33, 0.24, 1)
+polygon = PackedVector2Array(99, 168, 106, 158, 113, 168)
+
+; 断柱·中（倒伏更长一截）
+[node name="PillarBaseM" type="Polygon2D" parent="."]
+color = Color(0.3, 0.24, 0.18, 1)
+polygon = PackedVector2Array(216, 226, 236, 226, 236, 238, 216, 238)
+
+[node name="PillarStumpM" type="Polygon2D" parent="."]
+color = Color(0.34, 0.28, 0.2, 1)
+polygon = PackedVector2Array(219, 196, 233, 196, 233, 226, 219, 226)
+
+; 断柱·右（殿前残柱最高）
+[node name="PillarStumpR" type="Polygon2D" parent="."]
+color = Color(0.36, 0.29, 0.2, 1)
+polygon = PackedVector2Array(402, 128, 416, 128, 416, 238, 402, 238)
+
+[node name="PillarBreakR" type="Polygon2D" parent="."]
+color = Color(0.42, 0.34, 0.24, 1)
+polygon = PackedVector2Array(402, 128, 409, 116, 416, 128)
+
+; 香炉（院心青铜大香炉：炉身+三足+香烟）
+[node name="CenserBody" type="Polygon2D" parent="."]
+color = Color(0.4, 0.32, 0.2, 1)
+polygon = PackedVector2Array(150, 216, 170, 216, 166, 232, 154, 232)
+
+[node name="CenserLegL" type="Polygon2D" parent="."]
+color = Color(0.34, 0.27, 0.17, 1)
+polygon = PackedVector2Array(153, 232, 157, 232, 157, 238, 153, 238)
+
+[node name="CenserLegR" type="Polygon2D" parent="."]
+color = Color(0.34, 0.27, 0.17, 1)
+polygon = PackedVector2Array(163, 232, 167, 232, 167, 238, 163, 238)
+
+[node name="CenserSmoke" type="Polygon2D" parent="."]
+color = Color(0.75, 0.72, 0.6, 0.14)
+polygon = PackedVector2Array(156, 216, 164, 216, 168, 150, 152, 150)
+
+; 佛光（遗址残存佛性，顶端斜洒淡金光柱）
+[node name="BuddhaLight1" type="Polygon2D" parent="."]
+color = Color(1.0, 0.85, 0.45, 0.07)
+polygon = PackedVector2Array(150, 0, 195, 0, 215, 238, 165, 238)
+
+[node name="BuddhaLight2" type="Polygon2D" parent="."]
+color = Color(1.0, 0.88, 0.5, 0.06)
+polygon = PackedVector2Array(360, 0, 400, 0, 415, 238, 375, 238)
+
+; 殿内佛光（心猿石像背光，斗战胜佛遗蜕余辉）
+[node name="StatueGlow" type="Polygon2D" parent="."]
+color = Color(1.0, 0.85, 0.4, 0.1)
+polygon = PackedVector2Array(425, 130, 462, 180, 425, 238, 388, 180)
+
+; Ground
+[node name="Ground" type="StaticBody2D" parent="."]
+position = Vector2(240, 238)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
+shape = SubResource("ground_shape")
+
+[node name="GroundVisual" type="Polygon2D" parent="Ground"]
+color = Color(0.2, 0.16, 0.12, 1)
+polygon = PackedVector2Array(-240, -5, 240, -5, 240, 12, -240, 12)
+
+; Walls
+[node name="WallL" type="StaticBody2D" parent="."]
+position = Vector2(0, 150)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallL"]
+shape = SubResource("wall_shape")
+
+[node name="WallVisualL" type="Polygon2D" parent="WallL"]
+color = Color(0.16, 0.13, 0.1, 1)
+polygon = PackedVector2Array(-8, -70, 8, -70, 8, 70, -8, 70)
+
+[node name="WallR" type="StaticBody2D" parent="."]
+position = Vector2(480, 150)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallR"]
+shape = SubResource("wall_shape")
+
+[node name="WallVisualR" type="Polygon2D" parent="WallR"]
+color = Color(0.16, 0.13, 0.1, 1)
+polygon = PackedVector2Array(-8, -70, 8, -70, 8, 70, -8, 70)
+
+; 佛光高台（讲经台残址，精英护法金刚镇守）
+[node name="FoGuangPlatform" type="StaticBody2D" parent="."]
+position = Vector2(330, 160)
+
+[node name="PlatformShape" type="CollisionShape2D" parent="FoGuangPlatform"]
+shape = SubResource("platform_shape")
+
+[node name="PlatformVisual" type="Polygon2D" parent="FoGuangPlatform"]
+color = Color(0.38, 0.3, 0.2, 1)
+polygon = PackedVector2Array(-60, -4, 60, -4, 60, 6, -60, 6)
+
+; 高台蒲团（讲经残迹）
+[node name="PuTuan" type="Polygon2D" parent="."]
+color = Color(0.6, 0.45, 0.2, 1)
+polygon = PackedVector2Array(344, 148, 360, 148, 360, 156, 344, 156)
+
+[node name="SpawnEntrance" type="Marker2D" parent="."]
+position = Vector2(50, 200)
+
+[node name="SpawnExit" type="Marker2D" parent="."]
+position = Vector2(200, 200)

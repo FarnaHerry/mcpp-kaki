@@ -569,6 +569,40 @@
         "max": 3,
         "chance": 0.8
       }
+    ],
+    "da_lei_yin_si": [
+      {
+        "item": "spirit_stone_mid",
+        "min": 3,
+        "max": 5,
+        "chance": 1.0,
+        "min_realm": 4
+      },
+      {
+        "item": "zhan_tan_gong_de_xiang",
+        "min": 1,
+        "max": 1,
+        "chance": 1.0
+      },
+      {
+        "item": "qian_nian_ling_zhi",
+        "min": 1,
+        "max": 1,
+        "chance": 0.6
+      },
+      {
+        "item": "da_huan_dan",
+        "min": 1,
+        "max": 1,
+        "chance": 0.5
+      },
+      {
+        "item": "spirit_stone_high",
+        "min": 1,
+        "max": 2,
+        "chance": 0.6,
+        "min_realm": 7
+      }
     ]
   }
 }

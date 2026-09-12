@@ -15,9 +15,9 @@ func _setup():
 
 	WC.make_landmark(self, 120, 140, "南赡部洲 · 长安郊外", Color(0.9, 0.8, 0.4, 1))
 
-	WC.make_ground(self, -50, 2200, 238)
+	WC.make_ground(self, -50, 2600, 238)
 	WC.make_wall(self, -44, 40, 270)
-	WC.make_wall(self, 2194, 40, 270)
+	WC.make_wall(self, 2594, 40, 270)
 
 	# 城郊：屋檐平台（跳跃）
 	WC.make_platform(self, 450, 170, 100)
@@ -61,6 +61,10 @@ func _setup():
 	WC.make_landmark(self, 1800, 120, "五庄观（人参果）", Color(0.6, 0.9, 0.5, 1))
 	WC.spawn_item_pickup(self, Vector2(1850, 232), "ren_shen_guo", 1)
 	WC.spawn_item_pickup(self, Vector2(1900, 232), "spirit_stone", 20)
+
+	# ===== 大雷音寺遗址：废寺秘境入口（五庄观以东荒野，心猿石像 Boss + 旃檀功德香秘藏）=====
+	WC.make_landmark(self, 2380, 120, "大雷音寺遗址", Color(1.0, 0.85, 0.45, 1))
+	WC.create_portal(self, 2450, "res://scenes/rooms/da_lei_yin_si.tscn", "[↑] 进入大雷音寺遗址", ctx.player, ctx.camera, ctx.hint)
 
 	# ===== 地府入口（正式版：长安城内，design/world-map.md 南赡部洲地府入口）=====
 	WC.make_landmark(self, 100, 60, "黄泉路入口（地府）", Color(0.6, 0.5, 0.9, 1))

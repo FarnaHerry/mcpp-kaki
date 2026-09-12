@@ -40,7 +40,7 @@ static EnemyDef _mk(const char *p_id, const char *p_name, float p_hp, float p_at
 }
 
 void EnemyDatabase::_load_hardcoded() {
-	s_defs.reserve(64);
+	s_defs.reserve(72);
 	// ===== 东胜神洲·落霞山地（bootstrap.gd）=====
 	s_defs.push_back(_mk("shan_xiao", "山魈", 1, 10, 60, 200, 35, 0.8f, 0, 0, false, false, false, 0.9f, 0.2f, 0.2f, ""));
 	s_defs.push_back(_mk("huo_xiao", "火魈", 2, 10, 55, 200, 35, 0.8f, 0, 0, false, false, false, 0.9f, 0.3f, 0.1f, ""));
@@ -124,6 +124,12 @@ void EnemyDatabase::_load_hardcoded() {
 	s_defs.push_back(_mk("han_mo_jiao", "墨鲛", 200, 55, 90, 280, 35, 0.9f, 0, 9, false, false, false, 0.1f, 0.35f, 0.45f, "", 0.08f));
 	s_defs.push_back(_mk("han_yuan_gui", "寒渊龟", 350, 40, 35, 220, 35, 1.5f, 0, 9, false, false, false, 0.3f, 0.35f, 0.4f, "", 0.10f));
 	s_defs.push_back(_mk("han_yuan_jun", "寒渊君", 250, 70, 55, 420, 40, 1.0f, 0, 9, false, false, true, 0.25f, 0.15f, 0.35f, "han_mo_gong"));
+
+	// ===== 大雷音寺遗址秘境（南赡部洲·废寺，realm6~7 炼虚~合体段）=====
+	s_defs.push_back(_mk("sao_di_seng_kui", "扫地僧傀", 170, 32, 65, 250, 38, 0.9f, 0, 6, false, false, false, 0.55f, 0.48f, 0.38f, ""));
+	s_defs.push_back(_mk("song_jing_shou", "诵经兽", 130, 28, 80, 330, 250, 1.0f, 170, 6, true, false, false, 0.45f, 0.55f, 0.5f, ""));
+	s_defs.push_back(_mk("hu_fa_jin_gang", "护法金刚", 260, 40, 55, 300, 42, 1.0f, 0, 7, false, false, false, 0.85f, 0.7f, 0.3f, ""));
+	s_defs.push_back(_mk("xin_yuan_shi_xiang", "心猿石像", 220, 45, 70, 460, 46, 0.85f, 0, 7, false, false, true, 0.72f, 0.68f, 0.55f, "da_lei_yin_si"));
 }
 
 static EnemyDef *_find_def(std::vector<EnemyDef> &p_defs, const String &p_id) {
