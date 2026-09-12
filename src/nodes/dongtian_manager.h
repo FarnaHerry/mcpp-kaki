@@ -15,6 +15,7 @@ namespace godot {
 class Player;
 class CameraRoom2D;
 class Enemy;
+class CloneAvatar;
 
 // 洞天系统 v1（后花园·空洞天）— design/dongtian.md
 // 玩家随身小世界：炼虚解锁 dongtian 能力后，安全状态按 O 键进出。
@@ -94,6 +95,29 @@ public:
 	Dictionary get_beast(int p_index) const;
 	// 打坐倍率加成（Player::get_dongtian_meditate_mult 叠加）：0.05 × 栏内灵兽数
 	double get_beast_bonus() const { return 0.05 * _beast_count; }
+
+	// ---- 傀儡（v5 经营：灵石购买激活，驻守/随行双模式，X 切换）----
+	// 驻守模式：所有生长中地块生长速度 +50%（生长计时统一走 _effective_grow）。
+	// 随行模式：傀儡实体（CloneAvatar 弱化快照 HP×40%/攻×40%，常驻寿命）跟随玩家出战，
+	// 仅洞天内/洲野外部署（玩家父节点=主场景根或洞天场景），进 Portal 房间自动收回（无冷却），
+	// 战死回洞天 60s 冷却后可重新召出。激活/模式/冷却随档持久化。
+	enum PuppetMode { PUPPET_GARRISON = 0, PUPPET_FOLLOW = 1 };
+	static constexpr int PUPPET_COST = 1500; // 下品基准（=上品×15）
+	static constexpr float PUPPET_RESPAWN_CD = 60.0f;
+	bool is_puppet_active() const { return _puppet_active; }
+	// 未激活返回价格（下品基准）；已激活返回 0
+	int get_puppet_cost() const { return _puppet_active ? 0 : PUPPET_COST; }
+	// 灵石购买激活（走 CurrencySystem 扣款，不足/已激活返回 false）
+	bool activate_puppet();
+	int get_puppet_mode() const { return _puppet_mode; }
+	void set_puppet_mode(int p_mode);
+	// 驻守加成：生长速度倍率（未激活/随行 = 1.0）
+	double get_puppet_growth_mult() const { return (_puppet_active && _puppet_mode == PUPPET_GARRISON) ? 1.5 : 1.0; }
+	// 随行实体当前是否在场
+	bool is_puppet_deployed() const { return _puppet_deployed; }
+	// 战死后剩余冷却秒数
+	float get_puppet_cooldown() const { return _puppet_cooldown; }
+	void debug_clear_puppet_cooldown() { _puppet_cooldown = 0.0f; }
 
 	Dictionary save_to_dict() const;
 	void load_from_dict(const Dictionary &p_data);
@@ -189,6 +213,12 @@ private:
 	int _beast_count = 0;
 	bool _subdue_prompt_on = false; // 降伏提示为本 Manager 所发（离开范围才清自己发的）
 
+	// 傀儡（v5，持久化激活/模式；实体不持久，_poll 按态部署）
+	bool _puppet_active = false;
+	int _puppet_mode = PUPPET_GARRISON;
+	bool _puppet_deployed = false;     // 随行实体在场（我方视角记账，实体消亡由 poll/信号校正）
+	float _puppet_cooldown = 0.0f;     // 战死重召冷却（游戏时间秒）
+
 	void _try_enter();
 	void _enter();
 	void _exit(bool p_restore_pos);
@@ -202,6 +232,12 @@ private:
 	int _storage_free_capacity(const StringName &p_id, int p_max_stack) const;
 	void _subdue_poll();                                         // 降伏轮询（闯阵中，半血以下贴近 X）
 	void _subdue_invader(Enemy *p_enemy);
+	int _effective_grow(int p_grow) const;                       // 驻守傀儡加成后的实际生长秒数
+	void _puppet_poll(double p_delta);                           // 傀儡随行部署/收回/战死冷却轮询
+	CloneAvatar *_find_puppet() const;                           // dongtian_puppet 组扫在场随行实体
+	void _deploy_puppet();                                       // 召出随行傀儡实体（CloneAvatar 弱化快照）
+	void _recall_puppet();                                       // 收回随行傀儡（无冷却；进 Portal/进出洞天/切模式）
+	void _on_puppet_died();                                      // 傀儡战死（died 信号）→ 60s 冷却
 };
 
 } // namespace godot

@@ -26,19 +26,26 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("gain_spiritual_energy", "amount"), &CloneAvatar::gain_spiritual_energy);
 		ClassDB::bind_method(D_METHOD("_on_hurtbox_hit", "hitbox", "source"), &CloneAvatar::_on_hurtbox_hit);
 		ClassDB::bind_method(D_METHOD("_on_owner_exiting"), &CloneAvatar::_on_owner_exiting);
+		// 战死信号（洞天傀儡随行：Manager 据此起 60s 重召冷却；收回/场景卸载不触发）
+		ADD_SIGNAL(MethodInfo("died"));
 	}
 
 	void CloneAvatar::setup_from_player(Player *p) {
+		setup_from_player_scaled(p, 0.5f, 0.6f, 0.8f, 30.0);
+	}
+
+	void CloneAvatar::setup_from_player_scaled(Player *p, float p_hp_ratio, float p_atk_ratio, float p_speed_ratio, double p_lifetime) {
 		_owner = p;
+		lifetime = p_lifetime;
 		if (!p) return;
 		// 与玩家互加碰撞例外：所有 body 默认带 layer 1 位（set_collision_layer_value 只加不清），
 		// 分身 mask 含 layer 1(Ground) → 会被玩家身体挡住（设计意图是「不挡玩家路」）
 		add_collision_exception_with(p);
 		p->add_collision_exception_with(this);
-		max_health = p->get_max_health() * 0.5f;
+		max_health = p->get_max_health() * p_hp_ratio;
 		current_health = max_health;
-		attack_damage = p->get_effective_attack() * 0.6f;
-		move_speed = p->move_speed * 0.8f; // 玩家移速已随境界缩放（_update_move_speed）
+		attack_damage = p->get_effective_attack() * p_atk_ratio;
+		move_speed = p->move_speed * p_speed_ratio; // 玩家移速已随境界缩放（_update_move_speed）
 		_facing = p->facing_direction;
 		p->connect("tree_exiting", Callable(this, "_on_owner_exiting"));
 	}
@@ -47,7 +54,8 @@ namespace godot {
 		if (Engine::get_singleton()->is_editor_hint())
 			return;
 
-		add_to_group("shen_wai_clones"); // 同时存活上限管理（Player::_summon_clone 顶掉最老）
+		if (join_clone_group)
+			add_to_group("shen_wai_clones"); // 同时存活上限管理（Player::_summon_clone 顶掉最老）
 		_setup_collision();
 		_create_hitboxes();
 		_create_visual();
@@ -106,9 +114,10 @@ namespace godot {
 	}
 
 	void CloneAvatar::_create_visual() {
-		// 金色半透明简易人形（毫毛分身）：躯干 + 头
-		const Color gold(1.0f, 0.85f, 0.3f, 0.55f);
-		const Color gold_head(1.0f, 0.9f, 0.45f, 0.65f);
+		// 简易人形（躯干 + 头），染色由 visual_tint 定（默认金色毫毛；洞天傀儡木质褐）
+		const Color body_c = visual_tint;
+		Color head_c = visual_tint.lightened(0.15f);
+		head_c.a = MIN(1.0f, visual_tint.a + 0.1f);
 
 		Polygon2D *body = memnew(Polygon2D);
 		body->set_name("BodyVisual");
@@ -118,7 +127,7 @@ namespace godot {
 		body_poly.append(Vector2(5, 9));
 		body_poly.append(Vector2(-5, 9));
 		body->set_polygon(body_poly);
-		body->set_color(gold);
+		body->set_color(body_c);
 		add_child(body);
 
 		Polygon2D *head = memnew(Polygon2D);
@@ -129,7 +138,7 @@ namespace godot {
 			head_poly.append(Vector2(Math::cos(a) * 4.0f, -17.0f + Math::sin(a) * 4.0f));
 		}
 		head->set_polygon(head_poly);
-		head->set_color(gold_head);
+		head->set_color(head_c);
 		add_child(head);
 	}
 
@@ -168,7 +177,7 @@ namespace godot {
 			return;
 
 		_age += p_delta;
-		if (_age >= lifetime) {
+		if (lifetime > 0.0 && _age >= lifetime) { // lifetime<=0 = 常驻（洞天傀儡随行）
 			dissipate();
 			return;
 		}
@@ -224,6 +233,7 @@ namespace godot {
 		current_health -= Math::max(p_amount, 1.0f); // 保底 1 点（同 DamageCalculator 模型）
 		if (current_health <= 0.0f) {
 			current_health = 0.0f;
+			emit_signal("died"); // 战死（收回/到寿不触发——洞天傀儡据此起 60s 重召冷却）
 			dissipate(); // 死亡即消散
 		}
 	}
