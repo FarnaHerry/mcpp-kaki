@@ -16,6 +16,7 @@ const MeditateSpot := preload("res://scripts/spots/meditate_spot.gd")
 const PillLab := preload("res://scripts/spots/pill_lab.gd")
 const DongtianHerbSpot := preload("res://scripts/spots/dongtian_herb_spot.gd")
 const YaoTong := preload("res://scripts/spots/yao_tong.gd")
+const Kuilei := preload("res://scripts/spots/kuilei.gd")
 const WC := preload("res://scripts/world_common.gd")
 
 # 灵兽闯阵：入侵灵兽种类与出生点（Manager 触发后回调 spawn_invasion 装配）
@@ -87,6 +88,11 @@ func _ready():
 
 	# v5 灵兽栏（中央上空浮台 + 围栏视觉；降伏的灵兽由 refresh_beast_pen 装配）
 	_make_beast_pen()
+
+	# v5 傀儡（灵田左端上空浮台 x=40,y=150：距出生点 (240,200) 205px，
+	# 远超 48px 幽灵 enter 守卫半径；浮台 20..60 与冰心莲台 60..108 平接，
+	# 避开扩张碑交互区 x=16..56@y≥191——垂直间隔 27px 互不串扰）
+	_make_puppet_ledge()
 
 	# 自家小世界：不压制（-1），显式还原防残留
 	call_deferred("_suppress_player", -1)
@@ -205,6 +211,29 @@ func _make_herb_ledge(ledge_name: String, pos: Vector2, spot_index: int):
 	herb.position = pos + Vector2(0, -3)
 	herb.set("spot_index", spot_index)
 	add_child(herb)
+
+# 傀儡浮台：单向高台（可跳上/从下方穿过）+ 台板视觉 + 傀儡 NPC
+func _make_puppet_ledge():
+	var platform = StaticBody2D.new()
+	platform.name = "PuppetLedge"
+	platform.position = Vector2(40, 150)
+	platform.collision_layer = 1
+	platform.collision_mask = 0
+	var pshape = CollisionShape2D.new()
+	var prect = RectangleShape2D.new()
+	prect.size = Vector2(40, 6)
+	pshape.shape = prect
+	pshape.one_way_collision = true
+	platform.add_child(pshape)
+	var deck = Polygon2D.new()
+	deck.color = Color(0.45, 0.34, 0.2, 1)
+	deck.polygon = PackedVector2Array([-20, -6, 20, -6, 17, 0, -17, 0])
+	platform.add_child(deck)
+	add_child(platform)
+	var puppet = Kuilei.new()
+	puppet.name = "Kuilei"
+	puppet.position = Vector2(40, 147)
+	add_child(puppet)
 
 # 按 DongtianManager 当前地块数补建缺失的 FarmPlot（v4 扩张后新地立即可种）
 func refresh_plots():

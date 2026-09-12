@@ -1,5 +1,6 @@
 #include "dongtian_manager.h"
 #include "camera_room_2d.h"
+#include "clone_avatar.h"
 #include "enemy.h"
 #include "player.h"
 #include "../core/currency_system.h"
@@ -77,6 +78,16 @@ namespace godot {
         ClassDB::bind_method(D_METHOD("get_beast_count"), &DongtianManager::get_beast_count);
         ClassDB::bind_method(D_METHOD("get_beast", "index"), &DongtianManager::get_beast);
         ClassDB::bind_method(D_METHOD("get_beast_bonus"), &DongtianManager::get_beast_bonus);
+        ClassDB::bind_method(D_METHOD("is_puppet_active"), &DongtianManager::is_puppet_active);
+        ClassDB::bind_method(D_METHOD("get_puppet_cost"), &DongtianManager::get_puppet_cost);
+        ClassDB::bind_method(D_METHOD("activate_puppet"), &DongtianManager::activate_puppet);
+        ClassDB::bind_method(D_METHOD("get_puppet_mode"), &DongtianManager::get_puppet_mode);
+        ClassDB::bind_method(D_METHOD("set_puppet_mode", "mode"), &DongtianManager::set_puppet_mode);
+        ClassDB::bind_method(D_METHOD("get_puppet_growth_mult"), &DongtianManager::get_puppet_growth_mult);
+        ClassDB::bind_method(D_METHOD("is_puppet_deployed"), &DongtianManager::is_puppet_deployed);
+        ClassDB::bind_method(D_METHOD("get_puppet_cooldown"), &DongtianManager::get_puppet_cooldown);
+        ClassDB::bind_method(D_METHOD("debug_clear_puppet_cooldown"), &DongtianManager::debug_clear_puppet_cooldown);
+        ClassDB::bind_method(D_METHOD("_on_puppet_died"), &DongtianManager::_on_puppet_died);
     }
 
     void DongtianManager::_process(double p_delta) {
@@ -115,6 +126,9 @@ namespace godot {
             SignalBus *bus = SignalBus::get_singleton();
             if (bus) bus->emit_signal("interaction_prompt", "", false);
         }
+
+        // 傀儡随行：部署/收回/战死冷却（驻守模式仅生长加成，无实体）
+        _puppet_poll(p_delta);
 
         if (!Input::get_singleton()->is_action_just_pressed("dongtian"))
             return;
@@ -206,6 +220,9 @@ namespace godot {
         if (!root || !_player)
             return;
 
+        // 随行傀儡留在外界会失去锚点：收回（无冷却），进洞天后由 _puppet_poll 重新召出
+        _recall_puppet();
+
         _saved_world_pos = _player->get_global_position();
 
         Ref<PackedScene> scene = ResourceLoader::get_singleton()->load(DONGTIAN_SCENE);
@@ -237,6 +254,9 @@ namespace godot {
     void DongtianManager::_exit(bool p_restore_pos) {
         if (!_loaded_scene || !_player)
             return;
+
+        // 随行傀儡挂在洞天场景内：收回（无冷却），回外界后由 _puppet_poll 重新召出
+        _recall_puppet();
 
         Node *parent = _player->get_parent();
         if (parent) parent->remove_child(_player);
@@ -402,7 +422,7 @@ namespace godot {
             if (p.herb.is_empty())
                 continue;
             const Item *def = db->get_item(p.herb);
-            int grow = def ? def->grow_seconds : 60;
+            int grow = _effective_grow(def ? def->grow_seconds : 60);
             if (_now() - p.planted_at < grow)
                 continue; // 未成熟
             int yield = 2; // 种一收二（同手动收获）
@@ -503,6 +523,116 @@ namespace godot {
     }
 
     // ============================================================
+    // 傀儡（v5：灵石购买激活；驻守=灵田生长+50% / 随行=弱化分身实体出战）
+    // ============================================================
+
+    int DongtianManager::_effective_grow(int p_grow) const {
+        if (get_puppet_growth_mult() > 1.0)
+            return MAX(1, p_grow * 2 / 3); // +50% 速度 = 时长 ÷1.5
+        return p_grow;
+    }
+
+    bool DongtianManager::activate_puppet() {
+        if (_puppet_active)
+            return false;
+        CurrencySystem *cur = CurrencySystem::get_singleton();
+        if (!cur || !cur->spend(PUPPET_COST))
+            return false; // 灵石不足
+        _puppet_active = true;
+        _puppet_mode = PUPPET_GARRISON; // 初醒默认驻守灵田
+        return true;
+    }
+
+    void DongtianManager::set_puppet_mode(int p_mode) {
+        if (!_puppet_active || p_mode == _puppet_mode)
+            return;
+        if (p_mode != PUPPET_GARRISON && p_mode != PUPPET_FOLLOW)
+            return;
+        _puppet_mode = p_mode;
+        if (p_mode != PUPPET_FOLLOW)
+            _recall_puppet(); // 离开随行模式：收回实体（无冷却）；进入随行由 _puppet_poll 部署
+    }
+
+    CloneAvatar *DongtianManager::_find_puppet() const {
+        SceneTree *st = get_tree();
+        if (!st)
+            return nullptr;
+        TypedArray<Node> g = st->get_nodes_in_group("dongtian_puppet");
+        for (int i = 0; i < g.size(); i++) {
+            CloneAvatar *c = Object::cast_to<CloneAvatar>(g[i]);
+            if (c && !c->is_queued_for_deletion())
+                return c;
+        }
+        return nullptr;
+    }
+
+    void DongtianManager::_puppet_poll(double p_delta) {
+        if (_puppet_cooldown > 0.0f) {
+            _puppet_cooldown -= float(p_delta);
+            if (_puppet_cooldown < 0.0f)
+                _puppet_cooldown = 0.0f;
+        }
+        if (!_puppet_active || _puppet_mode != PUPPET_FOLLOW || !_player)
+            return;
+        CloneAvatar *puppet = _find_puppet();
+        if (_puppet_deployed && !puppet) {
+            // 实体消亡但非战死（died 信号已处理冷却）：场景切换/洞天卸载带走 → 静默清账
+            _puppet_deployed = false;
+        }
+        // 仅洞天内/洲野外可部署：玩家父节点 = 主场景根 或 洞天场景；
+        // 进 Portal 房间/机缘秘境（父节点变为房间）→ 自动收回（无冷却）
+        Node *parent = _player->get_parent();
+        Node *root = get_tree()->get_current_scene();
+        bool valid_space = parent && (parent == root || (_loaded_scene && parent == _loaded_scene));
+        if (!valid_space) {
+            if (puppet)
+                _recall_puppet();
+            return;
+        }
+        if (_player->is_dead()) {
+            if (puppet)
+                _recall_puppet(); // 主殁傀散（收回无冷却，复活后重新召出）
+            return;
+        }
+        if (puppet || _puppet_cooldown > 0.0f)
+            return;
+        _deploy_puppet();
+    }
+
+    void DongtianManager::_deploy_puppet() {
+        if (!_player)
+            return;
+        Node *parent = _player->get_parent();
+        if (!parent)
+            return;
+        CloneAvatar *puppet = memnew(CloneAvatar);
+        puppet->join_clone_group = false;                          // 不占身外化身上限、不被顶掉
+        puppet->visual_tint = Color(0.62f, 0.5f, 0.34f, 0.85f);    // 木质傀儡（区别于金色毫毛分身）
+        puppet->setup_from_player_scaled(_player, 0.4f, 0.4f, 0.8f, 0.0); // 弱化快照 + 常驻
+        parent->add_child(puppet); // 与玩家同层（随玩家所在空间部署）
+        puppet->add_to_group(StringName("dongtian_puppet"));
+        puppet->set_global_position(_player->get_global_position() + Vector2(-28.0f * float(_player->facing_direction), 0.0f));
+        puppet->connect("died", Callable(this, "_on_puppet_died"));
+        _puppet_deployed = true;
+    }
+
+    void DongtianManager::_recall_puppet() {
+        CloneAvatar *puppet = _find_puppet();
+        if (puppet) {
+            puppet->disconnect("died", Callable(this, "_on_puppet_died")); // 收回非战死，不起冷却
+            puppet->remove_from_group(StringName("dongtian_puppet"));
+            puppet->dissipate();
+        }
+        _puppet_deployed = false;
+    }
+
+    void DongtianManager::_on_puppet_died() {
+        _puppet_deployed = false;
+        _puppet_cooldown = PUPPET_RESPAWN_CD;
+        _show_reason(LOC("傀儡战毁，残躯自动回收（60 息后可重新召出）"));
+    }
+
+    // ============================================================
     // 灵田（现实时间生长；状态自持，场景卸载不丢）
     // ============================================================
 
@@ -518,7 +648,7 @@ namespace godot {
         if (p.herb.is_empty())
             return d;
         const Item *def = ItemDatabase::get_singleton()->get_item(p.herb);
-        int grow = def ? def->grow_seconds : 60;
+        int grow = _effective_grow(def ? def->grow_seconds : 60);
         int64_t elapsed = _now() - p.planted_at;
         d["herb"] = p.herb;
         d["herb_name"] = def ? def->name : String(p.herb);
@@ -561,7 +691,7 @@ namespace godot {
         if (p.herb.is_empty() || !_player)
             return 0;
         const Item *def = ItemDatabase::get_singleton()->get_item(p.herb);
-        int grow = def ? def->grow_seconds : 60;
+        int grow = _effective_grow(def ? def->grow_seconds : 60);
         if (_now() - p.planted_at < grow)
             return 0; // 未成熟
         StringName herb = p.herb;
@@ -774,6 +904,10 @@ namespace godot {
             beasts.push_back(b);
         }
         d["beasts"] = beasts;
+        // v5：傀儡激活/模式/战死冷却（实体不持久，读档后由 _puppet_poll 按态重新部署）
+        d["puppet_active"] = _puppet_active;
+        d["puppet_mode"] = _puppet_mode;
+        d["puppet_cooldown"] = _puppet_cooldown;
         return d;
     }
 
@@ -812,6 +946,14 @@ namespace godot {
             _beasts[i].name = String(b.get("name", String()));
             _beast_count++;
         }
+        // v5 傀儡字段缺省走默认值（老档迁移安全）；实体不持久。
+        // 同场景读档（不切场景）时随行实体可能仍在场——按组扫描对账，防旗标与实体脱节；
+        // 旅行桥/重开场景读档实体不在场，_puppet_poll 按态重新部署。
+        _puppet_active = bool(p_data.get("puppet_active", false));
+        int pmode = int(p_data.get("puppet_mode", int(PUPPET_GARRISON)));
+        _puppet_mode = (pmode == PUPPET_FOLLOW) ? PUPPET_FOLLOW : PUPPET_GARRISON;
+        _puppet_cooldown = float(p_data.get("puppet_cooldown", 0.0));
+        _puppet_deployed = _puppet_active && _puppet_mode == PUPPET_FOLLOW && _find_puppet() != nullptr;
     }
 
 } // namespace godot

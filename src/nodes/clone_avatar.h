@@ -2,6 +2,7 @@
 #define CPP_KAKI_CLONE_AVATAR_H
 
 #include <godot_cpp/classes/character_body2d.hpp>
+#include <godot_cpp/variant/color.hpp>
 
 import mcpp_kaki.combat;
 
@@ -25,9 +26,15 @@ namespace godot {
 			float detect_radius = 300.0f; // 索敌半径
 			float attack_range = 24.0f;   // 贴身近战触发距离
 			float attack_interval = 1.0f; // 攻击间隔（秒）
-			double lifetime = 30.0;       // 寿命（秒），到点消散；测试可调短
+			double lifetime = 30.0;       // 寿命（秒），到点消散；<=0 = 常驻（洞天傀儡随行）；测试可调短
+			// 是否计入 shen_wai_clones 上限管理（身外化身顶掉最老扫此组；洞天傀儡=false 不被顶）
+			bool join_clone_group = true;
+			// 视觉染色（默认金色毫毛；洞天傀儡=木质褐）
+			Color visual_tint = Color(1.0f, 0.85f, 0.3f, 0.55f);
 
-			void setup_from_player(Player *p); // 属性快照（HP×50% / 攻×60% / 速×80%）
+			void setup_from_player(Player *p); // 属性快照（HP×50% / 攻×60% / 速×80%，30s 寿命）
+			// 参数化快照（洞天傀儡随行复用：弱化比例 + 常驻寿命）
+			void setup_from_player_scaled(Player *p, float p_hp_ratio, float p_atk_ratio, float p_speed_ratio, double p_lifetime);
 
 			void take_hit(const HitBox *p_hitbox, Node *p_source);              // HitBox 驱动
 			void take_damage(float p_amount, Node *p_source);                   // 旧入口（投射物退回路径）
