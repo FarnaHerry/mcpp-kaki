@@ -377,12 +377,17 @@ public:
 	struct Active {
 		StringName id;
 		float remaining = 0.0f;
+		float potency = 1.0f; // 丹毒连磕递减：本次实例数值倍率（1.0=全效）
 	};
 
 	static const Def *find_def(const StringName &p_id);
 	static void ensure_defs_loaded();
 
 	bool apply(const StringName &p_id);
+	// 丹药专用入口（design/alchemy.md 丹毒）：连磕递减 + 积毒 debuff。
+	// 同一 buff 剩余 >50% 再服 → 本次数值 6 折；60s 内同种丹 ≥3 次 → 上 buff_dan_du
+	//（攻防-10% 120s），丹毒期间再服同种丹效果再减半且刷新丹毒。
+	bool apply_pill(const StringName &p_id);
 	void remove(const StringName &p_id);
 	void clear();
 	void tick(double p_delta);
@@ -391,6 +396,8 @@ public:
 	float get_atk_mult() const { return 1.0f + _sum_atk; }
 	float get_def_mult() const { return 1.0f + _sum_def; }
 	float get_elem_resist_bonus(int p_elem) const;
+	float get_potency(const StringName &p_id) const; // 无该 buff 返回 1.0（测试/UI 用）
+	int get_dose_count(const StringName &p_id);      // 近 60s 同种丹服用次数（测试用）
 
 	Array get_active_list() const;
 	Dictionary save_to_dict() const;
@@ -400,13 +407,23 @@ protected:
 	static void _bind_methods();
 
 private:
+	// 丹毒窗口常量（design/alchemy.md）
+	static constexpr double DOSE_WINDOW = 60.0;   // 同种丹计数滑动窗口（秒）
+	static constexpr int DOSE_TOXIC_AT = 3;       // 窗口内 ≥N 次 → 积毒
+	static constexpr float REFRESH_POTENCY = 0.6f; // 剩余 >50% 连磕 → 本次 6 折
+	static constexpr float TOXIC_POTENCY = 0.5f;   // 丹毒期间同种丹 → 再减半
+
 	static std::vector<Def> s_defs;
 	static bool s_defs_loaded;
 	std::vector<Active> _active;
 	float _sum_atk = 0.0f;
 	float _sum_def = 0.0f;
 	float _sum_elem[ELEM_CAPACITY] = {};
+	double _time = 0.0; // buff 系统内部时钟（tick 推进，丹毒窗口计时基准）
+	HashMap<StringName, std::vector<double>> _doses; // buff_id → 近 60s 服用时刻
+	StringName _dan_du_source; // 触发丹毒的丹种（丹毒期减半/刷新只认同种）
 
+	void _prune_doses(); // 丢弃窗口外服药记录
 	void _recalc();
 	void _emit_changed();
 };

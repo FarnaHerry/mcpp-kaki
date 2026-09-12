@@ -56,7 +56,7 @@ func _process(delta) -> bool:
 			var list = buffs.call("get_active_list")
 			_check(list.size() == 1, "same-name refresh: still 1 entry")
 			_check(float(list[0]["remaining"]) > 299.0, "duration refreshed to ~300")
-			_check(abs(float(buffs.call("get_atk_mult")) - 1.15) < 0.001, "no stacking: atk still 1.15")
+			_check(abs(float(buffs.call("get_atk_mult")) - 1.09) < 0.001, "no stacking, dan-du diminished: atk 1.09 (0.15*0.6)")
 			# 攻击乘区钩子：get_effective_attack 上涨
 			buffs.call("clear")
 			var atk0 = float(p.call("get_effective_attack"))

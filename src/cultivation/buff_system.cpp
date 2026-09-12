@@ -36,6 +36,8 @@ namespace godot {
 			// ---- 机缘叙事（仙人抚顶 / 醍醐灌顶）----
 			{ "buff_chang_sheng", "长生", 900.0f, 0.15f, 0.15f, ELEM_NONE, 0.0f }, // 仙人抚顶：攻+15% 防+15%（太上老君授长生）
 			{ "buff_ti_hu",      "醍醐", 900.0f, 0.10f, 0.10f, ELEM_NONE, 0.0f }, // 醍醐灌顶：攻+10% 防+10%（菩提佛法开悟）
+		// ---- 丹毒（design/alchemy.md：同种丹 60s 内 ≥3 次积毒，apply_pill 内部施加）----
+		{ "buff_dan_du",     "丹毒", 120.0f, -0.10f, -0.10f, ELEM_NONE, 0.0f }, // 丹毒：攻-10% 防-10%（连磕积毒，期间同种丹效果再减半）
 	};
 
 	const BuffSystem::Def *BuffSystem::find_def(const StringName &p_id) {
@@ -47,12 +49,16 @@ namespace godot {
 
 	void BuffSystem::_bind_methods() {
 		ClassDB::bind_method(D_METHOD("apply", "id"), &BuffSystem::apply);
+		ClassDB::bind_method(D_METHOD("apply_pill", "id"), &BuffSystem::apply_pill);
 		ClassDB::bind_method(D_METHOD("remove", "id"), &BuffSystem::remove);
 		ClassDB::bind_method(D_METHOD("clear"), &BuffSystem::clear);
+		ClassDB::bind_method(D_METHOD("tick", "delta"), &BuffSystem::tick);
 		ClassDB::bind_method(D_METHOD("has", "id"), &BuffSystem::has);
 		ClassDB::bind_method(D_METHOD("get_atk_mult"), &BuffSystem::get_atk_mult);
 		ClassDB::bind_method(D_METHOD("get_def_mult"), &BuffSystem::get_def_mult);
 		ClassDB::bind_method(D_METHOD("get_elem_resist_bonus", "elem"), &BuffSystem::get_elem_resist_bonus);
+		ClassDB::bind_method(D_METHOD("get_potency", "id"), &BuffSystem::get_potency);
+		ClassDB::bind_method(D_METHOD("get_dose_count", "id"), &BuffSystem::get_dose_count);
 		ClassDB::bind_method(D_METHOD("get_active_list"), &BuffSystem::get_active_list);
 		ClassDB::bind_method(D_METHOD("save_to_dict"), &BuffSystem::save_to_dict);
 		ClassDB::bind_method(D_METHOD("load_from_dict", "data"), &BuffSystem::load_from_dict);
@@ -65,6 +71,7 @@ namespace godot {
 		for (Active &a : _active) {
 			if (a.id == p_id) {
 				a.remaining = def->duration;
+				a.potency = 1.0f; // 普通通道恒全效（丹药递减只走 apply_pill）
 				_emit_changed();
 				return true;
 			}
@@ -76,6 +83,83 @@ namespace godot {
 		_recalc();
 		_emit_changed();
 		return true;
+	}
+
+	// 丹药服用入口（丹毒机制，design/alchemy.md「成败与丹毒」）
+	bool BuffSystem::apply_pill(const StringName &p_id) {
+		const Def *def = find_def(p_id);
+		if (!def) return false;
+		_prune_doses();
+		std::vector<double> &doses = _doses[p_id];
+		doses.push_back(_time);
+		const int count = (int)doses.size();
+
+		float potency = 1.0f;
+		// 连磕递减：同名 buff 剩余 >50% 再服 → 本次数值 6 折（持续同）
+		for (const Active &a : _active) {
+			if (a.id == p_id && a.remaining > def->duration * 0.5f) {
+				potency *= REFRESH_POTENCY;
+				break;
+			}
+		}
+		// 丹毒期间再服同种丹：效果再减半
+		const StringName DAN_DU = StringName("buff_dan_du");
+		const bool toxic_same = has(DAN_DU) && _dan_du_source == p_id;
+		if (toxic_same) potency *= TOXIC_POTENCY;
+
+		// 上药/刷新（同名不叠加，potency 为本次实例数值倍率）
+		bool found = false;
+		for (Active &a : _active) {
+			if (a.id == p_id) {
+				a.remaining = def->duration;
+				a.potency = potency;
+				found = true;
+				break;
+			}
+		}
+		if (!found) {
+			Active a;
+			a.id = p_id;
+			a.remaining = def->duration;
+			a.potency = potency;
+			_active.push_back(a);
+		}
+
+		// 积毒：窗口内同种丹 ≥3 次 → 上丹毒并记丹种；丹毒期同种丹刷新丹毒
+		if (count >= DOSE_TOXIC_AT) {
+			_dan_du_source = p_id;
+			apply(DAN_DU);
+		} else if (toxic_same) {
+			apply(DAN_DU); // 刷新 120s
+		}
+		_recalc();
+		_emit_changed();
+		return true;
+	}
+
+	float BuffSystem::get_potency(const StringName &p_id) const {
+		for (const Active &a : _active) {
+			if (a.id == p_id) return a.potency;
+		}
+		return 1.0f;
+	}
+
+	int BuffSystem::get_dose_count(const StringName &p_id) {
+		_prune_doses();
+		const std::vector<double> *doses = _doses.getptr(p_id);
+		return doses ? (int)doses->size() : 0;
+	}
+
+	void BuffSystem::_prune_doses() {
+		std::vector<StringName> empty_keys;
+		for (auto &kv : _doses) {
+			std::vector<double> &v = kv.value;
+			size_t keep = 0;
+			while (keep < v.size() && _time - v[keep] > DOSE_WINDOW) keep++;
+			if (keep > 0) v.erase(v.begin(), v.begin() + (ptrdiff_t)keep);
+			if (v.empty()) empty_keys.push_back(kv.key);
+		}
+		for (const StringName &k : empty_keys) _doses.erase(k);
 	}
 
 	void BuffSystem::remove(const StringName &p_id) {
@@ -97,6 +181,8 @@ namespace godot {
 	}
 
 	void BuffSystem::tick(double p_delta) {
+		_time += p_delta; // 内部时钟：丹毒滑动窗口计时基准（无活跃 buff 也推进）
+		_prune_doses();
 		if (_active.empty()) return;
 		bool expired = false;
 		for (int i = (int)_active.size() - 1; i >= 0; i--) {
@@ -132,6 +218,7 @@ namespace godot {
 			d["id"] = a.id;
 			d["name"] = def ? LOC(def->name) : String(a.id);
 			d["remaining"] = a.remaining;
+			d["potency"] = a.potency;
 			out.push_back(d);
 		}
 		return out;
@@ -144,14 +231,28 @@ namespace godot {
 			Dictionary e;
 			e["id"] = a.id;
 			e["remaining"] = a.remaining;
+			e["potency"] = a.potency;
 			arr.push_back(e);
 		}
 		d["active"] = arr;
+		// 丹毒窗口：服药时刻（内部时钟基准）+ 丹毒丹种，读档后递减/积毒状态连续
+		d["dose_time"] = _time;
+		Dictionary doses;
+		for (const auto &kv : _doses) {
+			Array ts;
+			for (double t : kv.value) ts.push_back(t);
+			doses[String(kv.key)] = ts;
+		}
+		d["doses"] = doses;
+		d["dan_du_source"] = String(_dan_du_source);
 		return d;
 	}
 
 	void BuffSystem::load_from_dict(const Dictionary &p_data) {
 		_active.clear();
+		_doses.clear();
+		_dan_du_source = StringName();
+		_time = 0.0;
 		if (p_data.has("active")) {
 			Array arr = p_data["active"];
 			for (int i = 0; i < arr.size(); i++) {
@@ -161,9 +262,24 @@ namespace godot {
 				Active a;
 				a.id = id;
 				a.remaining = e["remaining"];
+				a.potency = e.has("potency") ? (float)(double)e["potency"] : 1.0f; // 老档缺省全效
 				_active.push_back(a);
 			}
 		}
+		if (p_data.has("dose_time")) _time = (double)p_data["dose_time"];
+		if (p_data.has("doses")) {
+			Dictionary doses = p_data["doses"];
+			Array keys = doses.keys();
+			for (int i = 0; i < keys.size(); i++) {
+				StringName id = StringName(String(keys[i]));
+				Array ts = doses[keys[i]];
+				std::vector<double> v;
+				for (int j = 0; j < ts.size(); j++) v.push_back((double)ts[j]);
+				if (!v.empty()) _doses[id] = v;
+			}
+		}
+		if (p_data.has("dan_du_source")) _dan_du_source = StringName(String(p_data["dan_du_source"]));
+		_prune_doses();
 		_recalc();
 		_emit_changed();
 	}
@@ -175,10 +291,10 @@ namespace godot {
 		for (const Active &a : _active) {
 			const Def *def = find_def(a.id);
 			if (!def) continue;
-			_sum_atk += def->atk_mult;
-			_sum_def += def->def_mult;
+			_sum_atk += def->atk_mult * a.potency;   // potency：丹毒递减只影响本次实例数值
+			_sum_def += def->def_mult * a.potency;
 			if (def->elem != ELEM_NONE && def->elem < ELEM_CAPACITY) {
-				_sum_elem[def->elem] += def->elem_resist;
+				_sum_elem[def->elem] += def->elem_resist * a.potency;
 			}
 		}
 	}

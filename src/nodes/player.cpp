@@ -2051,7 +2051,13 @@ namespace godot {
 				_buffs->remove("buff_hunger"); // 进食解除饥饿
 		}
 		if (def->buff_id != StringName() && _buffs) {
-			_buffs->apply(def->buff_id); // 同名刷新不叠加
+			// 丹毒（design/alchemy.md）：丹药（无饱食度的 buff 消耗品）走 apply_pill
+			// ——连磕递减 + 积毒；食物（fullness>0）保持普通刷新，不吃丹毒
+			if (def->fullness_amount > 0.0f) {
+				_buffs->apply(def->buff_id); // 食物：同名刷新不叠加
+			} else {
+				_buffs->apply_pill(def->buff_id); // 丹药：丹毒管线
+			}
 		}
 		if (def->learn_skill != StringName() && _skills) {
 			_skills->learn(def->learn_skill); // 秘籍/残卷：使用即悟（已会则 no-op）
