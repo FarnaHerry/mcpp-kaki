@@ -372,6 +372,7 @@ public:
 		float def_mult;
 		Element elem;
 		float elem_resist;
+		bool elem_all = false; // 全元素抗性（elem 字段忽略，elem_resist 作用于全部元素）
 	};
 
 	struct Active {

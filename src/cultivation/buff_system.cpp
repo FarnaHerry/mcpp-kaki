@@ -9,6 +9,7 @@ module;
 module mcpp_kaki.cultivation;
 import mcpp_kaki.utils;
 import mcpp_kaki.core;
+import mcpp_kaki.combat;
 namespace godot {
 
 	// 静态 buff 定义表（design/alchemy.md：buff 时长 300s，同名刷新不叠加）
@@ -38,10 +39,49 @@ namespace godot {
 			{ "buff_ti_hu",      "醍醐", 900.0f, 0.10f, 0.10f, ELEM_NONE, 0.0f }, // 醍醐灌顶：攻+10% 防+10%（菩提佛法开悟）
 		// ---- 丹毒（design/alchemy.md：同种丹 60s 内 ≥3 次积毒，apply_pill 内部施加）----
 		{ "buff_dan_du",     "丹毒", 120.0f, -0.10f, -0.10f, ELEM_NONE, 0.0f }, // 丹毒：攻-10% 防-10%（连磕积毒，期间同种丹效果再减半）
+		// ---- 大雷音寺遗址（Boss 心猿石像秘藏·旃檀功德香）----
+		{ "buff_zhan_tan", "旃檀佛光", 600.0f, 0.0f, 0.0f, ELEM_NONE, 0.15f, true }, // 旃檀功德香：全元素抗性+15%
 	};
 
+	std::vector<BuffSystem::Def> BuffSystem::s_defs;
+	bool BuffSystem::s_defs_loaded = false;
+
+	void BuffSystem::ensure_defs_loaded() {
+		if (s_defs_loaded) return;
+		s_defs_loaded = true;
+		static std::vector<std::string> s_strings; // c_str 持久化池（防悬垂）
+		SceneTree *st = Object::cast_to<SceneTree>(Engine::get_singleton()->get_main_loop());
+		Node *scene = st ? st->get_current_scene() : nullptr;
+		DataLoader *dl = scene ? Object::cast_to<DataLoader>(scene->find_child("DataLoader", true, false)) : nullptr;
+		if (dl) {
+			Array all = dl->get_all_buffs();
+			if (all.size() > 0) {
+				s_defs.reserve(all.size());
+				s_strings.reserve(all.size() * 2);
+				for (int i = 0; i < all.size(); i++) {
+					Dictionary d = all[i];
+					s_strings.push_back(String(d["id"]).utf8().get_data());
+					s_strings.push_back(String(d["name"]).utf8().get_data());
+					Def def;
+					def.id = s_strings[s_strings.size() - 2].c_str();
+					def.name = s_strings[s_strings.size() - 1].c_str();
+					def.duration = float(d["duration"]);
+					def.atk_mult = float(d["atk_mult"]);
+					def.def_mult = float(d["def_mult"]);
+					def.elem = Element(int(d["elem"]));
+					def.elem_resist = float(d["elem_resist"]);
+					def.elem_all = bool(d.get("elem_all", false)); // 全元素抗性（旃檀佛光）
+					s_defs.push_back(def);
+				}
+				return;
+			}
+		}
+		for (const Def &d : BUFF_DEFS) { s_defs.push_back(d); }
+	}
+
 	const BuffSystem::Def *BuffSystem::find_def(const StringName &p_id) {
-		for (const Def &d : BUFF_DEFS) {
+		ensure_defs_loaded();
+		for (const Def &d : s_defs) {
 			if (StringName(d.id) == p_id) return &d;
 		}
 		return nullptr;
@@ -293,7 +333,10 @@ namespace godot {
 			if (!def) continue;
 			_sum_atk += def->atk_mult * a.potency;   // potency：丹毒递减只影响本次实例数值
 			_sum_def += def->def_mult * a.potency;
-			if (def->elem != ELEM_NONE && def->elem < ELEM_CAPACITY) {
+			if (def->elem_all) {
+				// 全元素抗性（旃檀佛光）：elem_resist 作用于全部元素
+				for (int i = 1; i < ELEM_CAPACITY; i++) _sum_elem[i] += def->elem_resist * a.potency;
+			} else if (def->elem != ELEM_NONE && def->elem < ELEM_CAPACITY) {
 				_sum_elem[def->elem] += def->elem_resist * a.potency;
 			}
 		}
