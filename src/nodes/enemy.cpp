@@ -289,6 +289,7 @@ namespace godot {
 				proj->direction = dir;
 				proj->speed = 200.0f + (e->boss_phase >= 3 ? 120.0f : e->boss_phase >= 2 ? 80.0f : 0.0f);
 				proj->damage = e->attack_damage * 0.6f;
+				e->_apply_proj_element(proj); // Boss 扇形弹同走元素结算（天罚使雷链=雷元素）
 				proj->set_source(e);
 				proj->set_collision_mask_value(3, true); // Hit player
 				e->get_parent()->add_child(proj);
@@ -419,6 +420,8 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("get_enemy_id"), &Enemy::get_enemy_id);
 		ClassDB::bind_method(D_METHOD("set_drop_table", "v"), &Enemy::set_drop_table);
 		ClassDB::bind_method(D_METHOD("get_drop_table"), &Enemy::get_drop_table);
+		ClassDB::bind_method(D_METHOD("set_proj_element", "v"), &Enemy::set_proj_element);
+		ClassDB::bind_method(D_METHOD("get_proj_element"), &Enemy::get_proj_element);
 		ClassDB::bind_method(D_METHOD("get_def_color"), &Enemy::get_def_color);
 		ClassDB::bind_method(D_METHOD("get_def_size"), &Enemy::get_def_size);
 		ClassDB::bind_method(D_METHOD("set_preferred_distance", "v"), &Enemy::set_preferred_distance);
@@ -467,6 +470,7 @@ namespace godot {
 		ADD_PROPERTY(PropertyInfo(Variant::STRING, "display_name"), "set_display_name", "get_display_name");
 		ADD_PROPERTY(PropertyInfo(Variant::STRING, "enemy_id"), "set_enemy_id", "get_enemy_id");
 		ADD_PROPERTY(PropertyInfo(Variant::STRING, "drop_table"), "set_drop_table", "get_drop_table");
+		ADD_PROPERTY(PropertyInfo(Variant::STRING, "proj_element"), "set_proj_element", "get_proj_element");
 		ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "preferred_distance"), "set_preferred_distance", "get_preferred_distance");
 		ADD_PROPERTY(PropertyInfo(Variant::INT, "elite_tier"), "set_elite_tier", "get_elite_tier");
 		ADD_PROPERTY(PropertyInfo(Variant::STRING, "affix_id"), "set_affix_id", "get_affix_id");
@@ -556,6 +560,7 @@ namespace godot {
 		defense += behavior.def_add;
 		display_name = def->name;
 		drop_table = def->drops;
+		proj_element = def->proj_element; // 投射物元素承接（空=物理弹）
 		// ……最后才置 Boss（其 _apply_boss_hp_scale 幂等补偿把血量 ×5，
 		// 与调用顺序无关：未入树时由 _ready 补偿，已入树时由 setter 补偿）
 		if (def->boss) {
@@ -872,10 +877,32 @@ namespace godot {
 		proj->direction = dir;
 		proj->speed = 250.0f;
 		proj->damage = attack_damage * (behavior.boss ? 1.5f : 1.0f);
+		_apply_proj_element(proj); // 雷系等：DMG_ELEMENTAL 经 take_damage_typed 结算（元素抗性可减免）
 		proj->set_source(this);
 		proj->set_collision_mask_value(3, true); // Hit player
 		proj->set_collision_mask_value(1, true); // Hit ground walls
 		get_parent()->add_child(proj);
+	}
+
+	// 元素名 → Element 枚举（enemies.json proj_element 字段；"lei" 等，空/未知=物理）
+	Element Enemy::get_proj_element_enum() const {
+		if (proj_element.is_empty()) return ELEM_NONE;
+		if (proj_element == "jin") return ELEM_JIN;
+		if (proj_element == "mu") return ELEM_MU;
+		if (proj_element == "shui") return ELEM_SHUI;
+		if (proj_element == "huo") return ELEM_HUO;
+		if (proj_element == "tu") return ELEM_TU;
+		if (proj_element == "lei") return ELEM_LEI;
+		if (proj_element == "feng") return ELEM_FENG;
+		return ELEM_NONE;
+	}
+
+	void Enemy::_apply_proj_element(Projectile *p_proj) const {
+		if (!p_proj) return;
+		Element elem = get_proj_element_enum();
+		if (elem == ELEM_NONE) return; // 无元素：维持物理现状（伤害基数不变，仅结算路径差异）
+		p_proj->damage_category = DMG_ELEMENTAL;
+		p_proj->element = elem;
 	}
 
 	// ---- Accessors ----

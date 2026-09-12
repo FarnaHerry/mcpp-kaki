@@ -326,7 +326,8 @@
       20,
       28
     ],
-    "drops": ""
+    "drops": "",
+    "proj_element": "lei"
   },
   "gu_tu": {
     "name": "谷兔",
@@ -1392,6 +1393,7 @@
       32,
       38
     ],
-    "drops": ""
+    "drops": "",
+    "proj_element": "lei"
   }
 }

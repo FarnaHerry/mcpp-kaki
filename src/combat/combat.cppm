@@ -337,6 +337,11 @@ public:
 	void set_source(Node *p_source) { _source = p_source; }
 	Node *get_source() const { return _source; }
 
+	// 结算口径只读访问（测试/调试断言用；数值字段本体保持 public 直装配）
+	float get_damage() const { return damage; }
+	int get_damage_category() const { return int(damage_category); }
+	int get_element() const { return int(element); }
+
 	void _ready() override;
 	void _physics_process(double p_delta) override;
 	void _on_body_entered(Node2D *p_body);

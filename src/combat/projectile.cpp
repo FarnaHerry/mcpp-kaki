@@ -13,6 +13,9 @@ namespace godot {
 void Projectile::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_source", "source"), &Projectile::set_source);
 	ClassDB::bind_method(D_METHOD("get_source"), &Projectile::get_source);
+	ClassDB::bind_method(D_METHOD("get_damage"), &Projectile::get_damage);
+	ClassDB::bind_method(D_METHOD("get_damage_category"), &Projectile::get_damage_category);
+	ClassDB::bind_method(D_METHOD("get_element"), &Projectile::get_element);
 	ClassDB::bind_method(D_METHOD("_on_body_entered", "body"), &Projectile::_on_body_entered);
 }
 

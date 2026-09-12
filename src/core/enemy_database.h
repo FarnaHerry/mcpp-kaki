@@ -35,6 +35,7 @@ struct EnemyDef {
 	Vector2 size = Vector2(20, 28);
 	String drops;            // 命名掉落表（空串=走类别兜底掉落表）
 	float elite_chance = 0.0f; // 生成时自动精英化概率（0=不精英化；Boss 不配）
+	String proj_element;     // 投射物元素（"lei" 等元素名；空=物理弹，向后兼容）
 };
 
 class EnemyDatabase {
