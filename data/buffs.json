@@ -142,5 +142,15 @@
     "def_mult": -0.1,
     "elem": 0,
     "elem_resist": 0.0
+  },
+  {
+    "id": "buff_zhan_tan",
+    "name": "旃檀佛光",
+    "duration": 600.0,
+    "atk_mult": 0.0,
+    "def_mult": 0.0,
+    "elem": 0,
+    "elem_resist": 0.15,
+    "elem_all": true
   }
 ]
