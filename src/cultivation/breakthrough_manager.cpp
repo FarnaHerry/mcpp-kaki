@@ -481,6 +481,11 @@ namespace godot {
 		_event_id = p_realm;
 		_def = p_def;
 		_phase = Phase::INTRO;
+		// 波次计数归零——上次事件若玩家战死，存活劫敌随 arena 释放但
+		// _enemies_alive 不会递减，残留值会让 _wave_check 永远早退（事件卡死）
+		_enemies_alive = 0;
+		_waves_left = 0;
+		_wave_check_pending = false;
 
 		SignalBus *bus = SignalBus::get_singleton();
 		if (bus)
@@ -714,6 +719,10 @@ namespace godot {
 	void BreakthroughManager::_finish(bool p_success) {
 		_active = false;
 		_phase = Phase::IDLE;
+		// 同 _start_event：战败清场时存活劫敌不走 _on_event_enemy_died，计数一并归零
+		_enemies_alive = 0;
+		_waves_left = 0;
+		_wave_check_pending = false;
 
 		if (_mirror && !p_success)
 			_clear_mirror();
