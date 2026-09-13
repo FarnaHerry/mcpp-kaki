@@ -1,0 +1,183 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/rooms/cang_zhen_ge.gd" id="1"]
+
+[sub_resource type="RectangleShape2D" id="ground_shape"]
+size = Vector2(480, 24)
+
+[sub_resource type="RectangleShape2D" id="wall_shape"]
+size = Vector2(16, 140)
+
+[sub_resource type="RectangleShape2D" id="platform_shape"]
+size = Vector2(120, 10)
+
+[node name="CangZhenGe" type="Node2D"]
+script = ExtResource("1")
+
+; Background（深海宝库，幽蓝泛金）
+[node name="Background" type="Polygon2D" parent="."]
+color = Color(0.03, 0.05, 0.15, 1)
+polygon = PackedVector2Array(0, 0, 480, 0, 480, 270, 0, 270)
+
+; 水光折射（顶部海光透过阁顶，青白斜洒）
+[node name="LightBeam1" type="Polygon2D" parent="."]
+color = Color(0.55, 0.85, 1.0, 0.09)
+polygon = PackedVector2Array(60, 0, 105, 0, 130, 238, 80, 238)
+
+[node name="LightBeam2" type="Polygon2D" parent="."]
+color = Color(0.55, 0.85, 1.0, 0.07)
+polygon = PackedVector2Array(280, 0, 315, 0, 335, 238, 295, 238)
+
+[node name="LightBeam3" type="Polygon2D" parent="."]
+color = Color(0.7, 0.9, 1.0, 0.06)
+polygon = PackedVector2Array(400, 0, 440, 0, 455, 238, 415, 238)
+
+; 多宝架·左（立架三层，摆放金玉器物）
+[node name="ShelfLPost1" type="Polygon2D" parent="."]
+color = Color(0.35, 0.28, 0.18, 1)
+polygon = PackedVector2Array(58, 130, 64, 130, 64, 238, 58, 238)
+
+[node name="ShelfLPost2" type="Polygon2D" parent="."]
+color = Color(0.35, 0.28, 0.18, 1)
+polygon = PackedVector2Array(128, 130, 134, 130, 134, 238, 128, 238)
+
+[node name="ShelfLBoard1" type="Polygon2D" parent="."]
+color = Color(0.42, 0.34, 0.22, 1)
+polygon = PackedVector2Array(54, 130, 138, 130, 138, 136, 54, 136)
+
+[node name="ShelfLBoard2" type="Polygon2D" parent="."]
+color = Color(0.42, 0.34, 0.22, 1)
+polygon = PackedVector2Array(54, 166, 138, 166, 138, 172, 54, 172)
+
+[node name="ShelfLBoard3" type="Polygon2D" parent="."]
+color = Color(0.42, 0.34, 0.22, 1)
+polygon = PackedVector2Array(54, 202, 138, 202, 138, 208, 54, 208)
+
+[node name="ShelfLTreasure1" type="Polygon2D" parent="."]
+color = Color(0.95, 0.8, 0.3, 1)
+polygon = PackedVector2Array(74, 120, 84, 120, 84, 130, 74, 130)
+
+[node name="ShelfLTreasure2" type="Polygon2D" parent="."]
+color = Color(0.55, 0.9, 0.95, 1)
+polygon = PackedVector2Array(102, 156, 112, 156, 112, 166, 102, 166)
+
+[node name="ShelfLTreasure3" type="Polygon2D" parent="."]
+color = Color(0.9, 0.55, 0.75, 1)
+polygon = PackedVector2Array(88, 194, 96, 194, 96, 202, 88, 202)
+
+; 多宝架·右（稍矮两层）
+[node name="ShelfRPost1" type="Polygon2D" parent="."]
+color = Color(0.35, 0.28, 0.18, 1)
+polygon = PackedVector2Array(186, 160, 192, 160, 192, 238, 186, 238)
+
+[node name="ShelfRPost2" type="Polygon2D" parent="."]
+color = Color(0.35, 0.28, 0.18, 1)
+polygon = PackedVector2Array(248, 160, 254, 160, 254, 238, 248, 238)
+
+[node name="ShelfRBoard1" type="Polygon2D" parent="."]
+color = Color(0.42, 0.34, 0.22, 1)
+polygon = PackedVector2Array(182, 160, 258, 160, 258, 166, 182, 166)
+
+[node name="ShelfRBoard2" type="Polygon2D" parent="."]
+color = Color(0.42, 0.34, 0.22, 1)
+polygon = PackedVector2Array(182, 200, 258, 200, 258, 206, 182, 206)
+
+[node name="ShelfRTreasure1" type="Polygon2D" parent="."]
+color = Color(0.95, 0.85, 0.4, 1)
+polygon = PackedVector2Array(206, 150, 216, 150, 216, 160, 206, 160)
+
+[node name="ShelfRTreasure2" type="Polygon2D" parent="."]
+color = Color(0.6, 0.8, 1.0, 1)
+polygon = PackedVector2Array(228, 190, 238, 190, 238, 200, 228, 200)
+
+; 珊瑚灯·左（红珊瑚灯柱 + 灯晕）
+[node name="CoralLampL" type="Polygon2D" parent="."]
+color = Color(0.85, 0.4, 0.45, 1)
+polygon = PackedVector2Array(160, 238, 166, 238, 165, 210, 170, 198, 164, 190, 162, 196, 158, 188, 154, 198, 159, 210)
+
+[node name="CoralLampLGlow" type="Polygon2D" parent="."]
+color = Color(1.0, 0.6, 0.6, 0.16)
+polygon = PackedVector2Array(150, 186, 172, 186, 178, 206, 144, 206)
+
+; 珊瑚灯·右
+[node name="CoralLampR" type="Polygon2D" parent="."]
+color = Color(0.85, 0.4, 0.45, 1)
+polygon = PackedVector2Array(300, 238, 306, 238, 305, 214, 310, 202, 304, 194, 302, 200, 298, 192, 294, 202, 299, 214)
+
+[node name="CoralLampRGlow" type="Polygon2D" parent="."]
+color = Color(1.0, 0.6, 0.6, 0.16)
+polygon = PackedVector2Array(290, 190, 312, 190, 318, 210, 284, 210)
+
+; 珍珠贝台（巨蚌托珠：台体 StaticBody + 蚌壳视觉 + 明珠）
+[node name="PearlPlatform" type="StaticBody2D" parent="."]
+position = Vector2(340, 160)
+
+[node name="PlatformShape" type="CollisionShape2D" parent="PearlPlatform"]
+shape = SubResource("platform_shape")
+
+[node name="PlatformVisual" type="Polygon2D" parent="PearlPlatform"]
+color = Color(0.5, 0.55, 0.6, 1)
+polygon = PackedVector2Array(-60, -4, 60, -4, 60, 6, -60, 6)
+
+[node name="ClamShellL" type="Polygon2D" parent="."]
+color = Color(0.62, 0.55, 0.68, 1)
+polygon = PackedVector2Array(282, 158, 300, 138, 306, 142, 292, 158)
+
+[node name="ClamShellR" type="Polygon2D" parent="."]
+color = Color(0.62, 0.55, 0.68, 1)
+polygon = PackedVector2Array(398, 158, 380, 138, 374, 142, 388, 158)
+
+[node name="ClamPearl" type="Polygon2D" parent="."]
+color = Color(0.95, 0.95, 1.0, 1)
+polygon = PackedVector2Array(334, 146, 346, 146, 346, 156, 334, 156)
+
+[node name="ClamPearlGlow" type="Polygon2D" parent="."]
+color = Color(0.9, 0.95, 1.0, 0.14)
+polygon = PackedVector2Array(326, 138, 354, 138, 358, 160, 322, 160)
+
+; 阁底龙柱（Boss 身后盘龙金柱，藏珍阁最深处）
+[node name="DragonPillar" type="Polygon2D" parent="."]
+color = Color(0.5, 0.42, 0.2, 1)
+polygon = PackedVector2Array(452, 90, 468, 90, 468, 238, 452, 238)
+
+[node name="DragonPillarCap" type="Polygon2D" parent="."]
+color = Color(0.75, 0.62, 0.28, 1)
+polygon = PackedVector2Array(448, 90, 472, 90, 466, 78, 454, 78)
+
+; Ground
+[node name="Ground" type="StaticBody2D" parent="."]
+position = Vector2(240, 238)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
+shape = SubResource("ground_shape")
+
+[node name="GroundVisual" type="Polygon2D" parent="Ground"]
+color = Color(0.12, 0.2, 0.32, 1)
+polygon = PackedVector2Array(-240, -5, 240, -5, 240, 12, -240, 12)
+
+; Walls
+[node name="WallL" type="StaticBody2D" parent="."]
+position = Vector2(0, 150)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallL"]
+shape = SubResource("wall_shape")
+
+[node name="WallVisualL" type="Polygon2D" parent="WallL"]
+color = Color(0.1, 0.18, 0.3, 1)
+polygon = PackedVector2Array(-8, -70, 8, -70, 8, 70, -8, 70)
+
+[node name="WallR" type="StaticBody2D" parent="."]
+position = Vector2(480, 150)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallR"]
+shape = SubResource("wall_shape")
+
+[node name="WallVisualR" type="Polygon2D" parent="WallR"]
+color = Color(0.1, 0.18, 0.3, 1)
+polygon = PackedVector2Array(-8, -70, 8, -70, 8, 70, -8, 70)
+
+[node name="SpawnEntrance" type="Marker2D" parent="."]
+position = Vector2(50, 200)
+
+[node name="SpawnExit" type="Marker2D" parent="."]
+position = Vector2(240, 200)

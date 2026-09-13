@@ -35,6 +35,9 @@ func _ready():
 	WC.spawn_item_pickup(self, Vector2(375, 232), "spirit_stone_high", 1)
 	WC.spawn_item_pickup(self, Vector2(395, 232), "spirit_stone_mid", 3)
 
+	# 深处二层入口：藏珍阁 Portal（镇守将身后右侧 x=438，避开秘藏台拾取点 375~405）
+	_add_cang_zhen_ge_portal()
+
 	# 秘境压制修为：龙宫压到 realm 6
 	call_deferred("_suppress_player", 6)
 	call_deferred("_link_exit_portal")
@@ -53,3 +56,35 @@ func _link_exit_portal():
 
 func _on_player_exit(_body: Node):
 	_suppress_player(-1)
+
+# 藏珍阁入口（嵌套 Portal：龙宫→阁→回龙宫入口旁；player/camera 从主场景取，
+# _ready 时玩家尚未重挂载进龙宫；提示经 SignalBus interaction_prompt 转发，同 CondPortal 模式）
+func _add_cang_zhen_ge_portal():
+	var cs = get_tree().current_scene
+	var player = cs.find_child("Player", true, false)
+	var camera = cs.find_child("CameraRoom2D", true, false)
+	var portal = ClassDB.instantiate("Portal")
+	portal.name = "CangZhenGePortal"
+	portal.position = Vector2(438, 210)
+	portal.set("target_scene", "res://scenes/rooms/cang_zhen_ge.tscn")
+	portal.set("prompt_text", "[↑] 入藏珍阁")
+	portal.set("room_bounds", Rect2(0, 0, 480, 270))
+	portal.call("set_player", player)
+	portal.call("set_camera", camera)
+	var ds = CollisionShape2D.new()
+	var dr = RectangleShape2D.new()
+	dr.size = Vector2(32, 80)
+	ds.shape = dr
+	portal.add_child(ds)
+	# 阁门视觉（青金水光门扉）
+	var vis = Polygon2D.new()
+	vis.color = Color(0.55, 0.85, 1.0, 0.55)
+	vis.polygon = PackedVector2Array([Vector2(-8, -26), Vector2(8, -26), Vector2(8, 26), Vector2(-8, 26)])
+	portal.add_child(vis)
+	portal.connect("portal_prompt", Callable(self, "_on_czg_portal_prompt"))
+	add_child(portal)
+
+func _on_czg_portal_prompt(text: String, show: bool):
+	var bus = get_tree().current_scene.get_node_or_null("SignalBus")
+	if bus:
+		bus.emit_signal("interaction_prompt", text, show)

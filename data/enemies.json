@@ -1488,5 +1488,101 @@
       38
     ],
     "drops": "da_lei_yin_si"
+  },
+  "xun_zhen_jiao_wei": {
+    "name": "巡珍鲛卫",
+    "hp": 300,
+    "atk": 55,
+    "speed": 85,
+    "detection": 300,
+    "attack_range": 38,
+    "attack_cooldown": 0.9,
+    "realm": 7,
+    "flags": [],
+    "color": [
+      0.2,
+      0.5,
+      0.6,
+      1.0
+    ],
+    "size": [
+      22,
+      30
+    ],
+    "drops": ""
+  },
+  "zhu_mu_jing": {
+    "name": "珠母精",
+    "hp": 220,
+    "atk": 45,
+    "speed": 70,
+    "detection": 330,
+    "attack_range": 250,
+    "attack_cooldown": 1.1,
+    "preferred": 170,
+    "realm": 7,
+    "flags": [
+      "ranged"
+    ],
+    "color": [
+      0.8,
+      0.75,
+      0.85,
+      1.0
+    ],
+    "size": [
+      18,
+      24
+    ],
+    "drops": "",
+    "proj_element": "shui"
+  },
+  "zhen_ge_ju_yuan": {
+    "name": "镇阁巨鼋",
+    "hp": 420,
+    "atk": 50,
+    "speed": 40,
+    "detection": 260,
+    "attack_range": 40,
+    "attack_cooldown": 1.4,
+    "realm": 7,
+    "flags": [
+      "heavy"
+    ],
+    "color": [
+      0.35,
+      0.45,
+      0.35,
+      1.0
+    ],
+    "size": [
+      26,
+      26
+    ],
+    "drops": ""
+  },
+  "long_wang_san_tai_zi": {
+    "name": "龙王三太子",
+    "hp": 220,
+    "atk": 60,
+    "speed": 90,
+    "detection": 460,
+    "attack_range": 46,
+    "attack_cooldown": 0.8,
+    "realm": 8,
+    "flags": [
+      "boss"
+    ],
+    "color": [
+      0.9,
+      0.72,
+      0.3,
+      1.0
+    ],
+    "size": [
+      28,
+      38
+    ],
+    "drops": "cang_zhen_ge"
   }
 }
