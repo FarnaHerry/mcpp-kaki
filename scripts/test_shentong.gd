@@ -52,8 +52,14 @@ func _process(delta) -> bool:
 			var xp_bg = hud.find_child("XpBg", true, false) if hud != null else null
 			_check(law_bg != null and law_bg.visible, "HUD 法则条解锁后显示")
 			if law_bg != null and xp_bg != null:
-				_check(law_bg.position.x == 170.0, "法则条底部居中（x=170，非右上角/左列）")
-				_check(law_bg.position.y < xp_bg.position.y, "法则条在修为条上方（底部竖排补位）")
+				# 预存修复：旧断言按废弃布局写死（底部居中 x=170、法则在修为上方）。
+				# 现行布局（game_hud.cpp _layout_left_column）：左下角竖排贴左 x=8，
+				# 自下而上 境界→饱食→buff→[法则]→灵力→生命→修为圆（最上）。
+				# 放宽为结构断言（不锁像素，防分辨率/布局微调抖动）：
+				print("[TEST] law_bg pos=", law_bg.position, " xp_bg pos=", xp_bg.position)
+				_check(law_bg.position.x == xp_bg.position.x, "法则条与修为圆同列贴左（左下角竖排）")
+				_check(law_bg.position.y > xp_bg.position.y, "法则条在修为圆下方（修为圆居左列最上）")
+				_check(law_bg.position.y > 135.0 and law_bg.position.y < 266.0, "法则条位于视口下半屏内（y∈(135,266)，实际 %.1f）" % law_bg.position.y)
 			var sk = p.call("get_skills")
 			var s6 = sk.call("get_slot_info", 4)
 			print("[TEST] slot T: ", s6.get("id"))
