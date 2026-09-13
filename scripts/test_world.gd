@@ -65,7 +65,21 @@ func _process(delta) -> bool:
 				_check(root.find_child(n, true, false) != null, "enemy spawned: " + n)
 			var chi = root.find_child("Boss_ChiLong", true, false)
 			_check(String(chi.call("get_display_name")) == "幽谷螭龙", "boss display name 幽谷螭龙")
-			_check(float(chi.get("max_health")) == 300.0, "boss hp 300（平衡：30→300）")
+			# Boss 血量断言走 data/enemies.json 权威定义（预存修复：曾写死 300，数值重平衡后过时）。
+			# 公式（src/nodes/enemy.cpp set_enemy_id）：max_health = def.hp × (1+0.5×def.realm) × 5(boss)
+			var def: Dictionary = {}
+			var f := FileAccess.open("res://data/enemies.json", FileAccess.READ)
+			if f != null:
+				var parsed = JSON.parse_string(f.get_as_text())
+				if parsed is Dictionary:
+					def = parsed.get("you_gu_chi_long", {})
+			var def_hp := float(def.get("hp", -1))
+			var def_realm := int(def.get("realm", -1))
+			_check(def_hp > 0.0 and def_realm >= 0, "enemies.json 含 you_gu_chi_long 定义（hp/realm 可读）")
+			var expected_hp: float = def_hp * (1.0 + 0.5 * def_realm) * 5.0
+			print("[TEST] boss max_health=", chi.get("max_health"), " expected=", expected_hp,
+				" (hp=", def_hp, " realm=", def_realm, ")")
+			_check(float(chi.get("max_health")) == expected_hp, "boss hp == enemies.json 定义×境界缩放×Boss×5")
 		6:
 			_next = _t + 0.3
 			# 草药：新增点位（悟道茶×2/赤焰花×2/冰心莲新增/金刚藤新增）
