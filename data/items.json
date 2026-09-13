@@ -580,5 +580,26 @@
   ],
   "buy_price": 0,
   "sell_price": 0
+ },
+ {
+  "id": "ding_hai_zhu",
+  "name": "定海珠",
+  "desc": "东海龙宫藏珍阁镇阁之宝，龙王三太子私藏的上古定海神珠，澜沧止水、万水辟易。装备：水元素抗性+25%（强于避水珠）。",
+  "type": 3,
+  "max_stack": 1,
+  "grade": 3,
+  "equip_slot": 2,
+  "elem_resist": [
+   0.0,
+   0.0,
+   0.0,
+   0.25,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "buy_price": 0,
+  "sell_price": 0
  }
 ]

@@ -132,6 +132,12 @@ void EnemyDatabase::_load_hardcoded() {
 	s_defs.push_back(_mk("song_jing_shou", "诵经兽", 130, 28, 80, 330, 250, 1.0f, 170, 6, true, false, false, 0.45f, 0.55f, 0.5f, ""));
 	s_defs.push_back(_mk("hu_fa_jin_gang", "护法金刚", 260, 40, 55, 300, 42, 1.0f, 0, 7, false, false, false, 0.85f, 0.7f, 0.3f, ""));
 	s_defs.push_back(_mk("xin_yuan_shi_xiang", "心猿石像", 220, 45, 70, 460, 46, 0.85f, 0, 7, false, false, true, 0.72f, 0.68f, 0.55f, "da_lei_yin_si"));
+
+	// ===== 龙宫藏珍阁秘境（东海龙宫深处二层，realm7~8 合体~大乘段；巨鼋 heavy 标志仅 JSON 可表，兜底省略同寒渊龟例）=====
+	s_defs.push_back(_mk("xun_zhen_jiao_wei", "巡珍鲛卫", 300, 55, 85, 300, 38, 0.9f, 0, 7, false, false, false, 0.2f, 0.5f, 0.6f, ""));
+	s_defs.push_back(_mk("zhu_mu_jing", "珠母精", 220, 45, 70, 330, 250, 1.1f, 170, 7, true, false, false, 0.8f, 0.75f, 0.85f, "", 0.0f, "shui")); // 泡珠弹走水元素结算（水抗可减免）
+	s_defs.push_back(_mk("zhen_ge_ju_yuan", "镇阁巨鼋", 420, 50, 40, 260, 40, 1.4f, 0, 7, false, false, false, 0.35f, 0.45f, 0.35f, ""));
+	s_defs.push_back(_mk("long_wang_san_tai_zi", "龙王三太子", 220, 60, 90, 460, 46, 0.8f, 0, 8, false, false, true, 0.9f, 0.72f, 0.3f, "cang_zhen_ge"));
 }
 
 static EnemyDef *_find_def(std::vector<EnemyDef> &p_defs, const String &p_id) {
