@@ -549,5 +549,15 @@
   "buff_id": "buff_zhan_tan",
   "buy_price": 0,
   "sell_price": 800
+ },
+ {
+  "id": "dan_zha",
+  "name": "丹渣",
+  "desc": "炉火失控后炉底仅存的焦黑残渣，药性尽毁。聊胜于无，可售予坊市换一枚下品灵石。",
+  "type": 1,
+  "max_stack": 99,
+  "grade": 0,
+  "buy_price": 0,
+  "sell_price": 1
  }
 ]

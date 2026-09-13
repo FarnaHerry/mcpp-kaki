@@ -110,7 +110,7 @@
     "mat_count": 2,
     "grade": 2,
     "min_realm": 3,
-    "success_rate": 1.0,
+    "success_rate": 0.8,
     "desc": "修为+200"
   },
   {
@@ -129,7 +129,7 @@
     "mat_count": 2,
     "grade": 2,
     "min_realm": 3,
-    "success_rate": 1.0,
+    "success_rate": 0.8,
     "desc": "回血50%+修为100"
   },
   {
@@ -148,7 +148,7 @@
     "mat_count": 2,
     "grade": 3,
     "min_realm": 9,
-    "success_rate": 1.0,
+    "success_rate": 0.7,
     "desc": "攻击+20% 防御+20% 900s"
   }
 ]
