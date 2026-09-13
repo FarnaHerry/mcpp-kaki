@@ -559,5 +559,26 @@
   "grade": 0,
   "buy_price": 0,
   "sell_price": 1
+ },
+ {
+  "id": "lei_wen_pei",
+  "name": "雷纹佩",
+  "desc": "凌霄殿飞檐之上秘藏的雷纹玉佩，雷部天将遗物，佩之雷音不侵。装备：雷元素抗性+20%（雷兽雷弹、渡劫雷灾可减）。",
+  "type": 3,
+  "max_stack": 1,
+  "grade": 2,
+  "equip_slot": 2,
+  "elem_resist": [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.2,
+   0.0
+  ],
+  "buy_price": 0,
+  "sell_price": 0
  }
 ]

@@ -903,6 +903,12 @@ namespace godot {
 		if (elem == ELEM_NONE) return; // 无元素：维持物理现状（伤害基数不变，仅结算路径差异）
 		p_proj->damage_category = DMG_ELEMENTAL;
 		p_proj->element = elem;
+		// 元素弹体染色（生成方在 add_child 前调用，_create_visual 用 visual_color 装配）：
+		// lei=亮蓝紫；其他元素预留映射位，实装时补色
+		switch (elem) {
+			case ELEM_LEI: p_proj->visual_color = Color(0.65f, 0.45f, 1.0f, 0.95f); break;
+			default: break;
+		}
 	}
 
 	// ---- Accessors ----

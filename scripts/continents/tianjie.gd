@@ -93,9 +93,10 @@ func _setup():
 	# 天将×2（街市巡守，比天兵略强）
 	for i in range(2):
 		WC.spawn_enemy_by_id(self, Vector2(1600 + i * 500, 210), "tian_jiang", "TianJiang%d" % i)
-	# 隐藏高台秘藏（凌霄殿飞檐之上：上品灵石×2）
+	# 隐藏高台秘藏（凌霄殿飞檐之上：上品灵石×2 + 雷纹佩·雷抗饰品）
 	WC.make_platform(self, 2350, 60, 100, false)
 	WC.spawn_item_pickup(self, Vector2(2350, 52), "spirit_stone_high", 2)
+	WC.spawn_item_pickup(self, Vector2(2378, 52), "lei_wen_pei", 1)
 	WC.create_checkpoint(self, 1700)
 
 	# ===== 兜率宫 + 蟠桃园（2400~3500）：丹炉 / 蟠桃 / 巨灵神守关 =====
