@@ -16,8 +16,10 @@ import mcpp_kaki.inventory;
 import mcpp_kaki.core;
 namespace godot {
 
-	// 固定配方表（design/alchemy.md 第三节，7 配方；成功率 v1 全 100%）
+	// 固定配方表（design/alchemy.md 第三节，7+1 配方）
 	// 金丹 = realm index 3（0凡人 1炼气 2筑基 3金丹）
+	// 成功率（session 022 实装失败机制）：凡/灵品恒 100%（新手无惩罚），
+	// 地品 80%（悟道/大还），天品 70%（玄龙）——与 data/recipes.json 同步
 	static const AlchemySystem::Recipe RECIPES[] = {
 		{ "healing_pill", "回春丹",
 		  { "zhi_xue_cao", nullptr, nullptr }, { 3, 0, 0 }, 1,
@@ -36,14 +38,14 @@ namespace godot {
 		  1, 0, 1.0f, "防御+20% 300s" },
 		{ "wu_dao_dan", "悟道丹",
 		  { "wu_dao_cha", "ju_ling_cao", nullptr }, { 1, 2, 0 }, 2,
-		  2, 3, 1.0f, "修为+200" },
+		  2, 3, 0.8f, "修为+200" },
 		{ "da_huan_dan", "大还丹",
 		  { "qian_nian_ling_zhi", "bing_xin_lian", nullptr }, { 1, 1, 0 }, 2,
-		  2, 3, 1.0f, "回血50%+修为100" },
+		  2, 3, 0.8f, "回血50%+修为100" },
 		// 玄龙丹：北俱芦洲（渡劫）镇洲灵丹，上古巨兽龙骨淬炼
 		{ "xuan_long_dan", "玄龙丹",
 		  { "long_gu", "xuan_bing_shen", nullptr }, { 1, 2, 0 }, 2,
-		  3, 9, 1.0f, "攻击+20% 防御+20% 900s" },
+		  3, 9, 0.7f, "攻击+20% 防御+20% 900s" },
 	};
 // Runtime cache (DataLoader JSON or static fallback)
 std::vector<AlchemySystem::Recipe> AlchemySystem::s_recipes;
@@ -173,6 +175,23 @@ void AlchemySystem::ensure_loaded() {
 		ClassDB::bind_method(D_METHOD("craft", "id"), &AlchemySystem::craft);
 		ClassDB::bind_method(D_METHOD("get_recipe_list"), &AlchemySystem::get_recipe_list);
 		ClassDB::bind_method(D_METHOD("get_last_message"), &AlchemySystem::get_last_message);
+		ClassDB::bind_method(D_METHOD("debug_set_next_roll", "roll"), &AlchemySystem::debug_set_next_roll);
+	}
+
+	// 成败 roll：注入优先（一次性），否则固定种子 xorshift32 序列推进。
+	// 固定种子保证测试可复现（首 roll ≈0.0418），进程内逐炉变化。
+	float AlchemySystem::_roll() {
+		if (_next_roll >= 0.0f) {
+			float v = _next_roll;
+			_next_roll = -1.0f;
+			return v;
+		}
+		uint32_t x = _rng_state;
+		x ^= x << 13;
+		x ^= x >> 17;
+		x ^= x << 5;
+		_rng_state = x;
+		return (float)((double)x / 4294967296.0);
 	}
 
 	bool AlchemySystem::is_realm_locked(const Recipe *p_r) const {
@@ -208,25 +227,38 @@ void AlchemySystem::ensure_loaded() {
 			return false;
 		}
 
-		// 扣材料
+		// 成败判定：凡/灵品 success_rate>=1 必成（新手无惩罚，不消耗 roll 序列）；
+		// 地品 80% / 天品 70% 走 roll（注入优先，否则内部固定种子序列）
+		const bool success = (r->success_rate >= 1.0f) || (_roll() <= r->success_rate);
+
+		if (success) {
+			// 成功：全材料消耗
+			for (int i = 0; i < r->mat_count; i++) {
+				inv->remove_item(StringName(r->mat_id[i]), r->mat_qty[i]);
+			}
+			// 炼制 = 练气行为（成功每炉 +5）
+			if (_player->get_gongfa()) {
+				_player->get_gongfa()->feed(GongfaSystem::SCHOOL_QI, 5.0f);
+			}
+			inv->add_item(StringName(r->id), 1);
+			_last_message = String(LOC("炼成 「")) + LOC(r->name) + LOC("」");
+			return true;
+		}
+
+		// 失败：材料损毁一半（向上取整），另一半留存包中；得丹渣×1；
+		// 失败亦练（+1）；失败没出丹，不触发丹毒计数
 		for (int i = 0; i < r->mat_count; i++) {
-			inv->remove_item(StringName(r->mat_id[i]), r->mat_qty[i]);
+			const int burn = (r->mat_qty[i] + 1) / 2;
+			if (burn > 0) {
+				inv->remove_item(StringName(r->mat_id[i]), burn);
+			}
 		}
-
-		// 炼制 = 练气行为（成败皆练，每炉 +5）
 		if (_player->get_gongfa()) {
-			_player->get_gongfa()->feed(GongfaSystem::SCHOOL_QI, 5.0f);
+			_player->get_gongfa()->feed(GongfaSystem::SCHOOL_QI, 1.0f);
 		}
-
-		// 成功率 roll（v1 全 100%，失败机制预留：失败则材料损毁无产出）
-		if (UtilityFunctions::randf() > r->success_rate) {
-			_last_message = String(LOC("炼制失败，药材尽毁……"));
-			return false;
-		}
-
-		inv->add_item(StringName(r->id), 1);
-		_last_message = String(LOC("炼成 「")) + LOC(r->name) + LOC("」");
-		return true;
+		inv->add_item(StringName("dan_zha"), 1);
+		_last_message = LOC("炉火失控，丹毁渣存");
+		return false;
 	}
 
 	Array AlchemySystem::get_recipe_list() const {
@@ -241,6 +273,7 @@ void AlchemySystem::ensure_loaded() {
 			d["name"] = LOC(r.name);
 			d["grade"] = r.grade;
 			d["effect"] = LOC(r.effect_desc);
+			d["success_rate"] = r.success_rate;
 			d["realm_locked"] = is_realm_locked(&r);
 			d["min_realm"] = r.min_realm;
 			Array mats;

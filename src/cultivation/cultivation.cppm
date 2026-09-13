@@ -3,6 +3,7 @@
 // referenced by ArtifactSystem and provided via #include in the global fragment.
 module;
 
+#include <cstdint>
 #include <vector>
 
 #include <godot-cpp-m/macros.h>
@@ -517,6 +518,10 @@ public:
 
 	String get_last_message() const { return _last_message; }
 
+	// 测试挂钩：注入下一次成败 roll（[0,1]，<= success_rate 成；传 <0 恢复内部序列）。
+	// 一次性生效——craft 消费后自动清除。
+	void debug_set_next_roll(float p_roll) { _next_roll = p_roll; }
+
 protected:
 	static void _bind_methods();
 
@@ -525,6 +530,9 @@ private:
 	static bool s_loaded;
 	Player *_player = nullptr;
 	String _last_message;
+	float _next_roll = -1.0f; // 测试注入 roll；<0 = 走内部确定性序列
+	uint32_t _rng_state = 0x2F6E2B1u; // 成败 roll 序列（固定种子 xorshift32：测试可复现，逐炉推进）
+	float _roll(); // 取下一个 [0,1) roll（注入优先）
 };
 
 export class ArtifactSystem : public Object {

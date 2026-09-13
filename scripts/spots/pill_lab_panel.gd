@@ -143,7 +143,7 @@ func _refresh_detail():
 		return
 	var sel := clampi(int(_grid.call("get_selected")), 0, _recipes.size() - 1)
 	var r: Dictionary = _recipes[sel]
-	_detail.text = "%s  %s" % [String(r["name"]), String(r["effect"])]
+	_detail.text = "%s  %s  成率 %d%%" % [String(r["name"]), String(r["effect"]), int(round(float(r.get("success_rate", 1.0)) * 100.0))]
 	if bool(r["realm_locked"]):
 		_detail.text += "  （金丹起）"
 	var mat_line := "材料 "
