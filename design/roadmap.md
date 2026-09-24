@@ -1,9 +1,9 @@
-# 开发路线图（截至 session 021 + 2026-08-23）
+# 开发路线图（截至 session 023 + 2026-09-24）
 
 ## 〇、路线图状态刷新说明（2026-08-28）
 
 第二节/第三节的勾选状态已按实际进度刷新（session 015-021 及 8/17-8/23 提交），
-第一节的历史总结（session 002-014）保留原样作为记录；session 015-021 概要见下方追加块。
+第一节的历史总结（session 002-014）保留原样作为记录；session 015-021/022-023 概要见下方追加块。
 
 ### Session 015-021 概要（详见 docs/sessions/session-015~021.md）
 
@@ -19,6 +19,36 @@
   + Boss 血条境界名；多 agent worktree 并行（baseRef=head 流程）
 - **021**：四洲秘境副本（古剑冢/大雁塔地宫/地心火窟/荒古冰墓，Portal 房间模式 + 数据契约预注册）+
   DropSystem 掉落挂点修复（挂玩家当前父节点，房间内击杀可拾取）
+
+### Session 022-023 概要（8/31-9/24 提交，未单独成文，git log 为准）
+
+- **022 · 设置与外抽**（8/31）：键位配置 UI——设置页「键位」子页（InputMap 运行时改绑 32 项、
+  冲突拒绑、user://keybinds.cfg 持久化、恢复默认）；能力解锁表外抽 data/abilities.json
+  （22 条=15 主动+7 被动，AbilityManager ensure_loaded JSON 优先+兜底、能力页渲染接表）
+- **022 · 洞天补完**（8/31-9/13）：药童（委托照料自动收获成熟灵田入洞天仓库）+ 灵兽栏
+  （闯阵灵兽半血以下 X 降伏入驻，打坐倍率 +5%/只 上限 3）；傀儡 NPC（下品灵石×1500 激活，
+  驻守=灵田生长+50% / 随行=弱化分身实体出战，战毁 60s 冷却重召）
+- **022 · 渡劫与雷系**（8/31-9/13）：天罚使升级正式多阶段 Boss（tian_fa_shi 入 enemies.json，
+  三阶段=雷球直射/雷链扇形弹/雷域落雷圈 + 潜伏开火 bug 修复）；雷元素管线补全——敌人投射物
+  proj_element 字段数据驱动（雷兽/天罚使/珠母精弹体走 ELEM_LEI 结算吃雷抗）+ 雷纹佩
+  （雷抗20% 地品，天界飞檐秘藏投放）+ 雷弹染色
+- **022 · 丹道**（9/12-9/13）：丹毒机制（同种丹 buff 剩余>50% 再服药效 6 折；60s 窗口内同种
+  ≥3 次积 buff_dan_du——攻防-10% 120s，丹毒期同种丹再减半且刷新）；炼丹失败机制（黄/玄 100%、
+  地品 80%、天品 70%，recipes.json success_rate 固定种子判定，失败出丹渣+毁料一半+喂练气+1）；
+  BuffSystem 真接 buffs.json（ensure_defs_loaded 实现，修复旃檀佛光等纯 JSON 条目静默失效；
+  elem_all=全元素抗性语义）
+- **022 · 秘境与修复**（9/13）：大雷音寺遗址秘境（南赡部洲 x=2450，心猿石像 Boss realm7
+  HP4950 必掉旃檀功德香）+ 龙宫藏珍阁二层（龙宫内镇守将身后 x=438，龙王三太子 Boss realm8
+  HP5500 必掉定海珠·水抗25%）；机缘突破战死重试卡死修复（_enemies_alive/_waves_left/
+  _wave_check_pending 在 _start_event 与 _finish 双路归零）+ 预存断言清理（test_world 读
+  json 算期望 / breakthrough 卡死护栏）
+- **023 · 写死表清零**（9/24）：五表外抽，全走「FileAccess 直读+硬编码兜底」（词缀/阵点先例
+  同模式）——法宝 data/artifacts.json（7 条 JSON 权威源）/ 商店货架 data/shops.json（顶层
+  shops 字典预留多店、默认店 chang_an，价格仍走 items.json）/ 连招表 data/combos.json
+  （4 条定向 prev→next 倍率/窗口/话术，skills.json combo_* 字段退役死数据）+ 寿元表并入
+  realms.json 每境 lifespan 字段（SoulLedgerSystem 直读+TABLE 兜底，天尊 ∞ 判定留码）/
+  境界授予映射 data/grants.json（炼气→真仙 8 境条目表驱动，player.cpp 原 if 链逐字兜底、
+  机制行为留码）；data-externalization 状态总表同步成文
 
 ### 8/28-8/29 提交
 
@@ -157,9 +187,11 @@
 
 1. ~~**机缘突破事件**~~（session 009 v1 + 019 渡劫 v2 三灾齐至/天罚使 + 元婴双过法分叉 +
    W4-1 事件数据化 events.json/道心不稳 debuff + W5-2 心魔镜像玩家招式 + 8/22 仙人抚顶/
-   醍醐灌顶双机缘）——后续可做：天罚使换正式 Boss（用户预留，改 _spawn_boss 即可）
+   醍醐灌顶双机缘）——后续可做：~~天罚使换正式 Boss~~（session 022 已落地：tian_fa_shi 入
+   enemies.json 三阶段 Boss，见上方概要块）
 2. ~~**洞天系统**~~（v1-v4 全落地 + W4-2 灵兽闯阵/采集点×4 + session 014 设施补全）——
-   后续可做：洞天时间流速（design/dongtian.md 待敲定 Q4，成本高需拍板）、药童/傀儡 NPC、灵兽栏
+   后续可做：洞天时间流速（design/dongtian.md 待敲定 Q4，成本高需拍板）；~~药童/傀儡 NPC、灵兽栏~~
+   （session 022 已落地：洞天 v5 药童+灵兽栏 / v6 傀儡 NPC）
 3. ~~**技能/法术系统**~~（session 010 管线 + W4-3 连招派生 combo_after/window/mult）
 4. ~~**法宝系统完善**~~（session 011 v1 + 014 v2 + W4-4 温养来源扩充 + W5-4 温养进度可视化）——
    后续可做：法宝图标（依赖美术管线，design/art-assets.md）
@@ -173,9 +205,12 @@
 
 - **美术素材管线**（design/art-assets.md 仅规划未实现——全游戏程序化绘制，接入外部贴图是大升级，
   需要素材生成/审图工具链配合）
-- **云游图 UI**（洲间旅行当前走地图节点，云游图作为其 UI 载体，design/world-map.md）
-- **键位配置 UI**（设置页内重映射，data-externalization P4）
-- **能力解锁表外抽**（data-externalization P3，15+7 条）
+- ~~**云游图 UI**~~（2026-08-29 已落地：GameMenu 云游页升级可视化世界地图 v2——地理方位岛体/
+  云海航线/详情栏，见上方提交块与 CLAUDE.md「GameMenu 云游页」条）
+- ~~**键位配置 UI**~~（session 022 已落地：设置页「键位」子页 32 项改绑/冲突拒绑/keybinds.cfg
+  持久化/恢复默认，见 data-externalization §15）
+- ~~**能力解锁表外抽**~~（session 022 已落地：data/abilities.json 22 条——15 主动+7 被动，
+  见 data-externalization §12.1）
 
 ## 三、需要抽成 OOP 的候选
 
