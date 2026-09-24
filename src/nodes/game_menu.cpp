@@ -37,6 +37,13 @@ module;
 #include <godot_cpp/core/math.hpp>
 
 #include <map>
+#include <string>
+#include <vector>
+
+// 熔炼炉数据直读（data/smithing.json，AffixDatabase 模式）
+#include <godot_cpp/classes/file_access.hpp>
+#include <godot_cpp/classes/json.hpp>
+#include <godot_cpp/variant/utility_functions.hpp>
 
 module mcpp_kaki.nodes;
 import mcpp_kaki.cultivation;
@@ -1389,6 +1396,179 @@ void GameMenu::_handle_travel_input() {
 // 子页 0=炼丹 1=装备铸造 2=法宝铸造 3=装备强化
 // ============================================================
 
+// ------------------------------------------------------------
+// 熔炼数据（data/smithing.json 优先 + 硬编码兜底）
+// AffixDatabase/ArtifactSystem 直读模式，不走 DataLoader：
+//   equip_cast/artifact_cast 数组按 result_id 同键覆盖、新键追加；
+//   enhance 对象逐字段覆盖（当前实现每级费用固定，字段即费用锚点）。
+// id 一律 ASCII；name 为 UTF-8 中文，std::string 自持有（无 c_str 悬垂）。
+// ------------------------------------------------------------
+
+// 铸造配方（装备/法宝同构）：产物 + 两种材料
+struct SmithCastRecipe {
+	std::string result_id, result_name;
+	std::string mat1_id, mat1_name;
+	int mat1_qty = 0;
+	std::string mat2_id, mat2_name;
+	int mat2_qty = 0;
+};
+
+// 装备强化参数（原硬编码：5 中品灵石 + 1 玄冰髓 → 攻/防 +1，上限 +10）
+struct SmithEnhanceDefs {
+	int max_bonus = 10;         // 强化上限（extra_atk+extra_def 合计）
+	int atk_per_upgrade = 1;    // 每次强化攻击加成
+	int def_per_upgrade = 1;    // 每次强化防御加成
+	int cost_currency_tier = CurrencySystem::TIER_MID; // 灵石档位
+	int cost_currency_qty = 5;  // 灵石数量（按档位折算下品价值）
+	std::string cost_currency_name = "中品灵石"; // 档位显示名（UTF-8 字节自持有）
+	std::string cost_item_id = "xuan_bing_sui";
+	std::string cost_item_name = "玄冰髓";
+	int cost_item_qty = 1;
+};
+
+struct SmithData {
+	std::vector<SmithCastRecipe> equip_cast;
+	std::vector<SmithCastRecipe> artifact_cast;
+	SmithEnhanceDefs enhance;
+	bool loaded = false;
+};
+
+static void _smith_get_str(const Dictionary &p_d, const char *p_key, std::string &p_out) {
+	if (!p_d.has(p_key))
+		return;
+	String s = String(p_d[p_key]);
+	CharString u8 = s.utf8();
+	if (u8.get_data())
+		p_out = u8.get_data();
+}
+
+static void _smith_get_int(const Dictionary &p_d, const char *p_key, int &p_out) {
+	if (p_d.has(p_key))
+		p_out = int(p_d[p_key]);
+}
+
+// 灵石档位字符串 → 枚举值（JSON 用枚举名，如 "TIER_MID"）
+static bool _smith_tier_from_str(const String &p_s, int &p_out) {
+	if (p_s == "TIER_LOW") { p_out = CurrencySystem::TIER_LOW; return true; }
+	if (p_s == "TIER_MID") { p_out = CurrencySystem::TIER_MID; return true; }
+	if (p_s == "TIER_HIGH") { p_out = CurrencySystem::TIER_HIGH; return true; }
+	if (p_s == "TIER_PEAK") { p_out = CurrencySystem::TIER_PEAK; return true; }
+	return false;
+}
+
+// 硬编码兜底全表（原 RECIPES 逐字保留；JSON 缺失/缺条目时生效）
+static void _smith_load_hardcoded(SmithData &p_d) {
+	// 装备铸造配方：{result_id, result_name, mat1_id, mat1_name, mat1_qty, mat2_id, mat2_name, mat2_qty}
+	p_d.equip_cast.reserve(16); // reserve 防重分配
+	p_d.equip_cast.push_back({ "iron_sword", "铁剑", "zhi_xue_cao", "止血草", 3, "ju_ling_cao", "聚灵草", 2 });
+	p_d.equip_cast.push_back({ "protect_robe", "护体法衣", "bing_xin_lian", "冰心莲", 2, "chi_yan_hua", "赤焰花", 2 });
+	p_d.equip_cast.push_back({ "qing_feng_gu_jian", "青锋古剑", "long_gu", "龙骨", 2, "xuan_bing_sui", "玄冰髓", 1 });
+	p_d.equip_cast.push_back({ "bi_shui_zhu", "避水珠", "xuan_bing_shen", "玄冰参", 3, "long_gu", "龙骨", 2 });
+	p_d.equip_cast.push_back({ "she_li_zi", "舍利子", "jin_gang_teng", "金刚藤", 3, "xuan_bing_sui", "玄冰髓", 1 });
+
+	// 法宝铸造配方（同构）
+	p_d.artifact_cast.reserve(16);
+	p_d.artifact_cast.push_back({ "fei_jian", "飞剑", "iron_sword", "铁剑", 1, "zhi_xue_cao", "止血草", 5 });
+	p_d.artifact_cast.push_back({ "zhao_yao_hu", "照妖葫", "long_gu", "龙骨", 2, "xuan_bing_sui", "玄冰髓", 2 });
+	p_d.artifact_cast.push_back({ "xuan_tie_ta", "玄铁塔", "xuan_bing_shen", "玄冰参", 3, "jin_gang_teng", "金刚藤", 3 });
+
+	// 强化参数即 SmithEnhanceDefs 成员默认值（原硬编码数值逐字）
+}
+
+static void _smith_apply_cast_json(const Array &p_arr, std::vector<SmithCastRecipe> &p_out) {
+	p_out.reserve(p_out.size() + size_t(p_arr.size())); // 防重分配
+	for (int i = 0; i < p_arr.size(); i++) {
+		if (p_arr[i].get_type() != Variant::DICTIONARY)
+			continue;
+		Dictionary e = p_arr[i];
+		if (!e.has("result_id"))
+			continue;
+		String rid = String(e["result_id"]);
+		CharString rid_u8 = rid.utf8();
+		std::string rid_s = rid_u8.get_data() ? std::string(rid_u8.get_data()) : std::string();
+		SmithCastRecipe *r = nullptr;
+		for (SmithCastRecipe &x : p_out) {
+			if (x.result_id == rid_s) {
+				r = &x;
+				break;
+			}
+		}
+		if (!r) {
+			p_out.push_back(SmithCastRecipe());
+			r = &p_out.back();
+			r->result_id = rid_s;
+			r->result_name = rid_s; // 新条目无名：以 id 兜底显示
+		}
+		_smith_get_str(e, "result_name", r->result_name);
+		_smith_get_str(e, "mat1_id", r->mat1_id);
+		_smith_get_str(e, "mat1_name", r->mat1_name);
+		_smith_get_int(e, "mat1_qty", r->mat1_qty);
+		_smith_get_str(e, "mat2_id", r->mat2_id);
+		_smith_get_str(e, "mat2_name", r->mat2_name);
+		_smith_get_int(e, "mat2_qty", r->mat2_qty);
+	}
+}
+
+static void _smith_apply_json(SmithData &p_d) {
+	const String path = TXT("res://data/smithing.json");
+	if (!FileAccess::file_exists(path))
+		return;
+	String raw = FileAccess::get_file_as_string(path);
+	Variant parsed = JSON::parse_string(raw);
+	if (parsed.get_type() != Variant::DICTIONARY) {
+		UtilityFunctions::printerr(TXT("Smithing: smithing.json 顶层须为对象"));
+		return;
+	}
+	Dictionary root = parsed;
+	if (root.has("equip_cast")) {
+		if (root["equip_cast"].get_type() == Variant::ARRAY)
+			_smith_apply_cast_json(Array(root["equip_cast"]), p_d.equip_cast);
+		else
+			UtilityFunctions::printerr(TXT("Smithing: smithing.json equip_cast 须为数组"));
+	}
+	if (root.has("artifact_cast")) {
+		if (root["artifact_cast"].get_type() == Variant::ARRAY)
+			_smith_apply_cast_json(Array(root["artifact_cast"]), p_d.artifact_cast);
+		else
+			UtilityFunctions::printerr(TXT("Smithing: smithing.json artifact_cast 须为数组"));
+	}
+	if (root.has("enhance")) {
+		if (root["enhance"].get_type() != Variant::DICTIONARY) {
+			UtilityFunctions::printerr(TXT("Smithing: smithing.json enhance 须为对象"));
+		} else {
+			Dictionary e = root["enhance"];
+			_smith_get_int(e, "max_bonus", p_d.enhance.max_bonus);
+			_smith_get_int(e, "atk_per_upgrade", p_d.enhance.atk_per_upgrade);
+			_smith_get_int(e, "def_per_upgrade", p_d.enhance.def_per_upgrade);
+			if (e.has("cost_currency_tier")) {
+				int t = 0;
+				if (_smith_tier_from_str(String(e["cost_currency_tier"]), t))
+					p_d.enhance.cost_currency_tier = t;
+				else
+					UtilityFunctions::printerr(TXT("Smithing: smithing.json 未知 cost_currency_tier: ") + String(e["cost_currency_tier"]));
+			}
+			_smith_get_int(e, "cost_currency_qty", p_d.enhance.cost_currency_qty);
+			_smith_get_str(e, "cost_currency_name", p_d.enhance.cost_currency_name);
+			_smith_get_str(e, "cost_item_id", p_d.enhance.cost_item_id);
+			_smith_get_str(e, "cost_item_name", p_d.enhance.cost_item_name);
+			_smith_get_int(e, "cost_item_qty", p_d.enhance.cost_item_qty);
+		}
+	}
+}
+
+// 熔炼数据唯一入口（惰性一次：硬编码兜底全表 → JSON 覆盖/追加）。
+// 函数局部 static：构造必在运行时首次调用，无静态初始化顺序问题；
+// 容器/字符串均纯 C++ 类型（Godot 类型文件级 static 有引擎内存初始化前构造 segfault 教训）。
+static const SmithData &_smith() {
+	static SmithData s_data;
+	if (!s_data.loaded) {
+		s_data.loaded = true;
+		_smith_load_hardcoded(s_data); // 兜底全表
+		_smith_apply_json(s_data);     // JSON 优先（同 result_id 覆盖，新 result_id 追加）
+	}
+	return s_data;
+}
+
 void GameMenu::_build_forge_page() {
 	auto add_line = [&](const String &text, float x, float y, int size, const Color &c) {
 		Label *l = memnew(Label);
@@ -1557,39 +1737,28 @@ void GameMenu::_build_forge_equip() {
 	Color ok_c(0.6f, 1.0f, 0.6f);
 	Color bad_c(1.0f, 0.5f, 0.5f);
 
-	// 硬编码铸造配方：{result_id, result_name, mat1_id, mat1_name, mat1_qty, mat2_id, mat2_name, mat2_qty}
-	struct ForgeRecipe {
-		const char *result_id, *result_name;
-		const char *mat1_id, *mat1_name; int mat1_qty;
-		const char *mat2_id, *mat2_name; int mat2_qty;
-	};
-	static const ForgeRecipe RECIPES[] = {
-		{ "iron_sword", "铁剑", "zhi_xue_cao", "止血草", 3, "ju_ling_cao", "聚灵草", 2 },
-		{ "protect_robe", "护体法衣", "bing_xin_lian", "冰心莲", 2, "chi_yan_hua", "赤焰花", 2 },
-		{ "qing_feng_gu_jian", "青锋古剑", "long_gu", "龙骨", 2, "xuan_bing_sui", "玄冰髓", 1 },
-		{ "bi_shui_zhu", "避水珠", "xuan_bing_shen", "玄冰参", 3, "long_gu", "龙骨", 2 },
-		{ "she_li_zi", "舍利子", "jin_gang_teng", "金刚藤", 3, "xuan_bing_sui", "玄冰髓", 1 },
-	};
-	static const int RECIPE_COUNT = 5;
+	// 铸造配方：data/smithing.json 优先 + 硬编码兜底（_smith() 惰性加载）
+	const std::vector<SmithCastRecipe> &recipes = _smith().equip_cast;
+	const int recipe_count = (int)recipes.size();
 
 	Inventory *inv = _player ? _player->get_inventory() : nullptr;
-	ItemDatabase *db = ItemDatabase::get_singleton();
 
-	_forge_sel = CLAMP(_forge_sel, 0, RECIPE_COUNT - 1);
+	_forge_sel = CLAMP(_forge_sel, 0, recipe_count - 1);
 
 	// 铸造列表
 	add_line(LOC("— 装备铸造 —"), 80.0f, 56.0f, 10, head_c);
-	for (int i = 0; i < RECIPE_COUNT; i++) {
+	for (int i = 0; i < recipe_count; i++) {
+		const SmithCastRecipe &r = recipes[i];
 		bool is_sel = (i == _forge_sel);
-		int have1 = inv ? inv->get_item_count(StringName(RECIPES[i].mat1_id)) : 0;
-		int have2 = inv ? inv->get_item_count(StringName(RECIPES[i].mat2_id)) : 0;
-		bool enough = have1 >= RECIPES[i].mat1_qty && have2 >= RECIPES[i].mat2_qty;
+		int have1 = inv ? inv->get_item_count(StringName(r.mat1_id.c_str())) : 0;
+		int have2 = inv ? inv->get_item_count(StringName(r.mat2_id.c_str())) : 0;
+		bool enough = have1 >= r.mat1_qty && have2 >= r.mat2_qty;
 		float y = 76.0f + i * 22;
 		String prefix = is_sel ? LOC("▶ ") : LOC("  ");
-		add_line(prefix + LOC(RECIPES[i].result_name), 80.0f, y, 9, is_sel ? sel_c : (enough ? body_c : dim_c));
-		String mat = LOC(RECIPES[i].mat1_name) + LOC("×") + String::num_int64(RECIPES[i].mat1_qty) +
+		add_line(prefix + LOC(r.result_name.c_str()), 80.0f, y, 9, is_sel ? sel_c : (enough ? body_c : dim_c));
+		String mat = LOC(r.mat1_name.c_str()) + LOC("×") + String::num_int64(r.mat1_qty) +
 			LOC("(") + String::num_int64(have1) + LOC(") + ") +
-			LOC(RECIPES[i].mat2_name) + LOC("×") + String::num_int64(RECIPES[i].mat2_qty) +
+			LOC(r.mat2_name.c_str()) + LOC("×") + String::num_int64(r.mat2_qty) +
 			LOC("(") + String::num_int64(have2) + LOC(")");
 		add_line(mat, 100.0f, y + 10, 8, is_sel ? (enough ? ok_c : bad_c) : dim_c);
 	}
@@ -1622,38 +1791,31 @@ void GameMenu::_build_forge_artifact() {
 	Color ok_c(0.6f, 1.0f, 0.6f);
 	Color bad_c(1.0f, 0.5f, 0.5f);
 
-	struct ForgeRecipe {
-		const char *result_id, *result_name;
-		const char *mat1_id, *mat1_name; int mat1_qty;
-		const char *mat2_id, *mat2_name; int mat2_qty;
-	};
-	static const ForgeRecipe RECIPES[] = {
-		{ "fei_jian", "飞剑", "iron_sword", "铁剑", 1, "zhi_xue_cao", "止血草", 5 },
-		{ "zhao_yao_hu", "照妖葫", "long_gu", "龙骨", 2, "xuan_bing_sui", "玄冰髓", 2 },
-		{ "xuan_tie_ta", "玄铁塔", "xuan_bing_shen", "玄冰参", 3, "jin_gang_teng", "金刚藤", 3 },
-	};
-	static const int RECIPE_COUNT = 3;
+	// 法宝铸造配方：data/smithing.json 优先 + 硬编码兜底（_smith() 惰性加载）
+	const std::vector<SmithCastRecipe> &recipes = _smith().artifact_cast;
+	const int recipe_count = (int)recipes.size();
 
 	Inventory *inv = _player ? _player->get_inventory() : nullptr;
 	ArtifactSystem *arts = _player ? _player->get_artifacts() : nullptr;
 
-	_forge_sel = CLAMP(_forge_sel, 0, RECIPE_COUNT - 1);
+	_forge_sel = CLAMP(_forge_sel, 0, recipe_count - 1);
 
 	add_line(LOC("— 法宝铸造 —"), 80.0f, 56.0f, 10, head_c);
-	for (int i = 0; i < RECIPE_COUNT; i++) {
+	for (int i = 0; i < recipe_count; i++) {
+		const SmithCastRecipe &r = recipes[i];
 		bool is_sel = (i == _forge_sel);
-		int have1 = inv ? inv->get_item_count(StringName(RECIPES[i].mat1_id)) : 0;
-		int have2 = inv ? inv->get_item_count(StringName(RECIPES[i].mat2_id)) : 0;
-		bool enough = have1 >= RECIPES[i].mat1_qty && have2 >= RECIPES[i].mat2_qty;
-		bool already_owned = arts && arts->is_owned(StringName(RECIPES[i].result_id));
+		int have1 = inv ? inv->get_item_count(StringName(r.mat1_id.c_str())) : 0;
+		int have2 = inv ? inv->get_item_count(StringName(r.mat2_id.c_str())) : 0;
+		bool enough = have1 >= r.mat1_qty && have2 >= r.mat2_qty;
+		bool already_owned = arts && arts->is_owned(StringName(r.result_id.c_str()));
 		float y = 76.0f + i * 22;
 		String prefix = is_sel ? LOC("▶ ") : LOC("  ");
-		String name = LOC(RECIPES[i].result_name);
+		String name = LOC(r.result_name.c_str());
 		if (already_owned) name += LOC("（已拥有）");
 		add_line(prefix + name, 80.0f, y, 9, is_sel ? sel_c : (already_owned ? dim_c : (enough ? ok_c : bad_c)));
-		String mat = LOC(RECIPES[i].mat1_name) + LOC("×") + String::num_int64(RECIPES[i].mat1_qty) +
+		String mat = LOC(r.mat1_name.c_str()) + LOC("×") + String::num_int64(r.mat1_qty) +
 			LOC("(") + String::num_int64(have1) + LOC(") + ") +
-			LOC(RECIPES[i].mat2_name) + LOC("×") + String::num_int64(RECIPES[i].mat2_qty) +
+			LOC(r.mat2_name.c_str()) + LOC("×") + String::num_int64(r.mat2_qty) +
 			LOC("(") + String::num_int64(have2) + LOC(")");
 		add_line(mat, 100.0f, y + 10, 8, is_sel ? (enough ? ok_c : bad_c) : dim_c);
 	}
@@ -1751,12 +1913,13 @@ void GameMenu::_build_forge_upgrade() {
 
 	_forge_sel = CLAMP(_forge_sel, 0, count - 1);
 
-	// 检查强化材料：5 中品灵石 + 1 玄冰髓
+	// 检查强化材料（smithing.json enhance 段；默认 5 中品灵石 + 1 玄冰髓）
+	const SmithEnhanceDefs &enh = _smith().enhance;
 	CurrencySystem *cs = CurrencySystem::get_singleton();
 	bool can_upgrade = false;
 	if (cs && inv) {
-		int mid_cost = 5 * CurrencySystem::tier_value(CurrencySystem::TIER_MID); // 5 中品 = 50 下品
-		can_upgrade = cs->can_afford(mid_cost) && inv->get_item_count(StringName("xuan_bing_sui")) >= 1;
+		int cur_cost = enh.cost_currency_qty * CurrencySystem::tier_value(enh.cost_currency_tier); // 5 中品 = 50 下品
+		can_upgrade = cs->can_afford(cur_cost) && inv->get_item_count(StringName(enh.cost_item_id.c_str())) >= enh.cost_item_qty;
 	}
 
 	for (int i = 0; i < count; i++) {
@@ -1764,7 +1927,7 @@ void GameMenu::_build_forge_upgrade() {
 		float y = 76.0f + i * 20;
 		String prefix = is_sel ? LOC("▶ ") : LOC("  ");
 		int bonus = equips[i].extra_atk + equips[i].extra_def;
-		bool capped = bonus >= 10;
+		bool capped = bonus >= enh.max_bonus;
 		String line = prefix + equips[i].name + LOC(" ×") + String::num_int64(equips[i].qty);
 		String bonus_str;
 		if (equips[i].extra_atk > 0) bonus_str += LOC(" 攻+") + String::num_int64(equips[i].extra_atk);
@@ -1773,11 +1936,17 @@ void GameMenu::_build_forge_upgrade() {
 		add_line(line + bonus_str, 80.0f, y, 9, is_sel ? sel_c : body_c);
 	}
 
-	// 详情行
+	// 详情行（费用/加成/上限全部由 enhance 数据拼装，默认值渲染与原文案逐字节一致）
 	add_line(LOC("选中: ") + equips[_forge_sel].name + LOC("  强化 ") +
-		String::num_int64(equips[_forge_sel].extra_atk + equips[_forge_sel].extra_def) + LOC("/10"),
+		String::num_int64(equips[_forge_sel].extra_atk + equips[_forge_sel].extra_def) +
+		TXT("/") + String::num_int64(enh.max_bonus),
 		80.0f, 180.0f, 9, sel_c);
-	add_line(LOC("消耗: 5 中品灵石 + 1 玄冰髓  → 攻/防 +1（上限 +10）"),
+	String gain_txt = (enh.atk_per_upgrade == enh.def_per_upgrade)
+		? TXT("攻/防 +") + String::num_int64(enh.atk_per_upgrade)
+		: TXT("攻+") + String::num_int64(enh.atk_per_upgrade) + TXT(" 防+") + String::num_int64(enh.def_per_upgrade);
+	add_line(TXT("消耗: ") + String::num_int64(enh.cost_currency_qty) + TXT(" ") + LOC(enh.cost_currency_name.c_str()) +
+		TXT(" + ") + String::num_int64(enh.cost_item_qty) + TXT(" ") + LOC(enh.cost_item_name.c_str()) +
+		TXT("  → ") + gain_txt + TXT("（上限 +") + String::num_int64(enh.max_bonus) + TXT("）"),
 		80.0f, 194.0f, 8, dim_c);
 
 	if (!_forge_msg.is_empty()) {
@@ -1881,20 +2050,11 @@ void GameMenu::_handle_forge_alchemy_input() {
 
 void GameMenu::_handle_forge_equip_input() {
 	Input *input = Input::get_singleton();
-	struct ForgeRecipe {
-		const char *result_id, *result_name;
-		const char *mat1_id, *mat1_name; int mat1_qty;
-		const char *mat2_id, *mat2_name; int mat2_qty;
-	};
-	static const ForgeRecipe RECIPES[] = {
-		{ "iron_sword", "铁剑", "zhi_xue_cao", "止血草", 3, "ju_ling_cao", "聚灵草", 2 },
-		{ "protect_robe", "护体法衣", "bing_xin_lian", "冰心莲", 2, "chi_yan_hua", "赤焰花", 2 },
-		{ "qing_feng_gu_jian", "青锋古剑", "long_gu", "龙骨", 2, "xuan_bing_sui", "玄冰髓", 1 },
-		{ "bi_shui_zhu", "避水珠", "xuan_bing_shen", "玄冰参", 3, "long_gu", "龙骨", 2 },
-		{ "she_li_zi", "舍利子", "jin_gang_teng", "金刚藤", 3, "xuan_bing_sui", "玄冰髓", 1 },
-	};
-	static const int RECIPE_COUNT = 5;
-	_forge_sel = CLAMP(_forge_sel, 0, RECIPE_COUNT - 1);
+	// 铸造配方：data/smithing.json 优先 + 硬编码兜底（_smith() 惰性加载）
+	const std::vector<SmithCastRecipe> &recipes = _smith().equip_cast;
+	const int recipe_count = (int)recipes.size();
+	if (recipe_count == 0) return;
+	_forge_sel = CLAMP(_forge_sel, 0, recipe_count - 1);
 	if (input->is_action_just_pressed(LOC("up"))) {
 		// 首行 ↑ 进侧边栏子页选择
 		if (_forge_sel == 0) {
@@ -1906,7 +2066,7 @@ void GameMenu::_handle_forge_equip_input() {
 		_rebuild_page();
 	}
 	if (input->is_action_just_pressed(LOC("down"))) {
-		_forge_sel = Math::min(RECIPE_COUNT - 1, _forge_sel + 1);
+		_forge_sel = Math::min(recipe_count - 1, _forge_sel + 1);
 		_rebuild_page();
 	}
 	if (input->is_action_just_pressed(LOC("left"))) {
@@ -1919,25 +2079,25 @@ void GameMenu::_handle_forge_equip_input() {
 		_rebuild_page();
 	}
 	if (input->is_action_just_pressed(LOC("right"))) {
-		_forge_sel = Math::min(RECIPE_COUNT - 1, _forge_sel + 1);
+		_forge_sel = Math::min(recipe_count - 1, _forge_sel + 1);
 		_rebuild_page();
 	}
 	if (input->is_action_just_pressed(LOC("interact"))) {
 		Inventory *inv = _player ? _player->get_inventory() : nullptr;
 		if (!inv) return;
-		int idx = _forge_sel;
-		int have1 = inv->get_item_count(StringName(RECIPES[idx].mat1_id));
-		int have2 = inv->get_item_count(StringName(RECIPES[idx].mat2_id));
-		if (have1 < RECIPES[idx].mat1_qty || have2 < RECIPES[idx].mat2_qty) {
+		const SmithCastRecipe &r = recipes[CLAMP(_forge_sel, 0, recipe_count - 1)];
+		int have1 = inv->get_item_count(StringName(r.mat1_id.c_str()));
+		int have2 = inv->get_item_count(StringName(r.mat2_id.c_str()));
+		if (have1 < r.mat1_qty || have2 < r.mat2_qty) {
 			_forge_msg = LOC("材料不足，无法铸造");
 			_forge_msg_t = 2.5f;
 			_rebuild_page();
 			return;
 		}
-		inv->remove_item(StringName(RECIPES[idx].mat1_id), RECIPES[idx].mat1_qty);
-		inv->remove_item(StringName(RECIPES[idx].mat2_id), RECIPES[idx].mat2_qty);
-		inv->add_item(StringName(RECIPES[idx].result_id), 1);
-		_forge_msg = LOC("铸造成功！获得 ") + LOC(RECIPES[idx].result_name);
+		inv->remove_item(StringName(r.mat1_id.c_str()), r.mat1_qty);
+		inv->remove_item(StringName(r.mat2_id.c_str()), r.mat2_qty);
+		inv->add_item(StringName(r.result_id.c_str()), 1);
+		_forge_msg = LOC("铸造成功！获得 ") + LOC(r.result_name.c_str());
 		_forge_msg_t = 2.5f;
 		_rebuild_page();
 	}
@@ -1945,18 +2105,11 @@ void GameMenu::_handle_forge_equip_input() {
 
 void GameMenu::_handle_forge_artifact_input() {
 	Input *input = Input::get_singleton();
-	struct ForgeRecipe {
-		const char *result_id, *result_name;
-		const char *mat1_id, *mat1_name; int mat1_qty;
-		const char *mat2_id, *mat2_name; int mat2_qty;
-	};
-	static const ForgeRecipe RECIPES[] = {
-		{ "fei_jian", "飞剑", "iron_sword", "铁剑", 1, "zhi_xue_cao", "止血草", 5 },
-		{ "zhao_yao_hu", "照妖葫", "long_gu", "龙骨", 2, "xuan_bing_sui", "玄冰髓", 2 },
-		{ "xuan_tie_ta", "玄铁塔", "xuan_bing_shen", "玄冰参", 3, "jin_gang_teng", "金刚藤", 3 },
-	};
-	static const int RECIPE_COUNT = 3;
-	_forge_sel = CLAMP(_forge_sel, 0, RECIPE_COUNT - 1);
+	// 法宝铸造配方：data/smithing.json 优先 + 硬编码兜底（_smith() 惰性加载）
+	const std::vector<SmithCastRecipe> &recipes = _smith().artifact_cast;
+	const int recipe_count = (int)recipes.size();
+	if (recipe_count == 0) return;
+	_forge_sel = CLAMP(_forge_sel, 0, recipe_count - 1);
 	if (input->is_action_just_pressed(LOC("up"))) {
 		// 首行 ↑ 进侧边栏子页选择
 		if (_forge_sel == 0) {
@@ -1968,7 +2121,7 @@ void GameMenu::_handle_forge_artifact_input() {
 		_rebuild_page();
 	}
 	if (input->is_action_just_pressed(LOC("down"))) {
-		_forge_sel = Math::min(RECIPE_COUNT - 1, _forge_sel + 1);
+		_forge_sel = Math::min(recipe_count - 1, _forge_sel + 1);
 		_rebuild_page();
 	}
 	if (input->is_action_just_pressed(LOC("left"))) {
@@ -1981,33 +2134,33 @@ void GameMenu::_handle_forge_artifact_input() {
 		_rebuild_page();
 	}
 	if (input->is_action_just_pressed(LOC("right"))) {
-		_forge_sel = Math::min(RECIPE_COUNT - 1, _forge_sel + 1);
+		_forge_sel = Math::min(recipe_count - 1, _forge_sel + 1);
 		_rebuild_page();
 	}
 	if (input->is_action_just_pressed(LOC("interact"))) {
 		Inventory *inv = _player ? _player->get_inventory() : nullptr;
 		ArtifactSystem *arts = _player ? _player->get_artifacts() : nullptr;
 		if (!inv || !arts) return;
-		int idx = _forge_sel;
-		StringName res_id = StringName(RECIPES[idx].result_id);
+		const SmithCastRecipe &r = recipes[CLAMP(_forge_sel, 0, recipe_count - 1)];
+		StringName res_id = StringName(r.result_id.c_str());
 		if (arts->is_owned(res_id)) {
 			_forge_msg = LOC("已拥有该法宝");
 			_forge_msg_t = 2.5f;
 			_rebuild_page();
 			return;
 		}
-		int have1 = inv->get_item_count(StringName(RECIPES[idx].mat1_id));
-		int have2 = inv->get_item_count(StringName(RECIPES[idx].mat2_id));
-		if (have1 < RECIPES[idx].mat1_qty || have2 < RECIPES[idx].mat2_qty) {
+		int have1 = inv->get_item_count(StringName(r.mat1_id.c_str()));
+		int have2 = inv->get_item_count(StringName(r.mat2_id.c_str()));
+		if (have1 < r.mat1_qty || have2 < r.mat2_qty) {
 			_forge_msg = LOC("材料不足，无法铸造法宝");
 			_forge_msg_t = 2.5f;
 			_rebuild_page();
 			return;
 		}
-		inv->remove_item(StringName(RECIPES[idx].mat1_id), RECIPES[idx].mat1_qty);
-		inv->remove_item(StringName(RECIPES[idx].mat2_id), RECIPES[idx].mat2_qty);
+		inv->remove_item(StringName(r.mat1_id.c_str()), r.mat1_qty);
+		inv->remove_item(StringName(r.mat2_id.c_str()), r.mat2_qty);
 		arts->acquire(res_id);
-		_forge_msg = LOC("铸造成功！习得法宝 ") + LOC(RECIPES[idx].result_name);
+		_forge_msg = LOC("铸造成功！习得法宝 ") + LOC(r.result_name.c_str());
 		_forge_msg_t = 2.5f;
 		_rebuild_page();
 	}
@@ -2077,27 +2230,34 @@ void GameMenu::_handle_forge_upgrade_input() {
 	}
 
 	if (input->is_action_just_pressed(LOC("interact"))) {
+		// 强化费用/加成/上限：smithing.json enhance 段（默认值行为与原硬编码逐字一致）
+		const SmithEnhanceDefs &enh = _smith().enhance;
 		StringName eid = equips[_forge_sel].id;
 		int bonus = equips[_forge_sel].extra_atk + equips[_forge_sel].extra_def;
-		if (bonus >= 10) {
-			_forge_msg = LOC("已达强化上限 +10");
+		if (bonus >= enh.max_bonus) {
+			_forge_msg = TXT("已达强化上限 +") + String::num_int64(enh.max_bonus);
 			_forge_msg_t = 2.5f;
 			_rebuild_page();
 			return;
 		}
 		CurrencySystem *cs = CurrencySystem::get_singleton();
 		if (!cs || !inv) return;
-		int mid_cost = 5 * CurrencySystem::tier_value(CurrencySystem::TIER_MID);
-		if (!cs->can_afford(mid_cost) || inv->get_item_count(StringName("xuan_bing_sui")) < 1) {
-			_forge_msg = LOC("材料不足：需要 5 中品灵石 + 1 玄冰髓");
+		int cur_cost = enh.cost_currency_qty * CurrencySystem::tier_value(enh.cost_currency_tier);
+		if (!cs->can_afford(cur_cost) || inv->get_item_count(StringName(enh.cost_item_id.c_str())) < enh.cost_item_qty) {
+			_forge_msg = TXT("材料不足：需要 ") + String::num_int64(enh.cost_currency_qty) + TXT(" ") +
+				LOC(enh.cost_currency_name.c_str()) + TXT(" + ") + String::num_int64(enh.cost_item_qty) +
+				TXT(" ") + LOC(enh.cost_item_name.c_str());
 			_forge_msg_t = 2.5f;
 			_rebuild_page();
 			return;
 		}
-		cs->spend(mid_cost);
-		inv->remove_item(StringName("xuan_bing_sui"), 1);
-		inv->upgrade_item(eid, 1, 1);
-		_forge_msg = LOC("强化成功！") + equips[_forge_sel].name + LOC(" 攻防+1");
+		cs->spend(cur_cost);
+		inv->remove_item(StringName(enh.cost_item_id.c_str()), enh.cost_item_qty);
+		inv->upgrade_item(eid, enh.atk_per_upgrade, enh.def_per_upgrade);
+		String gain = (enh.atk_per_upgrade == enh.def_per_upgrade)
+			? TXT(" 攻防+") + String::num_int64(enh.atk_per_upgrade)
+			: TXT(" 攻+") + String::num_int64(enh.atk_per_upgrade) + TXT(" 防+") + String::num_int64(enh.def_per_upgrade);
+		_forge_msg = LOC("强化成功！") + equips[_forge_sel].name + gain;
 		_forge_msg_t = 2.5f;
 		_rebuild_page();
 	}

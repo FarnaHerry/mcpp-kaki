@@ -1,0 +1,97 @@
+{
+	"equip_cast": [
+		{
+			"result_id": "iron_sword",
+			"result_name": "铁剑",
+			"mat1_id": "zhi_xue_cao",
+			"mat1_name": "止血草",
+			"mat1_qty": 3,
+			"mat2_id": "ju_ling_cao",
+			"mat2_name": "聚灵草",
+			"mat2_qty": 2
+		},
+		{
+			"result_id": "protect_robe",
+			"result_name": "护体法衣",
+			"mat1_id": "bing_xin_lian",
+			"mat1_name": "冰心莲",
+			"mat1_qty": 2,
+			"mat2_id": "chi_yan_hua",
+			"mat2_name": "赤焰花",
+			"mat2_qty": 2
+		},
+		{
+			"result_id": "qing_feng_gu_jian",
+			"result_name": "青锋古剑",
+			"mat1_id": "long_gu",
+			"mat1_name": "龙骨",
+			"mat1_qty": 2,
+			"mat2_id": "xuan_bing_sui",
+			"mat2_name": "玄冰髓",
+			"mat2_qty": 1
+		},
+		{
+			"result_id": "bi_shui_zhu",
+			"result_name": "避水珠",
+			"mat1_id": "xuan_bing_shen",
+			"mat1_name": "玄冰参",
+			"mat1_qty": 3,
+			"mat2_id": "long_gu",
+			"mat2_name": "龙骨",
+			"mat2_qty": 2
+		},
+		{
+			"result_id": "she_li_zi",
+			"result_name": "舍利子",
+			"mat1_id": "jin_gang_teng",
+			"mat1_name": "金刚藤",
+			"mat1_qty": 3,
+			"mat2_id": "xuan_bing_sui",
+			"mat2_name": "玄冰髓",
+			"mat2_qty": 1
+		}
+	],
+	"artifact_cast": [
+		{
+			"result_id": "fei_jian",
+			"result_name": "飞剑",
+			"mat1_id": "iron_sword",
+			"mat1_name": "铁剑",
+			"mat1_qty": 1,
+			"mat2_id": "zhi_xue_cao",
+			"mat2_name": "止血草",
+			"mat2_qty": 5
+		},
+		{
+			"result_id": "zhao_yao_hu",
+			"result_name": "照妖葫",
+			"mat1_id": "long_gu",
+			"mat1_name": "龙骨",
+			"mat1_qty": 2,
+			"mat2_id": "xuan_bing_sui",
+			"mat2_name": "玄冰髓",
+			"mat2_qty": 2
+		},
+		{
+			"result_id": "xuan_tie_ta",
+			"result_name": "玄铁塔",
+			"mat1_id": "xuan_bing_shen",
+			"mat1_name": "玄冰参",
+			"mat1_qty": 3,
+			"mat2_id": "jin_gang_teng",
+			"mat2_name": "金刚藤",
+			"mat2_qty": 3
+		}
+	],
+	"enhance": {
+		"max_bonus": 10,
+		"atk_per_upgrade": 1,
+		"def_per_upgrade": 1,
+		"cost_currency_tier": "TIER_MID",
+		"cost_currency_qty": 5,
+		"cost_currency_name": "中品灵石",
+		"cost_item_id": "xuan_bing_sui",
+		"cost_item_name": "玄冰髓",
+		"cost_item_qty": 1
+	}
+}
