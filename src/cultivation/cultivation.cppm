@@ -410,10 +410,17 @@ protected:
 
 private:
 	// 丹毒窗口常量（design/alchemy.md）
-	static constexpr double DOSE_WINDOW = 60.0;   // 同种丹计数滑动窗口（秒）
-	static constexpr int DOSE_TOXIC_AT = 3;       // 窗口内 ≥N 次 → 积毒
-	static constexpr float REFRESH_POTENCY = 0.6f; // 剩余 >50% 连磕 → 本次 6 折
-	static constexpr float TOXIC_POTENCY = 0.5f;   // 丹毒期间同种丹 → 再减半
+	// 数值调参外抽（data/tuning.json "dan_du" 段）：constexpr _DEF=兜底默认（原值保留），
+	// 运行时同名 inline 值由 _ensure_dose_tuning() 逐键覆盖（键缺失/类型错→保留原值）。
+	static constexpr double DOSE_WINDOW_DEF = 60.0;   // 同种丹计数滑动窗口（秒）
+	static constexpr int DOSE_TOXIC_AT_DEF = 3;       // 窗口内 ≥N 次 → 积毒
+	static constexpr float REFRESH_POTENCY_DEF = 0.6f; // 剩余 >50% 连磕 → 本次 6 折
+	static constexpr float TOXIC_POTENCY_DEF = 0.5f;   // 丹毒期间同种丹 → 再减半
+	static inline double DOSE_WINDOW = DOSE_WINDOW_DEF;
+	static inline int DOSE_TOXIC_AT = DOSE_TOXIC_AT_DEF;
+	static inline float REFRESH_POTENCY = REFRESH_POTENCY_DEF;
+	static inline float TOXIC_POTENCY = TOXIC_POTENCY_DEF;
+	static void _ensure_dose_tuning(); // static 幂等（定义在 buff_system.cpp）
 
 	static std::vector<Def> s_defs;
 	static bool s_defs_loaded;
@@ -565,10 +572,32 @@ public:
 	static const int MAX_SLOTS = 6;
 
 	// 温养来源常量（SignalBus 解耦，见 _on_* 回调）
-	static constexpr float NURTURE_PER_KILL_ELITE_TIER = 2.0f; // 精英击杀：全部已装备 +tier×2
-	static constexpr float NURTURE_PER_BOSS = 15.0f;           // Boss 击杀：全部已装备 +15
-	static constexpr float NURTURE_PER_PILL = 1.0f;            // 服丹（炼丹产物）：本命 +1/颗
-	static constexpr float NURTURE_PER_MEDITATE_TICK = 0.1f;   // 打坐修为：本命 +0.1/次
+	// 数值调参外抽（data/tuning.json "nurture" 段）：constexpr _DEF=兜底默认（原值保留），
+	// 运行时同名 inline 值由 ensure_nurture_tuning() 逐键覆盖（键缺失/类型错→保留原值）。
+	static constexpr float NURTURE_PER_KILL_ELITE_TIER_DEF = 2.0f; // 精英击杀：全部已装备 +tier×2
+	static constexpr float NURTURE_PER_BOSS_DEF = 15.0f;           // Boss 击杀：全部已装备 +15
+	static constexpr float NURTURE_PER_PILL_DEF = 1.0f;            // 服丹（炼丹产物）：本命 +1/颗
+	static constexpr float NURTURE_PER_MEDITATE_TICK_DEF = 0.1f;   // 打坐修为：本命 +0.1/次
+	static inline float NURTURE_PER_KILL_ELITE_TIER = NURTURE_PER_KILL_ELITE_TIER_DEF;
+	static inline float NURTURE_PER_BOSS = NURTURE_PER_BOSS_DEF;
+	static inline float NURTURE_PER_PILL = NURTURE_PER_PILL_DEF;
+	static inline float NURTURE_PER_MEDITATE_TICK = NURTURE_PER_MEDITATE_TICK_DEF;
+
+	// 本命法宝温养（Player 侧消费，同 "nurture" 段外抽）
+	static constexpr float BENMING_NURTURE_MAX_DEF = 1000.0f;   // 温养满所需进度
+	static constexpr float BENMING_NURTURE_BASE_DEF = 1.2f;     // 温养下限 120%
+	static constexpr float BENMING_NURTURE_SLOPE_DEF = 0.3f;    // 温养斜率：120%→150%
+	static constexpr float BENMING_AWAKEN_BASE_DEF = 1.5f;      // 渡劫觉醒下限 150%
+	static constexpr float BENMING_AWAKEN_SLOPE_DEF = 0.5f;     // 觉醒斜率：150%→200%
+	static inline float BENMING_NURTURE_MAX = BENMING_NURTURE_MAX_DEF;
+	static inline float BENMING_NURTURE_BASE = BENMING_NURTURE_BASE_DEF;
+	static inline float BENMING_NURTURE_SLOPE = BENMING_NURTURE_SLOPE_DEF;
+	static inline float BENMING_AWAKEN_BASE = BENMING_AWAKEN_BASE_DEF;
+	static inline float BENMING_AWAKEN_SLOPE = BENMING_AWAKEN_SLOPE_DEF;
+
+	// data/tuning.json "nurture" 段直读加载器（static 幂等；定义在 tribulation_controller.cpp，
+	// Player::_ready 调用——artifact_system.cpp 不在本轮可改文件清单内）
+	static void ensure_nurture_tuning();
 
 	static const Def *find_def(const StringName &p_id);
 	static String kind_name(Kind p_k);
@@ -579,8 +608,10 @@ public:
 	static const std::vector<Def> &get_all_defs();
 
 	// 温养阶段阈值（次要法宝：100%→120%（STAGE1）→150%（STAGE2）→圆满；本命同档位语义）
-	static constexpr float NURTURE_STAGE1 = 300.0f;
-	static constexpr float NURTURE_STAGE2 = 600.0f;
+	static constexpr float NURTURE_STAGE1_DEF = 300.0f;
+	static constexpr float NURTURE_STAGE2_DEF = 600.0f;
+	static inline float NURTURE_STAGE1 = NURTURE_STAGE1_DEF;
+	static inline float NURTURE_STAGE2 = NURTURE_STAGE2_DEF;
 
 	ArtifactSystem();
 
@@ -798,25 +829,46 @@ private:
 		bool struck = false;
 	};
 
-	static constexpr double THUNDER_INTERVAL = 2.2;          // 落雷间隔
-	static constexpr double THUNDER_INTERVAL_ENRAGED = 1.4;  // 天罚使半血后
-	static constexpr double THUNDER_WARN = 1.0;              // 预警（元神每级 +15%）
-	static constexpr float THUNDER_HIT_HALF_W = 14.0f;
-	static constexpr float THUNDER_DMG_FRAC = 0.12f;         // 最大生命比例（肉身可减免）
-	static constexpr double FIRE_TICK = 1.0;
-	static constexpr float FIRE_DMG_FRAC = 0.015f;
-	static constexpr double GUST_INTERVAL = 2.5;
-	static constexpr double GUST_INTERVAL_ENRAGED = 1.8;
-	static constexpr float GUST_FORCE = 130.0f;
-	static constexpr float WIND_ERODE_FRAC = 0.006f;
-	static constexpr double WIND_ERODE_TICK = 0.5;
-	static constexpr float BOSS_HP = 2500.0f;
+	// 三灾数值调参外抽（data/tuning.json "tribulation" 段）：constexpr _DEF=兜底默认（原值保留），
+	// 运行时同名 inline 值由 _ensure_tuning() 逐键覆盖（键缺失/类型错→保留原值）。
+	static constexpr double THUNDER_INTERVAL_DEF = 2.2;          // 落雷间隔
+	static constexpr double THUNDER_INTERVAL_ENRAGED_DEF = 1.4;  // 天罚使半血后
+	static constexpr double THUNDER_WARN_DEF = 1.0;              // 预警（元神每级 +15%）
+	static constexpr float THUNDER_HIT_HALF_W_DEF = 14.0f;
+	static constexpr float THUNDER_DMG_FRAC_DEF = 0.12f;         // 最大生命比例（肉身可减免）
+	static constexpr double FIRE_TICK_DEF = 1.0;
+	static constexpr float FIRE_DMG_FRAC_DEF = 0.015f;
+	static constexpr double GUST_INTERVAL_DEF = 2.5;
+	static constexpr double GUST_INTERVAL_ENRAGED_DEF = 1.8;
+	static constexpr float GUST_FORCE_DEF = 130.0f;
+	static constexpr float WIND_ERODE_FRAC_DEF = 0.006f;
+	static constexpr double WIND_ERODE_TICK_DEF = 0.5;
+	static constexpr float BOSS_HP_DEF = 2500.0f;
 	// 天罚使多阶段（控制器驱动；Enemy Hurt 态自带阈值对此 Boss 置 0 禁用，防双重加速）
-	static constexpr float PHASE2_HP_FRAC = 0.66f;           // 二相「雷链」：扇形雷弹
-	static constexpr float PHASE3_HP_FRAC = 0.33f;           // 三相「雷域」：脚下落雷圈 + 移速/射速提升
-	static constexpr double DOMAIN_FIRST_DELAY = 1.2;        // 三相开启后首轮雷域延迟
-	static constexpr double DOMAIN_INTERVAL = 2.8;           // 雷域落雷圈间隔
-	static constexpr float DOMAIN_HIT_HALF_W = 22.0f;        // 雷域圈半宽（比普通天雷宽）
+	static constexpr float PHASE2_HP_FRAC_DEF = 0.66f;           // 二相「雷链」：扇形雷弹
+	static constexpr float PHASE3_HP_FRAC_DEF = 0.33f;           // 三相「雷域」：脚下落雷圈 + 移速/射速提升
+	static constexpr double DOMAIN_FIRST_DELAY_DEF = 1.2;        // 三相开启后首轮雷域延迟
+	static constexpr double DOMAIN_INTERVAL_DEF = 2.8;           // 雷域落雷圈间隔
+	static constexpr float DOMAIN_HIT_HALF_W_DEF = 22.0f;        // 雷域圈半宽（比普通天雷宽）
+	static inline double THUNDER_INTERVAL = THUNDER_INTERVAL_DEF;
+	static inline double THUNDER_INTERVAL_ENRAGED = THUNDER_INTERVAL_ENRAGED_DEF;
+	static inline double THUNDER_WARN = THUNDER_WARN_DEF;
+	static inline float THUNDER_HIT_HALF_W = THUNDER_HIT_HALF_W_DEF;
+	static inline float THUNDER_DMG_FRAC = THUNDER_DMG_FRAC_DEF;
+	static inline double FIRE_TICK = FIRE_TICK_DEF;
+	static inline float FIRE_DMG_FRAC = FIRE_DMG_FRAC_DEF;
+	static inline double GUST_INTERVAL = GUST_INTERVAL_DEF;
+	static inline double GUST_INTERVAL_ENRAGED = GUST_INTERVAL_ENRAGED_DEF;
+	static inline float GUST_FORCE = GUST_FORCE_DEF;
+	static inline float WIND_ERODE_FRAC = WIND_ERODE_FRAC_DEF;
+	static inline double WIND_ERODE_TICK = WIND_ERODE_TICK_DEF;
+	static inline float BOSS_HP = BOSS_HP_DEF;
+	static inline float PHASE2_HP_FRAC = PHASE2_HP_FRAC_DEF;
+	static inline float PHASE3_HP_FRAC = PHASE3_HP_FRAC_DEF;
+	static inline double DOMAIN_FIRST_DELAY = DOMAIN_FIRST_DELAY_DEF;
+	static inline double DOMAIN_INTERVAL = DOMAIN_INTERVAL_DEF;
+	static inline float DOMAIN_HIT_HALF_W = DOMAIN_HIT_HALF_W_DEF;
+	static void _ensure_tuning(); // static 幂等（定义在 tribulation_controller.cpp）
 
 	Player *_player = nullptr;
 	Node *_arena_node = nullptr;

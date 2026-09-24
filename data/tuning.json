@@ -1,0 +1,73 @@
+{
+	"tribulation": {
+		"thunder_interval": 2.2,
+		"thunder_interval_enraged": 1.4,
+		"thunder_warn": 1.0,
+		"thunder_hit_half_w": 14.0,
+		"thunder_dmg_frac": 0.12,
+		"fire_tick": 1.0,
+		"fire_dmg_frac": 0.015,
+		"gust_interval": 2.5,
+		"gust_interval_enraged": 1.8,
+		"gust_force": 130.0,
+		"wind_erode_frac": 0.006,
+		"wind_erode_tick": 0.5,
+		"boss_hp": 2500.0,
+		"phase2_hp_frac": 0.66,
+		"phase3_hp_frac": 0.33,
+		"domain_first_delay": 1.2,
+		"domain_interval": 2.8,
+		"domain_hit_half_w": 22.0
+	},
+	"nurture": {
+		"per_kill_elite_tier": 2.0,
+		"per_boss": 15.0,
+		"per_pill": 1.0,
+		"per_meditate_tick": 0.1,
+		"stage1": 300.0,
+		"stage2": 600.0,
+		"benming_max": 1000.0,
+		"benming_nurture_base": 1.2,
+		"benming_nurture_slope": 0.3,
+		"benming_awaken_base": 1.5,
+		"benming_awaken_slope": 0.5
+	},
+	"dan_du": {
+		"dose_window": 60.0,
+		"dose_toxic_at": 3,
+		"refresh_potency": 0.6,
+		"toxic_potency": 0.5
+	},
+	"aura": {
+		"wei_mana_cost": 30.0,
+		"wei_cooldown": 8.0,
+		"wei_radius": 240.0,
+		"wei_rebound_frac": 0.05,
+		"suppress_base": 2.0,
+		"suppress_per_gap": 0.5,
+		"suppress_cap": 5.0,
+		"guardian_radius": 300.0,
+		"lin_mana_cost": 45.0,
+		"lin_cooldown": 15.0,
+		"lin_radius": 200.0,
+		"lin_min_gap": 2,
+		"lin_kill_gap": 4,
+		"lin_kill_damage": 99999.0,
+		"lin_dmg_base": 2.0,
+		"lin_dmg_per_gap": 0.5,
+		"lin_rebound_frac": 0.08
+	},
+	"sustenance": {
+		"fullness_decay_per_sec": 0.3,
+		"food_mult_mortal": 1.0,
+		"food_mult_qi_refining": 1.2,
+		"safezone_hp_regen_frac": 0.01,
+		"safezone_mana_extra_mult": 1.0
+	},
+	"magnet": {
+		"range_base": 120.0,
+		"accel_base": 60.0,
+		"max_speed_base": 150.0,
+		"realm_scale": 0.3
+	}
+}

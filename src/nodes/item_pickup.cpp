@@ -1,28 +1,74 @@
 #include "item_pickup.h"
 #include "../nodes/player.h"
+#include "../utils/text.h"
 
 
 #include <godot_cpp/classes/collision_shape2d.hpp>
 #include <godot_cpp/classes/control.hpp>
 #include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/file_access.hpp>
+#include <godot_cpp/classes/json.hpp>
 #include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/polygon2d.hpp>
 #include <godot_cpp/classes/rectangle_shape2d.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/core/class_db.hpp>
+#include <godot_cpp/variant/utility_functions.hpp>
 
 import mcpp_kaki.cultivation;
 import mcpp_kaki.inventory;
 import mcpp_kaki.utils;
 namespace godot {
 
-// 纳戒磁吸基础参数（随境界缩放：base × (1 + realm × 0.3)）
-static constexpr float MAGNET_RANGE_BASE = 120.0f;
-static constexpr float MAGNET_ACCEL_BASE = 60.0f;
-static constexpr float MAGNET_MAX_SPEED_BASE = 150.0f;
+// 纳戒磁吸基础参数（随境界缩放：base × (1 + realm × MAGNET_REALM_SCALE)）
+// 数值调参外抽（data/tuning.json "magnet" 段直读，仿 AffixDatabase 先例）：
+// constexpr _DEF=兜底默认（原值保留），运行时值由 _ensure_magnet_tuning() 逐键覆盖
+// （键缺失/类型错→保留原值）。
+static constexpr float MAGNET_RANGE_BASE_DEF = 120.0f;
+static constexpr float MAGNET_ACCEL_BASE_DEF = 60.0f;
+static constexpr float MAGNET_MAX_SPEED_BASE_DEF = 150.0f;
+static constexpr float MAGNET_REALM_SCALE_DEF = 0.3f; // 速度随境倍率：1 + realm × 0.3
+static float MAGNET_RANGE_BASE = MAGNET_RANGE_BASE_DEF;
+static float MAGNET_ACCEL_BASE = MAGNET_ACCEL_BASE_DEF;
+static float MAGNET_MAX_SPEED_BASE = MAGNET_MAX_SPEED_BASE_DEF;
+static float MAGNET_REALM_SCALE = MAGNET_REALM_SCALE_DEF;
+
+static void _ensure_magnet_tuning() {
+	static bool s_loaded = false;
+	if (s_loaded)
+		return;
+	s_loaded = true;
+	const String path = "res://data/tuning.json";
+	if (!FileAccess::file_exists(path))
+		return; // JSON 不可用 → 全量兜底默认
+	String raw = FileAccess::get_file_as_string(path);
+	Variant parsed = JSON::parse_string(raw);
+	if (parsed.get_type() != Variant::DICTIONARY) {
+		UtilityFunctions::printerr(TXT("ItemPickup: tuning.json 顶层须为对象"));
+		return;
+	}
+	Dictionary root = parsed;
+	if (!root.has("magnet"))
+		return;
+	Variant sec = root["magnet"];
+	if (sec.get_type() != Variant::DICTIONARY)
+		return;
+	Dictionary d = sec;
+	auto tune = [&d](const char *p_key, float &p_out) {
+		if (!d.has(p_key))
+			return;
+		Variant v = d[p_key];
+		if (v.get_type() == Variant::FLOAT || v.get_type() == Variant::INT)
+			p_out = float(v);
+	};
+	tune("range_base", MAGNET_RANGE_BASE);
+	tune("accel_base", MAGNET_ACCEL_BASE);
+	tune("max_speed_base", MAGNET_MAX_SPEED_BASE);
+	tune("realm_scale", MAGNET_REALM_SCALE);
+}
 
 static float _magnet_mult(int p_realm) {
-	return 1.0f + float(p_realm) * 0.3f; // 炼气 1.3x → 天尊 4.6x
+	return 1.0f + float(p_realm) * MAGNET_REALM_SCALE; // 炼气 1.3x → 天尊 4.6x
 }
 
 void ItemPickup::set_item_id(const StringName &p_id) {
@@ -46,6 +92,8 @@ void ItemPickup::_bind_methods() {
 void ItemPickup::_ready() {
 	if (Engine::get_singleton()->is_editor_hint())
 		return;
+
+	_ensure_magnet_tuning(); // data/tuning.json "magnet" 段（幂等）
 
 	set_collision_layer_value(1, false);
 	set_collision_mask_value(3, true);
