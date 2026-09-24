@@ -573,6 +573,11 @@ public:
 	static const Def *find_def(const StringName &p_id);
 	static String kind_name(Kind p_k);
 
+	// 定义表运行时缓存：data/artifacts.json 优先（FileAccess 直读）+ 硬编码兜底 ARTIFACT_DEFS。
+	// ensure_defs_loaded 幂等；find_def/get_owned_list/get_all_defs 一律走运行时表 s_defs。
+	static void ensure_defs_loaded();
+	static const std::vector<Def> &get_all_defs();
+
 	// 温养阶段阈值（次要法宝：100%→120%（STAGE1）→150%（STAGE2）→圆满；本命同档位语义）
 	static constexpr float NURTURE_STAGE1 = 300.0f;
 	static constexpr float NURTURE_STAGE2 = 600.0f;
@@ -637,6 +642,9 @@ private:
 	void _on_energy_changed(int64_t p_current, int64_t p_max, double p_progress); // 打坐中：本命 +0.1/次
 
 	double _now() const;
+
+	static std::vector<Def> s_defs; // 运行时定义表（ensure_defs_loaded 首次调用填充）
+	static bool s_defs_loaded;
 };
 
 export class TitleComposer {
