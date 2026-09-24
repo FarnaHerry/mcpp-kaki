@@ -4,6 +4,8 @@ module;
 #include "../utils/text.h"
 
 #include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/file_access.hpp>
+#include <godot_cpp/classes/json.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/classes/scene_tree_timer.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
@@ -81,13 +83,66 @@ static const SkillSystem::Def SKILL_DEFS[] = {
 	  0.0f, 0.0f, 0.0f, 0.0f, SkillSystem::FX_MELEE_SWING, 3, 0.0f, Color(), 0.0f, nullptr, SkillSystem::PAS_ELEM_RESIST, 0.10f },
 };
 
-// 连招派生硬编码兜底表（与 data/skills.json 的 combo_* 字段同值；JSON 优先，此为 fallback）
+// 连招派生硬编码兜底表（与 data/combos.json 同值；JSON 优先，此为 fallback）
 static const SkillSystem::ComboDef COMBO_DEFS[] = {
 	{ "tu_jin_zhan", "po_kong_zhan", 3.0f, 1.5f, "破空接突进——剑势暴涨！" },   // 破空斩→突进斩（武技连武技）
 	{ "lei_zhou_shu", "huo_dan_shu", 3.0f, 1.4f, "火雷激荡——雷咒增幅！" },       // 火弹→雷咒（法术连法术）
 	{ "sheng_long_ji", "xuan_feng_zhan", 3.0f, 1.5f, "旋风未尽——升龙破空！" },  // 旋风斩→升龙击
 	{ "yu_jian_shu", "bing_zhui_shu", 3.0f, 1.4f, "冰锋御剑——剑气凝霄！" },     // 冰锥→御剑术
 };
+
+// 连招表 JSON 加载（data/combos.json，顶层数组，字段对齐 ComboDef：
+// skill_id=被强化技能（本次施放）、after_id=前置技能、window=窗口秒、mult=伤害倍率、text=触发提示）。
+// 兜底条目按 (skill_id, after_id) 定向键就地覆盖，新键追加（AffixDatabase/EnemyDatabase 先例）。
+// 注：data/skills.json 的 combo_* 派生字段已由此表接管（同值搬迁），不再读取。
+static void _apply_combos_json(std::vector<SkillSystem::ComboDef> &p_combos,
+		std::vector<std::string> &p_pool) {
+	const String path = "res://data/combos.json";
+	if (!FileAccess::file_exists(path))
+		return;
+	String raw = FileAccess::get_file_as_string(path);
+	Variant parsed = JSON::parse_string(raw);
+	if (parsed.get_type() != Variant::ARRAY) {
+		UtilityFunctions::printerr(TXT("SkillSystem: combos.json 顶层须为数组"));
+		return;
+	}
+	Array arr = parsed;
+	if (arr.size() == 0)
+		return;
+	p_pool.reserve(arr.size() * 3); // skill_id + after_id + text per entry（reserve 防重分配 c_str 悬垂）
+	for (int i = 0; i < arr.size(); i++) {
+		Variant v = arr[i];
+		if (v.get_type() != Variant::DICTIONARY)
+			continue;
+		Dictionary d = v;
+		if (!d.has("skill_id") || !d.has("after_id"))
+			continue;
+		p_pool.push_back(String(d["skill_id"]).utf8().get_data());
+		const char *sid = p_pool.back().c_str();
+		p_pool.push_back(String(d["after_id"]).utf8().get_data());
+		const char *aid = p_pool.back().c_str();
+		p_pool.push_back(d.has("text") ? String(d["text"]).utf8().get_data() : "");
+		const char *text = p_pool.back().empty() ? nullptr : p_pool.back().c_str();
+		float window = d.has("window") ? float(d["window"]) : 3.0f;
+		float mult = d.has("mult") ? float(d["mult"]) : 1.0f;
+
+		// 同 (skill_id, after_id) 定向键 → 覆盖兜底条目；否则追加
+		SkillSystem::ComboDef *hit = nullptr;
+		for (SkillSystem::ComboDef &c : p_combos) {
+			if (String(c.skill_id) == sid && String(c.after_id) == aid) {
+				hit = &c;
+				break;
+			}
+		}
+		if (hit) {
+			hit->window = window;
+			hit->mult = mult;
+			hit->text = text;
+		} else {
+			p_combos.push_back({ sid, aid, window, mult, text });
+		}
+	}
+}
 
 // Runtime definition cache (populated from SKILL_DEFS at first use)
 std::vector<SkillSystem::Def> SkillSystem::s_defs;
@@ -100,16 +155,20 @@ void SkillSystem::ensure_defs_loaded() {
 
 	// String storage for JSON-loaded defs (must outlive Def pointers)
 	static std::vector<std::string> s_strings;
+	// 连招 JSON 字符串池（独立于 s_strings——分开 reserve，防重分配悬垂 SSO 缓冲）
+	static std::vector<std::string> s_combo_strings;
 
 	// Try DataLoader (JSON external data) first
 	SceneTree *st = Object::cast_to<SceneTree>(Engine::get_singleton()->get_main_loop());
 	Node *scene = st ? st->get_current_scene() : nullptr;
 	DataLoader *dl = scene ? Object::cast_to<DataLoader>(scene->find_child("DataLoader", true, false)) : nullptr;
 
+	bool defs_from_json = false;
 	if (dl) {
 		Array all = dl->get_all_skills();
 		if (all.size() > 0) {
-			s_strings.reserve(all.size() * 8); // id + name + buff_id + combo_text + combo_after 若干 per skill（reserve 防 c_str 悬垂）
+			defs_from_json = true;
+			s_strings.reserve(all.size() * 8); // id + name + buff_id per skill（reserve 防 c_str 悬垂）
 			for (int i = 0; i < all.size(); i++) {
 				Dictionary d = all[i];
 				// Extract strings into persistent storage
@@ -138,39 +197,21 @@ void SkillSystem::ensure_defs_loaded() {
 				def.passive_stat = PassiveStat(int(d["passive_stat"]));
 				def.passive_value = float(d["passive_value"]);
 				s_defs.push_back(def);
-
-				// 连招派生字段（可选）：combo_after=前置技能 id（字符串或数组）、
-				// combo_window=窗口秒（默认 3.0）、combo_mult=伤害倍率、combo_text=触发提示
-				if (d.has("combo_after")) {
-					float cwindow = d.has("combo_window") ? float(d["combo_window"]) : 3.0f;
-					float cmult = d.has("combo_mult") ? float(d["combo_mult"]) : 1.0f;
-					String ctext = d.has("combo_text") ? String(d["combo_text"]) : String();
-					s_strings.push_back(ctext.utf8().get_data());
-					const char *text_ptr = s_strings.back().empty() ? nullptr : s_strings.back().c_str();
-					Variant after = d["combo_after"];
-					if (after.get_type() == Variant::ARRAY) {
-						Array arr = after;
-						for (int j = 0; j < arr.size(); j++) {
-							s_strings.push_back(String(arr[j]).utf8().get_data());
-							s_combos.push_back({ def.id, s_strings.back().c_str(), cwindow, cmult, text_ptr });
-						}
-					} else {
-						s_strings.push_back(String(after).utf8().get_data());
-						s_combos.push_back({ def.id, s_strings.back().c_str(), cwindow, cmult, text_ptr });
-					}
-				}
 			}
-			return;
+		}
+	}
+	if (!defs_from_json) {
+		// Fallback: hardcoded static array
+		for (const Def &d : SKILL_DEFS) {
+			s_defs.push_back(d);
 		}
 	}
 
-	// Fallback: hardcoded static array
-	for (const Def &d : SKILL_DEFS) {
-		s_defs.push_back(d);
-	}
+	// 连招表：硬编码兜底 + data/combos.json 覆盖/追加（JSON 优先；定向 prev(after_id)→next(skill_id)）
 	for (const ComboDef &c : COMBO_DEFS) {
 		s_combos.push_back(c);
 	}
+	_apply_combos_json(s_combos, s_combo_strings);
 }
 
 void SkillSystem::_bind_methods() {

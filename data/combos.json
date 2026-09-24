@@ -1,0 +1,6 @@
+[
+	{ "skill_id": "tu_jin_zhan",   "after_id": "po_kong_zhan",   "window": 3.0, "mult": 1.5, "text": "破空接突进——剑势暴涨！" },
+	{ "skill_id": "lei_zhou_shu",  "after_id": "huo_dan_shu",    "window": 3.0, "mult": 1.4, "text": "火雷激荡——雷咒增幅！" },
+	{ "skill_id": "sheng_long_ji", "after_id": "xuan_feng_zhan", "window": 3.0, "mult": 1.5, "text": "旋风未尽——升龙破空！" },
+	{ "skill_id": "yu_jian_shu",   "after_id": "bing_zhui_shu",  "window": 3.0, "mult": 1.4, "text": "冰锋御剑——剑气凝霄！" }
+]
