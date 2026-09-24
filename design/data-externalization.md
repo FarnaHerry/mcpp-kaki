@@ -22,8 +22,10 @@
 | P4 | 境界授予 | data/grants.json | Player::ensure_grants_loaded 表驱动 + 原 if 链逐字兜底 | ✅ (023) |
 | P4 | 技能连招 | data/combos.json | SkillSystem 定向 (prev→next) 覆盖/追加 + COMBO_DEFS 兜底（skills.json combo_* 退役死数据） | ✅ (023) |
 | P4 | 寿元 | data/realms.json 每境 `lifespan` | SoulLedgerSystem::lifespan_for_realm 直读 + TABLE 兜底（天尊 ∞ 判定留码） | ✅ (023) |
+| P4 | 熔炼炉 | data/smithing.json | GameMenu 熔炼炉区 `_smith()` 直读（equip_cast/artifact_cast/enhance 三段）+ 原表兜底 | ✅ (024) |
+| P4 | 调参常量 | data/tuning.json | 六段（tribulation/nurture/dan_du/aura/sustenance/magnet）各系统直读逐键覆盖 + constexpr 兜底 | ✅ (024) |
 | P4 | 输入映射 | user://keybinds.cfg（运行时覆盖） | GameMenu 设置页「键位」子页 → InputMap 改绑 | ✅ |
-| P5 | UI 文本/布局 | — | 待做（需本地化框架/UI 皮肤）；2026-09-24 首轮 LOC 覆盖进行中 | ❌ |
+| P5 | UI 文本/布局 | data/locale_en.json（367→738 键） | LOC() 渲染期包裹+language_changed 重取；action 名/存档键/flag 键红线裸化（62+21+8 处解包）；遗留：物品 desc EN 47 条、GDScript 动态拼串 | 🟡 首轮 ✅ (024) |
 
 > 核心模式：每个系统增加 `static std::vector<Def> s_defs` + `static bool s_loaded` +
 > `static void ensure_loaded()` 惰性填充。DataLoader 可用时走 JSON，否则退回硬编码静态数组。
@@ -449,7 +451,7 @@ GameMenu 设置页「键位」行（X 进入子页，3 列 × 12 行）覆盖移
 | **P4** | Player 属性 | 需引入角色模板后才可抽 | ❌ |
 | **P4** | 敌人 spawn 坐标（世界布局） | 洲脚本 GDScript 手写坐标（world_common + 各洲脚本） | ❌ |
 | **P4** | 输入映射 | 键位配置 UI（设置页子页 + keybinds.cfg 运行时覆盖） | ✅ |
-| **P5** | UI 文本/布局 | 需本地化框架或 UI 皮肤系统；2026-09-24 首轮 LOC 覆盖进行中 | ❌ |
+| **P5** | UI 文本/布局 | 首轮已落（session 024：738 键+红线解包，见实施状态表）；剩余 desc 长文本/GDScript 拼串/皮肤 | 🟡 |
 
 ---
 

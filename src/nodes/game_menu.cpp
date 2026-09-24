@@ -1963,21 +1963,21 @@ void GameMenu::_handle_forge_input() {
 
 	if (_forge_sidebar_focus) {
 		// 侧边栏焦点模式：↑/↓ 切子页，X/↓ 确认返回内容
-		if (input->is_action_just_pressed(LOC("up"))) {
+		if (input->is_action_just_pressed("up")) {
 			_forge_sub = (_forge_sub - 1 + SUB_COUNT) % SUB_COUNT;
 			_forge_sel = 0;
 			_forge_msg = String();
 			_rebuild_page();
 			return;
 		}
-		if (input->is_action_just_pressed(LOC("down"))) {
+		if (input->is_action_just_pressed("down")) {
 			_forge_sub = (_forge_sub + 1) % SUB_COUNT;
 			_forge_sel = 0;
 			_forge_msg = String();
 			_rebuild_page();
 			return;
 		}
-		if (input->is_action_just_pressed(LOC("interact"))) {
+		if (input->is_action_just_pressed("interact")) {
 			// X 确认 → 返回内容区
 			_forge_sidebar_focus = false;
 			_forge_sel = 0;
@@ -2006,7 +2006,7 @@ void GameMenu::_handle_forge_alchemy_input() {
 	if (count == 0) return;
 	_forge_sel = CLAMP(_forge_sel, 0, count - 1);
 	static const int GRID_COLS = 3;
-	if (input->is_action_just_pressed(LOC("up"))) {
+	if (input->is_action_just_pressed("up")) {
 		// 顶行 ↑ 进侧边栏子页选择
 		if (_forge_sel < GRID_COLS) {
 			_forge_sidebar_focus = true;
@@ -2016,11 +2016,11 @@ void GameMenu::_handle_forge_alchemy_input() {
 		_forge_sel = Math::max(0, _forge_sel - GRID_COLS);
 		_rebuild_page();
 	}
-	if (input->is_action_just_pressed(LOC("down"))) {
+	if (input->is_action_just_pressed("down")) {
 		_forge_sel = Math::min(count - 1, _forge_sel + GRID_COLS);
 		_rebuild_page();
 	}
-	if (input->is_action_just_pressed(LOC("left"))) {
+	if (input->is_action_just_pressed("left")) {
 		if (_forge_sel % GRID_COLS > 0) {
 			_forge_sel = Math::max(0, _forge_sel - 1);
 			_rebuild_page();
@@ -2030,13 +2030,13 @@ void GameMenu::_handle_forge_alchemy_input() {
 			_rebuild_page();
 		}
 	}
-	if (input->is_action_just_pressed(LOC("right"))) {
+	if (input->is_action_just_pressed("right")) {
 		if (_forge_sel % GRID_COLS < GRID_COLS - 1) {
 			_forge_sel = Math::min(count - 1, _forge_sel + 1);
 			_rebuild_page();
 		}
 	}
-	if (input->is_action_just_pressed(LOC("interact"))) {
+	if (input->is_action_just_pressed("interact")) {
 		int sel = CLAMP(_forge_sel, 0, (int)recipes.size() - 1);
 		if (sel >= 0) {
 			StringName id = Dictionary(recipes[sel])["id"];
@@ -2055,7 +2055,7 @@ void GameMenu::_handle_forge_equip_input() {
 	const int recipe_count = (int)recipes.size();
 	if (recipe_count == 0) return;
 	_forge_sel = CLAMP(_forge_sel, 0, recipe_count - 1);
-	if (input->is_action_just_pressed(LOC("up"))) {
+	if (input->is_action_just_pressed("up")) {
 		// 首行 ↑ 进侧边栏子页选择
 		if (_forge_sel == 0) {
 			_forge_sidebar_focus = true;
@@ -2065,11 +2065,11 @@ void GameMenu::_handle_forge_equip_input() {
 		_forge_sel = Math::max(0, _forge_sel - 1);
 		_rebuild_page();
 	}
-	if (input->is_action_just_pressed(LOC("down"))) {
+	if (input->is_action_just_pressed("down")) {
 		_forge_sel = Math::min(recipe_count - 1, _forge_sel + 1);
 		_rebuild_page();
 	}
-	if (input->is_action_just_pressed(LOC("left"))) {
+	if (input->is_action_just_pressed("left")) {
 		if (_forge_sel == 0) {
 			_forge_sidebar_focus = true;
 			_rebuild_page();
@@ -2078,11 +2078,11 @@ void GameMenu::_handle_forge_equip_input() {
 		_forge_sel = Math::max(0, _forge_sel - 1);
 		_rebuild_page();
 	}
-	if (input->is_action_just_pressed(LOC("right"))) {
+	if (input->is_action_just_pressed("right")) {
 		_forge_sel = Math::min(recipe_count - 1, _forge_sel + 1);
 		_rebuild_page();
 	}
-	if (input->is_action_just_pressed(LOC("interact"))) {
+	if (input->is_action_just_pressed("interact")) {
 		Inventory *inv = _player ? _player->get_inventory() : nullptr;
 		if (!inv) return;
 		const SmithCastRecipe &r = recipes[CLAMP(_forge_sel, 0, recipe_count - 1)];
@@ -2110,7 +2110,7 @@ void GameMenu::_handle_forge_artifact_input() {
 	const int recipe_count = (int)recipes.size();
 	if (recipe_count == 0) return;
 	_forge_sel = CLAMP(_forge_sel, 0, recipe_count - 1);
-	if (input->is_action_just_pressed(LOC("up"))) {
+	if (input->is_action_just_pressed("up")) {
 		// 首行 ↑ 进侧边栏子页选择
 		if (_forge_sel == 0) {
 			_forge_sidebar_focus = true;
@@ -2120,11 +2120,11 @@ void GameMenu::_handle_forge_artifact_input() {
 		_forge_sel = Math::max(0, _forge_sel - 1);
 		_rebuild_page();
 	}
-	if (input->is_action_just_pressed(LOC("down"))) {
+	if (input->is_action_just_pressed("down")) {
 		_forge_sel = Math::min(recipe_count - 1, _forge_sel + 1);
 		_rebuild_page();
 	}
-	if (input->is_action_just_pressed(LOC("left"))) {
+	if (input->is_action_just_pressed("left")) {
 		if (_forge_sel == 0) {
 			_forge_sidebar_focus = true;
 			_rebuild_page();
@@ -2133,11 +2133,11 @@ void GameMenu::_handle_forge_artifact_input() {
 		_forge_sel = Math::max(0, _forge_sel - 1);
 		_rebuild_page();
 	}
-	if (input->is_action_just_pressed(LOC("right"))) {
+	if (input->is_action_just_pressed("right")) {
 		_forge_sel = Math::min(recipe_count - 1, _forge_sel + 1);
 		_rebuild_page();
 	}
-	if (input->is_action_just_pressed(LOC("interact"))) {
+	if (input->is_action_just_pressed("interact")) {
 		Inventory *inv = _player ? _player->get_inventory() : nullptr;
 		ArtifactSystem *arts = _player ? _player->get_artifacts() : nullptr;
 		if (!inv || !arts) return;
@@ -2215,7 +2215,7 @@ void GameMenu::_handle_forge_upgrade_input() {
 	if (count == 0) return;
 	_forge_sel = CLAMP(_forge_sel, 0, count - 1);
 
-	if (input->is_action_just_pressed(LOC("up"))) {
+	if (input->is_action_just_pressed("up")) {
 		if (_forge_sel == 0) {
 			_forge_sidebar_focus = true;
 			_rebuild_page();
@@ -2224,12 +2224,12 @@ void GameMenu::_handle_forge_upgrade_input() {
 		_forge_sel = Math::max(0, _forge_sel - 1);
 		_rebuild_page();
 	}
-	if (input->is_action_just_pressed(LOC("down"))) {
+	if (input->is_action_just_pressed("down")) {
 		_forge_sel = Math::min(count - 1, _forge_sel + 1);
 		_rebuild_page();
 	}
 
-	if (input->is_action_just_pressed(LOC("interact"))) {
+	if (input->is_action_just_pressed("interact")) {
 		// 强化费用/加成/上限：smithing.json enhance 段（默认值行为与原硬编码逐字一致）
 		const SmithEnhanceDefs &enh = _smith().enhance;
 		StringName eid = equips[_forge_sel].id;
