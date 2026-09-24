@@ -278,7 +278,7 @@ void GameHUD::_create_xp_bar() {
 
 void GameHUD::_create_fullness_bar() {
     _build_bar(this, FULLNESS_BAR_Y, _fullness_color,
-               _fullness_bg, _fullness_fill, _fullness_label, TXT("饱食 100/100"));
+               _fullness_bg, _fullness_fill, _fullness_label, LOC("饱食 100/100"));
     _fullness_bg->set_name("FullnessBg");
     _fullness_fill->set_name("FullnessFill");
     _fullness_label->set_name("FullnessLabel");
@@ -1401,12 +1401,12 @@ void GameHUD::on_ledger_inspect(const Dictionary &p_data, bool p_show) {
     _ledger_overlay->set_visible(p_show);
     if (!p_show)
         return;
-    String origin = p_data.get("origin", TXT("后天修炼"));
-    String body = p_data.get("original_body", TXT("凡人"));
+    String origin = LOC(String(p_data.get("origin", TXT("后天修炼"))));
+    String body = LOC(String(p_data.get("original_body", TXT("凡人"))));
     int ledger_life = int(p_data.get("ledger_lifespan", 0));
     int actual_life = int(p_data.get("actual_lifespan", 0));
     bool protected_ = bool(p_data.get("soul_protection", false));
-    String realm = p_data.get("realm_name", String());
+    String realm = LOC(String(p_data.get("realm_name", String())));
 
     if (bool(p_data.get("trial", false))) {
         // 秦广王审判叙事（初次核簿 → 放还阳/划名提示）
@@ -1470,7 +1470,9 @@ void GameHUD::on_combo_ended(int p_final_count) {
 void GameHUD::on_interaction_prompt(const String &p_text, bool p_show) {
     _prompt_showing = p_show;
     if (!_interact_label) return;
-    _interact_label->set_text(p_text);
+    // 渲染期兜底翻译：部分上游（NarrativeNode.prompt 等）传原始中文，
+    // 已在源头 LOC 的文本查表不中会原样回落，双重包裹无害
+    _interact_label->set_text(LOC(p_text));
     _interact_label->set_visible(_hud_visible && p_show);
 }
 

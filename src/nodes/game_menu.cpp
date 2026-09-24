@@ -717,21 +717,21 @@ void GameMenu::_handle_skill_input() {
 	if (count == 0) return;
 	_skill_sel = CLAMP(_skill_sel, 0, count - 1);
 	static const int GRID_COLS = 3; // 与 _build_skill_page 一致
-	if (input->is_action_just_pressed(LOC("up"))) {
+	if (input->is_action_just_pressed("up")) {
 		_skill_sel = Math::max(0, _skill_sel - GRID_COLS);
 		_rebuild_page();
 	}
-	if (input->is_action_just_pressed(LOC("down"))) {
+	if (input->is_action_just_pressed("down")) {
 		_skill_sel = Math::min(count - 1, _skill_sel + GRID_COLS);
 		_rebuild_page();
 	}
-	if (input->is_action_just_pressed(LOC("left"))) {
+	if (input->is_action_just_pressed("left")) {
 		int row = _skill_sel / GRID_COLS;
 		int col = Math::max(0, _skill_sel % GRID_COLS - 1);
 		_skill_sel = Math::min(count - 1, row * GRID_COLS + col);
 		_rebuild_page();
 	}
-	if (input->is_action_just_pressed(LOC("right"))) {
+	if (input->is_action_just_pressed("right")) {
 		int row = _skill_sel / GRID_COLS;
 		int col = Math::min(GRID_COLS - 1, _skill_sel % GRID_COLS + 1);
 		_skill_sel = Math::min(count - 1, row * GRID_COLS + col);
@@ -745,7 +745,7 @@ void GameMenu::_handle_skill_input() {
 	static const int SLOT_IDX[12] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
 	static const char *SLOT_KEYS[12] = { "Q", "W", "E", "R", "T", "Y", "A", "S", "D", "F", "G", "H" };
 	for (int i = 0; i < 12; i++) {
-		if (input->is_action_just_pressed(LOC(SLOT_ACTIONS[i]))) {
+		if (input->is_action_just_pressed(SLOT_ACTIONS[i])) {
 			Dictionary k = actives[_skill_sel];
 			StringName id = StringName(String(k.get("id", "")));
 			if (skills->assign(SLOT_IDX[i], id)) {
@@ -950,21 +950,21 @@ void GameMenu::_handle_artifact_input() {
 	if (count == 0) return;
 	_artifact_sel = CLAMP(_artifact_sel, 0, count - 1);
 	static const int GRID_COLS = 3; // 与 _build_artifact_page 一致
-	if (input->is_action_just_pressed(LOC("up"))) {
+	if (input->is_action_just_pressed("up")) {
 		_artifact_sel = Math::max(0, _artifact_sel - GRID_COLS);
 		_rebuild_page();
 	}
-	if (input->is_action_just_pressed(LOC("down"))) {
+	if (input->is_action_just_pressed("down")) {
 		_artifact_sel = Math::min(count - 1, _artifact_sel + GRID_COLS);
 		_rebuild_page();
 	}
-	if (input->is_action_just_pressed(LOC("left"))) {
+	if (input->is_action_just_pressed("left")) {
 		int row = _artifact_sel / GRID_COLS;
 		int col = Math::max(0, _artifact_sel % GRID_COLS - 1);
 		_artifact_sel = Math::min(count - 1, row * GRID_COLS + col);
 		_rebuild_page();
 	}
-	if (input->is_action_just_pressed(LOC("right"))) {
+	if (input->is_action_just_pressed("right")) {
 		int row = _artifact_sel / GRID_COLS;
 		int col = Math::min(GRID_COLS - 1, _artifact_sel % GRID_COLS + 1);
 		_artifact_sel = Math::min(count - 1, row * GRID_COLS + col);
@@ -978,7 +978,7 @@ void GameMenu::_handle_artifact_input() {
 	static const char *KEYS[ArtifactSystem::MAX_SLOTS] = { "A", "S", "D", "F", "G", "H" };
 
 	// X：设本命法宝（觉醒锁定后拒绝；换本命会重置温养）
-	if (input->is_action_just_pressed(LOC("interact"))) {
+	if (input->is_action_just_pressed("interact")) {
 		StringName cur = arts->get_slot_artifact(0);
 		if (cur == id) {
 			_artifact_msg = kname + LOC(" 已是本命法宝");
@@ -997,7 +997,7 @@ void GameMenu::_handle_artifact_input() {
 	// A~H：装入对应法宝槽（A=本命槽同 X 规则；次要槽越限提示飞升解锁）
 	static const char *SLOT_ACTIONS[6] = { "skill_a", "skill_s", "skill_d", "skill_f", "skill_g", "skill_h" };
 	for (int i = 0; i < 6; i++) {
-		if (!input->is_action_just_pressed(LOC(SLOT_ACTIONS[i]))) continue;
+		if (!input->is_action_just_pressed(SLOT_ACTIONS[i])) continue;
 		if (i >= limit) {
 			_artifact_msg = LOC("[") + KEYS[i] + LOC("] 槽飞升后解锁");
 		} else if (i == 0) {
@@ -1119,7 +1119,7 @@ void GameMenu::_handle_sect_input() {
 	if (!sect) return;
 	Input *input = Input::get_singleton();
 	if (sect->in_sect()) {
-		if (input->is_action_just_pressed(LOC("interact"))) {
+		if (input->is_action_just_pressed("interact")) {
 			String name = LOC(String(sect->get_sect_info().get("name", "")));
 			_player->leave_sect();
 			_sect_msg = LOC("已叛出") + name;
@@ -1132,15 +1132,15 @@ void GameMenu::_handle_sect_input() {
 	int count = list.size();
 	if (count == 0) return;
 	_sect_sel = CLAMP(_sect_sel, 0, count - 1);
-	if (input->is_action_just_pressed(LOC("up"))) {
+	if (input->is_action_just_pressed("up")) {
 		_sect_sel = (_sect_sel - 1 + count) % count;
 		_rebuild_page();
 	}
-	if (input->is_action_just_pressed(LOC("down"))) {
+	if (input->is_action_just_pressed("down")) {
 		_sect_sel = (_sect_sel + 1) % count;
 		_rebuild_page();
 	}
-	if (input->is_action_just_pressed(LOC("interact"))) {
+	if (input->is_action_just_pressed("interact")) {
 		Dictionary c = list[_sect_sel];
 		StringName id = StringName(String(c["id"]));
 		if (_player->join_sect(id)) {
@@ -1360,15 +1360,15 @@ void GameMenu::_handle_travel_input() {
 	int count = list.size();
 	if (count == 0) return;
 	_travel_sel = CLAMP(_travel_sel, 0, count - 1);
-	if (input->is_action_just_pressed(LOC("up")) || input->is_action_just_pressed(LOC("left"))) {
+	if (input->is_action_just_pressed("up") || input->is_action_just_pressed("left")) {
 		_travel_sel = (_travel_sel - 1 + count) % count;
 		_rebuild_page();
 	}
-	if (input->is_action_just_pressed(LOC("down")) || input->is_action_just_pressed(LOC("right"))) {
+	if (input->is_action_just_pressed("down") || input->is_action_just_pressed("right")) {
 		_travel_sel = (_travel_sel + 1) % count;
 		_rebuild_page();
 	}
-	if (input->is_action_just_pressed(LOC("interact"))) {
+	if (input->is_action_just_pressed("interact")) {
 		Dictionary c = list[_travel_sel];
 		String id = c["id"];
 		if (bool(c["current"])) {
@@ -2300,7 +2300,7 @@ static const char *BESTIARY_NOTE_CYCLE[4] = { "", "★重要", "待收集", "已
 // 备注档中文名 → 序号（未命中返回 -1）
 static int _bestiary_note_index(const String &p_note) {
 	for (int i = 0; i < 4; i++) {
-		if (LOC(BESTIARY_NOTE_CYCLE[i]) == p_note) {
+		if (TXT(BESTIARY_NOTE_CYCLE[i]) == p_note) {
 			return i;
 		}
 	}
@@ -2413,7 +2413,7 @@ void GameMenu::_build_bestiary_page() {
 		if (note.is_empty()) {
 			note_line += LOC("（无，X 循环标记）");
 		} else {
-			note_line += note;
+			note_line += LOC(note);
 		}
 		add_line(note_line, 40.0f, 184.0f, 8, dim_c);
 	}
@@ -2433,25 +2433,25 @@ void GameMenu::_handle_bestiary_input() {
 
 	if (_bestiary_cat_focus) {
 		// 分类焦点模式：←/→ 切分类，↓/X 返回内容
-		if (input->is_action_just_pressed(LOC("left"))) {
+		if (input->is_action_just_pressed("left")) {
 			_bestiary_cat = (_bestiary_cat - 1 + 3) % 3;
 			_bestiary_sel = 0;
 			_rebuild_page();
 			return;
 		}
-		if (input->is_action_just_pressed(LOC("right"))) {
+		if (input->is_action_just_pressed("right")) {
 			_bestiary_cat = (_bestiary_cat + 1) % 3;
 			_bestiary_sel = 0;
 			_rebuild_page();
 			return;
 		}
-		if (input->is_action_just_pressed(LOC("down"))) {
+		if (input->is_action_just_pressed("down")) {
 			_bestiary_cat_focus = false;
 			_bestiary_sel = 0;
 			_rebuild_page();
 			return;
 		}
-		if (input->is_action_just_pressed(LOC("interact"))) {
+		if (input->is_action_just_pressed("interact")) {
 			_bestiary_cat_focus = false;
 			_bestiary_sel = 0;
 			_rebuild_page();
@@ -2468,7 +2468,7 @@ void GameMenu::_handle_bestiary_input() {
 		case 2: seen_ids = p->get_seen_equipment(); break;
 	}
 	// 内容区 ↑ 顶行 → 进分类焦点模式
-	if (input->is_action_just_pressed(LOC("up"))) {
+	if (input->is_action_just_pressed("up")) {
 		if (_bestiary_sel < 3 || seen_ids.is_empty()) {
 			_bestiary_cat_focus = true;
 			_rebuild_page();
@@ -2476,7 +2476,7 @@ void GameMenu::_handle_bestiary_input() {
 		}
 	}
 	// ← 最左列 → 进分类焦点模式（空分类也能进）
-	if (input->is_action_just_pressed(LOC("left"))) {
+	if (input->is_action_just_pressed("left")) {
 		if (_bestiary_sel % 3 == 0 || seen_ids.is_empty()) {
 			_bestiary_cat_focus = true;
 			_rebuild_page();
@@ -2496,21 +2496,21 @@ void GameMenu::_handle_bestiary_input() {
 	_bestiary_sel = CLAMP(_bestiary_sel, 0, count - 1);
 
 	static const int GRID_COLS = 3;
-	if (input->is_action_just_pressed(LOC("up"))) {
+	if (input->is_action_just_pressed("up")) {
 		_bestiary_sel = Math::max(0, _bestiary_sel - GRID_COLS);
 		_rebuild_page();
 	}
-	if (input->is_action_just_pressed(LOC("down"))) {
+	if (input->is_action_just_pressed("down")) {
 		_bestiary_sel = Math::min(count - 1, _bestiary_sel + GRID_COLS);
 		_rebuild_page();
 	}
-	if (input->is_action_just_pressed(LOC("left"))) {
+	if (input->is_action_just_pressed("left")) {
 		if (_bestiary_sel % GRID_COLS > 0) {
 			_bestiary_sel = Math::max(0, _bestiary_sel - 1);
 			_rebuild_page();
 		}
 	}
-	if (input->is_action_just_pressed(LOC("right"))) {
+	if (input->is_action_just_pressed("right")) {
 		if (_bestiary_sel % GRID_COLS < GRID_COLS - 1) {
 			_bestiary_sel = Math::min(count - 1, _bestiary_sel + 1);
 			_rebuild_page();
@@ -2518,15 +2518,15 @@ void GameMenu::_handle_bestiary_input() {
 	}
 
 	// X：循环备注标记 无 → ★重要 → 待收集 → 已收集 → 无
-	if (input->is_action_just_pressed(LOC("interact"))) {
+	if (input->is_action_just_pressed("interact")) {
 		String id = seen_ids[_bestiary_sel];
 		String cur = p->get_note(id);
 		int idx = _bestiary_note_index(cur);
 		if (idx < 0) idx = 0;
 		int next_idx = (idx + 1) % 4;
-		String nv = LOC(BESTIARY_NOTE_CYCLE[next_idx]);
+		String nv = TXT(BESTIARY_NOTE_CYCLE[next_idx]);
 		p->set_note(id, nv);
-		_bestiary_msg = LOC("标记: ") + nv;
+		_bestiary_msg = LOC("标记: ") + LOC(nv);
 		_bestiary_msg_t = 2.0f;
 		_rebuild_page();
 	}
@@ -2653,28 +2653,28 @@ void GameMenu::_handle_settings_input() {
 		return;
 	}
 
-	if (input->is_action_just_pressed(LOC("up"))) {
+	if (input->is_action_just_pressed("up")) {
 		_settings_sel = (_settings_sel + SETTINGS_ROWS - 1) % SETTINGS_ROWS;
 		_refresh_settings_page();
 	}
-	if (input->is_action_just_pressed(LOC("down"))) {
+	if (input->is_action_just_pressed("down")) {
 		_settings_sel = (_settings_sel + 1) % SETTINGS_ROWS;
 		_refresh_settings_page();
 	}
 	if (_settings_sel == 0) {
-		if (input->is_action_just_pressed(LOC("left"))) {
+		if (input->is_action_just_pressed("left")) {
 			_volume = CLAMP(_volume - 0.1f, 0.0f, 1.0f);
 			_apply_volume(); _save_settings(); _refresh_settings_page();
 		}
-		if (input->is_action_just_pressed(LOC("right"))) {
+		if (input->is_action_just_pressed("right")) {
 			_volume = CLAMP(_volume + 0.1f, 0.0f, 1.0f);
 			_apply_volume(); _save_settings(); _refresh_settings_page();
 		}
 	}
 	// Row 1: language toggle
 	if (_settings_sel == 1) {
-		if (input->is_action_just_pressed(LOC("left")) || input->is_action_just_pressed(LOC("right")) ||
-			input->is_action_just_pressed(LOC("interact"))) {
+		if (input->is_action_just_pressed("left") || input->is_action_just_pressed("right") ||
+			input->is_action_just_pressed("interact")) {
 			Localization *loc = Localization::get_singleton();
 			if (loc) {
 				String cur = loc->get_language();
@@ -2686,8 +2686,8 @@ void GameMenu::_handle_settings_input() {
 	}
 	// Row 2: window mode cycle
 	if (_settings_sel == 2) {
-		if (input->is_action_just_pressed(LOC("left")) || input->is_action_just_pressed(LOC("right"))) {
-			int dir = input->is_action_just_pressed(LOC("left")) ? -1 : 1;
+		if (input->is_action_just_pressed("left") || input->is_action_just_pressed("right")) {
+			int dir = input->is_action_just_pressed("left") ? -1 : 1;
 			_window_mode_opt = (_window_mode_opt + dir + 3) % 3;
 			_apply_display(); _save_settings(); _refresh_settings_page();
 		}
@@ -2696,8 +2696,8 @@ void GameMenu::_handle_settings_input() {
 
 	// Row 3: 分辨率（原生分辨率，全窗口模式可调）
 	if (_settings_sel == 3) {
-		if (input->is_action_just_pressed(LOC("left")) || input->is_action_just_pressed(LOC("right"))) {
-			int dir = input->is_action_just_pressed(LOC("left")) ? -1 : 1;
+		if (input->is_action_just_pressed("left") || input->is_action_just_pressed("right")) {
+			int dir = input->is_action_just_pressed("left") ? -1 : 1;
 			_fs_res_idx = (_fs_res_idx + dir + FS_RES_COUNT) % FS_RES_COUNT;
 			_apply_display(); _save_settings(); _refresh_settings_page();
 		}
@@ -2706,8 +2706,8 @@ void GameMenu::_handle_settings_input() {
 
 	// Row 4: 帧率上限（动态档：≤ 系统刷新率 + 无限）
 	if (_settings_sel == 4) {
-		if (input->is_action_just_pressed(LOC("left")) || input->is_action_just_pressed(LOC("right"))) {
-			int dir = input->is_action_just_pressed(LOC("left")) ? -1 : 1;
+		if (input->is_action_just_pressed("left") || input->is_action_just_pressed("right")) {
+			int dir = input->is_action_just_pressed("left") ? -1 : 1;
 			int n = (int)_fps_opts.size();
 			if (n > 0) {
 				int idx = 0;
@@ -2722,13 +2722,13 @@ void GameMenu::_handle_settings_input() {
 
 	// Row 5: 垂直同步（关/开）
 	if (_settings_sel == 5) {
-		if (input->is_action_just_pressed(LOC("left")) || input->is_action_just_pressed(LOC("right"))) {
+		if (input->is_action_just_pressed("left") || input->is_action_just_pressed("right")) {
 			_vsync = (_vsync + 1) % 2;
 			_apply_vsync(); _save_settings(); _refresh_settings_page();
 		}
 		return;
 	}
-	if (input->is_action_just_pressed(LOC("interact"))) {
+	if (input->is_action_just_pressed("interact")) {
 		switch (_settings_sel) {
 			case 0:
 				_volume = CLAMP(_volume + 0.1f, 0.0f, 1.0f);
@@ -2837,14 +2837,14 @@ void GameMenu::_apply_render_scale() {
 void GameMenu::_load_settings() {
 	Ref<ConfigFile> cfg;
 	cfg.instantiate();
-	if (cfg->load(LOC("user://settings.cfg")) == OK) {
-		_volume = CLAMP(float(cfg->get_value(LOC("audio"), LOC("master_volume"), 0.8f)), 0.0f, 1.0f);
+	if (cfg->load("user://settings.cfg") == OK) {
+		_volume = CLAMP(float(cfg->get_value("audio", "master_volume", 0.8f)), 0.0f, 1.0f);
 		// 窗口模式档位迁移（旧 4 档→新 3 档）：0窗口 1无边框窗口→无边框全屏 2全屏→无边框全屏 3独占→独占
-		int wm = int(cfg->get_value(LOC("display"), LOC("window_mode"), 0));
+		int wm = int(cfg->get_value("display", "window_mode", 0));
 		_window_mode_opt = wm <= 0 ? 0 : (wm >= 3 ? 2 : 1);
-		_fs_res_idx = CLAMP(int(cfg->get_value(LOC("display"), LOC("res_idx"), 2)), 0, FS_RES_COUNT - 1);
-		_max_fps = CLAMP(int(cfg->get_value(LOC("display"), LOC("max_fps"), -1)), -1, 1000);
-		_vsync = CLAMP(int(cfg->get_value(LOC("display"), LOC("vsync"), 1)), 0, 1);
+		_fs_res_idx = CLAMP(int(cfg->get_value("display", "res_idx", 2)), 0, FS_RES_COUNT - 1);
+		_max_fps = CLAMP(int(cfg->get_value("display", "max_fps", -1)), -1, 1000);
+		_vsync = CLAMP(int(cfg->get_value("display", "vsync", 1)), 0, 1);
 		// 旧档 resolution_idx/resolution_custom/custom_w/custom_h/scale_mode/aspect_idx/fps_idx
 		// 不再读取（存档重写时随新 ConfigFile 自动消失）
 	}
@@ -3111,10 +3111,10 @@ void GameMenu::_handle_keybinds_input() {
 	int col = _keybind_sel / KEYBIND_COL_ROWS;
 	int row = _keybind_sel % KEYBIND_COL_ROWS;
 	int ncol = col, nrow = row;
-	if (input->is_action_just_pressed(LOC("up")))    nrow = row > 0 ? row - 1 : 0;
-	if (input->is_action_just_pressed(LOC("down")))  nrow = MIN(row + 1, _keybind_col_rows(col) - 1);
-	if (input->is_action_just_pressed(LOC("left")))  ncol = col > 0 ? col - 1 : 0;
-	if (input->is_action_just_pressed(LOC("right"))) ncol = MIN(col + 1, KEYBIND_COLS - 1);
+	if (input->is_action_just_pressed("up"))    nrow = row > 0 ? row - 1 : 0;
+	if (input->is_action_just_pressed("down"))  nrow = MIN(row + 1, _keybind_col_rows(col) - 1);
+	if (input->is_action_just_pressed("left"))  ncol = col > 0 ? col - 1 : 0;
+	if (input->is_action_just_pressed("right")) ncol = MIN(col + 1, KEYBIND_COLS - 1);
 	if (ncol != col) nrow = MIN(nrow, _keybind_col_rows(ncol) - 1); // 换列钳制行
 	int nsel = ncol * KEYBIND_COL_ROWS + nrow;
 	if (nsel != _keybind_sel) {
@@ -3122,7 +3122,7 @@ void GameMenu::_handle_keybinds_input() {
 		_refresh_settings_page();
 	}
 
-	if (input->is_action_just_pressed(LOC("interact"))) {
+	if (input->is_action_just_pressed("interact")) {
 		if (_keybind_sel == KEYBIND_COUNT) {
 			_reset_keybinds();
 			_keybind_msg = LOC("已恢复默认键位");
@@ -3167,7 +3167,7 @@ void GameMenu::_process(double p_delta) {
 		_apply_vsync();
 	}
 	if (!_open) {
-		if (input->is_action_just_pressed(LOC("menu"))) {
+		if (input->is_action_just_pressed("menu")) {
 			// 储物面板打开时 ESC 归它处理（关面板），菜单不抢
 			Node *scene = get_tree()->get_current_scene();
 			StoragePanel *sp = scene ? Object::cast_to<StoragePanel>(scene->find_child("StoragePanel", true, false)) : nullptr;
@@ -3258,7 +3258,7 @@ void GameMenu::_process(double p_delta) {
 		}
 	}
 
-	if (input->is_action_just_pressed(LOC("menu"))) {
+	if (input->is_action_just_pressed("menu")) {
 		if (_keybind_open) {
 			if (_keybind_capture >= 0) {
 				// 捕获期的 ESC（合成 action 路径）：取消捕获，不退层
@@ -3279,11 +3279,11 @@ void GameMenu::_process(double p_delta) {
 
 	switch (_page) {
 		case PAGE_INVENTORY:
-			if (input->is_action_just_pressed(LOC("up")))    _inv_panel->ext_navigate(-1);
-			if (input->is_action_just_pressed(LOC("down")))  _inv_panel->ext_navigate(+1);
-			if (input->is_action_just_pressed(LOC("left")))  _inv_panel->ext_navigate_h(-1);
-			if (input->is_action_just_pressed(LOC("right"))) _inv_panel->ext_navigate_h(+1);
-			if (input->is_action_just_pressed(LOC("interact"))) _inv_panel->ext_use();
+			if (input->is_action_just_pressed("up"))    _inv_panel->ext_navigate(-1);
+			if (input->is_action_just_pressed("down"))  _inv_panel->ext_navigate(+1);
+			if (input->is_action_just_pressed("left"))  _inv_panel->ext_navigate_h(-1);
+			if (input->is_action_just_pressed("right")) _inv_panel->ext_navigate_h(+1);
+			if (input->is_action_just_pressed("interact")) _inv_panel->ext_use();
 			break;
 		case PAGE_ALCHEMY:
 			_handle_forge_input();
