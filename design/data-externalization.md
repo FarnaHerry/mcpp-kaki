@@ -1,5 +1,5 @@
 
-## 实施状态 (2026-08-28)
+## 实施状态 (2026-09-24 更新：session 022-023 清零写死表)
 
 | 优先级 | 系统 | JSON文件 | 运行时 | 状态 |
 |---|---|---|---|---|
@@ -15,6 +15,13 @@
 | P2 | 洲 | data/continents.json | ContinentManager::ensure_loaded → DataLoader | ✅ |
 | P2 | 境界 | data/realms.json | CultivationSystem::ensure_defs_loaded → DataLoader | ✅ |
 | P3 | 能力 | data/abilities.json | AbilityManager::ensure_defs_loaded → DataLoader | ✅ |
+| P3 | 精英词缀 | data/affixes.json | AffixDatabase::ensure FileAccess 直读（无 DataLoader 模式先例） | ✅ (022) |
+| P3 | 传送阵点 | data/teleports.json | DataLoader::get_all_teleports → teleport_panel.gd/world_common.gd | ✅ (022) |
+| P4 | 法宝 | data/artifacts.json | ArtifactSystem::ensure_defs_loaded 直读 + ARTIFACT_DEFS 兜底 | ✅ (023) |
+| P4 | 商店货架 | data/shops.json | ShopSystem::get_stock 直读（默认店 chang_an）+ STOCK[] 兜底 | ✅ (023) |
+| P4 | 境界授予 | data/grants.json | Player::ensure_grants_loaded 表驱动 + 原 if 链逐字兜底 | ✅ (023) |
+| P4 | 技能连招 | data/combos.json | SkillSystem 定向 (prev→next) 覆盖/追加 + COMBO_DEFS 兜底（skills.json combo_* 退役死数据） | ✅ (023) |
+| P4 | 寿元 | data/realms.json 每境 `lifespan` | SoulLedgerSystem::lifespan_for_realm 直读 + TABLE 兜底（天尊 ∞ 判定留码） | ✅ (023) |
 | P4 | 输入映射 | user://keybinds.cfg（运行时覆盖） | GameMenu 设置页「键位」子页 → InputMap 改绑 | ✅ |
 | P5 | UI 文本/布局 | — | 待做（需本地化框架/UI 皮肤） | ❌ |
 
