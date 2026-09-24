@@ -25,7 +25,7 @@
 | P4 | 熔炼炉 | data/smithing.json | GameMenu 熔炼炉区 `_smith()` 直读（equip_cast/artifact_cast/enhance 三段）+ 原表兜底 | ✅ (024) |
 | P4 | 调参常量 | data/tuning.json | 六段（tribulation/nurture/dan_du/aura/sustenance/magnet）各系统直读逐键覆盖 + constexpr 兜底 | ✅ (024) |
 | P4 | 输入映射 | user://keybinds.cfg（运行时覆盖） | GameMenu 设置页「键位」子页 → InputMap 改绑 | ✅ |
-| P5 | UI 文本/布局 | data/locale_en.json（367→738 键） | LOC() 渲染期包裹+language_changed 重取；action 名/存档键/flag 键红线裸化（62+21+8 处解包）；遗留：物品 desc EN 47 条、GDScript 动态拼串 | 🟡 首轮 ✅ (024) |
+| P5 | UI 文本/布局 | data/locale_en.json（367→738→**799 键**） | LOC() 渲染期包裹+language_changed 重取；action 名/存档键/flag 键红线裸化（62+21+8 处解包）；遗留：GDScript 动态拼串（物品 desc EN 已于 i18n 轮2 补齐 61 键） | 🟡 轮2 ✅ (024+desc 补齐) |
 
 > 核心模式：每个系统增加 `static std::vector<Def> s_defs` + `static bool s_loaded` +
 > `static void ensure_loaded()` 惰性填充。DataLoader 可用时走 JSON，否则退回硬编码静态数组。
