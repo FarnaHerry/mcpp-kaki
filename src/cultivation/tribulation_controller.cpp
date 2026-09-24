@@ -7,6 +7,8 @@ module;
 #include <godot_cpp/classes/canvas_layer.hpp>
 #include <godot_cpp/classes/capsule_shape2d.hpp>
 #include <godot_cpp/classes/collision_shape2d.hpp>
+#include <godot_cpp/classes/file_access.hpp>
+#include <godot_cpp/classes/json.hpp>
 #include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/polygon2d.hpp>
 #include <godot_cpp/core/class_db.hpp>
@@ -14,6 +16,107 @@ module;
 
 module mcpp_kaki.cultivation;
 namespace godot {
+
+	// ============================================================
+	// 数值调参外抽（data/tuning.json 直读，仿 AffixDatabase 先例）
+	// JSON 优先 + constexpr _DEF 兜底：逐键覆盖，键缺失/类型错→保留原常量值。
+	// ============================================================
+
+	static bool _tuning_load_root(Dictionary &r_root) {
+		const String path = "res://data/tuning.json";
+		if (!FileAccess::file_exists(path))
+			return false;
+		String raw = FileAccess::get_file_as_string(path);
+		Variant parsed = JSON::parse_string(raw);
+		if (parsed.get_type() != Variant::DICTIONARY) {
+			UtilityFunctions::printerr(TXT("TuningJSON: tuning.json 顶层须为对象"));
+			return false;
+		}
+		r_root = parsed;
+		return true;
+	}
+
+	static bool _tuning_section(const Dictionary &p_root, const char *p_name, Dictionary &r_sec) {
+		if (!p_root.has(p_name))
+			return false;
+		Variant v = p_root[p_name];
+		if (v.get_type() != Variant::DICTIONARY)
+			return false;
+		r_sec = v;
+		return true;
+	}
+
+	static void _tune_d(const Dictionary &p_d, const char *p_key, double &p_out) {
+		if (!p_d.has(p_key))
+			return;
+		Variant v = p_d[p_key];
+		if (v.get_type() == Variant::FLOAT || v.get_type() == Variant::INT)
+			p_out = double(v);
+	}
+
+	static void _tune_f(const Dictionary &p_d, const char *p_key, float &p_out) {
+		if (!p_d.has(p_key))
+			return;
+		Variant v = p_d[p_key];
+		if (v.get_type() == Variant::FLOAT || v.get_type() == Variant::INT)
+			p_out = float(v);
+	}
+
+	void TribulationController::_ensure_tuning() {
+		static bool s_loaded = false;
+		if (s_loaded)
+			return;
+		s_loaded = true;
+		Dictionary root;
+		if (!_tuning_load_root(root))
+			return; // JSON 不可用 → 全量兜底默认
+		Dictionary d;
+		if (!_tuning_section(root, "tribulation", d))
+			return;
+		_tune_d(d, "thunder_interval", THUNDER_INTERVAL);
+		_tune_d(d, "thunder_interval_enraged", THUNDER_INTERVAL_ENRAGED);
+		_tune_d(d, "thunder_warn", THUNDER_WARN);
+		_tune_f(d, "thunder_hit_half_w", THUNDER_HIT_HALF_W);
+		_tune_f(d, "thunder_dmg_frac", THUNDER_DMG_FRAC);
+		_tune_d(d, "fire_tick", FIRE_TICK);
+		_tune_f(d, "fire_dmg_frac", FIRE_DMG_FRAC);
+		_tune_d(d, "gust_interval", GUST_INTERVAL);
+		_tune_d(d, "gust_interval_enraged", GUST_INTERVAL_ENRAGED);
+		_tune_f(d, "gust_force", GUST_FORCE);
+		_tune_f(d, "wind_erode_frac", WIND_ERODE_FRAC);
+		_tune_d(d, "wind_erode_tick", WIND_ERODE_TICK);
+		_tune_f(d, "boss_hp", BOSS_HP);
+		_tune_f(d, "phase2_hp_frac", PHASE2_HP_FRAC);
+		_tune_f(d, "phase3_hp_frac", PHASE3_HP_FRAC);
+		_tune_d(d, "domain_first_delay", DOMAIN_FIRST_DELAY);
+		_tune_d(d, "domain_interval", DOMAIN_INTERVAL);
+		_tune_f(d, "domain_hit_half_w", DOMAIN_HIT_HALF_W);
+	}
+
+	// 法宝温养调参（"nurture" 段）——定义放本文件（artifact_system.cpp 不在本轮可改清单）
+	void ArtifactSystem::ensure_nurture_tuning() {
+		static bool s_loaded = false;
+		if (s_loaded)
+			return;
+		s_loaded = true;
+		Dictionary root;
+		if (!_tuning_load_root(root))
+			return;
+		Dictionary d;
+		if (!_tuning_section(root, "nurture", d))
+			return;
+		_tune_f(d, "per_kill_elite_tier", NURTURE_PER_KILL_ELITE_TIER);
+		_tune_f(d, "per_boss", NURTURE_PER_BOSS);
+		_tune_f(d, "per_pill", NURTURE_PER_PILL);
+		_tune_f(d, "per_meditate_tick", NURTURE_PER_MEDITATE_TICK);
+		_tune_f(d, "stage1", NURTURE_STAGE1);
+		_tune_f(d, "stage2", NURTURE_STAGE2);
+		_tune_f(d, "benming_max", BENMING_NURTURE_MAX);
+		_tune_f(d, "benming_nurture_base", BENMING_NURTURE_BASE);
+		_tune_f(d, "benming_nurture_slope", BENMING_NURTURE_SLOPE);
+		_tune_f(d, "benming_awaken_base", BENMING_AWAKEN_BASE);
+		_tune_f(d, "benming_awaken_slope", BENMING_AWAKEN_SLOPE);
+	}
 
 	TribulationController::TribulationController() {
 	}
@@ -26,6 +129,7 @@ namespace godot {
 	}
 
 	void TribulationController::start_tribulation(Player *p_player, const Rect2 &p_arena, Node *p_arena_node) {
+		_ensure_tuning(); // data/tuning.json "tribulation" 段（幂等）
 		_player = p_player;
 		_arena = p_arena;
 		_arena_node = p_arena_node;

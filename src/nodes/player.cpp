@@ -59,6 +59,147 @@ namespace godot {
 		inline constexpr const char *Meditate = "meditate";
 	} // namespace PlayerStates
 
+	// ============================================================
+	// 数值调参外抽（data/tuning.json "aura"/"sustenance" 段直读，仿 AffixDatabase 先例）
+	// JSON 优先 + constexpr _DEF 兜底：逐键覆盖，键缺失/类型错→保留原常量值。
+	// ============================================================
+
+	// ---- 威压 U / 灵压 I（design/sect-pressure.md §二，"aura" 段）----
+	static constexpr float AURA_WEI_MANA_COST_DEF = 30.0f;     // 威压耗灵
+	static constexpr double AURA_WEI_COOLDOWN_DEF = 8.0;       // 威压冷却（秒）
+	static constexpr float AURA_WEI_RADIUS_DEF = 240.0f;       // 威压半径（px）
+	static constexpr float AURA_WEI_REBOUND_DEF = 0.05f;       // 护佑反噬：5% 生命
+	static constexpr float AURA_SUPPRESS_BASE_DEF = 2.0f;      // 慑服基础时长（秒）
+	static constexpr float AURA_SUPPRESS_PER_GAP_DEF = 0.5f;   // 慑服每境界差 +0.5s
+	static constexpr float AURA_SUPPRESS_CAP_DEF = 5.0f;       // 慑服时长上限（秒）
+	static constexpr float AURA_GUARDIAN_RADIUS_DEF = 300.0f;  // 护佑保护圈半径（px）
+	static constexpr float AURA_LIN_MANA_COST_DEF = 45.0f;     // 灵压耗灵
+	static constexpr double AURA_LIN_COOLDOWN_DEF = 15.0;      // 灵压冷却（秒）
+	static constexpr float AURA_LIN_RADIUS_DEF = 200.0f;       // 灵压半径（px）
+	static constexpr int AURA_LIN_MIN_GAP_DEF = 2;             // 生效境界差（realm ≤ 玩家-N）
+	static constexpr int AURA_LIN_KILL_GAP_DEF = 4;            // 镇杀境界差（gap ≥ N）
+	static constexpr float AURA_LIN_KILL_DMG_DEF = 99999.0f;   // 镇杀伤害
+	static constexpr float AURA_LIN_DMG_BASE_DEF = 2.0f;       // 灵压法伤 atk×(base+slope×gap)
+	static constexpr float AURA_LIN_DMG_PER_GAP_DEF = 0.5f;
+	static constexpr float AURA_LIN_REBOUND_DEF = 0.08f;       // 护佑反噬：8% 生命
+	static float AURA_WEI_MANA_COST = AURA_WEI_MANA_COST_DEF;
+	static double AURA_WEI_COOLDOWN = AURA_WEI_COOLDOWN_DEF;
+	static float AURA_WEI_RADIUS = AURA_WEI_RADIUS_DEF;
+	static float AURA_WEI_REBOUND = AURA_WEI_REBOUND_DEF;
+	static float AURA_SUPPRESS_BASE = AURA_SUPPRESS_BASE_DEF;
+	static float AURA_SUPPRESS_PER_GAP = AURA_SUPPRESS_PER_GAP_DEF;
+	static float AURA_SUPPRESS_CAP = AURA_SUPPRESS_CAP_DEF;
+	static float AURA_GUARDIAN_RADIUS = AURA_GUARDIAN_RADIUS_DEF;
+	static float AURA_LIN_MANA_COST = AURA_LIN_MANA_COST_DEF;
+	static double AURA_LIN_COOLDOWN = AURA_LIN_COOLDOWN_DEF;
+	static float AURA_LIN_RADIUS = AURA_LIN_RADIUS_DEF;
+	static int AURA_LIN_MIN_GAP = AURA_LIN_MIN_GAP_DEF;
+	static int AURA_LIN_KILL_GAP = AURA_LIN_KILL_GAP_DEF;
+	static float AURA_LIN_KILL_DMG = AURA_LIN_KILL_DMG_DEF;
+	static float AURA_LIN_DMG_BASE = AURA_LIN_DMG_BASE_DEF;
+	static float AURA_LIN_DMG_PER_GAP = AURA_LIN_DMG_PER_GAP_DEF;
+	static float AURA_LIN_REBOUND = AURA_LIN_REBOUND_DEF;
+
+	// ---- 饱食/安全区休整（design/cultivation-realms.md 饮食，"sustenance" 段）----
+	static constexpr float SUS_FULLNESS_DECAY_DEF = 0.3f;      // 饱食度衰减（/s，凡人/炼气）
+	static constexpr float SUS_FOOD_MULT_MORTAL_DEF = 1.0f;    // 食物倍率：凡人
+	static constexpr float SUS_FOOD_MULT_QI_DEF = 1.2f;        // 食物倍率：炼气起
+	static constexpr float SUS_SAFEZONE_HP_REGEN_DEF = 0.01f;  // 安全区休整：HP 1%/s
+	static constexpr float SUS_SAFEZONE_MANA_EXTRA_DEF = 1.0f; // 安全区灵力额外回复倍率（×1，与基础 tick 合计 ×2）
+	static float SUS_FULLNESS_DECAY = SUS_FULLNESS_DECAY_DEF;
+	static float SUS_FOOD_MULT_MORTAL = SUS_FOOD_MULT_MORTAL_DEF;
+	static float SUS_FOOD_MULT_QI = SUS_FOOD_MULT_QI_DEF;
+	static float SUS_SAFEZONE_HP_REGEN = SUS_SAFEZONE_HP_REGEN_DEF;
+	static float SUS_SAFEZONE_MANA_EXTRA = SUS_SAFEZONE_MANA_EXTRA_DEF;
+
+	static bool _tuning_load_root(Dictionary &r_root) {
+		const String path = "res://data/tuning.json";
+		if (!FileAccess::file_exists(path))
+			return false;
+		String raw = FileAccess::get_file_as_string(path);
+		Variant parsed = JSON::parse_string(raw);
+		if (parsed.get_type() != Variant::DICTIONARY) {
+			UtilityFunctions::printerr(TXT("PlayerTuning: tuning.json 顶层须为对象"));
+			return false;
+		}
+		r_root = parsed;
+		return true;
+	}
+
+	static void _tune_f(const Dictionary &p_d, const char *p_key, float &p_out) {
+		if (!p_d.has(p_key))
+			return;
+		Variant v = p_d[p_key];
+		if (v.get_type() == Variant::FLOAT || v.get_type() == Variant::INT)
+			p_out = float(v);
+	}
+
+	static void _tune_d(const Dictionary &p_d, const char *p_key, double &p_out) {
+		if (!p_d.has(p_key))
+			return;
+		Variant v = p_d[p_key];
+		if (v.get_type() == Variant::FLOAT || v.get_type() == Variant::INT)
+			p_out = double(v);
+	}
+
+	static void _tune_i(const Dictionary &p_d, const char *p_key, int &p_out) {
+		if (!p_d.has(p_key))
+			return;
+		Variant v = p_d[p_key];
+		if (v.get_type() == Variant::INT)
+			p_out = int(v);
+	}
+
+	static void _ensure_aura_tuning() {
+		static bool s_loaded = false;
+		if (s_loaded)
+			return;
+		s_loaded = true;
+		Dictionary root;
+		if (!_tuning_load_root(root) || !root.has("aura"))
+			return;
+		Variant sec = root["aura"];
+		if (sec.get_type() != Variant::DICTIONARY)
+			return;
+		Dictionary d = sec;
+		_tune_f(d, "wei_mana_cost", AURA_WEI_MANA_COST);
+		_tune_d(d, "wei_cooldown", AURA_WEI_COOLDOWN);
+		_tune_f(d, "wei_radius", AURA_WEI_RADIUS);
+		_tune_f(d, "wei_rebound_frac", AURA_WEI_REBOUND);
+		_tune_f(d, "suppress_base", AURA_SUPPRESS_BASE);
+		_tune_f(d, "suppress_per_gap", AURA_SUPPRESS_PER_GAP);
+		_tune_f(d, "suppress_cap", AURA_SUPPRESS_CAP);
+		_tune_f(d, "guardian_radius", AURA_GUARDIAN_RADIUS);
+		_tune_f(d, "lin_mana_cost", AURA_LIN_MANA_COST);
+		_tune_d(d, "lin_cooldown", AURA_LIN_COOLDOWN);
+		_tune_f(d, "lin_radius", AURA_LIN_RADIUS);
+		_tune_i(d, "lin_min_gap", AURA_LIN_MIN_GAP);
+		_tune_i(d, "lin_kill_gap", AURA_LIN_KILL_GAP);
+		_tune_f(d, "lin_kill_damage", AURA_LIN_KILL_DMG);
+		_tune_f(d, "lin_dmg_base", AURA_LIN_DMG_BASE);
+		_tune_f(d, "lin_dmg_per_gap", AURA_LIN_DMG_PER_GAP);
+		_tune_f(d, "lin_rebound_frac", AURA_LIN_REBOUND);
+	}
+
+	static void _ensure_sustenance_tuning() {
+		static bool s_loaded = false;
+		if (s_loaded)
+			return;
+		s_loaded = true;
+		Dictionary root;
+		if (!_tuning_load_root(root) || !root.has("sustenance"))
+			return;
+		Variant sec = root["sustenance"];
+		if (sec.get_type() != Variant::DICTIONARY)
+			return;
+		Dictionary d = sec;
+		_tune_f(d, "fullness_decay_per_sec", SUS_FULLNESS_DECAY);
+		_tune_f(d, "food_mult_mortal", SUS_FOOD_MULT_MORTAL);
+		_tune_f(d, "food_mult_qi_refining", SUS_FOOD_MULT_QI);
+		_tune_f(d, "safezone_hp_regen_frac", SUS_SAFEZONE_HP_REGEN);
+		_tune_f(d, "safezone_mana_extra_mult", SUS_SAFEZONE_MANA_EXTRA);
+	}
+
 	// ------- Idle -------
 	class PlayerIdleState : public State<Player> {
 	public:
@@ -814,6 +955,11 @@ namespace godot {
 		if (Engine::get_singleton()->is_editor_hint())
 			return;
 
+		// 数值调参外抽（data/tuning.json，幂等）：威压/灵压、饱食/安全区、法宝温养
+		_ensure_aura_tuning();
+		_ensure_sustenance_tuning();
+		ArtifactSystem::ensure_nurture_tuning();
+
 		current_health = max_health;
 		for (int i = 0; i < EQUIP_SLOT_COUNT; i++) {
 			_equipment[i] = StringName();
@@ -857,13 +1003,13 @@ namespace godot {
 				SafeZone::is_point_safe(get_global_position())) {
 			float mh = get_max_health();
 			if (current_health < mh) {
-				current_health = Math::min(current_health + (float)(mh * 0.01 * p_delta), mh);
+				current_health = Math::min(current_health + (float)(mh * SUS_SAFEZONE_HP_REGEN * p_delta), mh);
 				SignalBus *bus = SignalBus::get_singleton();
 				if (bus)
 					bus->emit_signal("player_health_changed", current_health, mh);
 			}
 			if (_cultivation)
-				_cultivation->tick_mana_regen(p_delta);
+				_cultivation->tick_mana_regen(p_delta * SUS_SAFEZONE_MANA_EXTRA);
 		}
 
 		_update_fullness(p_delta);
@@ -877,10 +1023,10 @@ namespace godot {
 	}
 
 	float Player::get_food_mult() const {
-		// 食物效果倍率：凡人 1.0 / 炼气起 1.2（design/cultivation-realms.md L167）
+		// 食物效果倍率：凡人 1.0 / 炼气起 1.2（design/cultivation-realms.md L167，tuning.json sustenance 段）
 		if (_cultivation && _cultivation->get_realm_index() >= CultivationSystem::QI_REFINING)
-			return 1.2f;
-		return 1.0f;
+			return SUS_FOOD_MULT_QI;
+		return SUS_FOOD_MULT_MORTAL;
 	}
 
 	void Player::_update_fullness(double p_delta) {
@@ -891,9 +1037,9 @@ namespace godot {
 				_fullness = _max_fullness;
 			return;
 		}
-		// 凡人/炼气：随时间衰减（满→空约 5.5 分钟）
+		// 凡人/炼气：随时间衰减（满→空约 5.5 分钟，tuning.json sustenance 段）
 		if (_fullness > 0.0f) {
-			_fullness = Math::max(0.0f, _fullness - 0.3f * float(p_delta));
+			_fullness = Math::max(0.0f, _fullness - SUS_FULLNESS_DECAY * float(p_delta));
 		}
 		// 饥饿 debuff（force-managed）：归零 apply / 回正 remove
 		if (_buffs) {
@@ -1881,8 +2027,7 @@ namespace godot {
 
 	// ---- 法宝系统（本命法宝）----
 
-	// 温养满所需进度
-	static constexpr float BENMING_NURTURE_MAX = 1000.0f;
+	// 温养满所需进度 → ArtifactSystem::BENMING_NURTURE_MAX（tuning.json "nurture" 段外抽）
 
 	void Player::set_benming_artifact(const StringName &p_item_id) {
 		// 飞升后不可更换（托塔李天王模式：终身绑定）
@@ -1892,18 +2037,21 @@ namespace godot {
 	}
 
 	float Player::get_benming_coeff() const {
+		ArtifactSystem::ensure_nurture_tuning();
 		if (_benming_item.is_empty())
 			return 1.0f;
-		float t = Math::clamp(_benming_nurture / BENMING_NURTURE_MAX, 0.0f, 1.0f);
+		float t = Math::clamp(_benming_nurture / ArtifactSystem::BENMING_NURTURE_MAX, 0.0f, 1.0f);
 		if (_benming_awakened) {
-			return 1.5f + 0.5f * t; // 觉醒：150% → 200%
+			// 觉醒：150% → 200%
+			return ArtifactSystem::BENMING_AWAKEN_BASE + ArtifactSystem::BENMING_AWAKEN_SLOPE * t;
 		}
-		return 1.2f + 0.3f * t; // 温养：120% → 150%
+		// 温养：120% → 150%
+		return ArtifactSystem::BENMING_NURTURE_BASE + ArtifactSystem::BENMING_NURTURE_SLOPE * t;
 	}
 
 	void Player::nurture_benming(float p_amount) {
 		if (_benming_item.is_empty()) return;
-		_benming_nurture = Math::min(_benming_nurture + p_amount, BENMING_NURTURE_MAX);
+		_benming_nurture = Math::min(_benming_nurture + p_amount, ArtifactSystem::BENMING_NURTURE_MAX);
 	}
 
 	void Player::awaken_benming_artifact() {
@@ -2486,7 +2634,7 @@ namespace godot {
 		for (int i = 0; i < p_guardians.size(); i++) {
 			Node2D *g = Object::cast_to<Node2D>(p_guardians[i]);
 			if (!g) continue;
-			if (ep.distance_to(g->get_global_position()) <= 300.0f) {
+			if (ep.distance_to(g->get_global_position()) <= AURA_GUARDIAN_RADIUS) {
 				return true;
 			}
 		}
@@ -2494,34 +2642,35 @@ namespace godot {
 	}
 
 	bool Player::cast_wei_pressure() {
+		_ensure_aura_tuning();
 		if (_time < _wei_cd_until) return false;
-		if (!_cultivation || !_cultivation->consume_mana(30.0f)) return false;
-		_wei_cd_until = _time + 8.0;
+		if (!_cultivation || !_cultivation->consume_mana(AURA_WEI_MANA_COST)) return false;
+		_wei_cd_until = _time + AURA_WEI_COOLDOWN;
 
 		int prealm = _cultivation->get_realm_index();
 		int hit = 0;
-		Vector<Object*> guardians = _find_guardians(240.0f, prealm);
+		Vector<Object*> guardians = _find_guardians(AURA_WEI_RADIUS, prealm);
 
 		TypedArray<Node> enemies = get_tree()->get_nodes_in_group("enemies");
 		for (int i = 0; i < enemies.size(); i++) {
 			Enemy *e = Object::cast_to<Enemy>(enemies[i]);
 			if (!e || e->is_dead()) continue;
 			float dist = get_global_position().distance_to(e->get_global_position());
-			if (dist > 240.0f) continue;
+			if (dist > AURA_WEI_RADIUS) continue;
 			// realm < player 方可慑服
 			if (e->realm >= prealm) continue;
-			// 护佑：高阶敌人在场 → 其身边 300px 低阶全免
+			// 护佑：高阶敌人在场 → 其身边保护圈内低阶全免
 			if (_is_guarded(e, guardians)) continue;
 
-			float duration = 2.0f + 0.5f * float(prealm - e->realm);
-			if (duration > 5.0f) duration = 5.0f;
+			float duration = AURA_SUPPRESS_BASE + AURA_SUPPRESS_PER_GAP * float(prealm - e->realm);
+			if (duration > AURA_SUPPRESS_CAP) duration = AURA_SUPPRESS_CAP;
 			e->suppress(duration);
 			hit++;
 		}
 
 		// 护佑反弹
 		if (!guardians.is_empty()) {
-			float rebound = max_health * 0.05f;
+			float rebound = max_health * AURA_WEI_REBOUND;
 			current_health -= rebound;
 			SignalBus *bus = SignalBus::get_singleton();
 			if (bus) {
@@ -2550,36 +2699,37 @@ namespace godot {
 	}
 
 	bool Player::cast_lin_pressure() {
+		_ensure_aura_tuning();
 		if (_time < _lin_cd_until) return false;
 		// 平衡：60→45 蓝，与同代技能性价比相称（单目标法伤 3~3.5×atk，15s 大技能）
-		if (!_cultivation || !_cultivation->consume_mana(45.0f)) return false;
-		_lin_cd_until = _time + 15.0;
+		if (!_cultivation || !_cultivation->consume_mana(AURA_LIN_MANA_COST)) return false;
+		_lin_cd_until = _time + AURA_LIN_COOLDOWN;
 
 		int prealm = _cultivation->get_realm_index();
 		int hit = 0;
 		int zhen_sha = 0;
-		Vector<Object*> guardians = _find_guardians(200.0f, prealm);
+		Vector<Object*> guardians = _find_guardians(AURA_LIN_RADIUS, prealm);
 
 		TypedArray<Node> enemies = get_tree()->get_nodes_in_group("enemies");
 		for (int i = 0; i < enemies.size(); i++) {
 			Enemy *e = Object::cast_to<Enemy>(enemies[i]);
 			if (!e || e->is_dead()) continue;
 			float dist = get_global_position().distance_to(e->get_global_position());
-			if (dist > 200.0f) continue;
+			if (dist > AURA_LIN_RADIUS) continue;
 			// realm ≤ player-2 方可生效（境界接近则灵压不侵）
 			int gap = prealm - e->realm;
-			if (gap < 2) continue;
+			if (gap < AURA_LIN_MIN_GAP) continue;
 			// 护佑
 			if (_is_guarded(e, guardians)) continue;
 
-			if (gap >= 4) {
+			if (gap >= AURA_LIN_KILL_GAP) {
 				// 镇杀：大境界碾压（元婴镇凡人/炼气）
-				e->take_damage_typed(99999.0f, int(DMG_SPELL), int(ELEM_NONE), this);
+				e->take_damage_typed(AURA_LIN_KILL_DMG, int(DMG_SPELL), int(ELEM_NONE), this);
 				zhen_sha++;
 			} else {
 				// 法术伤害 = 攻击力 × (2 + 0.5×差)，走法抗结算
 				float atk = get_effective_attack();
-				float dmg = atk * (2.0f + 0.5f * float(gap));
+				float dmg = atk * (AURA_LIN_DMG_BASE + AURA_LIN_DMG_PER_GAP * float(gap));
 				e->take_damage_typed(dmg, int(DMG_SPELL), int(ELEM_NONE), this);
 			}
 			hit++;
@@ -2587,7 +2737,7 @@ namespace godot {
 
 		// 护佑反弹
 		if (!guardians.is_empty()) {
-			float rebound = max_health * 0.08f;
+			float rebound = max_health * AURA_LIN_REBOUND;
 			current_health -= rebound;
 			SignalBus *bus = SignalBus::get_singleton();
 			if (bus) {

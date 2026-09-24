@@ -2,6 +2,8 @@ module;
 
 #include "../utils/text.h"
 #include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/file_access.hpp>
+#include <godot_cpp/classes/json.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <string>
@@ -125,10 +127,50 @@ namespace godot {
 		return true;
 	}
 
+	// ============================================================
+	// 丹毒数值调参外抽（data/tuning.json "dan_du" 段直读，仿 AffixDatabase 先例）
+	// JSON 优先 + constexpr _DEF 兜底：逐键覆盖，键缺失/类型错→保留原常量值。
+	// ============================================================
+
+	void BuffSystem::_ensure_dose_tuning() {
+		static bool s_loaded = false;
+		if (s_loaded)
+			return;
+		s_loaded = true;
+		const String path = "res://data/tuning.json";
+		if (!FileAccess::file_exists(path))
+			return; // JSON 不可用 → 全量兜底默认
+		String raw = FileAccess::get_file_as_string(path);
+		Variant parsed = JSON::parse_string(raw);
+		if (parsed.get_type() != Variant::DICTIONARY) {
+			UtilityFunctions::printerr(TXT("BuffSystem: tuning.json 顶层须为对象"));
+			return;
+		}
+		Dictionary root = parsed;
+		if (!root.has("dan_du"))
+			return;
+		Variant sec = root["dan_du"];
+		if (sec.get_type() != Variant::DICTIONARY)
+			return;
+		Dictionary d = sec;
+		auto get_num = [&d](const char *p_key, Variant &r_v) -> bool {
+			if (!d.has(p_key))
+				return false;
+			r_v = d[p_key];
+			return r_v.get_type() == Variant::FLOAT || r_v.get_type() == Variant::INT;
+		};
+		Variant v;
+		if (get_num("dose_window", v)) DOSE_WINDOW = double(v);
+		if (get_num("dose_toxic_at", v)) DOSE_TOXIC_AT = int(v);
+		if (get_num("refresh_potency", v)) REFRESH_POTENCY = float(v);
+		if (get_num("toxic_potency", v)) TOXIC_POTENCY = float(v);
+	}
+
 	// 丹药服用入口（丹毒机制，design/alchemy.md「成败与丹毒」）
 	bool BuffSystem::apply_pill(const StringName &p_id) {
 		const Def *def = find_def(p_id);
 		if (!def) return false;
+		_ensure_dose_tuning();
 		_prune_doses();
 		std::vector<double> &doses = _doses[p_id];
 		doses.push_back(_time);
@@ -191,6 +233,7 @@ namespace godot {
 	}
 
 	void BuffSystem::_prune_doses() {
+		_ensure_dose_tuning(); // DOSE_WINDOW 走 tuning.json（幂等）
 		std::vector<StringName> empty_keys;
 		for (auto &kv : _doses) {
 			std::vector<double> &v = kv.value;
