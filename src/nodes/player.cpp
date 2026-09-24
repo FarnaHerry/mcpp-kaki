@@ -9,10 +9,16 @@
 #include "../core/enemy_database.h"
 #include "../utils/text.h"
 
+#include <algorithm>
+#include <string>
+#include <vector>
+
 #include <godot_cpp/classes/collision_shape2d.hpp>
 #include <godot_cpp/classes/polygon2d.hpp>
 #include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/classes/input.hpp>
+#include <godot_cpp/classes/json.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/classes/rectangle_shape2d.hpp>
@@ -1418,6 +1424,130 @@ namespace godot {
 		}
 	}
 
+	// ============================================================
+	// 境界突破授予映射（data/grants.json 表驱动 + 硬编码兜底）
+	// 审计缺口：design/data-externalization.md §2.2「境界授予映射硬编码」。
+	// 只抽数据（学什么/装哪槽/得什么法宝/入包什么物品）；机制行为
+	// （辟谷切状态/本命觉醒/次要槽扩容/槽位空判定逻辑本身）留在代码。
+	// ============================================================
+	namespace {
+
+		// 授予条目内的单条引用（std::string 自持有内容，无 c_str 悬垂）
+		struct GrantSkillRef {
+			std::string id;
+			int slot = -1; // -1=只学不装；>=0=该槽为空时装入（空判定同原链，不抢占已装配）
+		};
+		struct GrantArtifactRef {
+			std::string id;
+			int slot = -1; // -1=仅 acquire 持而不装（次要栏满待换）；>=0=equip 该槽
+		};
+		struct GrantItemRef {
+			std::string id;
+			int qty = 1;
+		};
+		// 一条授予：首次跨过「old < realm && new >= realm」时触发（门槛语义同原 if 链）
+		struct GrantEntry {
+			int realm = 0;
+			std::vector<std::string> gongfas;        // 功法 grant（炼体/练气自动入槽）
+			std::vector<GrantArtifactRef> artifacts; // 法宝 acquire + 可选 equip
+			std::vector<GrantSkillRef> skills;       // 主动技能 learn + 可选空槽 assign
+			std::vector<std::string> passives;       // 被动（学会即常驻不占槽）
+			std::vector<GrantItemRef> items;         // 入包物品（法宝残篇等）
+		};
+
+		std::vector<GrantEntry> s_grants; // 解析后按 realm 升序 stable_sort（文件表序无关）
+		bool s_grants_loaded = false;
+		bool s_grants_from_json = false; // false=JSON 缺失/解析失败/空表 → 走 _apply_grants_fallback
+
+		// 数组元素兼容纯字符串与 {"id":...} 字典两种写法，统一取 id
+		bool grant_pick_id(const Variant &p_v, std::string &r_id) {
+			if (p_v.get_type() == Variant::STRING) {
+				r_id = String(p_v).utf8().get_data();
+			} else if (p_v.get_type() == Variant::DICTIONARY) {
+				Dictionary d = p_v;
+				if (d.has("id") && Variant(d["id"]).get_type() == Variant::STRING)
+					r_id = String(d["id"]).utf8().get_data();
+			}
+			return !r_id.empty();
+		}
+
+		void ensure_grants_loaded() {
+			if (s_grants_loaded) return;
+			s_grants_loaded = true;
+			s_grants_from_json = false;
+			const String path = TXT("res://data/grants.json");
+			if (!FileAccess::file_exists(path)) return;
+			Variant parsed = JSON::parse_string(FileAccess::get_file_as_string(path));
+			if (parsed.get_type() != Variant::DICTIONARY) return;
+			Dictionary root = parsed;
+			if (!root.has("grants") || Variant(root["grants"]).get_type() != Variant::ARRAY) return;
+			Array arr = root["grants"];
+			s_grants.reserve(arr.size()); // 装入前先 reserve，防重分配搬动
+			for (int i = 0; i < arr.size(); i++) {
+				if (arr[i].get_type() != Variant::DICTIONARY) continue;
+				Dictionary d = arr[i];
+				if (!d.has("realm")) continue;
+				GrantEntry e;
+				e.realm = int(d["realm"]);
+				if (d.has("gongfas") && Variant(d["gongfas"]).get_type() == Variant::ARRAY) {
+					Array a = d["gongfas"];
+					e.gongfas.reserve(a.size());
+					for (int j = 0; j < a.size(); j++) {
+						std::string id;
+						if (grant_pick_id(a[j], id)) e.gongfas.push_back(id);
+					}
+				}
+				if (d.has("artifacts") && Variant(d["artifacts"]).get_type() == Variant::ARRAY) {
+					Array a = d["artifacts"];
+					e.artifacts.reserve(a.size());
+					for (int j = 0; j < a.size(); j++) {
+						GrantArtifactRef r;
+						if (!grant_pick_id(a[j], r.id)) continue;
+						if (a[j].get_type() == Variant::DICTIONARY)
+							r.slot = int(Dictionary(a[j]).get("slot", -1));
+						e.artifacts.push_back(r);
+					}
+				}
+				if (d.has("skills") && Variant(d["skills"]).get_type() == Variant::ARRAY) {
+					Array a = d["skills"];
+					e.skills.reserve(a.size());
+					for (int j = 0; j < a.size(); j++) {
+						GrantSkillRef r;
+						if (!grant_pick_id(a[j], r.id)) continue;
+						if (a[j].get_type() == Variant::DICTIONARY)
+							r.slot = int(Dictionary(a[j]).get("slot", -1));
+						e.skills.push_back(r);
+					}
+				}
+				if (d.has("passives") && Variant(d["passives"]).get_type() == Variant::ARRAY) {
+					Array a = d["passives"];
+					e.passives.reserve(a.size());
+					for (int j = 0; j < a.size(); j++) {
+						std::string id;
+						if (grant_pick_id(a[j], id)) e.passives.push_back(id);
+					}
+				}
+				if (d.has("items") && Variant(d["items"]).get_type() == Variant::ARRAY) {
+					Array a = d["items"];
+					e.items.reserve(a.size());
+					for (int j = 0; j < a.size(); j++) {
+						GrantItemRef r;
+						if (!grant_pick_id(a[j], r.id)) continue;
+						if (a[j].get_type() == Variant::DICTIONARY)
+							r.qty = int(Dictionary(a[j]).get("qty", 1));
+						e.items.push_back(r);
+					}
+				}
+				s_grants.push_back(std::move(e));
+			}
+			if (s_grants.empty()) return; // 空表视同 JSON 不可用 → 硬编码兜底
+			std::stable_sort(s_grants.begin(), s_grants.end(),
+			                 [](const GrantEntry &a, const GrantEntry &b) { return a.realm < b.realm; });
+			s_grants_from_json = true;
+		}
+
+	} // namespace
+
 	void Player::_on_cultivation_realm_changed(int p_old_realm, int p_new_realm) {
 		_abilities->check_realm_unlocks();
 		_update_move_speed();
@@ -1425,6 +1555,76 @@ namespace godot {
 		// 突破洗髓：生命上限提升并回满
 		_refresh_max_health(true);
 
+		// 境界授予：data/grants.json 表驱动优先，JSON 缺失/解析失败退回硬编码链
+		ensure_grants_loaded();
+		if (s_grants_from_json) {
+			_apply_grants_from_json(p_old_realm, p_new_realm);
+			return;
+		}
+		_apply_grants_fallback(p_old_realm, p_new_realm);
+	}
+
+	void Player::_apply_grants_from_json(int p_old_realm, int p_new_realm) {
+		// 数据授予：按 realm 升序遍历表条目，跨过「old < realm && new >= realm」门槛即应用。
+		// learn/acquire/equip_gongfa 均幂等（已会/已有直接返回 true），与原链一致只随跨门槛触发
+		for (const GrantEntry &g : s_grants) {
+			if (p_old_realm >= g.realm || p_new_realm < g.realm)
+				continue;
+			if (_gongfa) {
+				for (const std::string &id : g.gongfas)
+					_gongfa->grant(StringName(id.c_str()));
+			}
+			if (_artifacts) {
+				for (const GrantArtifactRef &a : g.artifacts) {
+					StringName id(a.id.c_str());
+					_artifacts->acquire(id);
+					if (a.slot >= 0)
+						_artifacts->equip(a.slot, id);
+				}
+			}
+			if (_skills) {
+				for (const GrantSkillRef &s : g.skills) {
+					StringName id(s.id.c_str());
+					_skills->learn(id);
+					if (s.slot >= 0 && _skills->get_slot_skill(s.slot) == StringName())
+						_skills->assign(s.slot, id); // 槽空才装（原链空判定语义）
+				}
+				for (const std::string &id : g.passives)
+					_skills->learn(StringName(id.c_str()));
+			}
+			for (const GrantItemRef &it : g.items)
+				pickup_item(StringName(it.id.c_str()), it.qty);
+		}
+		// 机制行为不入表，留在代码（与数据授予互不依赖）
+		_apply_realm_grant_mechanics(p_old_realm, p_new_realm);
+	}
+
+	void Player::_apply_realm_grant_mechanics(int p_old_realm, int p_new_realm) {
+		// 筑基：辟谷（不再需进食，饱食度锁定满，食物转纯 buff）
+		if (p_old_realm < CultivationSystem::FOUNDATION &&
+		    p_new_realm >= CultivationSystem::FOUNDATION) {
+			if (_fullness != _max_fullness) {
+				_fullness = _max_fullness;
+				_emit_fullness();
+			}
+			if (_buffs && _buffs->has("buff_hunger"))
+				_buffs->remove("buff_hunger"); // 辟谷自动解除饥饿
+			SignalBus *bus = SignalBus::get_singleton();
+			if (bus)
+				bus->emit_signal("bigu_changed", true);
+		}
+		// 渡劫成仙：本命法宝觉醒（150% → 200%）+ 次要法宝槽 +3
+		if (p_old_realm < CultivationSystem::TRUE_IMMORTAL &&
+		    p_new_realm >= CultivationSystem::TRUE_IMMORTAL) {
+			awaken_benming_artifact();
+			if (_artifacts) {
+				_artifacts->unlock_secondary_slots(); // 飞升：次要槽 2→5（共 6 槽）
+			}
+		}
+	}
+
+	// 硬编码兜底：原境界授予 if 链逐字保留（JSON 不可用时走这里，行为与表路径一致）
+	void Player::_apply_grants_fallback(int p_old_realm, int p_new_realm) {
 		// 引气入体（炼气）：授予入门功法（炼体《莽牛劲》+ 练气《吐纳诀》）
 		if (_gongfa && p_old_realm < CultivationSystem::QI_REFINING &&
 		    p_new_realm >= CultivationSystem::QI_REFINING) {
