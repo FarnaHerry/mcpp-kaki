@@ -299,6 +299,11 @@ class Player : public CharacterBody2D {
 		void _summon_clone(); // 身外化身：生成分身实体（同时存活 ≤2，第 3 次顶掉最老）
 		void _on_ability_unlocked(const StringName &p_ability_id);
 		void _on_cultivation_realm_changed(int p_old_realm, int p_new_realm);
+		// 境界突破授予映射（data/grants.json 表驱动优先 + 硬编码兜底，_apply_grants_fallback）：
+		// 「学什么/装哪槽/得什么法宝/入包什么物品」走表；机制行为（辟谷/觉醒/扩槽）留码
+		void _apply_grants_from_json(int p_old_realm, int p_new_realm);
+		void _apply_grants_fallback(int p_old_realm, int p_new_realm);
+		void _apply_realm_grant_mechanics(int p_old_realm, int p_new_realm);
 	};
 
 } // namespace godot

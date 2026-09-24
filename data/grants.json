@@ -1,0 +1,63 @@
+{
+	"_readme": "境界突破授予表（player.cpp _on_cultivation_realm_changed 消费）。条目按 realm 升序，realm=触发门槛境界序号（CultivationSystem::Realm，同 abilities.json unlock_realm 口径），语义=「首次跨过 old < realm && new >= realm」。gongfas=授予功法（GongfaSystem::grant，炼体/练气自动入对应槽）；artifacts=法宝（acquire，带 slot 则 equip 该槽，省略=持而不装）；skills=主动技能（learn，带 slot 则该槽为空时装入，不抢占已装配）；passives=被动（学会即常驻不占槽）；items=入背包物品（法宝残篇等，X 使用经 learn_artifact 习得）；qty 省略=1。机制行为不入表（筑基辟谷/真仙本命觉醒+次要槽扩容/check_realm_unlocks/洗髓回血，见 _apply_realm_grant_mechanics）。JSON 缺失/解析失败/空表时退回 player.cpp _apply_grants_fallback 硬编码链。",
+	"grants": [
+		{
+			"realm": 1,
+			"gongfas": ["mang_niu_jin", "tu_na_jue"],
+			"skills": [
+				{"id": "huo_dan_shu", "slot": 8},
+				{"id": "bing_zhui_shu", "slot": 9},
+				"xuan_feng_zhan",
+				"sheng_long_ji"
+			],
+			"passives": ["shen_xing"],
+			"notes": "炼气（引气入体）：入门功法炼体《莽牛劲》+练气《吐纳诀》；灵根显现火弹术/冰锥术装 D/F；武技精进旋风斩/升龙击；被动神行百变"
+		},
+		{
+			"realm": 2,
+			"artifacts": [{"id": "fei_jian", "slot": 1}],
+			"skills": ["lei_zhou_shu", "tu_dun_shu"],
+			"passives": ["jian_xin"],
+			"notes": "筑基：飞剑升级为法宝（飞行道具→可祭出作战）装次要槽1；雷咒术/土盾术；被动剑心通明。辟谷机制在代码"
+		},
+		{
+			"realm": 3,
+			"artifacts": [{"id": "zhao_yao_hu", "slot": 2}],
+			"skills": ["yu_jian_shu"],
+			"passives": ["tie_bu_shan", "ling_tai"],
+			"notes": "金丹：赐照妖葫装次要槽2；御剑术（剑扇三连）；被动铁布衫/灵台清明"
+		},
+		{
+			"realm": 4,
+			"artifacts": ["xuan_tie_ta"],
+			"passives": ["feng_lei_yi"],
+			"notes": "元婴：赐玄铁塔（辅助型；次要栏满则持而未装，待换）；被动风雷双翼"
+		},
+		{
+			"realm": 5,
+			"skills": [
+				{"id": "suo_di_cheng_cun", "slot": 4},
+				"jin_gang_bu_huai",
+				"san_mei_zhen_huo"
+			],
+			"passives": ["dao_fa_zi_ran"],
+			"items": ["ba_gua_lu"],
+			"notes": "化神（初触法则）：首个神通缩地成寸装 T；金刚不坏/三昧真火；被动道法自然；赐八卦炉残篇入包（辅助·攻+15%）"
+		},
+		{
+			"realm": 6,
+			"items": ["kun_xian_sheng"],
+			"notes": "炼虚：赐捆仙绳残篇入包（攻击·瞬身锁敌）"
+		},
+		{
+			"realm": 7,
+			"items": ["ding_feng_zhu"],
+			"notes": "合体：赐定风珠残篇入包（辅助·风抗+30%）"
+		},
+		{
+			"realm": 10,
+			"skills": [{"id": "tian_lei_yin", "slot": 11}],
+			"notes": "真仙（渡劫成仙）：首个仙法天雷引装 H。本命法宝觉醒（150%→200%）+次要法宝槽扩容（+3）机制在代码"
+		}
+	]
+}
