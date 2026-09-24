@@ -10,11 +10,14 @@ import mcpp_kaki.utils;       // SignalBus
 #include <godot_cpp/classes/capsule_shape2d.hpp>
 #include <godot_cpp/classes/collision_shape2d.hpp>
 #include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/file_access.hpp>
+#include <godot_cpp/classes/json.hpp>
 #include <godot_cpp/classes/polygon2d.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/array.hpp>
 #include <godot_cpp/variant/packed_vector2_array.hpp>
+#include <godot_cpp/variant/utility_functions.hpp>
 
 namespace godot {
 
@@ -23,19 +26,50 @@ namespace godot {
 // ============================================================
 
 int SoulLedgerSystem::lifespan_for_realm(int p_realm) {
+	// 硬编码兜底表（与 data/realms.json 各境界条目 "lifespan" 字段同值）：
 	// 凡人100 / 炼气150 / 筑基250 / 金丹500 / 元婴2000 / 化神5000 / 炼虚8000
 	// / 合体12000 / 大乘20000 / 渡劫50000 / 真仙100000 / 金仙200000
 	// / 天尊（三清级，跳出五行）寿元无限（-1）——成仙后寿元正常，仅三清不入轮回
 	static const int TABLE[CultivationSystem::REALM_COUNT] = {
 		100, 150, 250, 500, 2000, 5000, 8000, 12000, 20000, 50000, 100000, 200000, 0
 	};
+	// 运行时表：JSON 优先（static 幂等缓存；FileAccess 直读 realms.json 的
+	// "lifespan" 字段——AffixDatabase 先例，不走 DataLoader），缺文件/缺字段走兜底
+	static int s_table[CultivationSystem::REALM_COUNT];
+	static bool s_loaded = false;
+	if (!s_loaded) {
+		s_loaded = true;
+		for (int i = 0; i < CultivationSystem::REALM_COUNT; i++)
+			s_table[i] = TABLE[i];
+		const String path = "res://data/realms.json";
+		if (FileAccess::file_exists(path)) {
+			Variant parsed = JSON::parse_string(FileAccess::get_file_as_string(path));
+			if (parsed.get_type() == Variant::DICTIONARY) {
+				Dictionary root = parsed;
+				if (root.has("realms") && Variant(root["realms"]).get_type() == Variant::ARRAY) {
+					Array realms = root["realms"];
+					for (int i = 0; i < realms.size() && i < CultivationSystem::REALM_COUNT; i++) {
+						Variant v = realms[i];
+						if (v.get_type() != Variant::DICTIONARY)
+							continue;
+						Dictionary d = v;
+						if (d.has("lifespan"))
+							s_table[i] = int(d["lifespan"]);
+					}
+				}
+			} else {
+				UtilityFunctions::printerr(TXT("SoulLedgerSystem: realms.json 顶层须为对象"));
+			}
+		}
+	}
 	if (p_realm < 0)
 		p_realm = 0;
 	if (p_realm >= CultivationSystem::REALM_COUNT)
 		p_realm = CultivationSystem::REALM_COUNT - 1;
+	// 天尊（三清级，跳出五行）寿元无限——判定留码，优先于表值
 	if (p_realm >= CultivationSystem::TIAN_ZUN)
 		return LIFESPAN_INFINITE;
-	return TABLE[p_realm];
+	return s_table[p_realm];
 }
 
 void SoulLedgerSystem::set_player(Player *p) {
