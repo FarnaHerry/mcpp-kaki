@@ -1,0 +1,19 @@
+{
+  "shops": {
+    "chang_an": {
+      "name": "长安坊市",
+      "stock": [
+        "brown_rice",
+        "dry_ration",
+        "spirit_rice",
+        "healing_pill",
+        "qi_pill",
+        "bing_xin_dan",
+        "chi_yan_dan",
+        "jin_gang_dan",
+        "protect_robe",
+        "ren_shen_guo"
+      ]
+    }
+  }
+}
