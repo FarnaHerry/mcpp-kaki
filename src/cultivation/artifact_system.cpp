@@ -4,6 +4,13 @@ module;
 
 #include "../utils/text.h"
 
+#include <godot_cpp/classes/file_access.hpp>
+#include <godot_cpp/classes/json.hpp>
+#include <godot_cpp/variant/utility_functions.hpp>
+#include <deque>
+#include <string>
+#include <vector>
+
 module mcpp_kaki.cultivation;
 import mcpp_kaki.utils;
 namespace godot {
@@ -34,6 +41,146 @@ static const ArtifactSystem::Def ARTIFACT_DEFS[] = {
 	  0.0f, 0.0f, 0.0f, SkillSystem::FX_MELEE_SWING, 0.0f, Color(), 0.0f,
 	  0.0f, ELEM_FENG, 0.30f },
 };
+
+// ============================================================
+// 运行时定义表 — data/artifacts.json 优先 + ARTIFACT_DEFS 硬编码兜底
+// （AffixDatabase 直读 JSON 模式，不走 DataLoader；JSON 命中同 id 覆盖、新 id 追加）
+// ============================================================
+
+std::vector<ArtifactSystem::Def> ArtifactSystem::s_defs;
+bool ArtifactSystem::s_defs_loaded = false;
+
+// 枚举字符串 → 值映射（JSON 用枚举名，如 "FX_PROJECTILE" / "ELEM_JIN"）
+static bool _kind_from_str(const String &p_s, ArtifactSystem::Kind &p_out) {
+	if (p_s == "KIND_ATTACK") { p_out = ArtifactSystem::KIND_ATTACK; return true; }
+	if (p_s == "KIND_SUPPORT") { p_out = ArtifactSystem::KIND_SUPPORT; return true; }
+	return false;
+}
+
+static bool _category_from_str(const String &p_s, DamageCategory &p_out) {
+	if (p_s == "DMG_PHYSICAL") { p_out = DMG_PHYSICAL; return true; }
+	if (p_s == "DMG_SPELL") { p_out = DMG_SPELL; return true; }
+	if (p_s == "DMG_ELEMENTAL") { p_out = DMG_ELEMENTAL; return true; }
+	return false;
+}
+
+static bool _elem_from_str(const String &p_s, Element &p_out) {
+	if (p_s == "ELEM_NONE") { p_out = ELEM_NONE; return true; }
+	if (p_s == "ELEM_JIN") { p_out = ELEM_JIN; return true; }
+	if (p_s == "ELEM_MU") { p_out = ELEM_MU; return true; }
+	if (p_s == "ELEM_SHUI") { p_out = ELEM_SHUI; return true; }
+	if (p_s == "ELEM_HUO") { p_out = ELEM_HUO; return true; }
+	if (p_s == "ELEM_TU") { p_out = ELEM_TU; return true; }
+	if (p_s == "ELEM_LEI") { p_out = ELEM_LEI; return true; }
+	if (p_s == "ELEM_FENG") { p_out = ELEM_FENG; return true; }
+	return false;
+}
+
+static bool _fx_from_str(const String &p_s, SkillSystem::EffectKind &p_out) {
+	if (p_s == "FX_MELEE_SWING") { p_out = SkillSystem::FX_MELEE_SWING; return true; }
+	if (p_s == "FX_LUNGE") { p_out = SkillSystem::FX_LUNGE; return true; }
+	if (p_s == "FX_PROJECTILE") { p_out = SkillSystem::FX_PROJECTILE; return true; }
+	if (p_s == "FX_BLINK") { p_out = SkillSystem::FX_BLINK; return true; }
+	if (p_s == "FX_AOE_SWING") { p_out = SkillSystem::FX_AOE_SWING; return true; }
+	if (p_s == "FX_RISING") { p_out = SkillSystem::FX_RISING; return true; }
+	if (p_s == "FX_SELF_BUFF") { p_out = SkillSystem::FX_SELF_BUFF; return true; }
+	if (p_s == "FX_PROJ_FAN") { p_out = SkillSystem::FX_PROJ_FAN; return true; }
+	if (p_s == "FX_INVULN") { p_out = SkillSystem::FX_INVULN; return true; }
+	return false;
+}
+
+void ArtifactSystem::ensure_defs_loaded() {
+	if (s_defs_loaded) return;
+	s_defs_loaded = true;
+	// c_str 持久化池：JSON 侧 id/name 落这里保生命期（防悬垂——本项目踩过的坑）。
+	// 用 deque：push_back 从不搬移已有元素缓冲，c_str 恒稳（vector 重分配会悬垂，continent_manager 教训）。
+	static std::deque<std::string> s_strings;
+
+	// 1) 硬编码兜底表为底（与 data/artifacts.json 同值；JSON 缺失/缺条目时生效）
+	s_defs.reserve(16);
+	for (const Def &d : ARTIFACT_DEFS) s_defs.push_back(d);
+
+	// 2) JSON 优先：直读 res://data/artifacts.json，同 id 覆盖、新 id 追加
+	const String path = TXT("res://data/artifacts.json");
+	if (!FileAccess::file_exists(path)) return;
+	String raw = FileAccess::get_file_as_string(path);
+	Variant parsed = JSON::parse_string(raw);
+	if (parsed.get_type() != Variant::ARRAY) {
+		UtilityFunctions::printerr(TXT("ArtifactSystem: artifacts.json 顶层须为数组"));
+		return;
+	}
+	Array all = parsed;
+	s_defs.reserve(s_defs.size() + size_t(all.size())); // 防重分配（deque 池本身地址稳定，无需 reserve）
+	for (int i = 0; i < all.size(); i++) {
+		if (all[i].get_type() != Variant::DICTIONARY) continue;
+		Dictionary d = all[i];
+		if (!d.has("id")) continue;
+		String id = String(d["id"]);
+		Def *def = nullptr;
+		for (Def &x : s_defs) {
+			if (x.id && id == TXT(x.id)) { def = &x; break; }
+		}
+		bool is_new = (def == nullptr);
+		if (is_new) {
+			s_defs.push_back(Def{});
+			def = &s_defs.back();
+		}
+		// id/name 入字符串池（deque 元素地址稳定，c_str 不悬垂）
+		CharString id_u8 = id.utf8();
+		s_strings.push_back(id_u8.get_data() ? std::string(id_u8.get_data()) : std::string());
+		def->id = s_strings.back().c_str();
+		if (d.has("name")) {
+			String nm = d["name"];
+			CharString nm_u8 = nm.utf8();
+			s_strings.push_back(nm_u8.get_data() ? std::string(nm_u8.get_data()) : std::string());
+			def->name = s_strings.back().c_str();
+		} else if (is_new) {
+			def->name = def->id; // 新条目无名：以 id 兜底显示
+		}
+		if (d.has("kind")) {
+			Kind k;
+			if (_kind_from_str(String(d["kind"]), k)) def->kind = k;
+			else UtilityFunctions::printerr(TXT("ArtifactSystem: artifacts.json 未知 kind: ") + String(d["kind"]));
+		}
+		if (d.has("damage_category")) {
+			DamageCategory c;
+			if (_category_from_str(String(d["damage_category"]), c)) def->category = c;
+			else UtilityFunctions::printerr(TXT("ArtifactSystem: artifacts.json 未知 damage_category: ") + String(d["damage_category"]));
+		}
+		if (d.has("element")) {
+			Element e;
+			if (_elem_from_str(String(d["element"]), e)) def->element = e;
+			else UtilityFunctions::printerr(TXT("ArtifactSystem: artifacts.json 未知 element: ") + String(d["element"]));
+		}
+		if (d.has("mana_cost")) def->mana_cost = float(d["mana_cost"]);
+		if (d.has("cooldown")) def->cooldown = float(d["cooldown"]);
+		if (d.has("power")) def->power = float(d["power"]);
+		if (d.has("effect")) {
+			SkillSystem::EffectKind f;
+			if (_fx_from_str(String(d["effect"]), f)) def->effect = f;
+			else UtilityFunctions::printerr(TXT("ArtifactSystem: artifacts.json 未知 effect: ") + String(d["effect"]));
+		}
+		if (d.has("proj_speed")) def->proj_speed = float(d["proj_speed"]);
+		if (d.has("proj_color")) {
+			Array c = d["proj_color"];
+			if (c.size() >= 4) def->proj_color = Color(float(c[0]), float(c[1]), float(c[2]), float(c[3]));
+			else if (c.size() == 3) def->proj_color = Color(float(c[0]), float(c[1]), float(c[2]));
+		}
+		if (d.has("passive_def")) def->passive_def = float(d["passive_def"]);
+		if (d.has("passive_atk")) def->passive_atk = float(d["passive_atk"]);
+		if (d.has("resist_elem")) {
+			Element e;
+			if (_elem_from_str(String(d["resist_elem"]), e)) def->resist_elem = e;
+			else UtilityFunctions::printerr(TXT("ArtifactSystem: artifacts.json 未知 resist_elem: ") + String(d["resist_elem"]));
+		}
+		if (d.has("resist_elem_pct")) def->resist_elem_pct = float(d["resist_elem_pct"]);
+	}
+}
+
+const std::vector<ArtifactSystem::Def> &ArtifactSystem::get_all_defs() {
+	ensure_defs_loaded();
+	return s_defs;
+}
 
 void ArtifactSystem::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("acquire", "id"), &ArtifactSystem::acquire);
@@ -69,8 +216,9 @@ void ArtifactSystem::_bind_methods() {
 }
 
 const ArtifactSystem::Def *ArtifactSystem::find_def(const StringName &p_id) {
-	for (const Def &d : ARTIFACT_DEFS) {
-		if (StringName(d.id) == p_id) return &d;
+	ensure_defs_loaded();
+	for (const Def &d : s_defs) {
+		if (d.id && StringName(d.id) == p_id) return &d;
 	}
 	return nullptr;
 }
@@ -399,9 +547,10 @@ Dictionary ArtifactSystem::get_slot_info(int p_slot) const {
 }
 
 Array ArtifactSystem::get_owned_list() const {
+	ensure_defs_loaded();
 	Array out;
-	for (const Def &def : ARTIFACT_DEFS) {
-		if (_owned.has(StringName(def.id))) {
+	for (const Def &def : s_defs) {
+		if (def.id && _owned.has(StringName(def.id))) {
 			Dictionary d;
 			d["id"] = String(def.id);
 			d["name"] = LOC(def.name);
