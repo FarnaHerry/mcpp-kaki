@@ -5,6 +5,7 @@
 
 #include <godot_cpp/classes/collision_shape2d.hpp>
 #include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/gd_script.hpp>
 #include <godot_cpp/classes/input.hpp>
 #include <godot_cpp/classes/marker2d.hpp>
 #include <godot_cpp/classes/node2d.hpp>
@@ -58,6 +59,10 @@ namespace godot {
         connect("body_entered", Callable(this, "_on_body_entered"));
         connect("body_exited", Callable(this, "_on_body_exited"));
         set_process(true);
+
+        Ref<GDScript> prop_visual = ResourceLoader::get_singleton()->load("res://scripts/art/prop_visual.gd");
+        if (prop_visual.is_valid())
+            prop_visual->call("attach", this, "portal", 40.0f, false);
     }
 
     void Portal::_process(double p_delta) {
@@ -120,6 +125,11 @@ namespace godot {
 
         Node *root = get_tree()->get_current_scene();
         if (root) root->add_child(_loaded_scene);
+
+        // 房间远景：按 target_scene 选择背景，仍位于所有交互/角色层之下。
+        Ref<GDScript> background_visual = ResourceLoader::get_singleton()->load("res://scripts/art/background_visual.gd");
+        if (background_visual.is_valid())
+            background_visual->call("attach", _loaded_scene);
 
         // Move player into the room
         Node *parent = _player->get_parent();

@@ -1,0 +1,187 @@
+{
+  "archetypes": {
+    "boss": {
+      "anchor": {
+        "x": 24,
+        "y": 43
+      },
+      "sil_height": 34,
+      "states": {
+        "attack": {
+          "count": 5,
+          "fps": 12,
+          "loop": false,
+          "row": 17
+        },
+        "death": {
+          "count": 5,
+          "fps": 7,
+          "loop": false,
+          "row": 19
+        },
+        "hurt": {
+          "count": 2,
+          "fps": 10,
+          "loop": true,
+          "row": 18
+        },
+        "idle": {
+          "count": 4,
+          "fps": 5,
+          "loop": true,
+          "row": 15
+        },
+        "walk": {
+          "count": 4,
+          "fps": 8,
+          "loop": true,
+          "row": 16
+        }
+      }
+    },
+    "flying": {
+      "anchor": {
+        "x": 24,
+        "y": 37
+      },
+      "sil_height": 18,
+      "states": {
+        "attack": {
+          "count": 5,
+          "fps": 12,
+          "loop": false,
+          "row": 12
+        },
+        "death": {
+          "count": 5,
+          "fps": 7,
+          "loop": false,
+          "row": 14
+        },
+        "hurt": {
+          "count": 2,
+          "fps": 10,
+          "loop": true,
+          "row": 13
+        },
+        "idle": {
+          "count": 4,
+          "fps": 5,
+          "loop": true,
+          "row": 10
+        },
+        "walk": {
+          "count": 4,
+          "fps": 8,
+          "loop": true,
+          "row": 11
+        }
+      }
+    },
+    "melee": {
+      "anchor": {
+        "x": 24,
+        "y": 41
+      },
+      "sil_height": 39,
+      "states": {
+        "attack": {
+          "count": 5,
+          "fps": 12,
+          "loop": false,
+          "row": 2
+        },
+        "death": {
+          "count": 5,
+          "fps": 7,
+          "loop": false,
+          "row": 4
+        },
+        "hurt": {
+          "count": 2,
+          "fps": 10,
+          "loop": true,
+          "row": 3
+        },
+        "idle": {
+          "count": 4,
+          "fps": 5,
+          "loop": true,
+          "row": 0
+        },
+        "walk": {
+          "count": 4,
+          "fps": 8,
+          "loop": true,
+          "row": 1
+        }
+      }
+    },
+    "ranged": {
+      "anchor": {
+        "x": 24,
+        "y": 41
+      },
+      "sil_height": 34,
+      "states": {
+        "attack": {
+          "count": 5,
+          "fps": 12,
+          "loop": false,
+          "row": 7
+        },
+        "death": {
+          "count": 5,
+          "fps": 7,
+          "loop": false,
+          "row": 9
+        },
+        "hurt": {
+          "count": 2,
+          "fps": 10,
+          "loop": true,
+          "row": 8
+        },
+        "idle": {
+          "count": 4,
+          "fps": 5,
+          "loop": true,
+          "row": 5
+        },
+        "walk": {
+          "count": 4,
+          "fps": 8,
+          "loop": true,
+          "row": 6
+        }
+      }
+    }
+  },
+  "frame_size": 48,
+  "generator": "tools/pixelart/enemy_sprites.py",
+  "sheet": "enemy_sheet.png",
+  "sheet_cols": 5,
+  "sheet_order": [
+    "melee/idle",
+    "melee/walk",
+    "melee/attack",
+    "melee/hurt",
+    "melee/death",
+    "ranged/idle",
+    "ranged/walk",
+    "ranged/attack",
+    "ranged/hurt",
+    "ranged/death",
+    "flying/idle",
+    "flying/walk",
+    "flying/attack",
+    "flying/hurt",
+    "flying/death",
+    "boss/idle",
+    "boss/walk",
+    "boss/attack",
+    "boss/hurt",
+    "boss/death"
+  ],
+  "sheet_rows": 20
+}

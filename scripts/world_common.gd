@@ -20,6 +20,7 @@ static func make_sprite(parent: Node, color: Color, size: Vector2, pos := Vector
 
 # ---- 核心装配：管理器 + UI + 玩家 + 相机（每洲一份）----
 static func setup(root: Node) -> Dictionary:
+	load("res://scripts/art/background_visual.gd").call("attach", root)
 	var signal_bus = ClassDB.instantiate("SignalBus")
 	signal_bus.name = "SignalBus"
 	root.add_child(signal_bus)
@@ -114,6 +115,9 @@ static func setup(root: Node) -> Dictionary:
 	shape.shape = capsule
 	player.add_child(shape)
 	make_sprite(player, Color(0.2, 0.4, 0.9, 1), Vector2(16, 28))
+	# 动作素材（design/art-assets.md）：assets/textures/player 有素材即挂 Sprite2D 逐帧
+	# 并隐藏上面的占位方块；素材缺失时 attach() 返回 null，占位原样保留（零行为变化）。
+	load("res://scripts/art/player_visual.gd").call("attach", player)
 	root.add_child(player)
 	camera.call("set_follow_target", player)
 	game_mgr.call("set_player", player)
@@ -166,7 +170,8 @@ static func make_platform(root: Node, x: float, y: float, w: float, one_way := t
 	shape.shape = rect
 	shape.one_way_collision = one_way
 	body.add_child(shape)
-	make_sprite(body, Color(0.35, 0.4, 0.2, 1), Vector2(w, 6))
+	var platform_visual = make_sprite(body, Color(0.35, 0.4, 0.2, 1), Vector2(w, 6))
+	load("res://scripts/art/terrain_visual.gd").call("apply_for", platform_visual, root)
 	root.add_child(body)
 	return body
 
@@ -180,7 +185,8 @@ static func make_wall(root: Node, x: float, y_top: float, y_bottom: float, color
 	rect.size = Vector2(12, h)
 	shape.shape = rect
 	body.add_child(shape)
-	make_sprite(body, color, Vector2(12, h))
+	var wall_visual = make_sprite(body, color, Vector2(12, h))
+	load("res://scripts/art/terrain_visual.gd").call("apply_for", wall_visual, root)
 	root.add_child(body)
 	return body
 
@@ -194,7 +200,8 @@ static func make_ground(root: Node, x0: float, x1: float, y := 238.0) -> StaticB
 	rect.size = Vector2(w, 24)
 	shape.shape = rect
 	body.add_child(shape)
-	make_sprite(body, Color(0.25, 0.2, 0.15, 1), Vector2(w, 24), Vector2(0, 12))
+	var ground_visual = make_sprite(body, Color(0.25, 0.2, 0.15, 1), Vector2(w, 24), Vector2(0, 12))
+	load("res://scripts/art/terrain_visual.gd").call("apply_for", ground_visual, root)
 	root.add_child(body)
 	return body
 
@@ -287,6 +294,9 @@ static func spawn_enemy(root: Node, pos: Vector2, color: Color, speed: float, de
 	eshape.shape = ecap
 	enemy.add_child(eshape)
 	make_sprite(enemy, color, Vector2(20, 28))
+	# 动作素材（design/art-assets.md）：挂在占位方块子节点下继承其缩放/染色；
+	# 素材缺失或原型无素材时 attach() 返回 null，方块原样保留。
+	load("res://scripts/art/enemy_visual.gd").call("attach", enemy)
 	enemy.connect("enemy_died", Callable(_wc(), "_on_enemy_died"))
 	root.add_child(enemy)
 	return enemy
@@ -307,6 +317,8 @@ static func spawn_enemy_by_id(root: Node, pos: Vector2, enemy_id: String, ename 
 	eshape.shape = ecap
 	enemy.add_child(eshape)
 	make_sprite(enemy, enemy.call("get_def_color"), enemy.call("get_def_size"))
+	# 动作素材：定义色染色 + 定义尺寸对齐（详见 enemy_visual.gd 顶部注释）
+	load("res://scripts/art/enemy_visual.gd").call("attach", enemy)
 	enemy.connect("enemy_died", Callable(_wc(), "_on_enemy_died"))
 	root.add_child(enemy)
 	# 精英化在入树后（sprite/HitBox 齐备，make_elite 视觉缩放找得到 Polygon2D）

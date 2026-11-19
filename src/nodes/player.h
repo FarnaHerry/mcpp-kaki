@@ -160,6 +160,9 @@ class Player : public CharacterBody2D {
 		// 聚灵阵（洞天 v3）：洞天内打坐修为倍率，随境界增强（炼虚 ×2.0，每境 +0.25）
 		double get_dongtian_meditate_mult() const;
 		String get_state_name() const; // FSM 当前态名（harness 用）
+		// 朝向（-1 左 / +1 右）：像素素材按此 flip_h，避免在脚本侧重算朝向而与
+		// 输入反转（威压/灵压）、贴墙、击退等 C++ 侧朝向变更脱节
+		int get_facing_direction() const { return facing_direction; }
 
 		// 法宝系统（本命法宝：120%→150%温养 → 渡劫觉醒200%）
 		void set_benming_artifact(const StringName &p_item_id);

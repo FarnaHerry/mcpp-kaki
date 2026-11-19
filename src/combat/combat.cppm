@@ -15,7 +15,7 @@ class Player; // external (nodes header) — global fragment, no module linkage
 
 export module mcpp_kaki.combat;
 
-import godot_cpp;
+import mcpplibs.mwrap.godot_cpp;
 
 namespace godot {
 
@@ -341,6 +341,7 @@ public:
 	float get_damage() const { return damage; }
 	int get_damage_category() const { return int(damage_category); }
 	int get_element() const { return int(element); }
+	void set_element(int p_element) { element = Element(p_element); }
 
 	void _ready() override;
 	void _physics_process(double p_delta) override;

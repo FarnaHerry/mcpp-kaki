@@ -868,6 +868,7 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("get_meditate_rate"), &Player::get_meditate_rate);
 		ClassDB::bind_method(D_METHOD("get_dongtian_meditate_mult"), &Player::get_dongtian_meditate_mult);
 		ClassDB::bind_method(D_METHOD("get_state_name"), &Player::get_state_name);
+		ClassDB::bind_method(D_METHOD("get_facing_direction"), &Player::get_facing_direction);
 		ClassDB::bind_method(D_METHOD("get_time"), &Player::get_time);
 		ClassDB::bind_method(D_METHOD("_on_gongfa_changed"), &Player::_on_gongfa_changed);
 		ClassDB::bind_method(D_METHOD("_on_enemy_killed", "enemy", "killer"), &Player::_on_enemy_killed);
@@ -2000,7 +2001,7 @@ namespace godot {
 	void Player::exec_skill_proj_fan(float p_power, DamageCategory p_cat, Element p_elem,
 	                                 float p_speed, const Color &p_color) {
 		// 御剑术：3 发扇形（±15°）
-		float base = (facing_direction > 0) ? 0.0f : (float)Math_PI;
+		float base = (facing_direction > 0) ? 0.0f : (float)godot::Math::PI;
 		static const float OFF[3] = { -0.26f, 0.0f, 0.26f };
 		float spell_mult = (_gongfa ? _gongfa->get_spell_mult() : 1.0f)
 			* (_cultivation ? _cultivation->get_path_spell_mult() : 1.0f); // 元神分叉法强

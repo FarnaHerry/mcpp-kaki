@@ -276,7 +276,7 @@ namespace godot {
 
 			// Spawn a fan of projectiles（阶段升高扇面更密更宽更快：一相3 / 二相5 / 三相7）
 			int count = (e->boss_phase >= 3) ? 7 : (e->boss_phase >= 2) ? 5 : 3;
-			float spread = Math_PI * ((e->boss_phase >= 3) ? 0.44f : 0.3f); // 三相 ~79°，其余 ~54°
+			float spread = godot::Math::PI * ((e->boss_phase >= 3) ? 0.44f : 0.3f); // 三相 ~79°，其余 ~54°
 			float start_angle = -spread * 0.5f;
 
 			for (int i = 0; i < count; i++) {
@@ -424,6 +424,8 @@ namespace godot {
 		ClassDB::bind_method(D_METHOD("get_proj_element"), &Enemy::get_proj_element);
 		ClassDB::bind_method(D_METHOD("get_def_color"), &Enemy::get_def_color);
 		ClassDB::bind_method(D_METHOD("get_def_size"), &Enemy::get_def_size);
+		ClassDB::bind_method(D_METHOD("get_state_name"), &Enemy::get_state_name);
+		ClassDB::bind_method(D_METHOD("get_facing_direction"), &Enemy::get_facing_direction);
 		ClassDB::bind_method(D_METHOD("set_preferred_distance", "v"), &Enemy::set_preferred_distance);
 		ClassDB::bind_method(D_METHOD("get_move_speed"), &Enemy::get_move_speed);
 		ClassDB::bind_method(D_METHOD("get_detection_radius"), &Enemy::get_detection_radius);
@@ -566,6 +568,10 @@ namespace godot {
 		if (def->boss) {
 			set_is_boss(true);
 		}
+	}
+
+	String Enemy::get_state_name() const {
+		return state_machine ? String(state_machine->get_current_name()) : String();
 	}
 
 	void Enemy::make_elite(int p_tier, const String &p_affix) {

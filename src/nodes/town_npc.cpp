@@ -5,9 +5,11 @@
 
 #include <godot_cpp/classes/collision_shape2d.hpp>
 #include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/gd_script.hpp>
 #include <godot_cpp/classes/input.hpp>
 #include <godot_cpp/classes/polygon2d.hpp>
 #include <godot_cpp/classes/rectangle_shape2d.hpp>
+#include <godot_cpp/classes/resource_loader.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/core/math.hpp>
 
@@ -64,6 +66,8 @@ void TownNpc::_build_visuals() {
 		Node *c = get_child(i);
 		if (Object::cast_to<CollisionShape2D>(c))
 			continue;
+		// 先摘出树释放名称占用，再 queue_free：否则新 NpcName/Bubble 会变成 @Label@…。
+		remove_child(c);
 		c->queue_free();
 	}
 	_bubble = nullptr;
@@ -86,7 +90,7 @@ void TownNpc::_build_visuals() {
 	head->set_color(Color(0.92f, 0.78f, 0.62f, 1.0f));
 	PackedVector2Array hp;
 	for (int i = 0; i < 8; i++) {
-		float a = Math_TAU * i / 8.0f;
+		float a = godot::Math::TAU * i / 8.0f;
 		hp.append(Vector2(Math::cos(a) * 6.0f, Math::sin(a) * 6.0f - 16.0f));
 	}
 	head->set_polygon(hp);
@@ -132,6 +136,11 @@ void TownNpc::_build_visuals() {
 	_bubble->set_horizontal_alignment(HorizontalAlignment::HORIZONTAL_ALIGNMENT_CENTER);
 	_bubble->set_visible(false);
 	add_child(_bubble);
+
+	// 传当前 build 的节点指针：setup() 重建时旧同名节点仍在 queue_free 队列里。
+	Ref<GDScript> npc_visual = ResourceLoader::get_singleton()->load("res://scripts/art/npc_visual.gd");
+	if (npc_visual.is_valid())
+		npc_visual->call("attach", this, robe, head, hair);
 }
 
 void TownNpc::_on_body_entered(Node2D *p_body) {

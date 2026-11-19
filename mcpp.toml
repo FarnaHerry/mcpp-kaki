@@ -37,7 +37,7 @@ kind   = "shared"
 soname = "libmcpp-kaki.linux.template_debug.x86_64.so"
 
 [dependencies.compat]
-godot-cpp = "10.0.0-rc1"
+godot-cpp = "10.0.0"
 
-[dependencies.godotengine]
-godot-cpp-m = "10.0.0-rc1"
+[dependencies.mcpplibs.mwrap]
+godot_cpp = "10.0.0"

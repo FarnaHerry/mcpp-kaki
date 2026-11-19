@@ -35,6 +35,10 @@ func _plot_pos(i: int) -> Vector2:
 	return Vector2(PLOT_X0 + (i - BASE_PLOTS) * PLOT_DX, PLOT2_Y)
 
 func _ready():
+	load("res://scripts/art/background_visual.gd").call("attach", self, "dongtian")
+	var terrain = load("res://scripts/art/terrain_visual.gd")
+	terrain.call("apply", get_node_or_null("EarthVisual"), "dirt")
+	terrain.call("apply", get_node_or_null("GrassVisual"), "grass")
 	refresh_plots()
 
 	# 仓库（储物箱）：灵田与灵泉之间（x=285；避开出生点 x=240 的下落走廊——

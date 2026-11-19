@@ -271,7 +271,7 @@ namespace godot {
 			Vector2 dir(_mirror->facing, 0.0f);
 			if (def->effect == SkillSystem::FX_PROJ_FAN) {
 				// 御剑术类：3 发扇形
-				float base = (_mirror->facing > 0) ? 0.0f : (float)Math_PI;
+				float base = (_mirror->facing > 0) ? 0.0f : (float)godot::Math::PI;
 				static const float OFF[3] = { -0.26f, 0.0f, 0.26f };
 				for (int i = 0; i < 3; i++) {
 					Vector2 d(Math::cos(base + OFF[i]), Math::sin(base + OFF[i]));

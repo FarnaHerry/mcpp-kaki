@@ -7,10 +7,12 @@
 #include <godot_cpp/classes/control.hpp>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/file_access.hpp>
+#include <godot_cpp/classes/gd_script.hpp>
 #include <godot_cpp/classes/json.hpp>
 #include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/polygon2d.hpp>
 #include <godot_cpp/classes/rectangle_shape2d.hpp>
+#include <godot_cpp/classes/resource_loader.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
@@ -217,6 +219,11 @@ void ItemPickup::_create_visual() {
 		beam->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);
 		add_child(beam);
 	}
+
+	// 全物品图标：挂在 PickupVisual 下，item_id 重建时自动随旧占位一起销毁。
+	Ref<GDScript> item_visual = ResourceLoader::get_singleton()->load("res://scripts/art/item_visual.gd");
+	if (item_visual.is_valid())
+		item_visual->call("attach", this);
 }
 
 void ItemPickup::_on_body_entered(Node2D *p_body) {

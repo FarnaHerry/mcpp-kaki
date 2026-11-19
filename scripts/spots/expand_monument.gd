@@ -23,6 +23,7 @@ func _ready():
 	stone.color = Color(0.55, 0.6, 0.62, 1)
 	stone.polygon = PackedVector2Array([-7, 0, -7, -22, 0, -27, 7, -22, 7, 0])
 	add_child(stone)
+	load("res://scripts/art/prop_visual.gd").call("attach", self, "expand_monument", 0.0, true)
 
 func _mgr():
 	return get_tree().current_scene.find_child("DongtianManager", true, false)

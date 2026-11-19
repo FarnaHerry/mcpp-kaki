@@ -2,8 +2,10 @@ module;
 
 #include <godot_cpp/classes/collision_shape2d.hpp>
 #include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/gd_script.hpp>
 #include <godot_cpp/classes/polygon2d.hpp>
 #include <godot_cpp/classes/rectangle_shape2d.hpp>
+#include <godot_cpp/classes/resource_loader.hpp>
 #include <godot_cpp/core/class_db.hpp>
 
 module mcpp_kaki.combat;
@@ -16,7 +18,10 @@ void Projectile::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_damage"), &Projectile::get_damage);
 	ClassDB::bind_method(D_METHOD("get_damage_category"), &Projectile::get_damage_category);
 	ClassDB::bind_method(D_METHOD("get_element"), &Projectile::get_element);
+	ClassDB::bind_method(D_METHOD("set_element", "element"), &Projectile::set_element);
 	ClassDB::bind_method(D_METHOD("_on_body_entered", "body"), &Projectile::_on_body_entered);
+
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "element"), "set_element", "get_element");
 }
 
 void Projectile::_ready() {
@@ -57,6 +62,10 @@ void Projectile::_create_visual() {
 	arrow.append(Vector2(-4, 4));  // bottom back
 	visual->set_polygon(arrow);
 	add_child(visual);
+
+	Ref<GDScript> projectile_visual = ResourceLoader::get_singleton()->load("res://scripts/art/projectile_visual.gd");
+	if (projectile_visual.is_valid())
+		projectile_visual->call("attach", this);
 }
 
 void Projectile::_physics_process(double p_delta) {

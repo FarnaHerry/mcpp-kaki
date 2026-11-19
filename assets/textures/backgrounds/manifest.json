@@ -1,0 +1,89 @@
+{
+  "generator": "tools/pixelart/background_sprites.py",
+  "styles": {
+    "beijulu": {
+      "size": [
+        480,
+        270
+      ],
+      "texture": "bg_beijulu.png"
+    },
+    "cave": {
+      "size": [
+        480,
+        270
+      ],
+      "texture": "bg_cave.png"
+    },
+    "difu": {
+      "size": [
+        480,
+        270
+      ],
+      "texture": "bg_difu.png"
+    },
+    "dongsheng": {
+      "size": [
+        480,
+        270
+      ],
+      "texture": "bg_dongsheng.png"
+    },
+    "dongtian": {
+      "size": [
+        480,
+        270
+      ],
+      "texture": "bg_dongtian.png"
+    },
+    "fire": {
+      "size": [
+        480,
+        270
+      ],
+      "texture": "bg_fire.png"
+    },
+    "nanzhanbu": {
+      "size": [
+        480,
+        270
+      ],
+      "texture": "bg_nanzhanbu.png"
+    },
+    "palace": {
+      "size": [
+        480,
+        270
+      ],
+      "texture": "bg_palace.png"
+    },
+    "tianjie": {
+      "size": [
+        480,
+        270
+      ],
+      "texture": "bg_tianjie.png"
+    },
+    "water": {
+      "size": [
+        480,
+        270
+      ],
+      "texture": "bg_water.png"
+    },
+    "xiniuhe": {
+      "size": [
+        480,
+        270
+      ],
+      "texture": "bg_xiniuhe.png"
+    },
+    "yunhai": {
+      "size": [
+        480,
+        270
+      ],
+      "texture": "bg_yunhai.png"
+    }
+  }
+}

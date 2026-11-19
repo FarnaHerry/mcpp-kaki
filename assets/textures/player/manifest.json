@@ -1,0 +1,66 @@
+{
+  "anchor": {
+    "x": 16,
+    "y": 29
+  },
+  "frame_size": 32,
+  "generator": "tools/pixelart/player_sprites.py",
+  "sheet": "player_sheet.png",
+  "sheet_cols": 6,
+  "states": {
+    "attack": {
+      "count": 5,
+      "fps": 16,
+      "loop": false,
+      "row": 6
+    },
+    "dash": {
+      "count": 2,
+      "fps": 12,
+      "loop": true,
+      "row": 5
+    },
+    "fall": {
+      "count": 2,
+      "fps": 8,
+      "loop": true,
+      "row": 3
+    },
+    "fly": {
+      "count": 4,
+      "fps": 8,
+      "loop": true,
+      "row": 7
+    },
+    "idle": {
+      "count": 4,
+      "fps": 6,
+      "loop": true,
+      "row": 0
+    },
+    "jump": {
+      "count": 2,
+      "fps": 8,
+      "loop": false,
+      "row": 2
+    },
+    "meditate": {
+      "count": 2,
+      "fps": 3,
+      "loop": true,
+      "row": 8
+    },
+    "run": {
+      "count": 6,
+      "fps": 12,
+      "loop": true,
+      "row": 1
+    },
+    "wall_cling": {
+      "count": 2,
+      "fps": 6,
+      "loop": true,
+      "row": 4
+    }
+  }
+}

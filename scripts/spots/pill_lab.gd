@@ -29,6 +29,7 @@ func _ready():
 	fire.color = Color(1.0, 0.62, 0.2, 0.9)
 	fire.polygon = PackedVector2Array([-3, -8, 0, -13, 3, -8, 0, -5])
 	add_child(fire)
+	load("res://scripts/art/prop_visual.gd").call("attach", self, "pill_lab", 0.0, true)
 	# 炼丹面板（CanvasLayer，随洞天场景卸载）
 	_panel = PillLabPanel.new()
 	add_child(_panel)

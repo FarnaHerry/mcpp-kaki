@@ -1,0 +1,102 @@
+{
+  "anchor": {
+    "x": 16,
+    "y": 44
+  },
+  "frame_size": [
+    32,
+    48
+  ],
+  "generator": "tools/pixelart/prop_sprites.py",
+  "props": {
+    "cond_portal": {
+      "idle": {
+        "count": 4,
+        "fps": 5,
+        "loop": true,
+        "row": 10
+      }
+    },
+    "expand_monument": {
+      "idle": {
+        "count": 4,
+        "fps": 5,
+        "loop": true,
+        "row": 7
+      }
+    },
+    "jlz_eye": {
+      "idle": {
+        "count": 4,
+        "fps": 5,
+        "loop": true,
+        "row": 8
+      }
+    },
+    "meditate_spot": {
+      "idle": {
+        "count": 4,
+        "fps": 5,
+        "loop": true,
+        "row": 5
+      }
+    },
+    "pill_lab": {
+      "idle": {
+        "count": 4,
+        "fps": 5,
+        "loop": true,
+        "row": 6
+      }
+    },
+    "portal": {
+      "idle": {
+        "count": 4,
+        "fps": 5,
+        "loop": true,
+        "row": 0
+      }
+    },
+    "refine_spot": {
+      "idle": {
+        "count": 4,
+        "fps": 5,
+        "loop": true,
+        "row": 4
+      }
+    },
+    "scene_gate": {
+      "idle": {
+        "count": 4,
+        "fps": 5,
+        "loop": true,
+        "row": 9
+      }
+    },
+    "storage_chest": {
+      "idle": {
+        "count": 4,
+        "fps": 5,
+        "loop": true,
+        "row": 1
+      }
+    },
+    "teleport_array": {
+      "active": {
+        "count": 4,
+        "fps": 5,
+        "loop": true,
+        "row": 3
+      },
+      "inactive": {
+        "count": 4,
+        "fps": 5,
+        "loop": true,
+        "row": 2
+      }
+    }
+  },
+  "sheet": "prop_sheet.png",
+  "sheet_cols": 4,
+  "sheet_rows": 11
+}

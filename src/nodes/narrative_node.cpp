@@ -6,9 +6,11 @@
 #include <godot_cpp/classes/collision_shape2d.hpp>
 #include <godot_cpp/classes/color_rect.hpp>
 #include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/gd_script.hpp>
 #include <godot_cpp/classes/input.hpp>
 #include <godot_cpp/classes/polygon2d.hpp>
 #include <godot_cpp/classes/rectangle_shape2d.hpp>
+#include <godot_cpp/classes/resource_loader.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/core/class_db.hpp>
 
@@ -89,6 +91,10 @@ void NarrativeNode::_ready() {
 	hp.append(Vector2(0, -21));
 	hat->set_polygon(hp);
 	add_child(hat);
+
+	Ref<GDScript> npc_visual = ResourceLoader::get_singleton()->load("res://scripts/art/npc_visual.gd");
+	if (npc_visual.is_valid())
+		npc_visual->call("attach", this, robe, Variant(), hat, 10.0f);
 
 	// 叙事 overlay 期间暂停世界，本节点仍需处理输入
 	set_process_mode(PROCESS_MODE_ALWAYS);

@@ -15,6 +15,9 @@ func _setup_game():
 	var player = ctx.player
 	var camera = ctx.camera
 	var hint = ctx.hint
+	var authored_ground = get_node_or_null("GroundVisual") as Polygon2D
+	if authored_ground != null:
+		load("res://scripts/art/terrain_visual.gd").call("apply", authored_ground, "grass")
 
 	# 起始干粮：凡人需进食维生（design/cultivation-realms.md 饮食），避免开局饿死
 	player.call("get_inventory").call("add_item", "dry_ration", 3)

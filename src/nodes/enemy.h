@@ -144,6 +144,9 @@ class Enemy : public CharacterBody2D {
 		Element get_proj_element_enum() const; // 元素名→Element（空/未知=ELEM_NONE；enemy.cpp 实现）
 		Color get_def_color() const { return _def_color; }  // 定义颜色（无定义=白）
 		Vector2 get_def_size() const { return _def_size; }  // 定义尺寸（无定义=20×28）
+		// 动作素材用：FSM 当前态名 + 朝向（脚本侧只做「态名→图集帧」映射，不重算逻辑）
+		String get_state_name() const;
+		int get_facing_direction() const { return facing_direction; }
 		void set_preferred_distance(float v) { preferred_distance = v; }
 		float get_move_speed() const { return move_speed; }
 		float get_detection_radius() const { return detection_radius; }

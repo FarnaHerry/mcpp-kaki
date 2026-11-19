@@ -16,3 +16,7 @@ bin/*.framework
 # Claude Code
 .claude/
 *.uid
+
+# 像素素材生成器（Python）
+__pycache__/
+*.pyc

@@ -10,7 +10,7 @@ module;
 
 export module mcpp_kaki.inventory;
 
-import godot_cpp;
+import mcpplibs.mwrap.godot_cpp;
 
 namespace godot {
 

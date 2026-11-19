@@ -21,7 +21,7 @@ class Enemy;  // external (nodes header)
 
 export module mcpp_kaki.cultivation;
 
-import godot_cpp;
+import mcpplibs.mwrap.godot_cpp;
 
 namespace godot {
 

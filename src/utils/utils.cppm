@@ -7,7 +7,7 @@ module;
 
 export module mcpp_kaki.utils;
 
-import godot_cpp;
+import mcpplibs.mwrap.godot_cpp;
 
 namespace godot {
 

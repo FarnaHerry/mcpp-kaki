@@ -5,9 +5,11 @@
 
 #include <godot_cpp/classes/collision_shape2d.hpp>
 #include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/gd_script.hpp>
 #include <godot_cpp/classes/input.hpp>
 #include <godot_cpp/classes/polygon2d.hpp>
 #include <godot_cpp/classes/rectangle_shape2d.hpp>
+#include <godot_cpp/classes/resource_loader.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
@@ -88,6 +90,10 @@ void HerbNode::_create_visual() {
 	herb.append(Vector2(-3, -2));
 	_visual->set_polygon(herb);
 	add_child(_visual);
+
+	Ref<GDScript> herb_visual = ResourceLoader::get_singleton()->load("res://scripts/art/herb_visual.gd");
+	if (herb_visual.is_valid())
+		herb_visual->call("attach", this);
 }
 
 void HerbNode::_send_prompt() {

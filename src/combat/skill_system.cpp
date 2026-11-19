@@ -5,7 +5,9 @@ module;
 
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/file_access.hpp>
+#include <godot_cpp/classes/gd_script.hpp>
 #include <godot_cpp/classes/json.hpp>
+#include <godot_cpp/classes/resource_loader.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/classes/scene_tree_timer.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
@@ -384,6 +386,11 @@ void SkillSystem::_execute(const Def *p_def, float p_power_mult) {
 			_player->exec_skill_invuln(p_def->effect_param);
 			break;
 	}
+
+	// 纯表现层：按 EffectKind 生成短帧 FX；伤害/位移/消耗仍由上面的既有出口负责。
+	Ref<GDScript> fx_visual = ResourceLoader::get_singleton()->load("res://scripts/art/skill_fx_visual.gd");
+	if (fx_visual.is_valid())
+		fx_visual->call("spawn", _player, int(p_def->effect));
 }
 
 const SkillSystem::ComboDef *SkillSystem::_match_combo(const StringName &p_id, double p_now) const {

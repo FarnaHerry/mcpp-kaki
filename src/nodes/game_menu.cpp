@@ -1195,7 +1195,7 @@ void GameMenu::_build_travel_page() {
 		static const float jit[10] = { 1.0f, 0.84f, 0.96f, 0.8f, 0.98f, 0.86f, 0.92f, 0.8f, 1.0f, 0.88f };
 		PackedVector2Array pts;
 		for (int i = 0; i < 10; i++) {
-			float a = Math_TAU * i / 10.0f;
+			float a = godot::Math::TAU * i / 10.0f;
 			pts.push_back(Vector2(Math::cos(a) * size.x * 0.5f * jit[i],
 					Math::sin(a) * size.y * 0.5f * jit[(i + 5) % 10]));
 		}
@@ -2758,7 +2758,7 @@ void GameMenu::_apply_volume() {
 	if (!as) return;
 	as->set_bus_mute(0, _volume <= 0.001f);
 	if (_volume > 0.001f) {
-		as->set_bus_volume_db(0, Math::linear2db(_volume));
+		as->set_bus_volume_db(0, Math::linear_to_db(_volume));
 	}
 }
 

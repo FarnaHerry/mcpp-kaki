@@ -3,6 +3,9 @@ module;
 #include <godot_cpp/classes/control.hpp>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/label.hpp>
+#include <godot_cpp/classes/resource_loader.hpp>
+#include <godot_cpp/classes/texture_rect.hpp>
+#include <godot_cpp/classes/texture.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/array.hpp>
 #include <godot_cpp/variant/color.hpp>
@@ -102,8 +105,10 @@ void GridList::_ensure_visible() {
 void GridList::_build_pool() {
 	// 清旧池
 	for (Cell &c : _cells) {
-		if (c.frame)
-			c.frame->queue_free(); // bg/label 是 frame 子节点，随之一同释放
+		if (c.frame) {
+			remove_child(c.frame); // 先摘出旧池，避免重建后外部读到 queue_free 中的旧格子
+			c.frame->queue_free(); // bg/icon/label 随 frame 一同释放
+		}
 	}
 	_cells.clear();
 
@@ -135,6 +140,15 @@ void GridList::_build_pool() {
 		c.label->add_theme_font_size_override("font_size", 11);
 		c.label->set_clip_text(true);
 		c.bg->add_child(c.label);
+
+		c.icon = memnew(TextureRect);
+		c.icon->set_name("Icon");
+		c.icon->set_position(Vector2(3, 2));
+		c.icon->set_size(Vector2(16, 16));
+		c.icon->set_stretch_mode(TextureRect::STRETCH_KEEP_ASPECT_CENTERED);
+		c.icon->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);
+		c.icon->set_visible(false);
+		c.bg->add_child(c.icon);
 
 		_cells.push_back(c);
 	}
@@ -181,6 +195,22 @@ void GridList::refresh() {
 		// 选中高亮优先（金框+选中底）；未选中有自定义底色（如品级淡染）则用之，否则默认底
 		c.bg->set_color(selected ? BG_SEL : (bg_custom.a > 0.0f ? bg_custom : BG_IDLE));
 		c.label->set_text(text);
+
+		// 物品条目：独立 16×16 PNG（ResourceLoader 内部缓存）；非物品/未知 id 保持纯文字格。
+		String item_id = d.get("item_id", String());
+		Ref<Texture2D> icon_texture;
+		if (!item_id.is_empty()) {
+			String path = "res://assets/textures/items/item_" + item_id + ".png";
+			ResourceLoader *loader = ResourceLoader::get_singleton();
+			if (loader->exists(path))
+				icon_texture = loader->load(path);
+		}
+		bool has_icon = icon_texture.is_valid();
+		c.icon->set_texture(icon_texture);
+		c.icon->set_visible(has_icon);
+		c.icon->set_modulate(Color(1, 1, 1, (dim || !_active) ? 0.45f : 1.0f));
+		c.label->set_position(has_icon ? Vector2(22, 1) : Vector2(3, 1));
+		c.label->set_size(has_icon ? _cell_size - Vector2(28, 4) : _cell_size - Vector2(8, 4));
 		if (dim)
 			c.label->add_theme_color_override("font_color", TEXT_DIM);
 		else if (!_active)

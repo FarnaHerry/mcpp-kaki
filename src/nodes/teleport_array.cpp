@@ -6,10 +6,12 @@
 
 #include <godot_cpp/classes/collision_shape2d.hpp>
 #include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/gd_script.hpp>
 #include <godot_cpp/classes/input.hpp>
 #include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/polygon2d.hpp>
 #include <godot_cpp/classes/rectangle_shape2d.hpp>
+#include <godot_cpp/classes/resource_loader.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/core/class_db.hpp>
 
@@ -71,6 +73,7 @@ void TeleportArray::_build_visuals() {
 		Node *c = get_child(i);
 		if (Object::cast_to<CollisionShape2D>(c))
 			continue;
+		remove_child(c); // 先释放 Base/TpName 等名称，避免 setup 重建后新节点被改名
 		c->queue_free();
 	}
 	_glow = nullptr;
@@ -104,7 +107,7 @@ void TeleportArray::_build_visuals() {
 	_glow->set_name("Glow");
 	PackedVector2Array gp;
 	for (int i = 0; i < 8; i++) {
-		float a = Math_TAU * i / 8.0f;
+		float a = godot::Math::TAU * i / 8.0f;
 		float r = (i % 2 == 0) ? 7.0f : 3.5f;
 		gp.append(Vector2(Math::cos(a) * r, Math::sin(a) * r - 27.0f));
 	}
@@ -121,6 +124,10 @@ void TeleportArray::_build_visuals() {
 	name->set_size(Vector2(90, 10));
 	name->set_horizontal_alignment(HorizontalAlignment::HORIZONTAL_ALIGNMENT_CENTER);
 	add_child(name);
+
+	Ref<GDScript> prop_visual = ResourceLoader::get_singleton()->load("res://scripts/art/prop_visual.gd");
+	if (prop_visual.is_valid())
+		prop_visual->call("attach", this, "teleport_array", 20.0f, true);
 }
 
 void TeleportArray::_refresh_visual() {

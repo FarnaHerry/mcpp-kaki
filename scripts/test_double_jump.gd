@@ -73,7 +73,10 @@ func _process(delta) -> bool:
 			for c in current_scene.get_children():
 				if c.get_class() == "Enemy":
 					c.queue_free()
-			_player().global_position = Vector2(600, 100)
+			# 起始高度必须留足滞空余量：0.4s 后按跳那一刻仍在空中（否则会变成
+			# 落地一段跳，被判定成「凡人二段跳」）。y=100 时下落到 217 地面只用
+			# ~0.4s，正好卡在按下瞬间（Godot 4.7 帧时序下稳定复现），故抬到 40。
+			_player().global_position = Vector2(600, 40)
 			_player().set("velocity", Vector2.ZERO)
 			_next = _t + 0.4
 			_step = 1

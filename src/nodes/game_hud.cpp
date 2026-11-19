@@ -237,7 +237,7 @@ void GameHUD::_create_xp_bar() {
     const float R = 16.0f; // 半径
     PackedVector2Array circle_verts;
     for (int i = 0; i < 64; i++) {
-        float a = 2.0f * Math_PI * (float)i / 64.0f;
+        float a = 2.0f * godot::Math::PI * (float)i / 64.0f;
         circle_verts.append(Vector2(R + cos(a) * R, R + sin(a) * R));
     }
 
@@ -1308,7 +1308,7 @@ void GameHUD::on_spiritual_energy_changed(int64_t p_current, int64_t p_max, floa
         } else if (p_progress >= 1.0f) {
             PackedVector2Array full;
             for (int i = 0; i < 64; i++) {
-                float a = 2.0f * Math_PI * (float)i / 64.0f;
+                float a = 2.0f * godot::Math::PI * (float)i / 64.0f;
                 full.append(Vector2(R + cos(a) * R, R + sin(a) * R));
             }
             fill->set_polygon(full);
@@ -1326,7 +1326,7 @@ void GameHUD::on_spiritual_energy_changed(int64_t p_current, int64_t p_max, floa
             verts.append(Vector2(x_l, water_y));
             // 底部弧（从 θ 到 2π-θ）
             for (int i = 0; i < arc; i++) {
-                float a = theta + (2.0f * Math_PI - 2.0f * theta) * (float)i / (float)(arc - 1);
+                float a = theta + (2.0f * godot::Math::PI - 2.0f * theta) * (float)i / (float)(arc - 1);
                 verts.append(Vector2(R + R * cos(a), R + R * sin(a)));
             }
             // 右交点

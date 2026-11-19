@@ -1,0 +1,139 @@
+{
+  "anchor": {
+    "x": 12,
+    "y": 21
+  },
+  "frame_size": 24,
+  "generator": "tools/pixelart/herb_sprites.py",
+  "herbs": {
+    "bing_xin_lian": {
+      "grown": {
+        "count": 4,
+        "fps": 4,
+        "loop": true,
+        "row": 0
+      },
+      "wilted": {
+        "count": 1,
+        "fps": 1,
+        "loop": false,
+        "row": 1
+      }
+    },
+    "chi_yan_hua": {
+      "grown": {
+        "count": 4,
+        "fps": 4,
+        "loop": true,
+        "row": 2
+      },
+      "wilted": {
+        "count": 1,
+        "fps": 1,
+        "loop": false,
+        "row": 3
+      }
+    },
+    "jin_gang_teng": {
+      "grown": {
+        "count": 4,
+        "fps": 4,
+        "loop": true,
+        "row": 4
+      },
+      "wilted": {
+        "count": 1,
+        "fps": 1,
+        "loop": false,
+        "row": 5
+      }
+    },
+    "ju_ling_cao": {
+      "grown": {
+        "count": 4,
+        "fps": 4,
+        "loop": true,
+        "row": 6
+      },
+      "wilted": {
+        "count": 1,
+        "fps": 1,
+        "loop": false,
+        "row": 7
+      }
+    },
+    "qian_nian_ling_zhi": {
+      "grown": {
+        "count": 4,
+        "fps": 4,
+        "loop": true,
+        "row": 8
+      },
+      "wilted": {
+        "count": 1,
+        "fps": 1,
+        "loop": false,
+        "row": 9
+      }
+    },
+    "spirit_rice": {
+      "grown": {
+        "count": 4,
+        "fps": 4,
+        "loop": true,
+        "row": 10
+      },
+      "wilted": {
+        "count": 1,
+        "fps": 1,
+        "loop": false,
+        "row": 11
+      }
+    },
+    "wu_dao_cha": {
+      "grown": {
+        "count": 4,
+        "fps": 4,
+        "loop": true,
+        "row": 12
+      },
+      "wilted": {
+        "count": 1,
+        "fps": 1,
+        "loop": false,
+        "row": 13
+      }
+    },
+    "xuan_bing_shen": {
+      "grown": {
+        "count": 4,
+        "fps": 4,
+        "loop": true,
+        "row": 14
+      },
+      "wilted": {
+        "count": 1,
+        "fps": 1,
+        "loop": false,
+        "row": 15
+      }
+    },
+    "zhi_xue_cao": {
+      "grown": {
+        "count": 4,
+        "fps": 4,
+        "loop": true,
+        "row": 16
+      },
+      "wilted": {
+        "count": 1,
+        "fps": 1,
+        "loop": false,
+        "row": 17
+      }
+    }
+  },
+  "sheet": "herb_sheet.png",
+  "sheet_cols": 4,
+  "sheet_rows": 18
+}

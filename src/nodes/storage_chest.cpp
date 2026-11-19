@@ -3,9 +3,11 @@
 
 #include <godot_cpp/classes/collision_shape2d.hpp>
 #include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/gd_script.hpp>
 #include <godot_cpp/classes/input.hpp>
 #include <godot_cpp/classes/polygon2d.hpp>
 #include <godot_cpp/classes/rectangle_shape2d.hpp>
+#include <godot_cpp/classes/resource_loader.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/core/class_db.hpp>
 
@@ -68,6 +70,10 @@ void StorageChest::_ready() {
 	lock_poly.append(Vector2(-2, 2));
 	lock->set_polygon(lock_poly);
 	add_child(lock);
+
+	Ref<GDScript> prop_visual = ResourceLoader::get_singleton()->load("res://scripts/art/prop_visual.gd");
+	if (prop_visual.is_valid())
+		prop_visual->call("attach", this, "storage_chest", 10.0f, true);
 
 	set_process(true);
 }

@@ -167,6 +167,7 @@ void StoragePanel::_refresh() {
 				if (qty > 1)
 					txt += " ×" + String::num_int64(qty);
 				cell["text"] = txt;
+				cell["item_id"] = id;
 				cell["color"] = grade_color(def ? def->grade : 0);
 				cell["bg_color"] = grade_bg_color(def ? def->grade : 0);
 			} else {
@@ -176,6 +177,7 @@ void StoragePanel::_refresh() {
 				if (qty > 1)
 					txt += " ×" + String::num_int64(qty);
 				cell["text"] = txt;
+				cell["item_id"] = StringName(s.get("id", StringName()));
 				const Item *sdef = db ? db->get_item(StringName(s.get("id", StringName()))) : nullptr;
 				cell["color"] = grade_color(sdef ? sdef->grade : 0);
 				cell["bg_color"] = grade_bg_color(sdef ? sdef->grade : 0);

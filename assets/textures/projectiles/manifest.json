@@ -1,0 +1,65 @@
+{
+  "elements": {
+    "0": {
+      "count": 4,
+      "fps": 10,
+      "loop": true,
+      "name": "physical",
+      "row": 0
+    },
+    "1": {
+      "count": 4,
+      "fps": 10,
+      "loop": true,
+      "name": "jin",
+      "row": 1
+    },
+    "2": {
+      "count": 4,
+      "fps": 10,
+      "loop": true,
+      "name": "mu",
+      "row": 2
+    },
+    "3": {
+      "count": 4,
+      "fps": 10,
+      "loop": true,
+      "name": "shui",
+      "row": 3
+    },
+    "4": {
+      "count": 4,
+      "fps": 10,
+      "loop": true,
+      "name": "huo",
+      "row": 4
+    },
+    "5": {
+      "count": 4,
+      "fps": 10,
+      "loop": true,
+      "name": "tu",
+      "row": 5
+    },
+    "6": {
+      "count": 4,
+      "fps": 10,
+      "loop": true,
+      "name": "lei",
+      "row": 6
+    },
+    "7": {
+      "count": 4,
+      "fps": 10,
+      "loop": true,
+      "name": "feng",
+      "row": 7
+    }
+  },
+  "frame_size": 16,
+  "generator": "tools/pixelart/projectile_sprites.py",
+  "sheet": "projectile_sheet.png",
+  "sheet_cols": 4,
+  "sheet_rows": 8
+}

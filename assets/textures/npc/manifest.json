@@ -1,0 +1,61 @@
+{
+  "anchor": {
+    "x": 16,
+    "y": 29
+  },
+  "frame_size": 32,
+  "generator": "tools/pixelart/npc_sprites.py",
+  "roles": {
+    "elder": {
+      "count": 4,
+      "fps": 4,
+      "loop": true,
+      "row": 1
+    },
+    "emperor": {
+      "count": 4,
+      "fps": 4,
+      "loop": true,
+      "row": 7
+    },
+    "immortal": {
+      "count": 4,
+      "fps": 4,
+      "loop": true,
+      "row": 4
+    },
+    "innkeeper": {
+      "count": 4,
+      "fps": 4,
+      "loop": true,
+      "row": 2
+    },
+    "judge": {
+      "count": 4,
+      "fps": 4,
+      "loop": true,
+      "row": 6
+    },
+    "merchant": {
+      "count": 4,
+      "fps": 4,
+      "loop": true,
+      "row": 3
+    },
+    "monk": {
+      "count": 4,
+      "fps": 4,
+      "loop": true,
+      "row": 5
+    },
+    "villager": {
+      "count": 4,
+      "fps": 4,
+      "loop": true,
+      "row": 0
+    }
+  },
+  "sheet": "npc_sheet.png",
+  "sheet_cols": 4,
+  "sheet_rows": 8
+}

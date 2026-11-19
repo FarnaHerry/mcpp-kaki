@@ -1,0 +1,69 @@
+{
+  "generator": "tools/pixelart/terrain_sprites.py",
+  "sheet": "terrain_sheet.png",
+  "sheet_cols": 4,
+  "sheet_rows": 3,
+  "styles": {
+    "bamboo": {
+      "col": 3,
+      "row": 0,
+      "texture": "tile_bamboo.png"
+    },
+    "cloud": {
+      "col": 3,
+      "row": 1,
+      "texture": "tile_cloud.png"
+    },
+    "dirt": {
+      "col": 1,
+      "row": 0,
+      "texture": "tile_dirt.png"
+    },
+    "fire": {
+      "col": 0,
+      "row": 1,
+      "texture": "tile_fire.png"
+    },
+    "grass": {
+      "col": 0,
+      "row": 0,
+      "texture": "tile_grass.png"
+    },
+    "heavenly": {
+      "col": 1,
+      "row": 2,
+      "texture": "tile_heavenly.png"
+    },
+    "ice": {
+      "col": 1,
+      "row": 1,
+      "texture": "tile_ice.png"
+    },
+    "sand": {
+      "col": 2,
+      "row": 1,
+      "texture": "tile_sand.png"
+    },
+    "stone": {
+      "col": 2,
+      "row": 0,
+      "texture": "tile_stone.png"
+    },
+    "underworld": {
+      "col": 0,
+      "row": 2,
+      "texture": "tile_underworld.png"
+    },
+    "water": {
+      "col": 2,
+      "row": 2,
+      "texture": "tile_water.png"
+    },
+    "wood": {
+      "col": 3,
+      "row": 2,
+      "texture": "tile_wood.png"
+    }
+  },
+  "tile_size": 16
+}

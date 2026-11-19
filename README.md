@@ -1,8 +1,8 @@
 # mcpp-kaki
 
-修仙题材的 2D 动作游戏（类银河恶魔城 Metroidvania），使用 **Godot 4.6 + C++ GDExtension** 编写。
+修仙题材的 2D 动作游戏（类银河恶魔城 Metroidvania），使用 **Godot 4.7 + C++ GDExtension** 编写。
 
-A xianxia (cultivation fantasy) 2D action game in the Metroidvania style, built with **Godot 4.6 + C++ GDExtension**.
+A xianxia (cultivation fantasy) 2D action game in the Metroidvania style, built with **Godot 4.7 + C++ GDExtension**.
 
 所有游戏逻辑用 C++ 编写（不使用 GDScript），构建系统用 **mcpp**（现代 C++23 模块化构建工具）。全项目（含 godot-cpp 官方绑定）统一使用 **C++23** 标准编译。
 
@@ -23,7 +23,7 @@ A xianxia (cultivation fantasy) 2D action game in the Metroidvania style, built 
 
 | 组件 | 说明 |
 |---|---|
-| Godot | 4.6 (config_version=5), gl_compatibility (2D) |
+| Godot | 4.7 (config_version=5), gl_compatibility (2D) |
 | 分辨率 | 480×270 内部 → 1920×1080 canvas_items stretch, Nearest pixel art |
 | 语言 | C++23（全项目统一，含 godot-cpp 官方绑定）；少量 GDScript 仅做场景装配 |
 | 构建 | **mcpp** (C++23 模块化构建工具) |
@@ -43,17 +43,36 @@ src/               # C++ 源码（模块化）
 scenes/            # .tscn 场景
 data/              # 外置游戏数据（JSON）
 scripts/           # GDScript 装配 + 构建脚本
+assets/            # 美术素材（像素动作帧 / 图集 / manifest）
+tools/pixelart/    # 像素素材生成器 + 校验器（Python，确定性可复现）
 bin/               # 编译产物（gitignored）
 ```
 
-> **模块化说明**：约 70% 的类已用 C++ 模块（`import mcpp_kaki.*`）组织，6 个模块接口（.cppm）经 mcpp 模块包 `godotengine:godot-cpp-m` 以 `import godot_cpp;` 接入引擎绑定（宏走 `<godot-cpp-m/macros.h>`，HashMap/HashSet 保持文本包含）。绑定 godot 内置类指针（`Node*`/`Node2D*`/`Object*`）的节点类（Player/Enemy 等）保持头文件——这是 C++ 模块与 godot-cpp 绑定模板的已知限制。
+> **模块化说明**：约 70% 的类已用 C++ 模块（`import mcpp_kaki.*`）组织，6 个模块接口（.cppm）经 mcpp 模块包 `mcpplibs.mwrap.godot_cpp` 以 `import mcpplibs.mwrap.godot_cpp;` 接入引擎绑定（宏走 `<godot-cpp-m/macros.h>`，HashMap/HashSet 保持文本包含）。绑定 godot 内置类指针（`Node*`/`Node2D*`/`Object*`）的节点类（Player/Enemy 等）保持头文件——这是 C++ 模块与 godot-cpp 绑定模板的已知限制。
+
+## 🎨 美术素材 / Art Assets
+
+动作素材是**程序化生成的像素帧**（确定性与可复现是同一条红线），玩家与敌人两套：
+
+```bash
+python3 tools/pixelart/player_sprites.py    # 玩家：32×32 / 9 态 29 帧 → assets/textures/player/
+python3 tools/pixelart/enemy_sprites.py     # 敌人：48×48 / 4 原型 × 5 态 80 帧 → assets/textures/enemy/
+python3 tools/pixelart/validate.py --module enemy_sprites   # 校验（细缝/贴边/锚点/位移/确定性，非 0 = 不合格）
+python3 tools/pixelart/ascii_view.py --module enemy_sprites --group boss --state idle  # ASCII 目视
+```
+
+- 运行期由 `scripts/art/player_visual.gd` / `enemy_visual.gd` 读各自 `manifest.json` 逐帧播放；
+  **素材缺失时自动回退程序化 `Polygon2D` 占位**（干净 clone 也能跑）。
+- 只画朝右，朝左由 `flip_h`；锚点 = 描边底（脚底）。敌人套为**中性灰阶 + 按定义色染色**，
+  68 个敌人定义共用 4 套素材；素材挂在 `Polygon2D` 子节点下以继承精英/场景缩放。
+- 设计与坑位见 `design/art-assets.md`；目视大图见 `docs/art/player_preview.png`。
 
 ## 📦 环境要求 / Requirements
 
-- **Godot 4.6**（`godot` 在 PATH 中）
+- **Godot 4.7**（`godot` 在 PATH 中）
 - **mcpp** 构建工具（`mcpp --version`），含 LLVM 工具链（`mcpp toolchain install llvm`）
 
-> godot-cpp 绑定由 mcpp 包 `compat:godot-cpp@10.0.0-rc1`（Godot 4.6）提供，首次 `mcpp build` 自动下载并编译，无需 Python / SCons / git 子模块。
+> godot-cpp 绑定由 mcpp 包 `compat:godot-cpp@10.0.0`（Godot 4.7）提供，模块层为 `mcpplibs.mwrap.godot_cpp@10.0.0`；首次 `mcpp build` 自动下载并编译，无需 Python / SCons / git 子模块。
 
 ## 🔨 编译 / Build
 
@@ -94,7 +113,7 @@ mcpp toolchain install llvm
 godot
 ```
 
-> **注意**：需要图形显示。Headless 模式（`godot --headless`）**不会加载 GDExtension**。
+> **注意**：运行游戏需要图形显示；`godot --headless` 仍会加载 GDExtension（可用 `-s` 跑 `scripts/test_*.gd` 回归），只是不渲染画面。
 
 ## 🎮 操作 / Controls
 

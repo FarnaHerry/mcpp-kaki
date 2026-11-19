@@ -5,9 +5,11 @@
 
 #include <godot_cpp/classes/collision_shape2d.hpp>
 #include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/gd_script.hpp>
 #include <godot_cpp/classes/input.hpp>
 #include <godot_cpp/classes/polygon2d.hpp>
 #include <godot_cpp/classes/rectangle_shape2d.hpp>
+#include <godot_cpp/classes/resource_loader.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/core/class_db.hpp>
 
@@ -68,6 +70,11 @@ void ShopKeeper::_ready() {
 	fp.append(Vector2(9, -14));
 	flag->set_polygon(fp);
 	add_child(flag);
+
+	set_meta("visual_id", "merchant");
+	Ref<GDScript> npc_visual = ResourceLoader::get_singleton()->load("res://scripts/art/npc_visual.gd");
+	if (npc_visual.is_valid())
+		npc_visual->call("attach", this, body, hat, Variant(), 14.0f);
 
 	set_process(true);
 }

@@ -7,13 +7,13 @@ version = 2
 
 [package."compat.godot-cpp"]
 namespace = "compat"
-version = "10.0.0-rc1"
-source  = "index+compat@10.0.0-rc1"
-hash    = "fnv1a:efac35b2dffa5507"
+version = "10.0.0"
+source  = "index+compat@10.0.0"
+hash    = "fnv1a:8d867057dbef3c3b"
 
-[package."godotengine.godot-cpp-m"]
-namespace = "godotengine"
-version = "10.0.0-rc1"
-source  = "index+godotengine@10.0.0-rc1"
-hash    = "fnv1a:8751b3226301bf6b"
+[package."mcpplibs.mwrap.godot_cpp"]
+namespace = "mcpplibs.mwrap"
+version = "10.0.0"
+source  = "index+mcpplibs.mwrap@10.0.0"
+hash    = "fnv1a:ec3265f2d9c7197b"
 

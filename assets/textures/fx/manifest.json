@@ -1,0 +1,56 @@
+{
+  "effects": {
+    "aoe": {
+      "count": 6,
+      "fps": 14,
+      "loop": false,
+      "row": 1
+    },
+    "blink": {
+      "count": 5,
+      "fps": 14,
+      "loop": false,
+      "row": 4
+    },
+    "buff": {
+      "count": 5,
+      "fps": 10,
+      "loop": false,
+      "row": 5
+    },
+    "fan": {
+      "count": 5,
+      "fps": 14,
+      "loop": false,
+      "row": 7
+    },
+    "invuln": {
+      "count": 5,
+      "fps": 10,
+      "loop": false,
+      "row": 6
+    },
+    "lunge": {
+      "count": 4,
+      "fps": 16,
+      "loop": false,
+      "row": 3
+    },
+    "rising": {
+      "count": 5,
+      "fps": 14,
+      "loop": false,
+      "row": 2
+    },
+    "slash": {
+      "count": 5,
+      "fps": 16,
+      "loop": false,
+      "row": 0
+    }
+  },
+  "frame_size": 32,
+  "generator": "tools/pixelart/fx_sprites.py",
+  "sheet": "fx_sheet.png",
+  "sheet_cols": 6
+}

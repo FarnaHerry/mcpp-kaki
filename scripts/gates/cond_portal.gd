@@ -27,6 +27,7 @@ func _ready():
 	vis.color = Color(0.9, 0.8, 0.35, 0.6)
 	vis.polygon = PackedVector2Array([Vector2(-10, -30), Vector2(10, -30), Vector2(10, 30), Vector2(-10, 30)])
 	add_child(vis)
+	load("res://scripts/art/prop_visual.gd").call("attach", self, "cond_portal", 30.0, true)
 	set_process(true)
 
 ## 创建内部 Portal（自带检测关掉——本门统一门控）
@@ -42,6 +43,7 @@ func setup(player: Node, camera: Node) -> void:
 	dr.size = Vector2(32, 80)
 	ds.shape = dr
 	portal.add_child(ds)
+	portal.set_meta("prop_visual_disabled", true) # 内部 Portal 仅逻辑，不重复画门
 	add_child(portal)
 	portal.monitoring = false # Portal._ready 置 true，压回——trigger() 由本门手动调
 	_portal = portal

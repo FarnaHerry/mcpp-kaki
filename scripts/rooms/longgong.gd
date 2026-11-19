@@ -81,6 +81,7 @@ func _add_cang_zhen_ge_portal():
 	vis.color = Color(0.55, 0.85, 1.0, 0.55)
 	vis.polygon = PackedVector2Array([Vector2(-8, -26), Vector2(8, -26), Vector2(8, 26), Vector2(-8, 26)])
 	portal.add_child(vis)
+	portal.set_meta("prop_visual_disabled", true) # 保留本处定制水光门，不叠通用门
 	portal.connect("portal_prompt", Callable(self, "_on_czg_portal_prompt"))
 	add_child(portal)
 

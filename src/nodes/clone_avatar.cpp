@@ -134,7 +134,7 @@ namespace godot {
 		head->set_name("HeadVisual");
 		PackedVector2Array head_poly;
 		for (int i = 0; i < 8; i++) {
-			float a = (float)Math_TAU * (float)i / 8.0f;
+			float a = (float)godot::Math::TAU * (float)i / 8.0f;
 			head_poly.append(Vector2(Math::cos(a) * 4.0f, -17.0f + Math::sin(a) * 4.0f));
 		}
 		head->set_polygon(head_poly);

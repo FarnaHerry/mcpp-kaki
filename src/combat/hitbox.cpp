@@ -35,7 +35,7 @@ namespace godot {
 	}
 
 	void HitBox::set_knockback_from_facing(int p_facing_direction) {
-		knockback_angle = (p_facing_direction > 0) ? 0.0f : Math_PI;
+		knockback_angle = (p_facing_direction > 0) ? 0.0f : godot::Math::PI;
 	}
 
 	void HitBox::_update_monitoring() {

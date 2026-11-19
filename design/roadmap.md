@@ -50,6 +50,22 @@
   境界授予映射 data/grants.json（炼气→真仙 8 境条目表驱动，player.cpp 原 if 链逐字兜底、
   机制行为留码）；data-externalization 状态总表同步成文
 
+### 2026-10-30 · 引擎升级 Godot 4.6 → 4.7（未成文 session）
+
+引擎侧早已是 4.7.2（Fedora 包），C++ 侧还钉着 4.6 绑定，属错配；本次对齐：
+
+- **依赖换包**：`compat:godot-cpp@10.0.0-rc1`（4.6）→ **`compat:godot-cpp@10.0.0`**（4.7 API）；
+  模块层 `godotengine:godot-cpp-m` **没有 10.0.0 发布**，4.7 的对应包是
+  **`mcpplibs.mwrap.godot_cpp@10.0.0`**（engine-api 4.7）→ 6 个 `.cppm` 的 `import godot_cpp;`
+  改 `import mcpplibs.mwrap.godot_cpp;`（宏头 `<godot-cpp-m/macros.h>` 两个包都发，未改）
+- **4.7 API 漂移两处**：`Math_PI`/`Math_TAU` 宏删除（改 `godot::Math::PI/TAU`）、
+  `Math::linear2db` 改名 `Math::linear_to_db`（9 文件 11 处）
+- **工程口径**：`project.godot` features 4.6→4.7、`.gdextension compatibility_minimum` 4.1→4.7
+- **验收**：全量构建绿（BMI 扁平化桥接仍需，mcpp 2026.10.29.1 复测未修）；
+  windowed + headless 均正常加载；97 个 `test_*.gd` 全绿——唯一红项 `test_double_jump`
+  是既有 harness 时序竞态（y=100 下落到 217 正好 0.4s，与按跳同帧落地 → 变成合法一段跳），
+  起始高度抬到 40 后 3 连跑稳定 PASS
+
 ### 8/28-8/29 提交
 
 - **境界参数外抽**（8/28）：data/realms.json（caps/stats/期数/灵力基底/混元/回复率）+
@@ -203,8 +219,12 @@
 
 ### 剩余可做（无阻塞，按价值排序）
 
-- **美术素材管线**（design/art-assets.md 仅规划未实现——全游戏程序化绘制，接入外部贴图是大升级，
-  需要素材生成/审图工具链配合）
+- ~~**美术素材管线**~~（**2026-10-17 v1+v2 落地**——v1 玩家 9 态 29 帧；**v2 敌人 4 原型 × 5 态 80 帧**
+  （boss>flying>ranged>melee 原型判定 / 中性灰阶+定义色染色 / 挂 Polygon2D 子节点继承精英与场景缩放 /
+  清空 polygon 停画占位 / 定义尺寸等比缩放）；工具链 `tools/pixelart/`（确定性生成 + 7 类断言校验 +
+  ASCII 目视 + `iter_assets()` 生成器无关契约）；接线 `scripts/art/{player,enemy}_visual.gd`，素材缺失自动回退；
+  harness 39 + 50 断言。详见 design/art-assets.md）——**下一轮可做**：道具/掉落物图标、攻击挥砍弧光 FX、
+  背景层，以及调色板色阶吸附（降用色数）
 - ~~**云游图 UI**~~（2026-08-29 已落地：GameMenu 云游页升级可视化世界地图 v2——地理方位岛体/
   云海航线/详情栏，见上方提交块与 CLAUDE.md「GameMenu 云游页」条）
 - ~~**键位配置 UI**~~（session 022 已落地：设置页「键位」子页 32 项改绑/冲突拒绑/keybinds.cfg

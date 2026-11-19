@@ -10,7 +10,11 @@ func _ready():
 	set_collision_mask_value(3, true)
 	connect("body_entered", _on_body_entered)
 	connect("body_exited", _on_body_exited)
+	call_deferred("_attach_art") # 等调用方补完占位门后再替换
 	set_process(true)
+
+func _attach_art():
+	load("res://scripts/art/prop_visual.gd").call("attach", self, "scene_gate", 18.0, true)
 
 func _on_body_entered(body):
 	if body.name != "Player":

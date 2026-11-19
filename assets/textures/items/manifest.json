@@ -1,0 +1,205 @@
+{
+  "frame_size": 16,
+  "generator": "tools/pixelart/item_sprites.py",
+  "items": {
+    "ba_gua_lu": {
+      "col": 0,
+      "row": 0
+    },
+    "ba_jiao_shan": {
+      "col": 1,
+      "row": 0
+    },
+    "bi_shui_zhu": {
+      "col": 2,
+      "row": 0
+    },
+    "bing_xin_dan": {
+      "col": 3,
+      "row": 0
+    },
+    "bing_xin_lian": {
+      "col": 4,
+      "row": 0
+    },
+    "brown_rice": {
+      "col": 5,
+      "row": 0
+    },
+    "chi_yan_dan": {
+      "col": 6,
+      "row": 0
+    },
+    "chi_yan_hua": {
+      "col": 0,
+      "row": 1
+    },
+    "da_huan_dan": {
+      "col": 1,
+      "row": 1
+    },
+    "dan_zha": {
+      "col": 2,
+      "row": 1
+    },
+    "ding_feng_zhu": {
+      "col": 3,
+      "row": 1
+    },
+    "ding_hai_shen_zhen": {
+      "col": 4,
+      "row": 1
+    },
+    "ding_hai_zhu": {
+      "col": 5,
+      "row": 1
+    },
+    "dry_ration": {
+      "col": 6,
+      "row": 1
+    },
+    "flying_sword": {
+      "col": 0,
+      "row": 2
+    },
+    "foundation_pill": {
+      "col": 1,
+      "row": 2
+    },
+    "healing_pill": {
+      "col": 2,
+      "row": 2
+    },
+    "iron_sword": {
+      "col": 3,
+      "row": 2
+    },
+    "jin_gang_dan": {
+      "col": 4,
+      "row": 2
+    },
+    "jin_gang_teng": {
+      "col": 5,
+      "row": 2
+    },
+    "ju_ling_cao": {
+      "col": 6,
+      "row": 2
+    },
+    "kun_xian_sheng": {
+      "col": 0,
+      "row": 3
+    },
+    "lei_wen_pei": {
+      "col": 1,
+      "row": 3
+    },
+    "li_huo_zhu": {
+      "col": 2,
+      "row": 3
+    },
+    "long_gu": {
+      "col": 3,
+      "row": 3
+    },
+    "pan_tao": {
+      "col": 4,
+      "row": 3
+    },
+    "protect_robe": {
+      "col": 5,
+      "row": 3
+    },
+    "pu_ti_xin_fa_juan": {
+      "col": 6,
+      "row": 3
+    },
+    "qi_pill": {
+      "col": 0,
+      "row": 4
+    },
+    "qian_nian_ling_zhi": {
+      "col": 1,
+      "row": 4
+    },
+    "qian_nian_zhen_zhu": {
+      "col": 2,
+      "row": 4
+    },
+    "qing_feng_gu_jian": {
+      "col": 3,
+      "row": 4
+    },
+    "ren_shen_guo": {
+      "col": 4,
+      "row": 4
+    },
+    "she_li_zi": {
+      "col": 5,
+      "row": 4
+    },
+    "shen_wai_can_juan": {
+      "col": 6,
+      "row": 4
+    },
+    "spirit_rice": {
+      "col": 0,
+      "row": 5
+    },
+    "spirit_stone": {
+      "col": 1,
+      "row": 5
+    },
+    "spirit_stone_high": {
+      "col": 2,
+      "row": 5
+    },
+    "spirit_stone_mid": {
+      "col": 3,
+      "row": 5
+    },
+    "spirit_stone_peak": {
+      "col": 4,
+      "row": 5
+    },
+    "wu_dao_cha": {
+      "col": 5,
+      "row": 5
+    },
+    "wu_dao_dan": {
+      "col": 6,
+      "row": 5
+    },
+    "xian_tao": {
+      "col": 0,
+      "row": 6
+    },
+    "xuan_bing_shen": {
+      "col": 1,
+      "row": 6
+    },
+    "xuan_bing_sui": {
+      "col": 2,
+      "row": 6
+    },
+    "xuan_long_dan": {
+      "col": 3,
+      "row": 6
+    },
+    "xuan_ming_dan": {
+      "col": 4,
+      "row": 6
+    },
+    "zhan_tan_gong_de_xiang": {
+      "col": 5,
+      "row": 6
+    },
+    "zhi_xue_cao": {
+      "col": 6,
+      "row": 6
+    }
+  },
+  "sheet": "item_sheet.png",
+  "sheet_cols": 7,
+  "sheet_rows": 7
+}

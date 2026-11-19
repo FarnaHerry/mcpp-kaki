@@ -17,6 +17,7 @@ func _ready():
 	add_child(shape)
 	connect("body_entered", _on_body_entered)
 	connect("body_exited", _on_body_exited)
+	load("res://scripts/art/prop_visual.gd").call("attach", self, "jlz_eye")
 	set_process(true)
 
 func _mgr():

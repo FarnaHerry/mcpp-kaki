@@ -18,7 +18,7 @@ class DongtianManager; // external (nodes header)
 
 export module mcpp_kaki.nodes;
 
-import godot_cpp;
+import mcpplibs.mwrap.godot_cpp;
 
 import mcpp_kaki.utils;
 import mcpp_kaki.inventory;
@@ -309,7 +309,7 @@ private:
 	bool _filter_matches(const Item *p_def) const;
 };
 // 统一格子列表：物品/技能/法宝/功法等一切列表条目的通用格子渲染。
-// 数据 = Array of {text, color?, dim?}；无图标时代一律名字格子。
+// 数据 = Array of {text, color?, dim?, bg_color?, item_id?}；item_id 对应独立物品图标。
 // 交互由宿主面板驱动（move_selection/get_selected），本组件只管渲染+网格导航+滚动。
 export class GridList : public Control {
 	GDCLASS(GridList, Control);
@@ -338,6 +338,7 @@ private:
 	struct Cell {
 		ColorRect *frame = nullptr; // 外框（选中=金）
 		ColorRect *bg = nullptr;
+		TextureRect *icon = nullptr; // item_id 对应的 16×16 物品图标（非物品隐藏）
 		Label *label = nullptr;
 	};
 

@@ -17,7 +17,7 @@ class Player; // external (nodes header) — global fragment, no module linkage
 
 export module mcpp_kaki.core;
 
-import godot_cpp;
+import mcpplibs.mwrap.godot_cpp;
 
 namespace godot {
 
